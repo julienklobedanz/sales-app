@@ -42,11 +42,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-| Variable | Zweck |
-|----------|--------|
-| `HUBSPOT_CLIENT_ID` | OAuth Client ID aus der HubSpot-App |
-| `HUBSPOT_CLIENT_SECRET` | OAuth Client Secret (nur Server) |
-| `NEXT_PUBLIC_APP_URL` | Basis-URL für Redirect-URI und Callback (lokal z. B. `http://localhost:3000`, Prod eure Domain) |
+| Variable                    | Zweck                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `HUBSPOT_CLIENT_ID`         | OAuth Client ID aus der HubSpot-App                                                                             |
+| `HUBSPOT_CLIENT_SECRET`     | OAuth Client Secret (nur Server)                                                                                |
+| `NEXT_PUBLIC_APP_URL`       | Basis-URL für Redirect-URI und Callback (lokal z. B. `http://localhost:3000`, Prod eure Domain)                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | Tokens werden serverseitig über Service Role geschrieben/gelesen — **Pflicht für CRM-Sync**, nicht nur optional |
 
 Kopie-Vorlage: siehe `.env.example` (Abschnitt „HubSpot CRM Sync“).
@@ -81,18 +81,18 @@ Die Redirect-URI muss **bytegenau** mit `NEXT_PUBLIC_APP_URL` + `/api/integratio
 
 ### Schritt 4 — Als Admin testen (Pflicht)
 
-| # | Aktion | Erwartung |
-|---|--------|-----------|
-| 1 | Als **Admin** einloggen | Sales / Account Manager: kein Connect, API → 403 |
-| 2 | **Settings → Integrationen → HubSpot → Verbindung einrichten** | Redirect zu HubSpot OAuth |
-| 2b | Alternativ: **Accounts-Empty-State** → HubSpot-Button | Gleicher OAuth-Flow; Rückkehr zu `/dashboard/accounts` |
-| 2c | Alternativ: **Deals-Empty-State** → HubSpot-Button | OAuth-Flow; Rückkehr zu `/dashboard/deals` |
-| 2d | Alternativ: **Settings → Integrationen → HubSpot** | OAuth-Flow; Rückkehr zu `/dashboard/settings?tab=integrations` |
-| 3 | OAuth abschließen | Redirect zu `/dashboard/accounts?crm_connected=success&crm_import=1` |
-| 4 | **Import-Dialog** öffnet sich | Liste: Accounts mit offenen Opportunities |
-| 5 | Accounts auswählen → **Importieren** | Toast mit Anzahl; Seite aktualisiert |
-| 6 | `/dashboard/accounts` | Neue/verknüpfte Accounts sichtbar |
-| 7 | Account-Detail → Tab **Pipeline** | Deals mit HubSpot-Sync-Link (wenn Portal-ID bekannt) |
+| #   | Aktion                                                         | Erwartung                                                            |
+| --- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 1   | Als **Admin** einloggen                                        | Sales / Account Manager: kein Connect, API → 403                     |
+| 2   | **Settings → Integrationen → HubSpot → Verbindung einrichten** | Redirect zu HubSpot OAuth                                            |
+| 2b  | Alternativ: **Accounts-Empty-State** → HubSpot-Button          | Gleicher OAuth-Flow; Rückkehr zu `/dashboard/accounts`               |
+| 2c  | Alternativ: **Deals-Empty-State** → HubSpot-Button             | OAuth-Flow; Rückkehr zu `/dashboard/deals`                           |
+| 2d  | Alternativ: **Settings → Integrationen → HubSpot**             | OAuth-Flow; Rückkehr zu `/dashboard/settings?tab=integrations`       |
+| 3   | OAuth abschließen                                              | Redirect zu `/dashboard/accounts?crm_connected=success&crm_import=1` |
+| 4   | **Import-Dialog** öffnet sich                                  | Liste: Accounts mit offenen Opportunities                            |
+| 5   | Accounts auswählen → **Importieren**                           | Toast mit Anzahl; Seite aktualisiert                                 |
+| 6   | `/dashboard/accounts`                                          | Neue/verknüpfte Accounts sichtbar                                    |
+| 7   | Account-Detail → Tab **Pipeline**                              | Deals mit HubSpot-Sync-Link (wenn Portal-ID bekannt)                 |
 
 **Dev-Preview Empty State** (nur `NODE_ENV=development`):
 
@@ -102,8 +102,8 @@ http://localhost:3000/dashboard/accounts?previewOnboarding=1
 
 **Manueller Import** (nach bereits erfolgter Verbindung):
 
-- Settings → HubSpot → „Accounts importieren“ (öffnet Import-Dialog in Settings), oder  
-- `/dashboard/accounts?crm_import=1`, oder  
+- Settings → HubSpot → „Accounts importieren“ (öffnet Import-Dialog in Settings), oder
+- `/dashboard/accounts?crm_import=1`, oder
 - `/dashboard/deals?crm_import=1`
 
 **OAuth-Rückkehr (`returnTo`):** Connect-URL akzeptiert `?returnTo=accounts|deals|settings` (Standard: `accounts`).
@@ -114,14 +114,14 @@ http://localhost:3000/dashboard/accounts?previewOnboarding=1
 
 ## API-Routen (Referenz)
 
-| Route | Methode | Admin | Beschreibung |
-|-------|---------|-------|--------------|
-| `/api/integrations/hubspot/connect` | GET | ja | OAuth-Start |
-| `/api/integrations/hubspot/callback` | GET | ja | Token speichern |
-| `/api/integrations/hubspot/status` | GET | ja | Verbindungsstatus |
-| `/api/integrations/hubspot/disconnect` | POST | ja | Trennen |
-| `/api/integrations/hubspot/discover` | GET | ja | Accounts mit offenen Deals |
-| `/api/integrations/hubspot/import` | POST | ja | Ausgewählte Accounts importieren |
+| Route                                  | Methode | Admin | Beschreibung                     |
+| -------------------------------------- | ------- | ----- | -------------------------------- |
+| `/api/integrations/hubspot/connect`    | GET     | ja    | OAuth-Start                      |
+| `/api/integrations/hubspot/callback`   | GET     | ja    | Token speichern                  |
+| `/api/integrations/hubspot/status`     | GET     | ja    | Verbindungsstatus                |
+| `/api/integrations/hubspot/disconnect` | POST    | ja    | Trennen                          |
+| `/api/integrations/hubspot/discover`   | GET     | ja    | Accounts mit offenen Deals       |
+| `/api/integrations/hubspot/import`     | POST    | ja    | Ausgewählte Accounts importieren |
 
 ---
 
@@ -136,14 +136,14 @@ http://localhost:3000/dashboard/accounts?previewOnboarding=1
 
 ## Fehlerbehebung
 
-| Symptom | Ursache | Lösung |
-|---------|---------|--------|
-| HubSpot-Button disabled / „nicht konfiguriert“ | `HUBSPOT_CLIENT_ID` / `SECRET` fehlen | Env setzen, App neu starten |
-| OAuth redirect error | Redirect-URI stimmt nicht | HubSpot-App + `NEXT_PUBLIC_APP_URL` abgleichen |
-| `crm_connected=error` | Token-Austausch oder State-Cookie | Logs `[hubspot/callback]`; erneut als Admin verbinden |
-| Discovery leer | Keine offenen Deals in HubSpot | In HubSpot Deals mit `hs_is_closed = false` prüfen |
-| Import 403 | Kein Admin | Mit Admin-Account testen |
-| Tokens nicht gespeichert | `SUPABASE_SERVICE_ROLE_KEY` fehlt | Key in Server-Env setzen |
+| Symptom                                        | Ursache                               | Lösung                                                |
+| ---------------------------------------------- | ------------------------------------- | ----------------------------------------------------- |
+| HubSpot-Button disabled / „nicht konfiguriert“ | `HUBSPOT_CLIENT_ID` / `SECRET` fehlen | Env setzen, App neu starten                           |
+| OAuth redirect error                           | Redirect-URI stimmt nicht             | HubSpot-App + `NEXT_PUBLIC_APP_URL` abgleichen        |
+| `crm_connected=error`                          | Token-Austausch oder State-Cookie     | Logs `[hubspot/callback]`; erneut als Admin verbinden |
+| Discovery leer                                 | Keine offenen Deals in HubSpot        | In HubSpot Deals mit `hs_is_closed = false` prüfen    |
+| Import 403                                     | Kein Admin                            | Mit Admin-Account testen                              |
+| Tokens nicht gespeichert                       | `SUPABASE_SERVICE_ROLE_KEY` fehlt     | Key in Server-Env setzen                              |
 
 ---
 

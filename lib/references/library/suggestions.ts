@@ -82,4 +82,3 @@ export async function getCompetitorSuggestionsImpl(query: string): Promise<strin
   }
   return Array.from(set).sort()
 }
-

@@ -116,10 +116,15 @@ export function SupportInAppForm({
           </DialogDescription>
         </div>
         {onCancel ? (
-          <Button type="button" variant="default" className="mt-1" onClick={() => {
-            resetForm()
-            onCancel()
-          }}>
+          <Button
+            type="button"
+            variant="default"
+            className="mt-1"
+            onClick={() => {
+              resetForm()
+              onCancel()
+            }}
+          >
             Schließen
           </Button>
         ) : (
@@ -146,7 +151,7 @@ export function SupportInAppForm({
                 'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
                 active
                   ? BRAND_PRIMARY_PILL_ACTIVE_CLASS
-                  : 'border-border bg-background text-foreground hover:bg-muted/60'
+                  : 'border-border bg-background text-foreground hover:bg-muted/60',
               )}
             >
               {item.label}
@@ -211,8 +216,7 @@ export function SupportInAppForm({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Antwort an{' '}
-            <span className="font-medium text-foreground">{email || '—'}</span>
+            Antwort an <span className="font-medium text-foreground">{email || '—'}</span>
             {' · '}
             <button
               type="button"
@@ -228,7 +232,12 @@ export function SupportInAppForm({
 
       <DialogFooter className="gap-2 sm:gap-2">
         {showCancel && onCancel ? (
-          <Button type="button" variant="outline" disabled={submitting} onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting}
+            onClick={onCancel}
+          >
             {cancelLabel}
           </Button>
         ) : null}

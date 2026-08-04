@@ -19,7 +19,10 @@ export function formatLastInteraction(value: string | null | undefined): string 
   return value
 }
 
-export function contactRoleLabel(c: { role?: string | null; position?: string | null }): string {
+export function contactRoleLabel(c: {
+  role?: string | null
+  position?: string | null
+}): string {
   const role = c.role?.trim()
   if (role) return role
   const position = c.position?.trim()
@@ -39,17 +42,32 @@ export function externalContactJobTitle(c: {
 
 function ContactActionPlaceholder({ children }: { children: ReactNode }) {
   return (
-    <span className={cn(CONTACT_ACTION_BTN_CLASS, 'inline-flex items-center justify-center')} aria-hidden>
+    <span
+      className={cn(CONTACT_ACTION_BTN_CLASS, 'inline-flex items-center justify-center')}
+      aria-hidden
+    >
       {children}
     </span>
   )
 }
 
-export function ContactMailButton({ email, name }: { email: string | null | undefined; name: string }) {
+export function ContactMailButton({
+  email,
+  name,
+}: {
+  email: string | null | undefined
+  name: string
+}) {
   const href = email?.trim() ? `mailto:${email.trim()}` : null
   if (href) {
     return (
-      <Button type="button" variant="ghost" size="icon" className={CONTACT_ACTION_BTN_CLASS} asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={CONTACT_ACTION_BTN_CLASS}
+        asChild
+      >
         <a href={href} aria-label={`E-Mail an ${name}`} title={email!.trim()}>
           <Mail className="size-4 text-muted-foreground" aria-hidden />
         </a>
@@ -63,12 +81,24 @@ export function ContactMailButton({ email, name }: { email: string | null | unde
   )
 }
 
-export function ContactPhoneButton({ phone, name }: { phone: string | null | undefined; name: string }) {
+export function ContactPhoneButton({
+  phone,
+  name,
+}: {
+  phone: string | null | undefined
+  name: string
+}) {
   const raw = phone?.trim()
   const href = raw ? `tel:${raw.replace(/[\s()-]/g, '')}` : null
   if (href) {
     return (
-      <Button type="button" variant="ghost" size="icon" className={CONTACT_ACTION_BTN_CLASS} asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={CONTACT_ACTION_BTN_CLASS}
+        asChild
+      >
         <a href={href} aria-label={`${name} anrufen`} title={raw}>
           <Phone className="size-4 text-muted-foreground" aria-hidden />
         </a>
@@ -82,10 +112,22 @@ export function ContactPhoneButton({ phone, name }: { phone: string | null | und
   )
 }
 
-export function ContactLinkedInButton({ href, name }: { href: string | null; name: string }) {
+export function ContactLinkedInButton({
+  href,
+  name,
+}: {
+  href: string | null
+  name: string
+}) {
   if (href) {
     return (
-      <Button type="button" variant="ghost" size="icon" className={CONTACT_ACTION_BTN_CLASS} asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={CONTACT_ACTION_BTN_CLASS}
+        asChild
+      >
         <a
           href={href}
           target="_blank"

@@ -11,7 +11,11 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -71,8 +75,17 @@ export function DealProofSection({
     }
   }
 
-  async function handleReferenceHelped(referenceId: string, helped: boolean, comment?: string) {
-    const result = await recordReferenceHelped({ dealId: deal.id, referenceId, helped, comment })
+  async function handleReferenceHelped(
+    referenceId: string,
+    helped: boolean,
+    comment?: string,
+  ) {
+    const result = await recordReferenceHelped({
+      dealId: deal.id,
+      referenceId,
+      helped,
+      comment,
+    })
     if (!result.success) toast.error(result.error ?? 'Konnte Feedback nicht speichern.')
     else toast.success('Feedback gespeichert.')
   }
@@ -82,19 +95,28 @@ export function DealProofSection({
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
           <CollapsibleTrigger asChild>
-            <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left">
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            >
               <AppIcon
                 icon={ArrowRight01Icon}
                 size={16}
                 className={cn(
                   'shrink-0 text-muted-foreground transition-transform',
-                  expanded && 'rotate-90'
+                  expanded && 'rotate-90',
                 )}
               />
               <CardTitle className="text-base">{title}</CardTitle>
             </button>
           </CollapsibleTrigger>
-          <Button type="button" size="sm" variant="outline" className="shrink-0" onClick={onFindReference}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={onFindReference}
+          >
             <AppIcon icon={Search01Icon} size={16} className="mr-1" />
             {COPY.deals.cockpit.findReference}
           </Button>
@@ -108,8 +130,15 @@ export function DealProofSection({
             />
             {deal.references.length === 0 ? (
               <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center">
-                <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.proofEmpty}</p>
-                <Button type="button" size="sm" className="mt-3" onClick={onFindReference}>
+                <p className="text-sm text-muted-foreground">
+                  {COPY.deals.cockpit.proofEmpty}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="mt-3"
+                  onClick={onFindReference}
+                >
                   <AppIcon icon={Search01Icon} size={16} className="mr-1" />
                   {COPY.deals.cockpit.findReference}
                 </Button>
@@ -148,7 +177,9 @@ export function DealProofSection({
                           </div>
                           <div className="flex items-center gap-2">
                             <ReferenceHelpedDialog
-                              onSubmit={(helped, comment) => handleReferenceHelped(ref.id, helped, comment)}
+                              onSubmit={(helped, comment) =>
+                                handleReferenceHelped(ref.id, helped, comment)
+                              }
                             />
                             <Button
                               variant="ghost"
@@ -233,7 +264,9 @@ function ReferenceHelpedDialog({
             <Label>Antwort</Label>
             <Select
               value={helped || '__none__'}
-              onValueChange={(v) => setHelped(v === '__none__' ? '' : (v as 'yes' | 'no'))}
+              onValueChange={(v) =>
+                setHelped(v === '__none__' ? '' : (v as 'yes' | 'no'))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Bitte auswählen …" />

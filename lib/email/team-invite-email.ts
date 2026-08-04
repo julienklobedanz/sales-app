@@ -18,7 +18,7 @@ function getResend(): Resend | null {
 
 export function formatTeamInviteRoleLabel(
   systemRole: SystemRole,
-  functionRole: FunctionRole
+  functionRole: FunctionRole,
 ): string {
   return formatRoleDimensionsLabel(systemRole, functionRole)
 }
@@ -76,13 +76,11 @@ export function buildTeamInviteEmailHtml(params: TeamInviteEmailParams): string 
   })
 }
 
-export type SendTeamInviteEmailResult =
-  | { sent: true }
-  | { sent: false; error: string }
+export type SendTeamInviteEmailResult = { sent: true } | { sent: false; error: string }
 
 /** Team-Einladung per Resend im RefStack-Layout versenden. */
 export async function sendTeamInviteEmail(
-  params: TeamInviteEmailParams
+  params: TeamInviteEmailParams,
 ): Promise<SendTeamInviteEmailResult> {
   const to = params.to.trim().toLowerCase()
   if (!to.includes('@')) {

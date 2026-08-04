@@ -17,7 +17,12 @@ import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import { getMatchStrength } from '@/lib/match/match-strength'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { formatDealVolume } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
@@ -156,7 +161,12 @@ export function DealsClientContent({
   }, [columnOrder])
 
   useEffect(() => {
-    setColumnSizing(loadColumnWidthsFromStorage(DEAL_COLUMN_SIZING_STORAGE_KEY, DEAL_RESIZABLE_COLUMN_IDS))
+    setColumnSizing(
+      loadColumnWidthsFromStorage(
+        DEAL_COLUMN_SIZING_STORAGE_KEY,
+        DEAL_RESIZABLE_COLUMN_IDS,
+      ),
+    )
   }, [])
 
   useEffect(() => {
@@ -171,7 +181,11 @@ export function DealsClientContent({
     try {
       const result = await importDealsFromXlsx(formData)
       if (result.success) {
-        toast.success(result.created != null ? `${result.created} Deal(s) importiert.` : 'Import abgeschlossen.')
+        toast.success(
+          result.created != null
+            ? `${result.created} Deal(s) importiert.`
+            : 'Import abgeschlossen.',
+        )
         router.refresh()
       } else {
         toast.error(result.error ?? 'Import fehlgeschlagen.')
@@ -191,14 +205,14 @@ export function DealsClientContent({
     const q = query.trim().toLowerCase()
     if (!q) return list
     return list.filter((d) => {
-      const hay = `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
+      const hay =
+        `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
       return hay.includes(q)
     })
   }, [deals, query, statusFilter])
 
   const filtersActive = statusFilter !== 'all'
-  const showDealsOnboarding =
-    deals.length === 0 && !query.trim() && !filtersActive
+  const showDealsOnboarding = deals.length === 0 && !query.trim() && !filtersActive
 
   const columns = useMemo<ColumnDef<DealRow>[]>(() => {
     return [
@@ -290,7 +304,10 @@ export function DealsClientContent({
       {
         id: 'reference_count',
         accessorFn: (row) => row.linked_refs?.length ?? 0,
-        meta: { viewLabel: DEAL_COL_LABELS.reference_count, headerAlign: 'center' as const },
+        meta: {
+          viewLabel: DEAL_COL_LABELS.reference_count,
+          headerAlign: 'center' as const,
+        },
         size: 96,
         minSize: 80,
         header: ({ column }) => (
@@ -325,7 +342,10 @@ export function DealsClientContent({
 
           if (refCount === 0) {
             return (
-              <div className="flex justify-center text-muted-foreground" aria-label="Keine Referenzen">
+              <div
+                className="flex justify-center text-muted-foreground"
+                aria-label="Keine Referenzen"
+              >
                 —
               </div>
             )
@@ -359,7 +379,10 @@ export function DealsClientContent({
             <div className="flex justify-center">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-flex cursor-default rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <span
+                    tabIndex={0}
+                    className="inline-flex cursor-default rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
                     <MatchScoreCircle size="sm" strength={strength} percent={percent} />
                   </span>
                 </TooltipTrigger>
@@ -379,7 +402,11 @@ export function DealsClientContent({
         header: ({ column }) => (
           <TableSortableHeader label={COPY.roles.accountManager} column={column} />
         ),
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {row.original.account_manager_name ?? '—'}
+          </span>
+        ),
       },
       {
         accessorKey: 'expiry_date',
@@ -390,7 +417,9 @@ export function DealsClientContent({
         cell: ({ row }) => {
           const isHot = isExpiringIn30Days(row.original.expiry_date)
           return (
-            <span className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+            <span
+              className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}
+            >
               {row.original.expiry_date ? formatDate(row.original.expiry_date) : '—'}
             </span>
           )
@@ -404,7 +433,11 @@ export function DealsClientContent({
         header: ({ column }) => (
           <TableSortableHeader label={COPY.roles.salesManager} column={column} />
         ),
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.sales_manager_name ?? '—'}</span>,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {row.original.sales_manager_name ?? '—'}
+          </span>
+        ),
       },
     ]
   }, [])
@@ -473,120 +506,125 @@ export function DealsClientContent({
             disabled: selectedDealIds.length !== 1,
             onClick: () => {
               const id = selectedDealIds[0]
-              if (id) window.open(`/dashboard/deals/${id}`, '_blank', 'noopener,noreferrer')
+              if (id)
+                window.open(`/dashboard/deals/${id}`, '_blank', 'noopener,noreferrer')
             },
           },
         ]}
       />
       <TooltipProvider delayDuration={300}>
-      <AppDataTable
-        tableVariant="deals"
-        columns={columns}
-        data={filtered}
-        initialPageSize={30}
-        getRowId={(row) => row.id}
-        onSelectedRowIdsChange={setSelectedDealIds}
-        initialColumnVisibility={{
-          account_manager_name: false,
-          sales_manager_name: false,
-          status: true,
-          company_name: true,
-          title: true,
-          volume: true,
-          reference_count: true,
-          match: true,
-          expiry_date: true,
-        }}
-        initialColumnOrder={[
-          'select',
-          'company_name',
-          'title',
-          'volume',
-          'status',
-          'reference_count',
-          'match',
-          'expiry_date',
-          'account_manager_name',
-          'sales_manager_name',
-        ]}
-        columnOrder={columnOrder}
-        onColumnOrderChange={setColumnOrder}
-        enableColumnDrag
-        enableColumnResize
-        columnSizing={columnSizing}
-        onColumnSizingChange={setColumnSizing}
-        toolbar={() => (
-          <div className="flex min-h-10 w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
-            <ToolbarSearchField
-              variant="dashboard"
-              value={query}
-              onChange={setQuery}
-              placeholder={COPY.deals.searchPlaceholder}
-              wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)]"
-              className="bg-white"
-            />
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
-            >
-              <SelectTrigger
-                className="w-full shrink-0 rounded-lg border bg-white shadow-sm data-[size=default]:h-10 sm:w-[200px]"
-                data-row-nav-ignore
+        <AppDataTable
+          tableVariant="deals"
+          columns={columns}
+          data={filtered}
+          initialPageSize={30}
+          getRowId={(row) => row.id}
+          onSelectedRowIdsChange={setSelectedDealIds}
+          initialColumnVisibility={{
+            account_manager_name: false,
+            sales_manager_name: false,
+            status: true,
+            company_name: true,
+            title: true,
+            volume: true,
+            reference_count: true,
+            match: true,
+            expiry_date: true,
+          }}
+          initialColumnOrder={[
+            'select',
+            'company_name',
+            'title',
+            'volume',
+            'status',
+            'reference_count',
+            'match',
+            'expiry_date',
+            'account_manager_name',
+            'sales_manager_name',
+          ]}
+          columnOrder={columnOrder}
+          onColumnOrderChange={setColumnOrder}
+          enableColumnDrag
+          enableColumnResize
+          columnSizing={columnSizing}
+          onColumnSizingChange={setColumnSizing}
+          toolbar={() => (
+            <div className="flex min-h-10 w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
+              <ToolbarSearchField
+                variant="dashboard"
+                value={query}
+                onChange={setQuery}
+                placeholder={COPY.deals.searchPlaceholder}
+                wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)]"
+                className="bg-white"
+              />
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        toolbarRight={() => (
-          <>
-            <input
-              ref={xlsxInputRef}
-              type="file"
-              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleXlsxImport(file)
-                e.target.value = ''
-              }}
-            />
-            <AccountsToolbarTooltip label="Listen importieren">
-              <Button
-                type="button"
-                variant="ghost"
-                size="toolbar"
-                disabled={importing}
-                className="shrink-0 px-2.5 hover:bg-muted/70"
-                onClick={() => xlsxInputRef.current?.click()}
-                aria-label="Listen importieren"
-              >
-                {importing ? (
-                  <AppIcon icon={Loader} size={16} className="animate-spin text-muted-foreground" />
-                ) : (
-                  <AppIcon icon={UploadIcon} size={16} className="shrink-0 text-muted-foreground" />
-                )}
+                <SelectTrigger
+                  className="w-full shrink-0 rounded-lg border bg-white shadow-sm data-[size=default]:h-10 sm:w-[200px]"
+                  data-row-nav-ignore
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_FILTER_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          toolbarRight={() => (
+            <>
+              <input
+                ref={xlsxInputRef}
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleXlsxImport(file)
+                  e.target.value = ''
+                }}
+              />
+              <AccountsToolbarTooltip label="Listen importieren">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  disabled={importing}
+                  className="shrink-0 px-2.5 hover:bg-muted/70"
+                  onClick={() => xlsxInputRef.current?.click()}
+                  aria-label="Listen importieren"
+                >
+                  {importing ? (
+                    <AppIcon
+                      icon={Loader}
+                      size={16}
+                      className="animate-spin text-muted-foreground"
+                    />
+                  ) : (
+                    <AppIcon
+                      icon={UploadIcon}
+                      size={16}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                  )}
+                </Button>
+              </AccountsToolbarTooltip>
+              <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
+                <AppIcon icon={CirclePlus} size={16} />
+                {COPY.deals.newDealButton}
               </Button>
-            </AccountsToolbarTooltip>
-            <Button
-              type="button"
-              size="toolbar"
-              onClick={() => setCreateOpen(true)}
-            >
-              <AppIcon icon={CirclePlus} size={16} />
-              {COPY.deals.newDealButton}
-            </Button>
-          </>
-        )}
-        showViewOptions
-      />
+            </>
+          )}
+          showViewOptions
+        />
       </TooltipProvider>
       {createDealDialog}
       {canConnectCrm ? (

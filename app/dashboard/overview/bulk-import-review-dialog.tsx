@@ -56,32 +56,34 @@ export function BulkImportReviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:max-w-[90vw] lg:max-w-7xl">
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-6 md:px-10 md:py-8">
-        <DialogHeader className="shrink-0 text-left">
-          <DialogTitle>Import prüfen</DialogTitle>
-          <DialogDescription>
-            Für die folgenden Referenzen fehlen noch verlässliche Angaben oder es gab Hinweise beim
-            Einlesen. Vorschläge kannst du kopieren und im Editor einfügen.
-          </DialogDescription>
-        </DialogHeader>
+          <DialogHeader className="shrink-0 text-left">
+            <DialogTitle>Import prüfen</DialogTitle>
+            <DialogDescription>
+              Für die folgenden Referenzen fehlen noch verlässliche Angaben oder es gab
+              Hinweise beim Einlesen. Vorschläge kannst du kopieren und im Editor
+              einfügen.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto py-2 pr-1">
-          {items.map((item) => (
-            <Card key={item.referenceId} className="gap-3 py-4 shadow-none">
-              <CardHeader className="px-4 pb-0">
-                <CardTitle className="text-base">{item.title || 'Referenz'}</CardTitle>
-                <CardDescription className="text-xs">
-                  {item.extractionError ? (
-                    <span className="text-destructive">{item.extractionError}</span>
-                  ) : item.needsInput ? (
-                    <span>Bitte Herausforderung und Lösung prüfen oder ergänzen.</span>
-                  ) : (
-                    <span>Bitte Vorschläge prüfen.</span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 px-4">
-                {(Object.keys(item.suggestions) as (keyof BulkImportReviewSuggestions)[]).map(
-                  (key) => {
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto py-2 pr-1">
+            {items.map((item) => (
+              <Card key={item.referenceId} className="gap-3 py-4 shadow-none">
+                <CardHeader className="px-4 pb-0">
+                  <CardTitle className="text-base">{item.title || 'Referenz'}</CardTitle>
+                  <CardDescription className="text-xs">
+                    {item.extractionError ? (
+                      <span className="text-destructive">{item.extractionError}</span>
+                    ) : item.needsInput ? (
+                      <span>Bitte Herausforderung und Lösung prüfen oder ergänzen.</span>
+                    ) : (
+                      <span>Bitte Vorschläge prüfen.</span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 px-4">
+                  {(
+                    Object.keys(item.suggestions) as (keyof BulkImportReviewSuggestions)[]
+                  ).map((key) => {
                     const values = item.suggestions[key]
                     if (!values?.length) return null
                     return (
@@ -107,21 +109,22 @@ export function BulkImportReviewDialog({
                         </div>
                       </div>
                     )
-                  },
-                )}
-                <Button asChild size="sm" className="w-full sm:w-auto">
-                  <Link href={ROUTES.references.edit(item.referenceId)}>Vervollständigen</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  })}
+                  <Button asChild size="sm" className="w-full sm:w-auto">
+                    <Link href={ROUTES.references.edit(item.referenceId)}>
+                      Vervollständigen
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        <DialogFooter className="shrink-0 border-t border-border pt-4 sm:justify-end">
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            Schließen
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-border pt-4 sm:justify-end">
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              Schließen
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

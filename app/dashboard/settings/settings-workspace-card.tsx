@@ -70,16 +70,18 @@ export function SettingsWorkspaceCard({
   const [primary, setPrimary] = useState(primaryColor ?? '#0f172a')
   const [secondary, setSecondary] = useState(secondaryColor ?? '#334155')
   const [dateFormat, setDateFormat] = useState<OrgDateDisplayFormat>(() =>
-    normalizeOrgDateDisplayFormat(dateDisplayFormat)
+    normalizeOrgDateDisplayFormat(dateDisplayFormat),
   )
   const [locale, setLocale] = useState<UiLocale>(() => normalizeUiLocale(uiLocale))
-  const [companyAddress, setCompanyAddress] = useState(billingSettings?.companyAddress ?? '')
+  const [companyAddress, setCompanyAddress] = useState(
+    billingSettings?.companyAddress ?? '',
+  )
   const [vatId, setVatId] = useState(billingSettings?.vatId ?? '')
   const [defaultTimezone, setDefaultTimezone] = useState(
-    billingSettings?.defaultTimezone ?? 'Europe/Berlin'
+    billingSettings?.defaultTimezone ?? 'Europe/Berlin',
   )
   const [inviteDomains, setInviteDomains] = useState(
-    billingSettings?.inviteAllowedEmailDomains ?? ''
+    billingSettings?.inviteAllowedEmailDomains ?? '',
   )
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -124,7 +126,9 @@ export function SettingsWorkspaceCard({
 
   useEffect(() => {
     if (saveSignal <= 0 || saveSignal === lastHandledSaveSignal || !isDirty) return
-    const form = document.getElementById('settings-workspace-form') as HTMLFormElement | null
+    const form = document.getElementById(
+      'settings-workspace-form',
+    ) as HTMLFormElement | null
     if (form) {
       form.requestSubmit()
       setLastHandledSaveSignal(saveSignal)
@@ -189,7 +193,7 @@ export function SettingsWorkspaceCard({
         vatId,
         defaultTimezone,
         inviteAllowedEmailDomains: inviteDomains,
-      }
+      },
     )
     setPending(false)
     if (result.success) {
@@ -264,12 +268,18 @@ export function SettingsWorkspaceCard({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onClick={() => {
-              const input = document.getElementById('workspace-logo-input') as HTMLInputElement | null
+              const input = document.getElementById(
+                'workspace-logo-input',
+              ) as HTMLInputElement | null
               input?.click()
             }}
           >
             {logoLoading ? (
-              <AppIcon icon={Loader} size={20} className="animate-spin text-muted-foreground" />
+              <AppIcon
+                icon={Loader}
+                size={20}
+                className="animate-spin text-muted-foreground"
+              />
             ) : logoPreview ? (
               <>
                 <img
@@ -297,7 +307,9 @@ export function SettingsWorkspaceCard({
             type="button"
             className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium hover:bg-accent"
             onClick={() => {
-              const input = document.getElementById('workspace-logo-input') as HTMLInputElement | null
+              const input = document.getElementById(
+                'workspace-logo-input',
+              ) as HTMLInputElement | null
               input?.click()
             }}
           >
@@ -333,7 +345,9 @@ export function SettingsWorkspaceCard({
                   }
                 }}
                 placeholder={
-                  organizationId ? 'Name deines Unternehmens' : `Kein ${COPY.misc.workspace} zugeordnet`
+                  organizationId
+                    ? 'Name deines Unternehmens'
+                    : `Kein ${COPY.misc.workspace} zugeordnet`
                 }
                 disabled={!organizationId}
                 className={`h-9 ${organizationId ? 'bg-background' : 'cursor-not-allowed bg-muted/50'}`}
@@ -352,7 +366,7 @@ export function SettingsWorkspaceCard({
                     const next = e.target.value
                     setSubdomainFollowsName(
                       next.trim() === '' ||
-                        next.trim().toLowerCase() === slugifySubdomainFromOrgName(name)
+                        next.trim().toLowerCase() === slugifySubdomainFromOrgName(name),
                     )
                     onSubdomainChange(next)
                   }}
@@ -491,7 +505,9 @@ export function SettingsWorkspaceCard({
                     </SelectItem>
                   ))}
                   {defaultTimezone &&
-                  !(DIGEST_TIMEZONE_OPTIONS as readonly string[]).includes(defaultTimezone) ? (
+                  !(DIGEST_TIMEZONE_OPTIONS as readonly string[]).includes(
+                    defaultTimezone,
+                  ) ? (
                     <SelectItem value={defaultTimezone}>{defaultTimezone}</SelectItem>
                   ) : null}
                 </SelectContent>

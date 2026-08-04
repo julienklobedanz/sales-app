@@ -13,7 +13,10 @@ export function formatComplianceValidUntilDate(validUntil: string | null): strin
   return formatNdaExpiryDateDe(validUntil)
 }
 
-export function complianceSearchTitle(row: { title: string; document_type: string }): string {
+export function complianceSearchTitle(row: {
+  title: string
+  document_type: string
+}): string {
   const typeLabel = complianceDocumentTypeLabel(row.document_type)
   const title = String(row.title ?? '').trim()
   if (title.toLowerCase().includes(typeLabel.toLowerCase())) return title

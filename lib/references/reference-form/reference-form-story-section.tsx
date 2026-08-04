@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { AppIcon } from '@/lib/icons'
 import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
-import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
+import {
+  RequiredLabel,
+  OptionalLabel,
+} from '@/lib/references/reference-form/reference-form-labels'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
 import { generateSummaryFromStory } from '@/app/dashboard/actions'
 
@@ -76,7 +79,7 @@ export function ReferenceFormStorySection({
                   const result = await generateSummaryFromStory(
                     customerChallenge,
                     ourSolution,
-                    initialData?.id
+                    initialData?.id,
                   )
                   if (result.success) {
                     setSummary(result.summary)
@@ -181,7 +184,7 @@ export function ReferenceFormStorySection({
                   if (value) {
                     setTags((prev) => {
                       const exists = prev.some(
-                        (t) => t.toLowerCase() === value.toLowerCase()
+                        (t) => t.toLowerCase() === value.toLowerCase(),
                       )
                       return exists ? prev : [...prev, value]
                     })

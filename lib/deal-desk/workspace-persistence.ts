@@ -14,7 +14,9 @@ import { log } from '@/lib/observability/logger'
 
 function isProfileUuid(value: string | null | undefined): value is string {
   if (!value?.trim()) return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim())
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value.trim(),
+  )
 }
 
 export type { NormalizedWorkspaceOverlay } from '@/lib/deal-desk/workspace-merge'
@@ -22,15 +24,17 @@ export type { NormalizedWorkspaceOverlay } from '@/lib/deal-desk/workspace-merge
 function isMissingNormalizedTableError(message: string | undefined): boolean {
   return Boolean(
     message &&
-      (/deal_desk_sme_routes|deal_desk_bid_team|deal_desk_red_flags|bid_decision/i.test(message) ||
-        message.includes('does not exist'))
+    (/deal_desk_sme_routes|deal_desk_bid_team|deal_desk_red_flags|bid_decision/i.test(
+      message,
+    ) ||
+      message.includes('does not exist')),
   )
 }
 
 export async function loadNormalizedWorkspaceOverlaysBatch(
   supabase: SupabaseClient,
   projectIds: string[],
-  organizationId: string
+  organizationId: string,
 ): Promise<Map<string, NormalizedWorkspaceOverlay>> {
   const map = new Map<string, NormalizedWorkspaceOverlay>()
   if (projectIds.length === 0) return map
@@ -60,7 +64,7 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
 
   if (
     [projectsRes.error, smeRes.error, bidRes.error, flagsRes.error].some(
-      (e) => e && !isMissingNormalizedTableError(e.message)
+      (e) => e && !isMissingNormalizedTableError(e.message),
     )
   ) {
     return map
@@ -68,7 +72,9 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
 
   for (const row of projectsRes.data ?? []) {
     const id = String((row as { id: string }).id)
-    const decision = bidDecisionFromDb((row as { bid_decision?: string | null }).bid_decision)
+    const decision = bidDecisionFromDb(
+      (row as { bid_decision?: string | null }).bid_decision,
+    )
     if (decision) map.set(id, { ...(map.get(id) ?? {}), decision })
   }
 
@@ -78,7 +84,8 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
     const flags = cur.redFlags ?? []
     flags.push({
       id: String((row as { flag_key?: string | null }).flag_key ?? row.id),
-      severity: ((row as { severity?: string }).severity ?? 'medium') as DealDeskRedFlag['severity'],
+      severity: ((row as { severity?: string }).severity ??
+        'medium') as DealDeskRedFlag['severity'],
       title: String((row as { label?: string }).label ?? 'Red Flag'),
       excerpt: '',
       markedForLegal: Boolean((row as { sent_to_legal?: boolean }).sent_to_legal),
@@ -92,9 +99,15 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
     const key = String((row as { requirement_key: string }).requirement_key)
     const profileId = (row as { assignee_profile_id?: string | null }).assignee_profile_id
     const smeRoutes = { ...(cur.smeRoutes ?? {}), [key]: 'routed' }
-    const smeAssignments: Record<string, DealDeskSmeAssignment> = { ...(cur.smeAssignments ?? {}) }
+    const smeAssignments: Record<string, DealDeskSmeAssignment> = {
+      ...(cur.smeAssignments ?? {}),
+    }
     if (profileId && isProfileUuid(profileId)) {
-      smeAssignments[key] = { route: 'routed', assigneeId: profileId, assigneeName: 'Teammitglied' }
+      smeAssignments[key] = {
+        route: 'routed',
+        assigneeId: profileId,
+        assigneeName: 'Teammitglied',
+      }
     }
     map.set(projectId, { ...cur, smeRoutes, smeAssignments })
   }
@@ -120,9 +133,13 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
 export async function loadNormalizedWorkspaceOverlay(
   supabase: SupabaseClient,
   projectId: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<NormalizedWorkspaceOverlay | null> {
-  const batch = await loadNormalizedWorkspaceOverlaysBatch(supabase, [projectId], organizationId)
+  const batch = await loadNormalizedWorkspaceOverlaysBatch(
+    supabase,
+    [projectId],
+    organizationId,
+  )
   return batch.get(projectId) ?? null
 }
 
@@ -130,7 +147,7 @@ export async function persistNormalizedWorkspace(
   supabase: SupabaseClient,
   projectId: string,
   organizationId: string,
-  workspace: DealDeskWorkspaceState
+  workspace: DealDeskWorkspaceState,
 ): Promise<void> {
   const bidDecision = bidDecisionToDb(workspace.decision)
 
@@ -141,11 +158,19 @@ export async function persistNormalizedWorkspace(
     .eq('organization_id', organizationId)
 
   if (projectError && !isMissingNormalizedTableError(projectError.message)) {
-    log.error('persistNormalizedWorkspace.bidDecisionFailed', { projectId, organizationId }, projectError)
+    log.error(
+      'persistNormalizedWorkspace.bidDecisionFailed',
+      { projectId, organizationId },
+      projectError,
+    )
     return
   }
 
-  const tables = ['deal_desk_sme_routes', 'deal_desk_bid_team', 'deal_desk_red_flags'] as const
+  const tables = [
+    'deal_desk_sme_routes',
+    'deal_desk_bid_team',
+    'deal_desk_red_flags',
+  ] as const
   for (const table of tables) {
     const { error } = await supabase
       .from(table)
@@ -153,7 +178,11 @@ export async function persistNormalizedWorkspace(
       .eq('project_id', projectId)
       .eq('organization_id', organizationId)
     if (error && !isMissingNormalizedTableError(error.message)) {
-      log.error('persistNormalizedWorkspace.deleteFailed', { table, projectId, organizationId }, error)
+      log.error(
+        'persistNormalizedWorkspace.deleteFailed',
+        { table, projectId, organizationId },
+        error,
+      )
       return
     }
   }
@@ -168,10 +197,14 @@ export async function persistNormalizedWorkspace(
         severity: flag.severity,
         sent_to_legal: Boolean(flag.markedForLegal),
         status: 'open',
-      }))
+      })),
     )
     if (error && !isMissingNormalizedTableError(error.message)) {
-      log.error('persistNormalizedWorkspace.redFlagsFailed', { projectId, organizationId }, error)
+      log.error(
+        'persistNormalizedWorkspace.redFlagsFailed',
+        { projectId, organizationId },
+        error,
+      )
     }
   }
 
@@ -186,13 +219,19 @@ export async function persistNormalizedWorkspace(
         project_id: projectId,
         organization_id: organizationId,
         requirement_key: requirementKey,
-        assignee_profile_id: isProfileUuid(assignment?.assigneeId) ? assignment!.assigneeId : null,
+        assignee_profile_id: isProfileUuid(assignment?.assigneeId)
+          ? assignment!.assigneeId
+          : null,
         status: 'open',
       }
     })
     const { error } = await supabase.from('deal_desk_sme_routes').insert(rows)
     if (error && !isMissingNormalizedTableError(error.message)) {
-      log.error('persistNormalizedWorkspace.smeRoutesFailed', { projectId, organizationId }, error)
+      log.error(
+        'persistNormalizedWorkspace.smeRoutesFailed',
+        { projectId, organizationId },
+        error,
+      )
     }
   }
 
@@ -206,10 +245,14 @@ export async function persistNormalizedWorkspace(
           profile_id: member.assigneeId,
           email: null,
           role: member.role,
-        }))
+        })),
     )
     if (error && !isMissingNormalizedTableError(error.message)) {
-      log.error('persistNormalizedWorkspace.bidTeamFailed', { projectId, organizationId }, error)
+      log.error(
+        'persistNormalizedWorkspace.bidTeamFailed',
+        { projectId, organizationId },
+        error,
+      )
     }
   }
 }

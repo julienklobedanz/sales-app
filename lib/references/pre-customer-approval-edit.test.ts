@@ -12,14 +12,14 @@ describe('pre-customer-approval-edit', () => {
         customerApprovalStatus: null,
         approvalRequestedAt: '2026-01-01T00:00:00Z',
         internalApprovalStatus: 'pending_internal',
-      })
+      }),
     ).toBe(true)
     expect(
       canEditPreCustomerApprovalRecipient({
         customerApprovalStatus: null,
         approvalRequestedAt: '2026-01-01T00:00:00Z',
         internalApprovalStatus: 'approved_internal',
-      })
+      }),
     ).toBe(true)
   })
 
@@ -29,7 +29,7 @@ describe('pre-customer-approval-edit', () => {
         customerApprovalStatus: 'pending',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
         internalApprovalStatus: 'approved_internal',
-      })
+      }),
     ).toBe(false)
   })
 
@@ -38,13 +38,13 @@ describe('pre-customer-approval-edit', () => {
       canEditInternalApprovalCoordinator({
         approvalRequestedAt: '2026-01-01T00:00:00Z',
         internalApprovalStatus: 'pending_internal',
-      })
+      }),
     ).toBe(true)
     expect(
       canEditInternalApprovalCoordinator({
         approvalRequestedAt: '2026-01-01T00:00:00Z',
         internalApprovalStatus: 'approved_internal',
-      })
+      }),
     ).toBe(false)
   })
 })

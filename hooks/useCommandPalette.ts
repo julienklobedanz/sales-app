@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 
 type Listener = () => void
 
@@ -10,7 +10,8 @@ const listeners = new Set<Listener>()
 let keyboardListenerAttached = false
 
 function setOpenState(next: boolean | ((prev: boolean) => boolean)) {
-  const value = typeof next === "function" ? (next as (prev: boolean) => boolean)(openState) : next
+  const value =
+    typeof next === 'function' ? (next as (prev: boolean) => boolean)(openState) : next
   openState = value
   for (const l of listeners) l()
 }
@@ -22,7 +23,7 @@ export function openCommandPaletteWithQuery(query: string) {
 }
 
 export function consumeCommandPalettePendingQuery(): string {
-  const q = pendingQuery ?? ""
+  const q = pendingQuery ?? ''
   pendingQuery = null
   return q
 }
@@ -40,7 +41,7 @@ export function useCommandPalette() {
   const open = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   const setOpen = React.useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => setOpenState(next),
-    []
+    [],
   )
 
   React.useEffect(() => {
@@ -48,20 +49,19 @@ export function useCommandPalette() {
     keyboardListenerAttached = true
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const isK = event.key.toLowerCase() === "k"
+      const isK = event.key.toLowerCase() === 'k'
       if (!isK) return
       if (!event.metaKey && !event.ctrlKey) return
       event.preventDefault()
       setOpenState((v) => !v)
     }
 
-    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener('keydown', onKeyDown)
     return () => {
-      window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener('keydown', onKeyDown)
       keyboardListenerAttached = false
     }
   }, [])
 
   return { open, setOpen }
 }
-

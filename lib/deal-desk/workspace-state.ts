@@ -17,7 +17,7 @@ export type DealDeskWorkspaceState = {
 
 export function defaultWorkspaceState(
   redFlags: DealDeskRedFlag[] = [],
-  opts?: { useDemoBidTeam?: boolean }
+  opts?: { useDemoBidTeam?: boolean },
 ): DealDeskWorkspaceState {
   return {
     redFlags: redFlags.map((f) => ({ ...f })),
@@ -32,7 +32,7 @@ export function defaultWorkspaceState(
 export function parseWorkspaceState(
   raw: unknown,
   fallbackRedFlags: DealDeskRedFlag[] = [],
-  opts?: { useDemoBidTeam?: boolean }
+  opts?: { useDemoBidTeam?: boolean },
 ): DealDeskWorkspaceState {
   if (!raw || typeof raw !== 'object') {
     return defaultWorkspaceState(fallbackRedFlags, opts)
@@ -47,18 +47,13 @@ export function parseWorkspaceState(
   const smeAssignments = parseSmeAssignments(o.smeAssignments, smeRoutes)
   const smeCustomExperts = Array.isArray(o.smeCustomExperts)
     ? (o.smeCustomExperts as SmeExpertOption[]).filter(
-        (e) => e && typeof e.id === 'string' && typeof e.name === 'string'
+        (e) => e && typeof e.id === 'string' && typeof e.name === 'string',
       )
     : []
-  const decision =
-    o.decision === 'go' || o.decision === 'no-bid' ? o.decision : null
+  const decision = o.decision === 'go' || o.decision === 'no-bid' ? o.decision : null
   const bidTeamRaw = Array.isArray(o.bidTeam) ? (o.bidTeam as BidTeamAssignment[]) : []
   const bidTeam =
-    bidTeamRaw.length > 0
-      ? bidTeamRaw
-      : opts?.useDemoBidTeam
-        ? DEFAULT_BID_TEAM
-        : []
+    bidTeamRaw.length > 0 ? bidTeamRaw : opts?.useDemoBidTeam ? DEFAULT_BID_TEAM : []
   return {
     redFlags: redFlags.map((f) => ({ ...f })),
     smeRoutes: { ...smeRoutes },

@@ -1,7 +1,4 @@
-import {
-  formatIndustryDisplay,
-  resolveIndustryId,
-} from '@/lib/constants/industries'
+import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 import {
   accountStatusSortRank,
   nextUrgencySortKey,
@@ -23,7 +20,7 @@ export function employeeLabel(value: number | null | undefined): string | null {
 export function filtersAreActive(
   filterIndustry: string,
   filterEmployeeBand: EmployeeBand,
-  filterReferences: ReferencesFilter
+  filterReferences: ReferencesFilter,
 ): boolean {
   return (
     filterIndustry !== '__all__' ||
@@ -35,7 +32,7 @@ export function filtersAreActive(
 export function companyHref(
   companyId: string,
   isPartnerView: boolean,
-  opts?: { edit?: boolean }
+  opts?: { edit?: boolean },
 ): string {
   let href = accountsDetailHref(companyId, isPartnerView ? 'partner' : 'account')
   if (opts?.edit) {
@@ -53,7 +50,7 @@ export function filterAndSortCompanies(
     filterIndustry: string
     filterEmployeeBand: EmployeeBand
     filterReferences: ReferencesFilter
-  }
+  },
 ): CompanyCard[] {
   const q = opts.search.trim().toLowerCase()
   let list = companies
@@ -89,7 +86,8 @@ export function filterAndSortCompanies(
         return name.includes(q) || industry.includes(q)
       })
   return [...searched].sort((a, b) => {
-    if (opts.sortMode === 'az') return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
+    if (opts.sortMode === 'az')
+      return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     const rankA = accountStatusSortRank(a.account_status)
     const rankB = accountStatusSortRank(b.account_status)
     if (rankA !== rankB) return rankA - rankB

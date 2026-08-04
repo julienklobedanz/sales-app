@@ -148,18 +148,35 @@ export async function updateWorkflowSettings(input: {
     return { success: false, error: 'Keine Organisation zugeordnet.' }
   }
 
-  const safeLinkExpiry = Math.max(1, Math.min(365, Number.isFinite(input.linkExpiryDays) ? Math.trunc(input.linkExpiryDays) : 14))
+  const safeLinkExpiry = Math.max(
+    1,
+    Math.min(
+      365,
+      Number.isFinite(input.linkExpiryDays) ? Math.trunc(input.linkExpiryDays) : 14,
+    ),
+  )
   const safeReminder1 = Math.max(
     1,
-    Math.min(30, Number.isFinite(input.reminder1Days) ? Math.trunc(input.reminder1Days) : 3)
+    Math.min(
+      30,
+      Number.isFinite(input.reminder1Days) ? Math.trunc(input.reminder1Days) : 3,
+    ),
   )
   const safeReminder2 = Math.max(
     safeReminder1,
-    Math.min(45, Number.isFinite(input.reminder2Days) ? Math.trunc(input.reminder2Days) : 7)
+    Math.min(
+      45,
+      Number.isFinite(input.reminder2Days) ? Math.trunc(input.reminder2Days) : 7,
+    ),
   )
   const safeEscalationAfter = Math.max(
     safeReminder2,
-    Math.min(60, Number.isFinite(input.escalationAfterDays) ? Math.trunc(input.escalationAfterDays) : 10)
+    Math.min(
+      60,
+      Number.isFinite(input.escalationAfterDays)
+        ? Math.trunc(input.escalationAfterDays)
+        : 10,
+    ),
   )
 
   const { data: orgRow, error: readErr } = await supabase
@@ -180,7 +197,9 @@ export async function updateWorkflowSettings(input: {
     approval_reminder_1_days: safeReminder1,
     approval_reminder_2_days: safeReminder2,
     approval_escalation_after_days: safeEscalationAfter,
-    approval_notify_requester_on_escalation: Boolean(input.autoNotifyRequesterOnEscalation),
+    approval_notify_requester_on_escalation: Boolean(
+      input.autoNotifyRequesterOnEscalation,
+    ),
     approval_allow_delegation: Boolean(input.autoAllowDelegation),
   }
 
@@ -215,16 +234,29 @@ export async function updateWorkspaceSecurityCompliance(input: {
     .single()
   const { systemRole } = parseProfileRoles(profile)
   if (!isSystemAdmin(systemRole)) {
-    return { success: false, error: 'Nur Workspace-Administratoren können Sicherheitsrichtlinien ändern.' }
+    return {
+      success: false,
+      error: 'Nur Workspace-Administratoren können Sicherheitsrichtlinien ändern.',
+    }
   }
 
   const maxTtl = Math.max(
     7,
-    Math.min(3650, Number.isFinite(input.publicLinkMaxTtlDays) ? Math.trunc(input.publicLinkMaxTtlDays) : 365)
+    Math.min(
+      3650,
+      Number.isFinite(input.publicLinkMaxTtlDays)
+        ? Math.trunc(input.publicLinkMaxTtlDays)
+        : 365,
+    ),
   )
   const retentionDays = Math.max(
     30,
-    Math.min(3650, Number.isFinite(input.auditLogRetentionDays) ? Math.trunc(input.auditLogRetentionDays) : 365)
+    Math.min(
+      3650,
+      Number.isFinite(input.auditLogRetentionDays)
+        ? Math.trunc(input.auditLogRetentionDays)
+        : 365,
+    ),
   )
 
   const { data: orgRow, error: readErr } = await supabase
@@ -254,7 +286,9 @@ export async function updateWorkspaceSecurityCompliance(input: {
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
-  const retentionCutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
+  const retentionCutoff = new Date(
+    Date.now() - retentionDays * 24 * 60 * 60 * 1000,
+  ).toISOString()
   await supabase
     .from('audit_logs')
     .delete()
@@ -267,7 +301,9 @@ export async function updateWorkspaceSecurityCompliance(input: {
     entityId: organizationId,
     actionDetails: {
       public_link_max_ttl_days: maxTtl,
-      public_link_require_password_for_new: Boolean(input.publicLinkRequirePasswordForNew),
+      public_link_require_password_for_new: Boolean(
+        input.publicLinkRequirePasswordForNew,
+      ),
       audit_log_retention_days: retentionDays,
     },
   })
@@ -277,7 +313,9 @@ export async function updateWorkspaceSecurityCompliance(input: {
 
 const HIGHLIGHT_GLOSSARY_MAX_LEN = 4000
 
-export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Promise<ActionResult> {
+export async function updateWorkspaceReferenceHighlightGlossary(
+  raw: string,
+): Promise<ActionResult> {
   const { supabase, user, organizationId } = await getContext()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
   if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
@@ -289,7 +327,10 @@ export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Pr
     .single()
   const { systemRole } = parseProfileRoles(profile)
   if (!isSystemAdmin(systemRole)) {
-    return { success: false, error: 'Nur Workspace-Administratoren können das Glossar bearbeiten.' }
+    return {
+      success: false,
+      error: 'Nur Workspace-Administratoren können das Glossar bearbeiten.',
+    }
   }
 
   const glossary = String(raw ?? '').slice(0, HIGHLIGHT_GLOSSARY_MAX_LEN)
@@ -372,4 +413,3 @@ export async function updateOrgCapabilitySettings(input: {
   revalidatePath(ROUTES.deals.root)
   return { success: true }
 }
-

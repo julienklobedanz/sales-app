@@ -24,7 +24,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
-const ORG_ID = process.env.ORGANIZATION_ID?.trim() || '3439c54a-93f9-428e-9ee3-cf61739805b4'
+const ORG_ID =
+  process.env.ORGANIZATION_ID?.trim() || '3439c54a-93f9-428e-9ee3-cf61739805b4'
 const CREATED_BY = 'e9f31c6a-a436-4f19-b0a8-24c5c790419d'
 const MARK_FAVORITES = process.env.MARK_FAVORITES !== '0'
 
@@ -191,7 +192,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Elena Vogt',
     person_title_before: 'VP Engineering',
     person_title_after: 'CTO',
-    change_summary: 'Elena Vogt übernimmt als CTO — Fokus auf Sport-Streaming-Plattform und CDN-Skalierung.',
+    change_summary:
+      'Elena Vogt übernimmt als CTO — Fokus auf Sport-Streaming-Plattform und CDN-Skalierung.',
     daysAgo: 2,
   },
   {
@@ -200,7 +202,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Thomas Müller',
     person_title_before: 'Head of Security',
     person_title_after: 'CISO',
-    change_summary: 'Thomas Müller wechselt auf den CISO-Posten — verantwortet Betrugserkennung und Instant Payment.',
+    change_summary:
+      'Thomas Müller wechselt auf den CISO-Posten — verantwortet Betrugserkennung und Instant Payment.',
     daysAgo: 5,
   },
   {
@@ -209,7 +212,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Sarah K.',
     person_title_before: null,
     person_title_after: 'VP Digital Factory',
-    change_summary: 'Sarah K. neu eingestellt als VP Digital Factory — Smart Factory Amberg und 5G-Campus.',
+    change_summary:
+      'Sarah K. neu eingestellt als VP Digital Factory — Smart Factory Amberg und 5G-Campus.',
     daysAgo: 4,
   },
   {
@@ -218,7 +222,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Marc Weber',
     person_title_before: 'Director Data',
     person_title_after: 'CDO',
-    change_summary: 'Marc Weber wird CDO — treibt GenAI in der Schadensbearbeitung voran.',
+    change_summary:
+      'Marc Weber wird CDO — treibt GenAI in der Schadensbearbeitung voran.',
     daysAgo: 7,
   },
   {
@@ -227,7 +232,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Julia Hartmann',
     person_title_before: 'Director Supply Chain',
     person_title_after: 'SVP EV Value Chain',
-    change_summary: 'Julia Hartmann leitet nun EV-Wertschöpfungskette und Batteriepassport-Programm.',
+    change_summary:
+      'Julia Hartmann leitet nun EV-Wertschöpfungskette und Batteriepassport-Programm.',
     daysAgo: 3,
   },
   {
@@ -236,7 +242,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Peter Schneider',
     person_title_before: 'CTO Renewables',
     person_title_after: 'CTO Grid & Renewables',
-    change_summary: 'Peter Schneider erweitert Mandat — Lastmanagement für Wind- und Solar-Feed-in.',
+    change_summary:
+      'Peter Schneider erweitert Mandat — Lastmanagement für Wind- und Solar-Feed-in.',
     daysAgo: 6,
   },
   {
@@ -245,7 +252,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'Anna Richter',
     person_title_before: 'CIO',
     person_title_after: 'CDO',
-    change_summary: 'Anna Richter wechselt von CIO auf CDO — Passagierfluss-Analyse und Data Mesh.',
+    change_summary:
+      'Anna Richter wechselt von CIO auf CDO — Passagierfluss-Analyse und Data Mesh.',
     daysAgo: 1,
   },
   {
@@ -254,7 +262,8 @@ const EXEC_EVENTS: ExecSeed[] = [
     person_name: 'David Chen',
     person_title_before: 'VP Sales',
     person_title_after: 'VP CRM & Guest Experience',
-    change_summary: 'David Chen verantwortet CRM-Rollout für Premium-Hotelgruppe in DACH.',
+    change_summary:
+      'David Chen verantwortet CRM-Rollout für Premium-Hotelgruppe in DACH.',
     daysAgo: 8,
   },
 ]
@@ -262,7 +271,9 @@ const EXEC_EVENTS: ExecSeed[] = [
 const FAVORITE_COMPANIES = ['DAZN', 'Commerzbank', 'Siemens', 'Allianz', 'BMW']
 
 function seedHash(kind: string, seedKey: string): string {
-  return createHash('sha256').update(`${SEED_VERSION}|${kind}|${seedKey}`, 'utf8').digest('hex')
+  return createHash('sha256')
+    .update(`${SEED_VERSION}|${kind}|${seedKey}`, 'utf8')
+    .digest('hex')
 }
 
 function daysAgoIso(daysAgo: number): string {
@@ -300,7 +311,10 @@ async function resolveCompanyId(names: string[]): Promise<string | null> {
   return null
 }
 
-async function insertNews(seed: NewsSeed, companyId: string): Promise<'inserted' | 'skipped' | 'error'> {
+async function insertNews(
+  seed: NewsSeed,
+  companyId: string,
+): Promise<'inserted' | 'skipped' | 'error'> {
   const content_hash = seedHash('news', seed.seedKey)
   const { data: existing } = await supabase
     .from('market_signal_account_news')
@@ -333,7 +347,10 @@ async function insertNews(seed: NewsSeed, companyId: string): Promise<'inserted'
   return 'inserted'
 }
 
-async function insertExec(seed: ExecSeed, companyId: string): Promise<'inserted' | 'skipped' | 'error'> {
+async function insertExec(
+  seed: ExecSeed,
+  companyId: string,
+): Promise<'inserted' | 'skipped' | 'error'> {
   const content_hash = seedHash('exec', seed.seedKey)
   const { data: existing } = await supabase
     .from('market_signal_executive_events')
@@ -429,7 +446,9 @@ async function main() {
   console.log(`  Account-News: ${newsInserted} neu, ${newsSkipped} bereits vorhanden`)
   console.log(`  Executive-Events: ${execInserted} neu, ${execSkipped} bereits vorhanden`)
   console.log('\nHomepage-Suche testen mit:')
-  console.log('  News | CRM-Rollout | Thomas Müller | IT-Budget | SAP | sport streaming | DAZN')
+  console.log(
+    '  News | CRM-Rollout | Thomas Müller | IT-Budget | SAP | sport streaming | DAZN',
+  )
 }
 
 main().catch((err) => {

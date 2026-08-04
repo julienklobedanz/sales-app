@@ -17,38 +17,41 @@ type Props = {
   rowHeight?: 9 | 10
 }
 
-export const TableRowCheckbox = forwardRef<HTMLButtonElement, Props>(function TableRowCheckbox(
-  {
-    checked,
-    onCheckedChange,
-    onChange,
-    onClick,
-    'aria-label': ariaLabel,
-    disabled = false,
-    rowHeight = 9,
-  },
-  ref,
-) {
-  const heightClass = rowHeight === 10 ? 'h-10' : 'min-h-9'
-  const resolvedChecked: CheckedState = checked === 'indeterminate' ? 'indeterminate' : checked
+export const TableRowCheckbox = forwardRef<HTMLButtonElement, Props>(
+  function TableRowCheckbox(
+    {
+      checked,
+      onCheckedChange,
+      onChange,
+      onClick,
+      'aria-label': ariaLabel,
+      disabled = false,
+      rowHeight = 9,
+    },
+    ref,
+  ) {
+    const heightClass = rowHeight === 10 ? 'h-10' : 'min-h-9'
+    const resolvedChecked: CheckedState =
+      checked === 'indeterminate' ? 'indeterminate' : checked
 
-  return (
-    <div className={`flex ${heightClass} w-full items-center justify-center`}>
-      <Checkbox
-        ref={ref}
-        checked={resolvedChecked}
-        onCheckedChange={(value) => {
-          if (value === 'indeterminate') return
-          if (onCheckedChange) {
-            onCheckedChange(value)
-            return
-          }
-          onChange?.()
-        }}
-        onClick={onClick}
-        disabled={disabled}
-        aria-label={ariaLabel}
-      />
-    </div>
-  )
-})
+    return (
+      <div className={`flex ${heightClass} w-full items-center justify-center`}>
+        <Checkbox
+          ref={ref}
+          checked={resolvedChecked}
+          onCheckedChange={(value) => {
+            if (value === 'indeterminate') return
+            if (onCheckedChange) {
+              onCheckedChange(value)
+              return
+            }
+            onChange?.()
+          }}
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={ariaLabel}
+        />
+      </div>
+    )
+  },
+)

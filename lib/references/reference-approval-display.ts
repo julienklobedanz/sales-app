@@ -41,7 +41,9 @@ export type ReferenceTitleBadgeInput = ApprovedScopeInput & {
 }
 
 /** Portfolio-Stufe für Titel-Kapsel (unabhängig vom laufenden Freigabe-Workflow). */
-export function resolvePortfolioTitleBadge(referenceStatus: string | null | undefined): ApprovalBadge {
+export function resolvePortfolioTitleBadge(
+  referenceStatus: string | null | undefined,
+): ApprovalBadge {
   const status = normalizeReferenceStatus(referenceStatus)
 
   if (status === 'internal_only') {
@@ -79,7 +81,9 @@ export function resolvePortfolioTitleBadge(referenceStatus: string | null | unde
 }
 
 /** Titel-Kapsel nach abgeschlossener Kundenfreigabe (Scope). */
-export function resolvePostCustomerApprovalTitleBadge(input: ApprovedScopeInput): ApprovalBadge {
+export function resolvePostCustomerApprovalTitleBadge(
+  input: ApprovedScopeInput,
+): ApprovalBadge {
   const named = input.approvalScopeNamedMention ?? true
   const anonymous = input.approvalScopeAnonymousMention ?? true
 
@@ -134,7 +138,9 @@ export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
   }
 }
 
-export function resolveInternalWorkflowBadge(internalApprovalStatus: string): ApprovalBadge {
+export function resolveInternalWorkflowBadge(
+  internalApprovalStatus: string,
+): ApprovalBadge {
   const internal = internalApprovalStatus.toLowerCase()
   switch (internal) {
     case 'approved_internal':
@@ -172,7 +178,7 @@ export function resolveCustomerWorkflowBadge(input: {
   const internal = input.internalApprovalStatus.toLowerCase()
   const customer = effectiveCustomerApprovalStatus(
     input.customerApprovalStatus,
-    input.referenceStatus
+    input.referenceStatus,
   )
   const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
 
@@ -230,7 +236,7 @@ const notStartedFreigabeBadge: ApprovalBadge = {
 
 /** Intern + Kunde in der Freigabestatus-Card (nach Workflow-Start). */
 export function resolveWorkflowStatusBadges(
-  input: WorkflowBadgesInput
+  input: WorkflowBadgesInput,
 ): { internal: ApprovalBadge; customer: ApprovalBadge | null } | null {
   if (!input.approvalRequestedAt?.trim()) return null
 
@@ -249,9 +255,10 @@ export function resolveWorkflowStatusBadges(
 }
 
 /** Intern + Kunde in der Freigabestatus-Card (inkl. Entwurf vor/nach Widerruf). */
-export function resolveFreigabestatusCardBadges(
-  input: WorkflowBadgesInput
-): { internal: ApprovalBadge; customer: ApprovalBadge } {
+export function resolveFreigabestatusCardBadges(input: WorkflowBadgesInput): {
+  internal: ApprovalBadge
+  customer: ApprovalBadge
+} {
   const active = resolveWorkflowStatusBadges(input)
   if (active) {
     return {
@@ -296,12 +303,14 @@ function normalizeReferenceStatus(raw: string | null | undefined) {
 }
 
 /** Titel-Badge und Listen — Portfolio-Stufe; Workflow nur bei Abschluss/Fehler. */
-export function resolveReferenceTitleBadge(input: ReferenceTitleBadgeInput): ApprovalBadge {
+export function resolveReferenceTitleBadge(
+  input: ReferenceTitleBadgeInput,
+): ApprovalBadge {
   const internal = String(input.internalApprovalStatus ?? '').toLowerCase()
   const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
   const customer = effectiveCustomerApprovalStatus(
     input.customerApprovalStatus,
-    input.referenceStatus
+    input.referenceStatus,
   )
   const workflowStarted = Boolean(input.approvalRequestedAt?.trim())
   const referenceStatus = normalizeReferenceStatus(input.referenceStatus)
@@ -357,7 +366,7 @@ export function getReferenceApprovalExplanation(input: ReferenceTitleBadgeInput)
   const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
   const customer = effectiveCustomerApprovalStatus(
     input.customerApprovalStatus,
-    input.referenceStatus
+    input.referenceStatus,
   )
   const workflowStarted = Boolean(input.approvalRequestedAt?.trim())
   const referenceStatus = normalizeReferenceStatus(input.referenceStatus)

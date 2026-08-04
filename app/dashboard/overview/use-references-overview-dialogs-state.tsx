@@ -27,9 +27,9 @@ export function useReferencesOverviewDialogsState() {
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
-  const [bulkImportPreviewPendingFiles, setBulkImportPreviewPendingFiles] = useState<Set<File>>(
-    () => new Set()
-  )
+  const [bulkImportPreviewPendingFiles, setBulkImportPreviewPendingFiles] = useState<
+    Set<File>
+  >(() => new Set())
   const bulkImportDropRef = useRef<HTMLInputElement>(null)
   const [trashOpen, setTrashOpen] = useState(false)
   const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
@@ -37,13 +37,19 @@ export function useReferencesOverviewDialogsState() {
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
   const [newRefModalOpen, setNewRefModalOpen] = useState(false)
-  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
+  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(
+    null,
+  )
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
 
   function addBulkImportFiles(newFiles: File[]) {
-    addBulkImportFilesHelper(newFiles, setBulkImportGroups, setBulkImportPreviewPendingFiles)
+    addBulkImportFilesHelper(
+      newFiles,
+      setBulkImportGroups,
+      setBulkImportPreviewPendingFiles,
+    )
   }
   function removeBulkImportFile(groupId: string, fileIndex: number) {
     removeBulkImportFileHelper(groupId, fileIndex, setBulkImportGroups)
@@ -139,7 +145,9 @@ export function useReferencesOverviewDialogsState() {
   }
 }
 
-export type ReferencesOverviewDialogsState = ReturnType<typeof useReferencesOverviewDialogsState>
+export type ReferencesOverviewDialogsState = ReturnType<
+  typeof useReferencesOverviewDialogsState
+>
 
 /** Re-export for callers that need the setter type. */
 export type SetSelectedRefIds = Dispatch<SetStateAction<Set<string>>>

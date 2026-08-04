@@ -24,7 +24,8 @@ export async function logEvent(params: LogEventParams): Promise<void> {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    const createdBy = params.createdBy !== undefined ? params.createdBy : user?.id ?? null
+    const createdBy =
+      params.createdBy !== undefined ? params.createdBy : (user?.id ?? null)
 
     const { error } = await supabase.from('evidence_events').insert({
       organization_id: params.organizationId,

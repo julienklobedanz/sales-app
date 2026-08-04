@@ -8,9 +8,9 @@ import {
 describe('scoreBrandfetchLogoCandidate', () => {
   it('bevorzugt dark theme vor light theme', () => {
     expect(
-      scoreBrandfetchLogoCandidate({ theme: 'dark', type: 'logo', format: 'svg' })
+      scoreBrandfetchLogoCandidate({ theme: 'dark', type: 'logo', format: 'svg' }),
     ).toBeGreaterThan(
-      scoreBrandfetchLogoCandidate({ theme: 'light', type: 'logo', format: 'svg' })
+      scoreBrandfetchLogoCandidate({ theme: 'light', type: 'logo', format: 'svg' }),
     )
   })
 })
@@ -45,13 +45,17 @@ describe('pickBestLogoUrlFromBrandfetchJson', () => {
   it('wählt dunkles Logo statt weißem Wortmarken-Logo', () => {
     const url = pickBestLogoUrlFromBrandfetchJson(appleLike)
     expect(url).not.toBe('https://cdn.example/apple-white.svg')
-    expect(url === 'https://cdn.example/apple-black.svg' || url === 'https://cdn.example/apple-icon.png').toBe(
-      true
-    )
+    expect(
+      url === 'https://cdn.example/apple-black.svg' ||
+        url === 'https://cdn.example/apple-icon.png',
+    ).toBe(true)
   })
 
   it('überspringt ausgeschlossene (helle) URL und nimmt dunkle Alternative', () => {
-    const url = pickBestLogoUrlFromBrandfetchJson(appleLike, 'https://cdn.example/apple-white.svg')
+    const url = pickBestLogoUrlFromBrandfetchJson(
+      appleLike,
+      'https://cdn.example/apple-white.svg',
+    )
     expect(url).not.toBe('https://cdn.example/apple-white.svg')
   })
 

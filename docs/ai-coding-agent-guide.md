@@ -8,14 +8,14 @@
 
 ## 1. Stack & Rahmen
 
-| Bereich | In diesem Projekt |
-|--------|-------------------|
-| Framework | **Next.js** (App Router), **React** |
-| Styling | **Tailwind CSS v4**, Design-Tokens über CSS-Variablen |
-| UI | **Shadcn/Radix** unter `components/ui/*` |
-| Daten | **Supabase** (Client/Server nach bestehenden Patterns) |
-| Icons | **Hugeicons** über zentralen Adapter `lib/icons.tsx` (`AppIcon`) – keine verstreuten Raw-Icon-Libraries in neuen Features |
-| Validierung | **Zod** (kein react-hook-form im Repo) |
+| Bereich     | In diesem Projekt                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Framework   | **Next.js** (App Router), **React**                                                                                       |
+| Styling     | **Tailwind CSS v4**, Design-Tokens über CSS-Variablen                                                                     |
+| UI          | **Shadcn/Radix** unter `components/ui/*`                                                                                  |
+| Daten       | **Supabase** (Client/Server nach bestehenden Patterns)                                                                    |
+| Icons       | **Hugeicons** über zentralen Adapter `lib/icons.tsx` (`AppIcon`) – keine verstreuten Raw-Icon-Libraries in neuen Features |
+| Validierung | **Zod** (kein react-hook-form im Repo)                                                                                    |
 
 ---
 
@@ -37,7 +37,7 @@ Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 - **Status:** Zentrale Badge-Komponenten nutzen, keine neuen Ad-hoc-Chips für dieselben Domänen:
   - `components/reference-status-badge.tsx`
   - `components/deal-status-badge.tsx`  
-  Variant-Semantik: `default` / `secondary` / `outline` / `destructive` nach **Bedeutung**, nicht nach Geschmack (siehe Design-Doc).
+    Variant-Semantik: `default` / `secondary` / `outline` / `destructive` nach **Bedeutung**, nicht nach Geschmack (siehe Design-Doc).
 
 ### 2.3 Copy & Sprache (UI)
 
@@ -108,15 +108,15 @@ npm run build
 
 ## 5. Was Agenten explizit **nicht** tun sollen (Schulden vermeiden)
 
-| Verhalten | Stattdessen |
-|-----------|-------------|
-| Neue Feature-Logik nur in `page.tsx` mit 800 Zeilen | Helfer/Module + kleine Komponenten |
-| Farben und Abstände „mal schnell“ hardcoden | Tokens + `components/ui` |
-| Jeden Status mit neuem `Badge`-Styling | `*StatusBadge` + Variant-Semantik |
-| Englische Strings für Endnutzer | `COPY` + Deutsch |
-| Lucide/Hugeicons direkt überall importieren | `AppIcon` / zentrale Icon-Datei |
-| Server Actions beliebig re-exporten | Wrapper-Pattern laut QC-Plan prüfen |
-| Aufgeräumte Bereiche „nebenbei“ umbauen | Separater Task, eigenes Review |
+| Verhalten                                           | Stattdessen                         |
+| --------------------------------------------------- | ----------------------------------- |
+| Neue Feature-Logik nur in `page.tsx` mit 800 Zeilen | Helfer/Module + kleine Komponenten  |
+| Farben und Abstände „mal schnell“ hardcoden         | Tokens + `components/ui`            |
+| Jeden Status mit neuem `Badge`-Styling              | `*StatusBadge` + Variant-Semantik   |
+| Englische Strings für Endnutzer                     | `COPY` + Deutsch                    |
+| Lucide/Hugeicons direkt überall importieren         | `AppIcon` / zentrale Icon-Datei     |
+| Server Actions beliebig re-exporten                 | Wrapper-Pattern laut QC-Plan prüfen |
+| Aufgeräumte Bereiche „nebenbei“ umbauen             | Separater Task, eigenes Review      |
 
 ---
 
@@ -129,20 +129,20 @@ npm run build
 - **Service-Role (`createServiceRoleSupabaseClient`):** umgeht RLS — **Default ist der normale Server-Client.** Service-Role nur mit dokumentiertem Grund **und** expliziter Grenze pro Query/Write (Kommentar: „Service-Role weil … / Grenze: …“). Typische Grenzen: gültiges Token, `organization_id` aus Session, Cron-Secret + per-Zeile-org, reine `auth.admin.*`-Operationen.
 - Keine sensiblen Secrets in Code; `.env.local` / geheime Werte nie committen.
 
-*(Security-Härtung und produktive API-Keys sind out of scope dieses Guides, aber Grundlagen gelten.)*
+_(Security-Härtung und produktive API-Keys sind out of scope dieses Guides, aber Grundlagen gelten.)_
 
 ---
 
 ## 7. Dokumentation im Repo
 
-| Datei | Inhalt |
-|-------|--------|
-| `docs/design-system.md` | Tokens, UI, Icons, Copy, Badges |
-| `docs/qc-struktur-plan.md` | Struktur-Ziele, Refactor-Slices, Server-Action-Hinweise |
-| `docs/refactoring-zusammenfassung.md` | Historische Übersicht Benefits |
-| `docs/ai-coding-agent-guide.md` | **Dieser Guide** – Session-Standard |
-| `docs/schema-sync.md` | Remote-Drift, `supabase link`, CI-Migrations-Gate |
-| `docs/integration-tests.md` | Unit vs. Integration, lokaler Stack, CI-Job |
+| Datei                                 | Inhalt                                                  |
+| ------------------------------------- | ------------------------------------------------------- |
+| `docs/design-system.md`               | Tokens, UI, Icons, Copy, Badges                         |
+| `docs/qc-struktur-plan.md`            | Struktur-Ziele, Refactor-Slices, Server-Action-Hinweise |
+| `docs/refactoring-zusammenfassung.md` | Historische Übersicht Benefits                          |
+| `docs/ai-coding-agent-guide.md`       | **Dieser Guide** – Session-Standard                     |
+| `docs/schema-sync.md`                 | Remote-Drift, `supabase link`, CI-Migrations-Gate       |
+| `docs/integration-tests.md`           | Unit vs. Integration, lokaler Stack, CI-Job             |
 
 **Regel:** Keine neuen „Parallel-Dokumente“ für dieselben Regeln anlegen. Bestehende Docs **aktualisieren**, wenn sich Konventionen ändern (z. B. neue Badge-Variant).
 
@@ -164,4 +164,4 @@ npm run build
 
 ---
 
-*Version: 1.0 – abstimmen mit `docs/design-system.md` und Team-Entscheidungen; bei Abweichungen zuerst Design-Doc anpassen, dann Code.*
+_Version: 1.0 – abstimmen mit `docs/design-system.md` und Team-Entscheidungen; bei Abweichungen zuerst Design-Doc anpassen, dann Code._

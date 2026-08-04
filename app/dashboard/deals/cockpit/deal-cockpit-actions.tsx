@@ -100,18 +100,29 @@ export function DealCockpitActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}>Bearbeiten</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setLinkOpen(true)}>Referenz verknüpfen</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setOutcomeOpen(true)}>Ausgang festhalten</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
+            Referenz verknüpfen
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setOutcomeOpen(true)}>
+            Ausgang festhalten
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`${ROUTES.deals.requestNew}?dealId=${encodeURIComponent(deal.id)}`}>
+            <Link
+              href={`${ROUTES.deals.requestNew}?dealId=${encodeURIComponent(deal.id)}`}
+            >
               Referenzbedarf melden
             </Link>
           </DropdownMenuItem>
           {deal.is_rfp_mode ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={demotePending} onSelect={() => void demoteFromRfp()}>
+              <DropdownMenuItem
+                disabled={demotePending}
+                onSelect={() => void demoteFromRfp()}
+              >
                 {COPY.deals.cockpit.demoteFromRfp}
               </DropdownMenuItem>
             </>
@@ -148,7 +159,9 @@ export function DealCockpitActions({
                 void confirmDeleteDeal()
               }}
             >
-              {deletePending ? COPY.deals.cockpit.deleteDealPending : COPY.deals.cockpit.deleteDeal}
+              {deletePending
+                ? COPY.deals.cockpit.deleteDealPending
+                : COPY.deals.cockpit.deleteDeal}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -169,7 +182,12 @@ export function DealCockpitActions({
         onOpenChange={setLinkOpen}
         showTrigger={false}
       />
-      <OutcomeDialog dealId={deal.id} open={outcomeOpen} onOpenChange={setOutcomeOpen} showTrigger={false} />
+      <OutcomeDialog
+        dealId={deal.id}
+        open={outcomeOpen}
+        onOpenChange={setOutcomeOpen}
+        showTrigger={false}
+      />
     </>
   )
 }

@@ -1,5 +1,8 @@
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
-import { winProbabilityTone, type WinProbabilityTone } from '@/lib/deal-desk/win-probability'
+import {
+  winProbabilityTone,
+  type WinProbabilityTone,
+} from '@/lib/deal-desk/win-probability'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 import { computeCoveragePercentWithVerdicts } from '@/lib/deals/rfp-relevance-coverage'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
@@ -24,7 +27,7 @@ export function computeRequirementCoveragePercent(
   requirements: ExtractedRfpRequirement[],
   coverage: RfpCoverageRow[],
   threshold = MATCH_COVERAGE_THRESHOLD,
-  verdicts?: Record<string, RfpVerdict> | null
+  verdicts?: Record<string, RfpVerdict> | null,
 ): number {
   if (verdicts && Object.keys(verdicts).length > 0) {
     return computeCoveragePercentWithVerdicts(requirements, coverage, verdicts, threshold)
@@ -76,7 +79,9 @@ export function resolveBidRecommendation(args: {
   return { tone, label, detail }
 }
 
-export function formatAngebotsReifeBreakdown(breakdown: WinProbabilityBreakdown | null): string {
+export function formatAngebotsReifeBreakdown(
+  breakdown: WinProbabilityBreakdown | null,
+): string {
   if (!breakdown) return '—'
   return `Portfolio ${breakdown.portfolioScore}% · Capabilities ${breakdown.capabilityScore}% · Nachweise ${breakdown.evidenceScore}%`
 }

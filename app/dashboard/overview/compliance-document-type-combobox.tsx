@@ -100,7 +100,7 @@ export function ComplianceDocumentTypeCombobox({
           ref={anchorRef}
           className={cn(
             'relative flex min-w-0 flex-1 items-center',
-            disabled && 'pointer-events-none opacity-60'
+            disabled && 'pointer-events-none opacity-60',
           )}
         >
           <Input
@@ -160,7 +160,10 @@ export function ComplianceDocumentTypeCombobox({
         onWheel={(e) => e.stopPropagation()}
         onInteractOutside={(e) => {
           // Klick ins Suchfeld soll die Liste nicht schließen.
-          if (e.target === inputRef.current || inputRef.current?.contains(e.target as Node)) {
+          if (
+            e.target === inputRef.current ||
+            inputRef.current?.contains(e.target as Node)
+          ) {
             e.preventDefault()
           }
         }}
@@ -193,7 +196,7 @@ export function ComplianceDocumentTypeCombobox({
                     <Check
                       className={cn(
                         'mr-2 size-4 shrink-0',
-                        value === type.slug ? 'opacity-100' : 'opacity-0'
+                        value === type.slug ? 'opacity-100' : 'opacity-0',
                       )}
                       aria-hidden
                     />

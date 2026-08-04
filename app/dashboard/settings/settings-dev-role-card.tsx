@@ -12,7 +12,10 @@ import {
   formatDevRolePreviewLabel,
   type DevRolePreview,
 } from '@/lib/dev-role-preview'
-import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
+import {
+  clearDevPreviewRole,
+  setDevPreviewRole,
+} from '@/app/dashboard/dev-preview-role-actions'
 import { cn } from '@/lib/utils'
 
 export function SettingsDevRoleCard({
@@ -53,16 +56,22 @@ export function SettingsDevRoleCard({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{COPY.settings.roleSwitcherCardTitle}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">
+          {COPY.settings.roleSwitcherCardTitle}
+        </h2>
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
-          <dt className="text-muted-foreground">{COPY.settings.roleSwitcherStoredLabel}</dt>
+          <dt className="text-muted-foreground">
+            {COPY.settings.roleSwitcherStoredLabel}
+          </dt>
           <dd className="mt-1 font-medium">{formatDevRolePreviewLabel(serverRoles)}</dd>
         </div>
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
-          <dt className="text-muted-foreground">{COPY.settings.roleSwitcherActiveLabel}</dt>
+          <dt className="text-muted-foreground">
+            {COPY.settings.roleSwitcherActiveLabel}
+          </dt>
           <dd className="mt-1 font-medium">{formatDevRolePreviewLabel(effective)}</dd>
         </div>
       </dl>
@@ -77,7 +86,10 @@ export function SettingsDevRoleCard({
                 key={devRolePreviewKey(preset)}
                 type="button"
                 variant={active ? 'default' : 'outline'}
-                className={cn('justify-start gap-2', active && 'ring-2 ring-ring ring-offset-2')}
+                className={cn(
+                  'justify-start gap-2',
+                  active && 'ring-2 ring-ring ring-offset-2',
+                )}
                 disabled={pending}
                 onClick={() => apply(preset)}
               >
@@ -89,7 +101,12 @@ export function SettingsDevRoleCard({
       </div>
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
-        <Button type="button" variant="secondary" disabled={pending || !previewRoles} onClick={clear}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={pending || !previewRoles}
+          onClick={clear}
+        >
           {COPY.settings.roleSwitcherReset}
         </Button>
       </div>

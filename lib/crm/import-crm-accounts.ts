@@ -19,7 +19,7 @@ export async function buildCrmImportPreview(
   supabase: SupabaseClient,
   organizationId: string,
   provider: CrmProvider,
-  accounts: CrmAccountCandidate[]
+  accounts: CrmAccountCandidate[],
 ): Promise<CrmImportPreviewItem[]> {
   const preview: CrmImportPreviewItem[] = []
 
@@ -52,13 +52,17 @@ export async function buildCrmImportPreview(
 async function enrichCompaniesWithBrandfetch(
   supabase: SupabaseClient,
   organizationId: string,
-  companyIds: string[]
+  companyIds: string[],
 ): Promise<number> {
   let enriched = 0
 
   for (const companyId of companyIds) {
     try {
-      const result = await syncExistingCompanyBrandfetch(supabase, organizationId, companyId)
+      const result = await syncExistingCompanyBrandfetch(
+        supabase,
+        organizationId,
+        companyId,
+      )
       if (result.success) enriched += 1
     } catch {
       // Einzelner Fehler blockiert den Rest nicht.
@@ -72,7 +76,7 @@ export async function importCrmAccounts(
   supabase: SupabaseClient,
   organizationId: string,
   provider: CrmProvider,
-  selectedAccounts: CrmAccountCandidate[]
+  selectedAccounts: CrmAccountCandidate[],
 ): Promise<CrmImportResult> {
   if (!selectedAccounts.length) {
     return {
@@ -199,13 +203,12 @@ export async function importCrmAccounts(
 
       let { error: dealError } = await supabase.from('deals').insert(dealPayload)
 
-      if (
-        dealError?.code === 'PGRST204' &&
-        dealError.message?.includes('crm_stage')
-      ) {
+      if (dealError?.code === 'PGRST204' && dealError.message?.includes('crm_stage')) {
         const { crm_stage, ...dealPayloadWithoutStage } = dealPayload
         void crm_stage
-        ;({ error: dealError } = await supabase.from('deals').insert(dealPayloadWithoutStage))
+        ;({ error: dealError } = await supabase
+          .from('deals')
+          .insert(dealPayloadWithoutStage))
       }
 
       if (dealError) {
@@ -216,11 +219,9 @@ export async function importCrmAccounts(
     }
   }
 
-  const enrichedAccounts = await enrichCompaniesWithBrandfetch(
-    supabase,
-    organizationId,
-    [...new Set(enrichCompanyIds)]
-  )
+  const enrichedAccounts = await enrichCompaniesWithBrandfetch(supabase, organizationId, [
+    ...new Set(enrichCompanyIds),
+  ])
 
   if (provider === 'hubspot') {
     await syncHubSpotWonDealsForOrganization(supabase, organizationId, provider)

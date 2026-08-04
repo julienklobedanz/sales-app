@@ -25,7 +25,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -148,8 +152,10 @@ function DocumentDropzone({
       aria-disabled={disabled}
       className={cn(
         'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
-        dragOver && !disabled ? 'border-primary/50 bg-muted/60' : 'border-border bg-muted/30',
-        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-muted/50'
+        dragOver && !disabled
+          ? 'border-primary/50 bg-muted/60'
+          : 'border-border bg-muted/30',
+        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-muted/50',
       )}
       onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
@@ -230,7 +236,7 @@ export function DealDocumentsSection({
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadKind, setUploadKind] = useState<DealDocumentKind>(
-    isRfpMode ? 'ausschreibung' : 'sonstiges'
+    isRfpMode ? 'ausschreibung' : 'sonstiges',
   )
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -242,7 +248,7 @@ export function DealDocumentsSection({
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(
-    () => isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis
+    () => isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis,
   )
 
   async function handleUpload() {
@@ -372,14 +378,19 @@ export function DealDocumentsSection({
                   size={16}
                   className={cn(
                     'shrink-0 text-muted-foreground transition-transform',
-                    expanded && 'rotate-90'
+                    expanded && 'rotate-90',
                   )}
                 />
                 <CardTitle className="text-base">{title}</CardTitle>
               </button>
             </CollapsibleTrigger>
             {canManage ? (
-              <Button type="button" variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUploadOpen(true)}
+              >
                 <AppIcon icon={CirclePlus} size={16} className="mr-1" />
                 {COPY.deals.cockpit.documentsUpload}
               </Button>
@@ -387,128 +398,145 @@ export function DealDocumentsSection({
           </CardHeader>
           {documents.length === 0 ? (
             <CardContent className="pt-0">
-              <p className="pl-7 text-sm text-muted-foreground">{COPY.deals.cockpit.documentsEmpty}</p>
+              <p className="pl-7 text-sm text-muted-foreground">
+                {COPY.deals.cockpit.documentsEmpty}
+              </p>
             </CardContent>
           ) : (
-          <CollapsibleContent>
-            <CardContent className="pt-0">
+            <CollapsibleContent>
+              <CardContent className="pt-0">
                 <ul className="divide-y divide-border pl-7">
                   {documents.map((doc) => (
                     <li
                       key={doc.id}
                       className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
                     >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-sm font-medium">{doc.file_name}</span>
-                      <Badge variant="secondary">{DEAL_DOCUMENT_KIND_LABELS[doc.kind]}</Badge>
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatFileSize(doc.size_bytes)}
-                      {doc.uploaded_by_name ? ` · ${doc.uploaded_by_name}` : ''}
-                      {` · ${formatUploadedAt(doc.created_at)}`}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1">
-                    {canManage && !isRfpMode && doc.kind === 'ausschreibung' ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={analyzingId === doc.id}
-                        onClick={() => void handleAnalyze(doc)}
-                      >
-                        {analyzingId === doc.id ? (
-                          <>
-                            <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
-                            {COPY.deals.cockpit.documentsAnalyzePending}
-                          </>
-                        ) : (
-                          COPY.deals.cockpit.documentsAnalyze
-                        )}
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={downloadPendingId === doc.id}
-                      onClick={() => handleDownload(doc)}
-                    >
-                      {downloadPendingId === doc.id ? (
-                        <AppIcon icon={Loader} size={16} className="animate-spin" />
-                      ) : (
-                        <Download className="size-4" />
-                      )}
-                      <span className="sr-only">{COPY.deals.cockpit.documentsDownload}</span>
-                    </Button>
-                    {canManage ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button type="button" variant="ghost" size="icon" className="size-8">
-                            <AppIcon icon={MoreHorizontal} size={16} />
-                            <span className="sr-only">Aktionen</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-sm font-medium">
+                            {doc.file_name}
+                          </span>
+                          <Badge variant="secondary">
+                            {DEAL_DOCUMENT_KIND_LABELS[doc.kind]}
+                          </Badge>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatFileSize(doc.size_bytes)}
+                          {doc.uploaded_by_name ? ` · ${doc.uploaded_by_name}` : ''}
+                          {` · ${formatUploadedAt(doc.created_at)}`}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {canManage && !isRfpMode && doc.kind === 'ausschreibung' ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={analyzingId === doc.id}
+                            onClick={() => void handleAnalyze(doc)}
+                          >
+                            {analyzingId === doc.id ? (
+                              <>
+                                <AppIcon
+                                  icon={Loader}
+                                  size={14}
+                                  className="mr-1 animate-spin"
+                                />
+                                {COPY.deals.cockpit.documentsAnalyzePending}
+                              </>
+                            ) : (
+                              COPY.deals.cockpit.documentsAnalyze
+                            )}
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setRenameTarget(doc)
-                              setRenameValue(doc.file_name)
-                            }}
-                          >
-                            {COPY.deals.cockpit.documentsRename}
-                          </DropdownMenuItem>
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                              {COPY.deals.cockpit.documentsChangeKind}
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              {DEAL_DOCUMENT_KINDS.map((kind) => (
-                                <DropdownMenuItem
-                                  key={kind}
-                                  disabled={kind === doc.kind}
-                                  onSelect={() => handleKindChange(doc, kind)}
-                                >
-                                  {DEAL_DOCUMENT_KIND_LABELS[kind]}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onSelect={() => setDeleteTarget(doc)}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            {COPY.deals.cockpit.documentsDelete}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={downloadPendingId === doc.id}
+                          onClick={() => handleDownload(doc)}
+                        >
+                          {downloadPendingId === doc.id ? (
+                            <AppIcon icon={Loader} size={16} className="animate-spin" />
+                          ) : (
+                            <Download className="size-4" />
+                          )}
+                          <span className="sr-only">
+                            {COPY.deals.cockpit.documentsDownload}
+                          </span>
+                        </Button>
+                        {canManage ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                              >
+                                <AppIcon icon={MoreHorizontal} size={16} />
+                                <span className="sr-only">Aktionen</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onSelect={() => {
+                                  setRenameTarget(doc)
+                                  setRenameValue(doc.file_name)
+                                }}
+                              >
+                                {COPY.deals.cockpit.documentsRename}
+                              </DropdownMenuItem>
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  {COPY.deals.cockpit.documentsChangeKind}
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  {DEAL_DOCUMENT_KINDS.map((kind) => (
+                                    <DropdownMenuItem
+                                      key={kind}
+                                      disabled={kind === doc.kind}
+                                      onSelect={() => handleKindChange(doc, kind)}
+                                    >
+                                      {DEAL_DOCUMENT_KIND_LABELS[kind]}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onSelect={() => setDeleteTarget(doc)}
+                              >
+                                <Trash2 className="mr-2 size-4" />
+                                {COPY.deals.cockpit.documentsDelete}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {isRfpMode && canManage ? (
+                  <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {COPY.deals.cockpit.documentsAnalyzeReadyHint}
+                    </p>
+                    <DealRfpAnalyzeButton
+                      dealId={dealId}
+                      documents={documents}
+                      canManage={canManage}
+                      hasAnalysis={rfpHasAnalysis}
+                      isStale={rfpAnalysisStale}
+                      variant="default"
+                      className="shrink-0"
+                      onAnalyzed={() => void refreshReferenceSuggestions?.()}
+                    />
                   </div>
-                </li>
-              ))}
-            </ul>
-            {isRfpMode && canManage ? (
-              <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {COPY.deals.cockpit.documentsAnalyzeReadyHint}
-                </p>
-                <DealRfpAnalyzeButton
-                  dealId={dealId}
-                  documents={documents}
-                  canManage={canManage}
-                  hasAnalysis={rfpHasAnalysis}
-                  isStale={rfpAnalysisStale}
-                  variant="default"
-                  className="shrink-0"
-                  onAnalyzed={() => void refreshReferenceSuggestions?.()}
-                />
-              </div>
-            ) : null}
-            </CardContent>
-          </CollapsibleContent>
+                ) : null}
+              </CardContent>
+            </CollapsibleContent>
           )}
         </Collapsible>
       </Card>
@@ -520,7 +548,9 @@ export function DealDocumentsSection({
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="deal-doc-kind">{COPY.deals.cockpit.documentsKindLabel}</Label>
+              <Label htmlFor="deal-doc-kind">
+                {COPY.deals.cockpit.documentsKindLabel}
+              </Label>
               <KindSelect
                 id="deal-doc-kind"
                 value={uploadKind}
@@ -547,7 +577,11 @@ export function DealDocumentsSection({
             <Button type="button" variant="outline" onClick={() => setUploadOpen(false)}>
               Abbrechen
             </Button>
-            <Button type="button" onClick={handleUpload} disabled={uploading || !uploadFile}>
+            <Button
+              type="button"
+              onClick={handleUpload}
+              disabled={uploading || !uploadFile}
+            >
               {uploading ? (
                 <>
                   <AppIcon icon={Loader} size={16} className="mr-1 animate-spin" />
@@ -599,7 +633,9 @@ export function DealDocumentsSection({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{COPY.deals.cockpit.documentsDeleteConfirm}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {COPY.deals.cockpit.documentsDeleteConfirm}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget?.file_name ?? ''} wird aus dem Deal und dem Speicher entfernt.
             </AlertDialogDescription>

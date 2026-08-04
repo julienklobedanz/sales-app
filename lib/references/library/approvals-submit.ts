@@ -23,7 +23,7 @@ import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-ty
 
 export async function submitForApprovalImpl(
   id: string,
-  options?: SubmitForApprovalOptions
+  options?: SubmitForApprovalOptions,
 ) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -58,7 +58,7 @@ export async function submitForApprovalImpl(
       approval_competitor_blacklist,
       approval_quote_proposed,
       companies ( name )
-    `
+    `,
     )
     .eq('id', id)
     .single()
@@ -81,7 +81,9 @@ export async function submitForApprovalImpl(
   const internalApproval = String(ref.approval_internal_status ?? '')
   const customerApproval = String(ref.customer_approval_status ?? '')
   const isApprovalGranted =
-    customerApproval === 'approved' || refStatus === 'approved' || refStatus === 'external'
+    customerApproval === 'approved' ||
+    refStatus === 'approved' ||
+    refStatus === 'external'
   const staleInternalPending = isStaleInternalPending({
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
@@ -104,11 +106,12 @@ export async function submitForApprovalImpl(
     })
   ) {
     throw new Error(
-      'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Freigabestatus), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).'
+      'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Freigabestatus), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).',
     )
   }
   const organizationId =
-    typeof (profile as { organization_id?: string | null } | null)?.organization_id === 'string'
+    typeof (profile as { organization_id?: string | null } | null)?.organization_id ===
+    'string'
       ? (profile as { organization_id: string }).organization_id
       : null
   const requesterName =
@@ -134,7 +137,8 @@ export async function submitForApprovalImpl(
   const linkPolicy = parseOrgPublicLinkPolicy(workflowSettingsUnknown, 14)
   const defaultApprovalLinkDays = Math.max(1, Math.min(365, linkPolicy.defaultTtlDays))
   const explicitExpiryDays =
-    options?.approvalExpiresInDays != null && Number.isFinite(options.approvalExpiresInDays)
+    options?.approvalExpiresInDays != null &&
+    Number.isFinite(options.approvalExpiresInDays)
       ? Math.max(1, Math.min(365, Math.trunc(Number(options.approvalExpiresInDays))))
       : null
   const expiryDays = explicitExpiryDays ?? defaultApprovalLinkDays
@@ -147,7 +151,7 @@ export async function submitForApprovalImpl(
     ref,
     ref.company_id,
     options,
-    { requireRecipientEmail: false }
+    { requireRecipientEmail: false },
   )
   const companyName = companyNameFromReferenceRow(ref.companies)
 
@@ -174,7 +178,8 @@ export async function submitForApprovalImpl(
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
       approval_coordinator_email: accountManagerEmail,
-      approval_coordinator_name: referenceGiverNameFromRecipientEmail(accountManagerEmail),
+      approval_coordinator_name:
+        referenceGiverNameFromRecipientEmail(accountManagerEmail),
       approval_customer_facing_name: null,
       approval_internal_reviewer_id: null,
       approval_internal_reviewed_at: null,
@@ -191,7 +196,9 @@ export async function submitForApprovalImpl(
       approval_scope_reference_call: scope
         ? scope.referenceCall
         : (ref.approval_scope_reference_call ?? false),
-      approval_scope_logo_use: scope ? scope.logoUse : (ref.approval_scope_logo_use ?? false),
+      approval_scope_logo_use: scope
+        ? scope.logoUse
+        : (ref.approval_scope_logo_use ?? false),
       approval_scope_press_release: scope
         ? scope.pressRelease
         : (ref.approval_scope_press_release ?? false),

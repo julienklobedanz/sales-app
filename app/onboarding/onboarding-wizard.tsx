@@ -4,24 +4,22 @@ import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
-import {
-  OnboardingShell,
-  type OnboardingTransition,
-} from './components/onboarding-shell'
+import { OnboardingShell, type OnboardingTransition } from './components/onboarding-shell'
 import { WorkspaceStep, type WorkspaceStepValue } from './steps/workspace-step'
 import { CrmConnectStep } from './steps/crm-connect-step'
-import { TeamStep, type TeamInviteRow, createDefaultInviteRows, normalizeTeamInvitesOnBack } from './steps/team-step'
+import {
+  TeamStep,
+  type TeamInviteRow,
+  createDefaultInviteRows,
+  normalizeTeamInvitesOnBack,
+} from './steps/team-step'
 import { finalizeWorkspaceAndProfile, sendTeamInvites } from './wizard-actions'
 import {
   ONBOARDING_BRAND_META,
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_META,
 } from './onboarding-steps'
-import {
-  guessCompanyFromEmail,
-  joinFullName,
-  splitFullName,
-} from './onboarding-utils'
+import { guessCompanyFromEmail, joinFullName, splitFullName } from './onboarding-utils'
 import { ROUTES } from '@/lib/routes'
 import { humanizeTeamInviteEmailError } from '@/lib/email/team-invite-email'
 import { COPY } from '@/lib/copy'
@@ -63,7 +61,9 @@ export function OnboardingWizard({
     organizationName: inviteOrganizationName ?? guessedCompany,
   })
 
-  const [invites, setInvites] = React.useState<TeamInviteRow[]>(() => createDefaultInviteRows())
+  const [invites, setInvites] = React.useState<TeamInviteRow[]>(() =>
+    createDefaultInviteRows(),
+  )
   const [sending, setSending] = React.useState(false)
   const [savingWorkspace, setSavingWorkspace] = React.useState(false)
 
@@ -122,7 +122,7 @@ export function OnboardingWizard({
         after?.()
       }, COMPLETE_MS)
     },
-    []
+    [],
   )
 
   function goToStep(nextStep: number) {
@@ -192,7 +192,7 @@ export function OnboardingWizard({
           toast.success(
             res.emailsSent === 1
               ? '1 Einladung wurde per E-Mail versendet.'
-              : `${res.emailsSent} Einladungen wurden per E-Mail versendet.`
+              : `${res.emailsSent} Einladungen wurden per E-Mail versendet.`,
           )
         } else if (res.emailsSent > 0) {
           toast.warning(
@@ -201,7 +201,7 @@ export function OnboardingWizard({
               description:
                 'Die übrigen Einladungen sind gespeichert. Links können Sie unter Einstellungen → Team kopieren.',
               duration: 14_000,
-            }
+            },
           )
         } else {
           const firstFailure = res.failures[0]
@@ -223,7 +223,7 @@ export function OnboardingWizard({
         runTransition('complete', null, complete)
       })
     },
-    [invites, router, runTransition]
+    [invites, router, runTransition],
   )
 
   return (

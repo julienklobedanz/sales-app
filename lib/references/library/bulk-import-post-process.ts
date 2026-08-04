@@ -13,7 +13,7 @@ import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
  * Fallback: Extraktion aus Storage (wenn keine Datei mehr im Browser verfügbar).
  */
 export async function runBulkImportExtractionForReference(
-  referenceId: string
+  referenceId: string,
 ): Promise<BulkImportExtractionResult> {
   const id = String(referenceId ?? '').trim()
   if (!id) return { success: false, error: 'Ungültige Referenz.' }
@@ -69,7 +69,9 @@ export async function runBulkImportExtractionForReference(
     }
   }
 
-  const { data: blob, error: dlErr } = await supabase.storage.from('references').download(path)
+  const { data: blob, error: dlErr } = await supabase.storage
+    .from('references')
+    .download(path)
   if (dlErr || !blob) {
     revalidatePath(ROUTES.references.root)
     return {
@@ -78,7 +80,8 @@ export async function runBulkImportExtractionForReference(
       title: '',
       needsInput: true,
       extractionOk: false,
-      extractionError: dlErr?.message ?? 'Datei konnte nicht aus dem Storage geladen werden.',
+      extractionError:
+        dlErr?.message ?? 'Datei konnte nicht aus dem Storage geladen werden.',
       suggestions: {},
     }
   }
@@ -89,7 +92,7 @@ export async function runBulkImportExtractionForReference(
     organizationId,
     id,
     buffer,
-    fileName
+    fileName,
   )
 
   revalidatePath(ROUTES.references.root)

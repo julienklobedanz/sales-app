@@ -78,17 +78,22 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
     setSubmitting(true)
     try {
       const supabase = createClient()
-      const { data: factorsPayload, error: listErr } = await supabase.auth.mfa.listFactors()
+      const { data: factorsPayload, error: listErr } =
+        await supabase.auth.mfa.listFactors()
       if (listErr) throw listErr
 
       const factor = pickVerifiedTotpFactor(extractTotpFactors(factorsPayload))
       if (!factor) {
-        toast.error('Kein aktiver Authenticator gefunden. Bitte in den Einstellungen 2FA neu einrichten.')
+        toast.error(
+          'Kein aktiver Authenticator gefunden. Bitte in den Einstellungen 2FA neu einrichten.',
+        )
         setSubmitting(false)
         return
       }
 
-      const { data: challengeRow, error: chErr } = await supabase.auth.mfa.challenge({ factorId: factor.id })
+      const { data: challengeRow, error: chErr } = await supabase.auth.mfa.challenge({
+        factorId: factor.id,
+      })
       if (chErr || !challengeRow?.id) throw chErr ?? new Error('Challenge fehlgeschlagen')
 
       const { error: verErr } = await supabase.auth.mfa.verify({
@@ -103,7 +108,9 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
       setStatus('ok')
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Code ungültig. Bitte erneut versuchen.')
+      toast.error(
+        err instanceof Error ? err.message : 'Code ungültig. Bitte erneut versuchen.',
+      )
     } finally {
       setSubmitting(false)
     }
@@ -112,7 +119,10 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
   if (status === 'loading') {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Lade Authentifizierung" />
+        <Loader2
+          className="size-6 animate-spin text-muted-foreground"
+          aria-label="Lade Authentifizierung"
+        />
       </div>
     )
   }

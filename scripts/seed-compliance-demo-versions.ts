@@ -35,8 +35,13 @@ const DOC_TYPE = 'iso_27001'
 
 async function resolveOrgId(): Promise<string> {
   if (ORGANIZATION_ID) return ORGANIZATION_ID
-  const { data, error } = await supabase.from('organizations').select('id').limit(1).maybeSingle()
-  if (error || !data?.id) throw new Error('Keine Organisation gefunden — ORGANIZATION_ID setzen.')
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .limit(1)
+    .maybeSingle()
+  if (error || !data?.id)
+    throw new Error('Keine Organisation gefunden — ORGANIZATION_ID setzen.')
   return String(data.id)
 }
 
@@ -55,10 +60,10 @@ async function main() {
   console.log(`Organisation: ${orgId}`)
 
   const archivePdf = readFileSync(
-    join(process.cwd(), 'public/demo/compliance/iso27001-archiv-2024.pdf')
+    join(process.cwd(), 'public/demo/compliance/iso27001-archiv-2024.pdf'),
   )
   const currentPdf = readFileSync(
-    join(process.cwd(), 'public/demo/compliance/iso27001-aktuell-2026.pdf')
+    join(process.cwd(), 'public/demo/compliance/iso27001-aktuell-2026.pdf'),
   )
 
   const { data: existing } = await supabase
@@ -99,7 +104,7 @@ async function main() {
     orgId,
     archiveId,
     'iso27001-archiv-2024.pdf',
-    archivePdf
+    archivePdf,
   )
 
   const { error: archiveUpdateError } = await supabase
@@ -127,7 +132,9 @@ async function main() {
       .single()
 
     if (currentInsertError || !currentInserted) {
-      throw new Error(currentInsertError?.message ?? 'Aktuelle Version Insert fehlgeschlagen')
+      throw new Error(
+        currentInsertError?.message ?? 'Aktuelle Version Insert fehlgeschlagen',
+      )
     }
 
     const currentId = String(currentInserted.id)
@@ -135,7 +142,7 @@ async function main() {
       orgId,
       currentId,
       'iso27001-aktuell-2026.pdf',
-      currentPdf
+      currentPdf,
     )
 
     const { error: currentUpdateError } = await supabase
@@ -153,7 +160,9 @@ async function main() {
   }
 
   console.log('Archiv-Version ISO 27001 (abgelaufen 31.12.2024) angelegt.')
-  console.log(`Öffne ${ROUTES.references.root} → Zertifikate und klicke auf eine Zeile für die Versionshistorie.`)
+  console.log(
+    `Öffne ${ROUTES.references.root} → Zertifikate und klicke auf eine Zeile für die Versionshistorie.`,
+  )
 }
 
 main().catch((err) => {

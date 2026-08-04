@@ -1,7 +1,11 @@
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 
 const SYSTEM_ROLES = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
-const FUNCTION_ROLES = new Set<FunctionRole>(['sales_rep', 'account_manager', 'sales_leader'])
+const FUNCTION_ROLES = new Set<FunctionRole>([
+  'sales_rep',
+  'account_manager',
+  'sales_leader',
+])
 
 function asSystemRole(value: unknown): SystemRole | null {
   const s = typeof value === 'string' ? value : null
@@ -13,7 +17,9 @@ function asFunctionRole(value: unknown): FunctionRole | null {
   return s && FUNCTION_ROLES.has(s as FunctionRole) ? (s as FunctionRole) : null
 }
 
-export function parseCapabilitiesOverrides(raw: unknown): Partial<Record<Capability, boolean>> {
+export function parseCapabilitiesOverrides(
+  raw: unknown,
+): Partial<Record<Capability, boolean>> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   const out: Partial<Record<Capability, boolean>> = {}
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
@@ -32,7 +38,7 @@ export function parseProfileRoles(
         capabilities?: unknown
       }
     | null
-    | undefined
+    | undefined,
 ): {
   systemRole: SystemRole
   functionRole: FunctionRole

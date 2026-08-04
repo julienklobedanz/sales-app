@@ -35,7 +35,7 @@ describe('approval-recipient-input', () => {
           label: 'X',
           kind: 'external_contact',
         },
-      })
+      }),
     ).toBe(true)
     expect(canSubmitApprovalRecipient({ query: 'Max', selected: null })).toBe(false)
   })

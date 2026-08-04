@@ -26,7 +26,7 @@ const DISPLAY: Record<CompanyAccountStatusValue, AccountStatusDisplay> = {
 }
 
 export function accountStatusDisplay(
-  status: CompanyAccountStatusValue | null | undefined
+  status: CompanyAccountStatusValue | null | undefined,
 ): AccountStatusDisplay | null {
   if (!status) return null
   return DISPLAY[status] ?? null

@@ -15,7 +15,9 @@ export function isMissingEnrichmentColumnsError(message: string | undefined): bo
   return ENRICHMENT_COLUMN_NAMES.some((col) => m.includes(col))
 }
 
-export function stripEnrichmentFields<T extends Record<string, unknown>>(row: T): Omit<T, keyof MarketSignalEnrichmentColumns> {
+export function stripEnrichmentFields<T extends Record<string, unknown>>(
+  row: T,
+): Omit<T, keyof MarketSignalEnrichmentColumns> {
   const { signal_category, insight_signal_fact, insight_why_now, ...rest } = row
   void signal_category
   void insight_signal_fact

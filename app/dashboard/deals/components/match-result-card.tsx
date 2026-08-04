@@ -3,7 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { LinkIcon, Loader, Sparkles, FileText, InformationCircleIcon, FileDownloadIcon } from '@hugeicons/core-free-icons'
+import {
+  LinkIcon,
+  Loader,
+  Sparkles,
+  FileText,
+  InformationCircleIcon,
+  FileDownloadIcon,
+} from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/ui/company-logo'
@@ -57,7 +64,9 @@ export function MatchResultCard({
         return
       }
       const abs =
-        typeof window !== 'undefined' ? new URL(res.url, window.location.origin).href : res.url
+        typeof window !== 'undefined'
+          ? new URL(res.url, window.location.origin).href
+          : res.url
       // Kundenlink ist immer /p/{slug} — ohne ?manage=
       await navigator.clipboard.writeText(abs)
       toast.success('Kundenlink in die Zwischenablage kopiert.')
@@ -110,7 +119,9 @@ export function MatchResultCard({
   return (
     <div
       className={cn(
-        variant === 'embedded' ? 'px-4 py-2.5' : 'rounded-xl border bg-card p-4 shadow-sm'
+        variant === 'embedded'
+          ? 'px-4 py-2.5'
+          : 'rounded-xl border bg-card p-4 shadow-sm',
       )}
     >
       <div className="space-y-2">
@@ -136,21 +147,34 @@ export function MatchResultCard({
                 {hit.title}
               </Link>
               {meta ? (
-                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{meta}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                  {meta}
+                </p>
               ) : null}
             </div>
           </div>
-          <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} strength={matchStrength} />
+          <MatchScoreCircle
+            key={`${hit.id}-${hit.similarity}`}
+            strength={matchStrength}
+          />
         </div>
 
         {hit.snippet ? (
-          <p className="text-left text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">{hit.snippet}</p>
+          <p className="text-left text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">
+            {hit.snippet}
+          </p>
         ) : null}
 
         {variant === 'embedded' ? (
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-1">
             <div className="flex flex-wrap gap-1.5">
-              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPdfOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setPdfOpen(true)}
+              >
                 <AppIcon icon={FileText} size={14} className="mr-1" />
                 PDF exportieren
               </Button>
@@ -169,12 +193,24 @@ export function MatchResultCard({
                 )}
                 Link erstellen
               </Button>
-              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setKiOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setKiOpen(true)}
+              >
                 <AppIcon icon={Sparkles} size={14} className="mr-1" />
                 KI-Entwurf
               </Button>
             </div>
-            <Button type="button" variant="secondary" size="sm" className="h-8 shrink-0 text-xs" asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-8 shrink-0 text-xs"
+              asChild
+            >
               <Link href={ROUTES.references.detail(hit.id)}>
                 <AppIcon icon={InformationCircleIcon} size={14} className="mr-1" />
                 Details
@@ -183,7 +219,13 @@ export function MatchResultCard({
           </div>
         ) : (
           <div className="flex flex-wrap justify-start gap-1.5 pt-1">
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPdfOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setPdfOpen(true)}
+            >
               <AppIcon icon={FileText} size={14} className="mr-1" />
               PDF exportieren
             </Button>
@@ -202,11 +244,23 @@ export function MatchResultCard({
               )}
               Link erstellen
             </Button>
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setKiOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setKiOpen(true)}
+            >
               <AppIcon icon={Sparkles} size={14} className="mr-1" />
               KI-Entwurf
             </Button>
-            <Button type="button" variant="secondary" size="sm" className="h-8 text-xs" asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-8 text-xs"
+              asChild
+            >
               <Link href={ROUTES.references.detail(hit.id)}>
                 <AppIcon icon={InformationCircleIcon} size={14} className="mr-1" />
                 Details
@@ -219,7 +273,11 @@ export function MatchResultCard({
                 variant={alreadyLinked ? 'outline' : 'default'}
                 className="h-8 text-xs"
                 disabled={linkLoading}
-                title={alreadyLinked ? 'Klicken, um die Referenz aus dem Deal zu entfernen' : undefined}
+                title={
+                  alreadyLinked
+                    ? 'Klicken, um die Referenz aus dem Deal zu entfernen'
+                    : undefined
+                }
                 onClick={() => void handleDealLink()}
               >
                 {linkLoading ? (

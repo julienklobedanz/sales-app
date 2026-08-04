@@ -17,10 +17,12 @@ export const ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES = [
 export type RolesPermissionsVisibilityCapability =
   (typeof ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES)[number]
 
-const VISIBILITY_CAPABILITY_SET = new Set<string>(ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES)
+const VISIBILITY_CAPABILITY_SET = new Set<string>(
+  ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES,
+)
 
 export function isVisibilityCapability(
-  cap: Capability
+  cap: Capability,
 ): cap is RolesPermissionsVisibilityCapability {
   return VISIBILITY_CAPABILITY_SET.has(cap)
 }
@@ -115,7 +117,9 @@ export function parseRolesPermissionsSettings(raw: unknown): RolesPermissionsSet
       draft: typeof l.draft === 'string' ? l.draft.slice(0, 120) : undefined,
       nda: typeof l.nda === 'string' ? l.nda.slice(0, 120) : undefined,
       confidential_sales:
-        typeof l.confidential_sales === 'string' ? l.confidential_sales.slice(0, 120) : undefined,
+        typeof l.confidential_sales === 'string'
+          ? l.confidential_sales.slice(0, 120)
+          : undefined,
     }
   }
 
@@ -123,7 +127,9 @@ export function parseRolesPermissionsSettings(raw: unknown): RolesPermissionsSet
     sales_sees_drafts:
       typeof obj.sales_sees_drafts === 'boolean' ? obj.sales_sees_drafts : undefined,
     function_role_capabilities:
-      Object.keys(functionRoleCapabilities).length > 0 ? functionRoleCapabilities : undefined,
+      Object.keys(functionRoleCapabilities).length > 0
+        ? functionRoleCapabilities
+        : undefined,
     active_function_roles: activeRoles.length > 0 ? activeRoles : undefined,
     approval_routing: approvalRouting,
     sensitivity_labels: sensitivityLabels,
@@ -131,7 +137,7 @@ export function parseRolesPermissionsSettings(raw: unknown): RolesPermissionsSet
 }
 
 export function serializeRolesPermissionsSettings(
-  settings: RolesPermissionsSettings
+  settings: RolesPermissionsSettings,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   if (typeof settings.sales_sees_drafts === 'boolean') {
@@ -157,16 +163,13 @@ export function effectiveCapabilitiesWithOrg(
   functionRole: FunctionRole,
   systemRole: Parameters<typeof isSystemAdmin>[0],
   overrides: Partial<Record<Capability, boolean>>,
-  orgSettings: RolesPermissionsSettings | null | undefined
+  orgSettings: RolesPermissionsSettings | null | undefined,
 ): Set<Capability> {
   const orgCaps = orgSettings?.function_role_capabilities?.[functionRole]
   const baseList = orgCaps ?? FUNCTION_ROLE_CAPS[functionRole]
   const caps = new Set<Capability>(baseList)
 
-  if (
-    functionRole === 'sales_rep' &&
-    orgSettings?.sales_sees_drafts === true
-  ) {
+  if (functionRole === 'sales_rep' && orgSettings?.sales_sees_drafts === true) {
     caps.add('see_draft_references')
   }
 
@@ -188,7 +191,12 @@ export function hasEffectiveCapability(
   systemRole: Parameters<typeof isSystemAdmin>[0],
   overrides: Partial<Record<Capability, boolean>>,
   cap: Capability,
-  orgSettings?: RolesPermissionsSettings | null
+  orgSettings?: RolesPermissionsSettings | null,
 ): boolean {
-  return effectiveCapabilitiesWithOrg(functionRole, systemRole, overrides, orgSettings).has(cap)
+  return effectiveCapabilitiesWithOrg(
+    functionRole,
+    systemRole,
+    overrides,
+    orgSettings,
+  ).has(cap)
 }

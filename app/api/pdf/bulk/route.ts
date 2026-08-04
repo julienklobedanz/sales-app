@@ -3,7 +3,11 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { ReferencePdfBundleDocument } from '@/lib/references/library/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/references/library/pdf/types'
+import type {
+  PdfOrgBranding,
+  PdfReference,
+  PdfTemplate,
+} from '@/lib/references/library/pdf/types'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
@@ -31,11 +35,14 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
 
-  const body = await req.json().catch(() => null) as
-    | { referenceIds?: unknown; template?: unknown }
-    | null
+  const body = (await req.json().catch(() => null)) as {
+    referenceIds?: unknown
+    template?: unknown
+  } | null
   const referenceIds = Array.isArray(body?.referenceIds)
-    ? body.referenceIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+    ? body.referenceIds.filter(
+        (id): id is string => typeof id === 'string' && id.trim().length > 0,
+      )
     : []
   if (referenceIds.length === 0) {
     return NextResponse.json({ error: 'Keine Referenzen ausgewählt.' }, { status: 400 })
@@ -55,7 +62,8 @@ export async function POST(req: NextRequest) {
 
   const { data: rows, error } = await supabase
     .from('references')
-    .select(`
+    .select(
+      `
       id,
       title,
       summary,
@@ -80,30 +88,42 @@ export async function POST(req: NextRequest) {
       approval_reference_giver_title,
       company_id,
       companies ( name, logo_url )
-    `)
+    `,
+    )
     .eq('organization_id', profile.organization_id)
     .in('id', referenceIds)
 
   if (error || !rows) {
-    return NextResponse.json({ error: 'Referenzen konnten nicht geladen werden.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Referenzen konnten nicht geladen werden.' },
+      { status: 500 },
+    )
   }
 
-  const salesExportStatuses = ['approved', 'internal_only', 'anonymized', 'external', 'internal']
+  const salesExportStatuses = [
+    'approved',
+    'internal_only',
+    'anonymized',
+    'external',
+    'internal',
+  ]
   const salesRestricted = profileIsSalesRestricted(systemRole, functionRole)
-  const allowedRows =
-    salesRestricted
-      ? rows.filter((row) =>
-          salesExportStatuses.includes(String(row.status ?? '').toLowerCase())
-        )
-      : rows
+  const allowedRows = salesRestricted
+    ? rows.filter((row) =>
+        salesExportStatuses.includes(String(row.status ?? '').toLowerCase()),
+      )
+    : rows
   if (allowedRows.length === 0) {
-    return NextResponse.json({ error: 'Keine berechtigten Referenzen gefunden.' }, { status: 403 })
+    return NextResponse.json(
+      { error: 'Keine berechtigten Referenzen gefunden.' },
+      { status: 403 },
+    )
   }
 
   const rowById = new Map(allowedRows.map((row) => [row.id, row]))
   const orderedRows = referenceIds
     .map((id) => rowById.get(id))
-    .filter((row): row is NonNullable<typeof rows[number]> => Boolean(row))
+    .filter((row): row is NonNullable<(typeof rows)[number]> => Boolean(row))
 
   const references: PdfReference[] = orderedRows.map((row) => {
     const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
@@ -163,12 +183,12 @@ export async function POST(req: NextRequest) {
           org: branding,
           template,
           exportedAtLabel,
-        })
+        }),
       ),
     {
       organizationId: profile.organization_id as string,
       resultCount: references.length,
-    }
+    },
   )
 
   await Promise.all(
@@ -179,8 +199,8 @@ export async function POST(req: NextRequest) {
         action: 'export_pdf',
         entityId: reference.id,
         actionDetails: { reference_id: reference.id, template, mode: 'bulk' },
-      })
-    )
+      }),
+    ),
   )
 
   const fileName = `${sanitizeFileName(org?.name ?? 'RefStack')}_Portfolio_${references.length}.pdf`
@@ -190,7 +210,9 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'no-store',
-      'Server-Timing': buildServerTimingHeader([{ name: 'export.pdf.bulk', ms: generateMs }]),
+      'Server-Timing': buildServerTimingHeader([
+        { name: 'export.pdf.bulk', ms: generateMs },
+      ]),
     },
   })
 }

@@ -31,7 +31,7 @@ export function ComplianceDocumentTypeIcon({
     <span
       className={cn(
         'flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-white',
-        className
+        className,
       )}
     >
       {showIso ? (

@@ -1,17 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
-import type { ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
+import type {
+  ReferenceApprovalRow,
+  ResolvedApprovalRecipient,
+} from '@/lib/references/library/approvals-types'
 
 export async function resolveContactForApproval(
   supabase: SupabaseClient,
   row: ReferenceApprovalRow,
   companyId: string,
   options?: SubmitForApprovalOptions,
-  resolveOpts?: { requireRecipientEmail?: boolean }
+  resolveOpts?: { requireRecipientEmail?: boolean },
 ): Promise<ResolvedApprovalRecipient> {
   const requireEmail = resolveOpts?.requireRecipientEmail !== false
-  const fromPerson = (c: { id: string; email?: string | null; first_name?: string | null } | null) => {
+  const fromPerson = (
+    c: { id: string; email?: string | null; first_name?: string | null } | null,
+  ) => {
     const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : ''
     const firstName = typeof c?.first_name === 'string' ? c.first_name : ''
     return {
@@ -22,7 +27,9 @@ export async function resolveContactForApproval(
     }
   }
 
-  const fromExternal = (c: { id: string; email?: string | null; first_name?: string | null } | null) => {
+  const fromExternal = (
+    c: { id: string; email?: string | null; first_name?: string | null } | null,
+  ) => {
     const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : ''
     const firstName = typeof c?.first_name === 'string' ? c.first_name : ''
     return {
@@ -42,7 +49,8 @@ export async function resolveContactForApproval(
       .single()
     if (error || !c) throw new Error('Ungültiger Kundenkontakt für dieses Unternehmen')
     const r = fromExternal(c)
-    if (requireEmail && !r.email) throw new Error('Der gewählte Kundenkontakt hat keine gültige E-Mail-Adresse')
+    if (requireEmail && !r.email)
+      throw new Error('Der gewählte Kundenkontakt hat keine gültige E-Mail-Adresse')
     return r
   }
 
@@ -55,7 +63,8 @@ export async function resolveContactForApproval(
       .single()
     if (error || !c) throw new Error('Ungültiger Kontakt für dieses Unternehmen')
     const r = fromPerson(c)
-    if (requireEmail && !r.email) throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
+    if (requireEmail && !r.email)
+      throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
     return r
   }
 
@@ -119,6 +128,6 @@ export async function resolveContactForApproval(
   }
 
   throw new Error(
-    'Kein Empfänger: Bitte in der Referenz einen Kundenkontakt mit gültiger E-Mail hinterlegen (oder im Account pflegen).'
+    'Kein Empfänger: Bitte in der Referenz einen Kundenkontakt mit gültiger E-Mail hinterlegen (oder im Account pflegen).',
   )
 }

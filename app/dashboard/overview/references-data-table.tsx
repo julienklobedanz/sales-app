@@ -344,7 +344,7 @@ export function ReferencesDataTable({
                             onSelect={(e) => {
                               void handleToggleFavorite(
                                 ref.id,
-                                e as unknown as React.MouseEvent
+                                e as unknown as React.MouseEvent,
                               )
                             }}
                           >
@@ -353,7 +353,9 @@ export function ReferencesDataTable({
                               size={16}
                               className={`mr-2 ${ref.is_favorited ? 'text-amber-500' : ''}`}
                             />
-                            {ref.is_favorited ? 'Favorit entfernen' : 'Als Favorit markieren'}
+                            {ref.is_favorited
+                              ? 'Favorit entfernen'
+                              : 'Als Favorit markieren'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={() => {
@@ -408,7 +410,9 @@ export function ReferencesDataTable({
         </div>
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-muted-foreground">{COPY.table.rowsPerPage}</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              {COPY.table.rowsPerPage}
+            </p>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => {

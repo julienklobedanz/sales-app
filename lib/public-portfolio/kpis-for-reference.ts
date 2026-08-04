@@ -33,7 +33,7 @@ export function formatProjectStatusDe(raw: string | null | undefined): string {
  */
 export function kpisForPublicReference(
   ref: PublicReference,
-  options?: { max?: number }
+  options?: { max?: number },
 ): PublicPortfolioKpi[] {
   const max = options?.max ?? 3
   const candidates: Candidate[] = []
@@ -111,7 +111,10 @@ export type PublicPortfolioPdfLayout = {
   tagLimit: number
 }
 
-function estimatePdfWeight(refs: PublicReference[]): { refCount: number; weight: number } {
+function estimatePdfWeight(refs: PublicReference[]): {
+  refCount: number
+  weight: number
+} {
   const refCount = refs.length
   let weight = 0
   for (const r of refs) {
@@ -128,7 +131,9 @@ function estimatePdfWeight(refs: PublicReference[]): { refCount: number; weight:
 /**
  * Eine A4-Seite: Skalierung (0,62–1) + angepasste Textlimits, damit der Inhalt möglichst auf eine Seite passt.
  */
-export function computePublicPortfolioPdfLayout(refs: PublicReference[]): PublicPortfolioPdfLayout {
+export function computePublicPortfolioPdfLayout(
+  refs: PublicReference[],
+): PublicPortfolioPdfLayout {
   const { refCount, weight } = estimatePdfWeight(refs)
   let scale = 1
   if (refCount >= 2) scale *= 0.9

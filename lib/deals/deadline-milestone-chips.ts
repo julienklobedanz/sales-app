@@ -2,10 +2,7 @@ import {
   DEAL_DEADLINE_KIND_LABELS,
   type DealDeadlineKind,
 } from '@/lib/deals/deadline-types'
-import {
-  deadlineDaysUntil,
-  type DealDeadlineRow,
-} from '@/lib/deals/deadline-display'
+import { deadlineDaysUntil, type DealDeadlineRow } from '@/lib/deals/deadline-display'
 import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 
 const MILESTONE_KIND_ORDER: DealDeadlineKind[] = [
@@ -71,7 +68,7 @@ function isCanonicalKind(kind: string): kind is DealDeadlineKind {
 
 export function buildDeadlineMilestoneChips(
   deadlines: DealDeadlineRow[],
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
 ): DeadlineMilestoneChip[] {
   const now = options?.now ?? new Date()
   const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'

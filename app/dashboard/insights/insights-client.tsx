@@ -3,7 +3,13 @@
 import Link from 'next/link'
 
 import type { InsightsPageModel } from '@/app/dashboard/insights/insights-data'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ROUTES } from '@/lib/routes'
 
 export function InsightsClient({ data }: { data: InsightsPageModel }) {
@@ -12,8 +18,8 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Insights</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {data.scope === 'all' ? 'Workspace-weite Kennzahlen' : 'Deine Referenzen'} · letzte{' '}
-          {data.windowDays} Tage
+          {data.scope === 'all' ? 'Workspace-weite Kennzahlen' : 'Deine Referenzen'} ·
+          letzte {data.windowDays} Tage
         </p>
       </div>
 
@@ -39,7 +45,10 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
         </CardHeader>
         <CardContent className="text-sm">
           <span className="font-medium tabular-nums">{data.adoption.wau}</span>
-          <span className="text-muted-foreground"> / {data.adoption.teamSize} Mitglieder (WAU)</span>
+          <span className="text-muted-foreground">
+            {' '}
+            / {data.adoption.teamSize} Mitglieder (WAU)
+          </span>
         </CardContent>
       </Card>
 
@@ -51,8 +60,8 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
           {!data.winRate.meaningful ? (
             <p className="text-muted-foreground">
               Nicht aussagekräftig — zu wenige abgeschlossene Deals (
-              {data.winRate.withReference.total + data.winRate.withoutReference.total} von mindestens{' '}
-              {data.winRate.minDealsRequired}).
+              {data.winRate.withReference.total + data.winRate.withoutReference.total} von
+              mindestens {data.winRate.minDealsRequired}).
             </p>
           ) : (
             <>
@@ -68,7 +77,8 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
                 {data.winRate.withoutReference.rate != null
                   ? `${data.winRate.withoutReference.rate} %`
                   : '—'}{' '}
-                ({data.winRate.withoutReference.won}/{data.winRate.withoutReference.total})
+                ({data.winRate.withoutReference.won}/{data.winRate.withoutReference.total}
+                )
               </p>
             </>
           )}
@@ -81,7 +91,9 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
         </CardHeader>
         <CardContent className="space-y-2">
           {data.topReferences.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Events im Zeitraum.</p>
+            <p className="text-sm text-muted-foreground">
+              Noch keine Events im Zeitraum.
+            </p>
           ) : (
             data.topReferences.map((ref) => (
               <Link
@@ -90,7 +102,9 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
                 className="flex justify-between gap-2 rounded-md border border-border/70 px-3 py-2 text-sm hover:bg-muted/40"
               >
                 <span className="truncate font-medium">{ref.title}</span>
-                <span className="shrink-0 text-muted-foreground">{ref.eventCount} Events</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {ref.eventCount} Events
+                </span>
               </Link>
             ))
           )}

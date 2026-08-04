@@ -86,7 +86,10 @@ export function ShareLinkPopoverPanel({
   const [nowMs] = useState(() => Date.now())
 
   return (
-    <PopoverContent align="start" className="w-[520px] max-w-[calc(100vw-2rem)] space-y-3">
+    <PopoverContent
+      align="start"
+      className="w-[520px] max-w-[calc(100vw-2rem)] space-y-3"
+    >
       <div className="text-sm font-medium">Kundenlink</div>
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -102,7 +105,9 @@ export function ShareLinkPopoverPanel({
         </div>
       ) : url ? (
         <div className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground">Kundenansicht (zum Weitergeben)</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Kundenansicht (zum Weitergeben)
+          </p>
           <Input value={url} readOnly className="font-mono text-xs" />
           {(metaExpiresAt || metaHasPassword) && (
             <p className="text-xs text-slate-500">
@@ -114,15 +119,22 @@ export function ShareLinkPopoverPanel({
           )}
           {viewSessions.length > 0 ? (
             <div className="space-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-              <p className="text-xs font-medium text-muted-foreground">Letzte Ansichten</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Letzte Ansichten
+              </p>
               <ul className="space-y-1 text-xs text-foreground/90">
                 {viewSessions.map((s) => {
                   const mins = Math.max(1, Math.round(s.activeSeconds / 60))
                   const who = s.recipientLabel || s.visitorName || 'Anonym'
                   const when = new Date(s.startedAt)
-                  const agoMin = Math.max(0, Math.round((nowMs - when.getTime()) / 60_000))
+                  const agoMin = Math.max(
+                    0,
+                    Math.round((nowMs - when.getTime()) / 60_000),
+                  )
                   const agoLabel =
-                    agoMin < 60 ? `vor ${agoMin} Min` : `vor ${Math.round(agoMin / 60)} Std`
+                    agoMin < 60
+                      ? `vor ${agoMin} Min`
+                      : `vor ${Math.round(agoMin / 60)} Std`
                   return (
                     <li key={s.id}>
                       {who} · {s.countryCode ?? '—'} · {mins} Min · {agoLabel}
@@ -195,7 +207,13 @@ export function ShareLinkPopoverPanel({
                 Kopieren
               </Button>
             </div>
-            <Button type="button" size="sm" variant="outline" className="w-full px-2" asChild>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full px-2"
+              asChild
+            >
               <a href={url} target="_blank" rel="noopener noreferrer">
                 <AppIcon icon={ExternalLink} size={16} className="mr-1" />
                 Öffnen
@@ -230,8 +248,9 @@ export function ShareLinkPopoverPanel({
                   Nur für die freigebende Person (Sperrrecht)
                 </p>
                 <p className="text-xs leading-relaxed text-amber-900/85 dark:text-amber-100/85">
-                  Dieser zweite Link zeigt dieselbe Kundenansicht, ermöglicht aber das sofortige Sperren.
-                  Nicht an Kolleginnen weitergeben, die nur die Referenz sehen sollen.
+                  Dieser zweite Link zeigt dieselbe Kundenansicht, ermöglicht aber das
+                  sofortige Sperren. Nicht an Kolleginnen weitergeben, die nur die
+                  Referenz sehen sollen.
                 </p>
               </div>
             </div>
@@ -274,7 +293,8 @@ export function ShareLinkPopoverPanel({
                     : 'Sperr-Link einrichten / anzeigen'}
                 </Button>
                 <p className="mt-2 text-[11px] text-muted-foreground">
-                  Das Geheimnis wird nur hier einmal angezeigt – bitte gleich kopieren oder erneut erzeugen.
+                  Das Geheimnis wird nur hier einmal angezeigt – bitte gleich kopieren
+                  oder erneut erzeugen.
                 </p>
               </div>
             )}
@@ -336,8 +356,8 @@ export function ShareLinkSecurityDialog({
         </DialogHeader>
         <div className="space-y-4 pt-1">
           <p className="text-xs text-slate-500">
-            Zugang, Passwort und Ablaufdatum gelten für diesen Kundenlink. Besucher-Tracking (Land,
-            Aktivzeit) erfolgt ohne Speicherung der IP.
+            Zugang, Passwort und Ablaufdatum gelten für diesen Kundenlink.
+            Besucher-Tracking (Land, Aktivzeit) erfolgt ohne Speicherung der IP.
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="sec-gate">Zugang</Label>
@@ -366,7 +386,9 @@ export function ShareLinkSecurityDialog({
               </Label>
             </div>
           ) : null}
-          <div className={`space-y-2 ${secRemovePw ? 'pointer-events-none opacity-40' : ''}`}>
+          <div
+            className={`space-y-2 ${secRemovePw ? 'pointer-events-none opacity-40' : ''}`}
+          >
             <div className="flex items-end gap-2">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <Label htmlFor="sec-pw">Passwort</Label>
@@ -406,8 +428,13 @@ export function ShareLinkSecurityDialog({
                 Kein Ablaufdatum
               </Label>
             </div>
-            <div className={`flex items-center gap-2 ${secNoExpiry ? 'pointer-events-none opacity-40' : ''}`}>
-              <Label htmlFor="sec-exp" className="w-24 shrink-0 text-sm text-muted-foreground">
+            <div
+              className={`flex items-center gap-2 ${secNoExpiry ? 'pointer-events-none opacity-40' : ''}`}
+            >
+              <Label
+                htmlFor="sec-exp"
+                className="w-24 shrink-0 text-sm text-muted-foreground"
+              >
                 Gültig bis
               </Label>
               <Input
@@ -454,8 +481,8 @@ export function ShareLinkSperrlinkConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Neuen Sperrlink erzeugen?</AlertDialogTitle>
           <AlertDialogDescription>
-            Es wird ein neuer Sperrlink generiert und automatisch per Mail an deinen Kunden{' '}
-            <span className="font-medium text-foreground">{customerEmail}</span>{' '}
+            Es wird ein neuer Sperrlink generiert und automatisch per Mail an deinen
+            Kunden <span className="font-medium text-foreground">{customerEmail}</span>{' '}
             geschickt. Möchtest du fortfahren?
           </AlertDialogDescription>
         </AlertDialogHeader>

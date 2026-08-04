@@ -75,7 +75,7 @@ type DealAccessRow = {
 
 async function loadDealForDocuments(
   auth: Extract<DocumentAuth, { orgId: string }>,
-  dealId: string
+  dealId: string,
 ): Promise<{ deal: DealAccessRow } | { error: string }> {
   const { data: deal, error } = await auth.supabase
     .from('deals')
@@ -93,7 +93,7 @@ async function loadDealForDocuments(
 
 async function loadDocumentRow(
   auth: Extract<DocumentAuth, { orgId: string }>,
-  documentId: string
+  documentId: string,
 ): Promise<{ row: Omit<DealDocumentRow, 'uploaded_by_name'> } | { error: string }> {
   const { data, error } = await auth.supabase
     .from('deal_documents')
@@ -111,9 +111,11 @@ async function loadDocumentRow(
 
 async function attachUploaderNames(
   auth: Extract<DocumentAuth, { orgId: string }>,
-  rows: Omit<DealDocumentRow, 'uploaded_by_name'>[]
+  rows: Omit<DealDocumentRow, 'uploaded_by_name'>[],
 ): Promise<DealDocumentRow[]> {
-  const uploaderIds = [...new Set(rows.map((r) => r.uploaded_by).filter(Boolean))] as string[]
+  const uploaderIds = [
+    ...new Set(rows.map((r) => r.uploaded_by).filter(Boolean)),
+  ] as string[]
   const names: Record<string, string> = {}
 
   if (uploaderIds.length > 0) {
@@ -129,17 +131,15 @@ async function attachUploaderNames(
 
   return rows.map((r) => ({
     ...r,
-    uploaded_by_name: r.uploaded_by ? names[r.uploaded_by] ?? null : null,
+    uploaded_by_name: r.uploaded_by ? (names[r.uploaded_by] ?? null) : null,
   }))
 }
 
 function assertCanManageDeal(
   auth: Extract<DocumentAuth, { userId: string }>,
-  deal: DealAccessRow
+  deal: DealAccessRow,
 ): { ok: true } | { error: string } {
-  if (
-    !canManageDealDocuments(deal, auth.userId, auth.systemRole, auth.functionRole)
-  ) {
+  if (!canManageDealDocuments(deal, auth.userId, auth.systemRole, auth.functionRole)) {
     return { error: 'Keine Berechtigung, Dokumente an diesem Deal zu verwalten.' }
   }
   return { ok: true }
@@ -150,8 +150,10 @@ function revalidateDealPage(dealId: string) {
 }
 
 export async function listDealDocuments(
-  dealId: string
-): Promise<{ success: true; rows: DealDocumentRow[] } | { success: false; error: string }> {
+  dealId: string,
+): Promise<
+  { success: true; rows: DealDocumentRow[] } | { success: false; error: string }
+> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
@@ -169,13 +171,16 @@ export async function listDealDocuments(
     return { success: false, error: error.message }
   }
 
-  const rows = await attachUploaderNames(auth, (data ?? []) as Omit<DealDocumentRow, 'uploaded_by_name'>[])
+  const rows = await attachUploaderNames(
+    auth,
+    (data ?? []) as Omit<DealDocumentRow, 'uploaded_by_name'>[],
+  )
   return { success: true, rows }
 }
 
 export async function uploadDealDocument(
   dealId: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -205,7 +210,7 @@ export async function uploadDealDocument(
     dealRes.deal.organization_id,
     dealId,
     docId,
-    file.name
+    file.name,
   )
 
   const { error: insertError } = await auth.supabase.from('deal_documents').insert({
@@ -243,7 +248,7 @@ export async function uploadDealDocument(
 
 export async function renameDealDocument(
   documentId: string,
-  fileName: string
+  fileName: string,
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -274,7 +279,7 @@ export async function renameDealDocument(
 
 export async function setDealDocumentKind(
   documentId: string,
-  kind: DealDocumentKind
+  kind: DealDocumentKind,
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -317,7 +322,7 @@ export async function setDealDocumentKind(
 }
 
 export async function deleteDealDocument(
-  documentId: string
+  documentId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -352,7 +357,7 @@ export async function deleteDealDocument(
 }
 
 export async function getDealDocumentSignedUrl(
-  documentId: string
+  documentId: string,
 ): Promise<{ success: true; url: string } | { success: false; error: string }> {
   const auth = await getDocumentAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -367,7 +372,10 @@ export async function getDealDocumentSignedUrl(
     })
 
   if (error || !data?.signedUrl) {
-    return { success: false, error: error?.message ?? 'Download-URL konnte nicht erstellt werden.' }
+    return {
+      success: false,
+      error: error?.message ?? 'Download-URL konnte nicht erstellt werden.',
+    }
   }
 
   return { success: true, url: data.signedUrl }

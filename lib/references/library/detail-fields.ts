@@ -12,7 +12,7 @@ export async function updateReferenceDetailFieldsImpl(
     project_status?: 'active' | 'completed' | null
     incumbent_provider?: string | null
     competitors?: string | null
-  }
+  },
 ) {
   const supabase = await createServerSupabaseClient()
   const updatePayload: Record<string, unknown> = {
@@ -27,10 +27,12 @@ export async function updateReferenceDetailFieldsImpl(
   if (payload.competitors !== undefined) {
     updatePayload.competitors = payload.competitors || null
   }
-  const { error } = await supabase.from('references').update(asTableUpdate<'references'>(updatePayload)).eq('id', id)
+  const { error } = await supabase
+    .from('references')
+    .update(asTableUpdate<'references'>(updatePayload))
+    .eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.references.edit(id))
   await revalidateOrgCachesForReference(id)
 }
-

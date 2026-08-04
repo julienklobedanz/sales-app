@@ -23,7 +23,7 @@ export function resolveReferenceVisibilityScope(params: {
 /** Defense-in-Depth: Status-Filter analog zum App-Gate / match_references. */
 export function isReferenceStatusAccessibleToUser(
   status: string | null | undefined,
-  scope: ReferenceVisibilityScope
+  scope: ReferenceVisibilityScope,
 ): boolean {
   if (!scope.restrictToSalesVisibleStatuses) return true
   return isReferenceVisibleToSales(status)
@@ -32,7 +32,7 @@ export function isReferenceStatusAccessibleToUser(
 export function userCanCreateReference(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<Capability, boolean>> = {}
+  capabilityOverrides: Partial<Record<Capability, boolean>> = {},
 ): boolean {
   return hasCapability(functionRole, systemRole, capabilityOverrides, 'create_reference')
 }
@@ -40,7 +40,7 @@ export function userCanCreateReference(
 export function userCanEditReference(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<Capability, boolean>> = {}
+  capabilityOverrides: Partial<Record<Capability, boolean>> = {},
 ): boolean {
   return (
     hasCapability(functionRole, systemRole, capabilityOverrides, 'edit_any_reference') ||
@@ -51,20 +51,28 @@ export function userCanEditReference(
 export function userCanAnonymizeReference(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<Capability, boolean>> = {}
+  capabilityOverrides: Partial<Record<Capability, boolean>> = {},
 ): boolean {
-  return hasCapability(functionRole, systemRole, capabilityOverrides, 'anonymize_reference')
+  return hasCapability(
+    functionRole,
+    systemRole,
+    capabilityOverrides,
+    'anonymize_reference',
+  )
 }
 
 /** Vertriebs-UI-Layout (Legacy `sales` ohne DB-Spalten-Vergleich). */
-export function isSalesAppView(systemRole: SystemRole, functionRole: FunctionRole): boolean {
+export function isSalesAppView(
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
+): boolean {
   return legacyAppRoleFrom(systemRole, functionRole) === 'sales'
 }
 
 export function canApproveInternalReference(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<Capability, boolean>> = {}
+  capabilityOverrides: Partial<Record<Capability, boolean>> = {},
 ): boolean {
   return hasCapability(functionRole, systemRole, capabilityOverrides, 'approve_internal')
 }

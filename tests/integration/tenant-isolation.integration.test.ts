@@ -27,7 +27,10 @@ describeIntegration('tenant isolation', () => {
   }, 120_000)
 
   it('Org-A-User sieht keine Referenzen von Org B', async () => {
-    const client = await signInIntegrationUser(fixtures.admin.email, fixtures.admin.password)
+    const client = await signInIntegrationUser(
+      fixtures.admin.email,
+      fixtures.admin.password,
+    )
     const { data, error } = await client
       .from('references')
       .select('id, organization_id')
@@ -39,7 +42,10 @@ describeIntegration('tenant isolation', () => {
   })
 
   it('Org-A-User sieht keine Companies von Org B', async () => {
-    const client = await signInIntegrationUser(fixtures.admin.email, fixtures.admin.password)
+    const client = await signInIntegrationUser(
+      fixtures.admin.email,
+      fixtures.admin.password,
+    )
     const { data, error } = await client
       .from('companies')
       .select('id')

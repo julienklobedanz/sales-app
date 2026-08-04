@@ -5,7 +5,9 @@ import { deriveReferenceGiverNameFromEmail } from './derive-reference-giver-name
 describe('deriveReferenceGiverNameFromEmail', () => {
   it('parses first.last from email local part', () => {
     expect(deriveReferenceGiverNameFromEmail('alex.stoepel@web.de')).toBe('Alex Stoepel')
-    expect(deriveReferenceGiverNameFromEmail('maria.mueller@example.com')).toBe('Maria Mueller')
+    expect(deriveReferenceGiverNameFromEmail('maria.mueller@example.com')).toBe(
+      'Maria Mueller',
+    )
   })
 
   it('supports underscore and hyphen separators', () => {

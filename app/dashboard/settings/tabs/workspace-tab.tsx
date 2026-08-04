@@ -114,7 +114,7 @@ export function WorkspaceTab({
       save: saveWorkspaceTab,
     },
     register,
-    'card'
+    'card',
   )
 
   return (
@@ -183,7 +183,12 @@ export function WorkspaceTab({
                 }}
               >
                 <AlertDialogTrigger asChild>
-                  <Button type="button" variant="destructive" size="sm" className="shrink-0">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="shrink-0"
+                  >
                     <AppIcon icon={ShieldAlert} size={16} />
                     Workspace löschen
                   </Button>
@@ -216,7 +221,10 @@ export function WorkspaceTab({
                       />
                       <p className="text-xs text-slate-500">
                         Gib exakt{' '}
-                        <span className="font-mono">{org.subdomain || 'deine-subdomain'}</span> ein.
+                        <span className="font-mono">
+                          {org.subdomain || 'deine-subdomain'}
+                        </span>{' '}
+                        ein.
                       </p>
                     </div>
                   ) : null}

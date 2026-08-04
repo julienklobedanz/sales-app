@@ -27,9 +27,11 @@ const triggerClassName =
 
 function typeChipClass(kind: DashboardNotificationItem['typeKind']) {
   if (kind === 'move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
-  if (kind === 'executive') return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
+  if (kind === 'executive')
+    return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
   if (kind === 'company') return 'bg-muted text-foreground border-0'
-  if (kind === 'approval') return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
+  if (kind === 'approval')
+    return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
   if (kind === 'nda') return 'bg-amber-600/10 text-amber-800 dark:text-amber-300 border-0'
   return 'bg-muted text-muted-foreground border-0'
 }
@@ -41,16 +43,21 @@ const NotificationTrigger = forwardRef<
     compact?: boolean
     rail?: boolean
   }
->(function NotificationTrigger({ unreadCount, compact = false, rail = false, className, ...props }, ref) {
+>(function NotificationTrigger(
+  { unreadCount, compact = false, rail = false, className, ...props },
+  ref,
+) {
   return (
     <button
       ref={ref}
       type="button"
       className={cn(
         rail ? 'cognism-sidebar-icon-btn' : triggerClassName,
-        compact && !rail && 'size-9 shrink-0 rounded-lg border-border/40 bg-muted/45 shadow-none hover:bg-muted/75',
+        compact &&
+          !rail &&
+          'size-9 shrink-0 rounded-lg border-border/40 bg-muted/45 shadow-none hover:bg-muted/75',
         !compact && !rail && 'h-9 w-full',
-        className
+        className,
       )}
       aria-label="Benachrichtigungen"
       {...props}
@@ -60,7 +67,9 @@ const NotificationTrigger = forwardRef<
         <span
           className={cn(
             'absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive font-bold text-white',
-            compact ? 'h-3.5 min-w-3.5 px-0.5 text-[9px]' : 'h-4 min-w-4 px-1 text-[10px]'
+            compact
+              ? 'h-3.5 min-w-3.5 px-0.5 text-[9px]'
+              : 'h-4 min-w-4 px-1 text-[10px]',
           )}
         >
           {compact && unreadCount > 9 ? '9+' : unreadCount}
@@ -83,7 +92,9 @@ function NotificationLogo({
       {logoUrl ? (
         <Image src={logoUrl} alt="" fill sizes="36px" className="object-contain p-1" />
       ) : companyName ? (
-        <span className="text-[10px] font-semibold text-muted-foreground">{initials}</span>
+        <span className="text-[10px] font-semibold text-muted-foreground">
+          {initials}
+        </span>
       ) : (
         <AppIcon icon={Building2} size={14} className="text-muted-foreground" />
       )}
@@ -115,7 +126,7 @@ function NotificationsPopover({
         { id: 'approvals' as const, label: COPY.notifications.tabApprovals },
         { id: 'other' as const, label: COPY.notifications.tabOther },
       ] as const,
-    []
+    [],
   )
 
   const unreadByGroup = useMemo(() => {
@@ -147,10 +158,13 @@ function NotificationsPopover({
 
   const filtered = useMemo(
     () => notifications.filter((n) => n.group === activeTab),
-    [activeTab, notifications]
+    [activeTab, notifications],
   )
 
-  const unreadLabel = COPY.notifications.unreadCount.replace('{count}', String(unreadCount))
+  const unreadLabel = COPY.notifications.unreadCount.replace(
+    '{count}',
+    String(unreadCount),
+  )
 
   return (
     <Popover>
@@ -203,7 +217,7 @@ function NotificationsPopover({
                   'relative flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors',
                   selected
                     ? 'bg-muted/70 text-foreground'
-                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
                 )}
               >
                 <span>{tab.label}</span>
@@ -233,12 +247,14 @@ function NotificationsPopover({
                 notification.group === 'signals'
                   ? notification.typeLabel
                   : notification.category &&
-                      notification.category.toLowerCase() !== notification.typeLabel.toLowerCase()
+                      notification.category.toLowerCase() !==
+                        notification.typeLabel.toLowerCase()
                     ? notification.category
                     : notification.typeLabel
               const summary =
                 notification.text &&
-                notification.text.trim().toLowerCase() !== notification.title.trim().toLowerCase()
+                notification.text.trim().toLowerCase() !==
+                  notification.title.trim().toLowerCase()
                   ? notification.text
                   : null
               const sourceLabel = notification.sourceLabel?.trim() || null
@@ -250,7 +266,7 @@ function NotificationsPopover({
                     'relative border-b last:border-b-0 transition-colors',
                     unread
                       ? 'bg-accent/25 hover:bg-accent/35'
-                      : 'opacity-60 hover:opacity-80 hover:bg-muted/30'
+                      : 'opacity-60 hover:opacity-80 hover:bg-muted/30',
                   )}
                 >
                   <Link
@@ -269,7 +285,7 @@ function NotificationsPopover({
                         <span
                           className={cn(
                             'inline-flex max-w-full items-center truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                            typeChipClass(notification.typeKind)
+                            typeChipClass(notification.typeKind),
                           )}
                         >
                           {chipLabel}
@@ -285,7 +301,9 @@ function NotificationsPopover({
                       <p
                         className={cn(
                           'mt-1 truncate text-sm leading-snug',
-                          unread ? 'font-semibold text-foreground' : 'font-medium text-foreground'
+                          unread
+                            ? 'font-semibold text-foreground'
+                            : 'font-medium text-foreground',
                         )}
                       >
                         {notification.title}
@@ -308,7 +326,11 @@ function NotificationsPopover({
                               className="pointer-events-auto inline-flex max-w-full items-center gap-1 truncate hover:text-foreground hover:underline"
                             >
                               <span className="truncate">{sourceLabel}</span>
-                              <AppIcon icon={ExternalLink} size={12} className="shrink-0" />
+                              <AppIcon
+                                icon={ExternalLink}
+                                size={12}
+                                className="shrink-0"
+                              />
                             </a>
                           </>
                         ) : null}
@@ -370,7 +392,7 @@ export function SidebarNotificationsSection({
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
-    [notifications]
+    [notifications],
   )
 
   function markAllNotificationsRead() {
@@ -390,7 +412,7 @@ export function SidebarNotificationsSection({
       void markNotificationRead(id).then((res) => {
         if (res.success) {
           setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
           )
         }
       })

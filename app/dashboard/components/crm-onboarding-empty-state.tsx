@@ -69,13 +69,7 @@ const disabledCrmButtonClass = `${actionButtonClass} opacity-50 pointer-events-n
 const badgeSpacerClass =
   'shrink-0 px-2 py-0.5 text-xs font-medium opacity-0 pointer-events-none select-none'
 
-function CrmLogo({
-  src,
-  variant,
-}: {
-  src: string
-  variant: 'brand' | 'light'
-}) {
+function CrmLogo({ src, variant }: { src: string; variant: 'brand' | 'light' }) {
   const wrapClass =
     variant === 'light'
       ? 'relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md'
@@ -149,7 +143,9 @@ export function CrmOnboardingEmptyState({
   return (
     <div className="flex min-h-[70vh] w-full flex-col items-center justify-center p-8">
       <h2 className="mb-2 text-center text-2xl font-bold text-gray-900">{copy.title}</h2>
-      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-gray-500">{copy.description}</p>
+      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-gray-500">
+        {copy.description}
+      </p>
 
       <div className="flex w-full max-w-md flex-col gap-3">
         {CRM_INTEGRATIONS.map((integration) => {

@@ -57,7 +57,10 @@ export function ReferenceDetailActionsCard({
               </Link>
             </Button>
             {canManageAsAdmin ? (
-              <form action={deleteReferenceFromDetailPage.bind(null, referenceId)} className="w-full">
+              <form
+                action={deleteReferenceFromDetailPage.bind(null, referenceId)}
+                className="w-full"
+              >
                 <Button type="submit" variant="destructive" className="w-full">
                   Löschen
                 </Button>

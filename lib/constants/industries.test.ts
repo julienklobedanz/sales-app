@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { formatIndustryDisplayCompact, isIndustryId, resolveIndustryId } from './industries'
+import {
+  formatIndustryDisplayCompact,
+  isIndustryId,
+  resolveIndustryId,
+} from './industries'
 
 describe('resolveIndustryId', () => {
   it('behält gültige ids', () => {
@@ -22,7 +26,7 @@ describe('formatIndustryDisplayCompact', () => {
   it('kürzt vor dem Komma', () => {
     expect(formatIndustryDisplayCompact('health').compact).toBe('Gesundheitswesen')
     expect(formatIndustryDisplayCompact('health').full).toBe(
-      'Gesundheitswesen, Life Sciences & Chemie'
+      'Gesundheitswesen, Life Sciences & Chemie',
     )
   })
 

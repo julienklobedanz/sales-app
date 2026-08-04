@@ -24,7 +24,9 @@ export function StickySaveBar({
       aria-label="Ungespeicherte Änderungen"
     >
       <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
-        <p className="px-2 text-sm font-medium text-gray-600">Ungespeicherte Änderungen</p>
+        <p className="px-2 text-sm font-medium text-gray-600">
+          Ungespeicherte Änderungen
+        </p>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
@@ -33,7 +35,7 @@ export function StickySaveBar({
             onClick={onSave}
             className={cn(
               BRAND_PRIMARY_BUTTON_CLASS,
-              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50'
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
             )}
           >
             <Save className="size-4 shrink-0" aria-hidden />

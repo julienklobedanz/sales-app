@@ -24,7 +24,12 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   const contactId = contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
   const submitMode = formData.get('submitMode')?.toString()
-  const allowed: ReferenceRow['status'][] = ['draft', 'internal_only', 'approved', 'anonymized']
+  const allowed: ReferenceRow['status'][] = [
+    'draft',
+    'internal_only',
+    'approved',
+    'anonymized',
+  ]
   const status =
     submitMode === 'draft'
       ? 'draft'
@@ -40,17 +45,25 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
       : null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() ?? null
   const contract_type = normalizeContractType(formData.get('contract_type')?.toString())
-  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() ?? null
+  const incumbent_provider =
+    formData.get('incumbent_provider')?.toString()?.trim() ?? null
   const competitors = formData.get('competitors')?.toString()?.trim() ?? null
-  const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())
+  const customer_challenge = normalizeNarrativeText(
+    formData.get('customer_challenge')?.toString(),
+  )
   const our_solution = normalizeNarrativeText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() ?? null
-  const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() ?? null
+  const customer_contact_id_raw =
+    formData.get('customer_contact_id')?.toString()?.trim() ?? null
   const customer_contact_id =
-    customer_contact_id_raw && customer_contact_id_raw !== '__none__' ? customer_contact_id_raw : null
+    customer_contact_id_raw && customer_contact_id_raw !== '__none__'
+      ? customer_contact_id_raw
+      : null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
-    projectStatusRaw === 'active' || projectStatusRaw === 'completed' ? projectStatusRaw : null
+    projectStatusRaw === 'active' || projectStatusRaw === 'completed'
+      ? projectStatusRaw
+      : null
   const project_start = formData.get('project_start')?.toString()?.trim() || null
   const project_end = formData.get('project_end')?.toString()?.trim() || null
   const ndaDealRaw = formData.get('nda_deal')?.toString()
@@ -60,14 +73,20 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
     throw new Error('Titel ist erforderlich.')
   }
 
-  const summaryLenErr = narrativeFieldLengthError(formData.get('summary')?.toString(), 'Zusammenfassung')
+  const summaryLenErr = narrativeFieldLengthError(
+    formData.get('summary')?.toString(),
+    'Zusammenfassung',
+  )
   if (summaryLenErr) throw new Error(summaryLenErr)
   const challengeLenErr = narrativeFieldLengthError(
     formData.get('customer_challenge')?.toString(),
-    'Herausforderung'
+    'Herausforderung',
   )
   if (challengeLenErr) throw new Error(challengeLenErr)
-  const solutionLenErr = narrativeFieldLengthError(formData.get('our_solution')?.toString(), 'Lösung')
+  const solutionLenErr = narrativeFieldLengthError(
+    formData.get('our_solution')?.toString(),
+    'Lösung',
+  )
   if (solutionLenErr) throw new Error(solutionLenErr)
 
   // Kontakt/Projekt sind in der DB optional; nicht blockieren (analog createReference).
@@ -179,4 +198,3 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   revalidatePath(ROUTES.references.edit(id))
   await revalidateOrgCachesForReference(id)
 }
-

@@ -25,19 +25,19 @@ function toIsoDate(d: Date): string {
 /** Vergabe-/Bekanntmachungsdatum — nur auf dem Zeitstrahl, nicht in der Fristenliste. */
 export function isVergabeMilestone(title: string): boolean {
   return /vergabe|veröffentlich|veroeffentlich|published|bekanntmach|auftragsbekannt|ausschreibung.*(online|veröffent|veroeffent)/i.test(
-    title
+    title,
   )
 }
 
 function isMeetingMilestone(title: string): boolean {
   return /meeting|gespräch|gespraech|termin|workshop|erstgespräch|erstgespraech|kennenlern/i.test(
-    title
+    title,
   )
 }
 
 function isPresentationMilestone(title: string): boolean {
   return /präsentation|praesentation|presentation|shortlist|pitch|vorstellung|ergebnis|demo/i.test(
-    title
+    title,
   )
 }
 
@@ -87,7 +87,7 @@ export function formatBidTimelineRelativeLabel(days: number): string {
 export function resolveVergabeDate(
   items: DealDeskTimelineItem[],
   submissionIso: string | null,
-  todayIso: string
+  todayIso: string,
 ): string {
   const sorted = [...items]
     .filter((it) => typeof it.dueDate === 'string' && it.dueDate.length >= 10)
@@ -117,12 +117,15 @@ function selectCoreMilestones(items: DealDeskTimelineItem[]): DealDeskTimelineIt
     .filter((it) => typeof it.dueDate === 'string' && it.dueDate.length >= 10)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 
-  const submissions = sorted.filter((it) => getTimelineItemKind(it.title) === 'submission')
-  const submissionAnchor = submissions.length > 0 ? submissions[submissions.length - 1]! : null
+  const submissions = sorted.filter(
+    (it) => getTimelineItemKind(it.title) === 'submission',
+  )
+  const submissionAnchor =
+    submissions.length > 0 ? submissions[submissions.length - 1]! : null
   const submissionIso = submissionAnchor?.dueDate ?? null
 
   let pool = sorted.filter(
-    (it) => getTimelineItemKind(it.title) !== 'start' && !isVergabeMilestone(it.title)
+    (it) => getTimelineItemKind(it.title) !== 'start' && !isVergabeMilestone(it.title),
   )
   if (submissionIso) {
     pool = pool.filter((it) => it.dueDate <= submissionIso)
@@ -170,7 +173,7 @@ function selectCoreMilestones(items: DealDeskTimelineItem[]): DealDeskTimelineIt
 function computePositions(
   vergabeIso: string,
   milestones: DealDeskTimelineItem[],
-  todayIso: string
+  todayIso: string,
 ): BidProgressTimelinePoint[] {
   if (milestones.length === 0) return []
 
@@ -226,7 +229,7 @@ function computePositions(
 /** Adaptiver Kern-Zeitstrahl: Vergabe (links) → Fristen → Abgabe (rechts), Heute proportional. */
 export function buildBidProgressTimeline(
   items: DealDeskTimelineItem[],
-  now: Date = new Date()
+  now: Date = new Date(),
 ): BidProgressTimelinePoint[] | null {
   const nowNorm = new Date(now)
   nowNorm.setHours(0, 0, 0, 0)

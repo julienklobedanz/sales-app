@@ -48,7 +48,8 @@ export async function sendClientApprovalDelegationEmail(args: {
   if (!key) return false
 
   const firstName = String(args.delegateFirstName ?? '').trim()
-  const previousContact = String(args.previousContactName ?? '').trim() || 'Ihrem bisherigen Ansprechpartner'
+  const previousContact =
+    String(args.previousContactName ?? '').trim() || 'Ihrem bisherigen Ansprechpartner'
   const companyName = String(args.companyName ?? '').trim() || 'Ihr Unternehmen'
   const refTitle = String(args.referenceTitle ?? '').trim() || 'Referenz'
   const approvalUrl = `${getAppOrigin()}/approval/${args.approvalToken.trim()}`

@@ -9,7 +9,10 @@ export const NDA_EXPIRY_CRITICAL_DAYS = 7
 
 export type NdaExpiryUrgency = 'expired' | 'critical' | 'warning'
 
-export function ndaDaysUntilExpiry(validUntil: string, refDate: Date = new Date()): number {
+export function ndaDaysUntilExpiry(
+  validUntil: string,
+  refDate: Date = new Date(),
+): number {
   const today = new Date(refDate)
   today.setHours(0, 0, 0, 0)
   const end = new Date(`${validUntil}T12:00:00`)
@@ -55,7 +58,7 @@ export function formatNdaExpiryDateDe(validUntil: string): string {
 export function buildNdaExpiryNotificationText(
   companyName: string,
   validUntil: string,
-  daysUntil: number
+  daysUntil: number,
 ): string {
   const dateLabel = formatNdaExpiryDateDe(validUntil)
   if (daysUntil < 0) {

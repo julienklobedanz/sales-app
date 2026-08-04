@@ -89,7 +89,7 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
             <span
               className={cn(
                 'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
-                workflowStatusBadges.internal.className
+                workflowStatusBadges.internal.className,
               )}
             >
               {workflowStatusBadges.internal.label}
@@ -100,7 +100,7 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
             <span
               className={cn(
                 'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
-                workflowStatusBadges.customer.className
+                workflowStatusBadges.customer.className,
               )}
             >
               {workflowStatusBadges.customer.label}
@@ -110,13 +110,17 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
             <>
               {requestedByDisplay ? (
                 <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Angefragt von</span>
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">
+                    Angefragt von
+                  </span>
                   <ReferenceReadinessValue value={requestedByDisplay} />
                 </div>
               ) : null}
               {coordinatorDisplay ? (
                 <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Accountverantw.</span>
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">
+                    Accountverantw.
+                  </span>
                   <ReferenceReadinessValue value={coordinatorDisplay} />
                 </div>
               ) : null}
@@ -128,7 +132,9 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
               ) : null}
               {delegatedRecipientDisplay ? (
                 <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Aktueller Empfänger</span>
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">
+                    Aktueller Empfänger
+                  </span>
                   <ReferenceReadinessValue value={delegatedRecipientDisplay} />
                 </div>
               ) : null}
@@ -149,7 +155,8 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
                 </div>
               </div>
             ) : null}
-            {!customerAccessRevoked && (approvalQuoteApproved || approvalQuoteProposed) ? (
+            {!customerAccessRevoked &&
+            (approvalQuoteApproved || approvalQuoteProposed) ? (
               <div className="space-y-1.5">
                 <p className="text-muted-foreground">Zitat</p>
                 <p className="rounded-md border bg-muted/20 p-2 text-xs">

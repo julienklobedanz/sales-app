@@ -45,7 +45,7 @@ async function createAuthUser(
     organizationId: string
     systemRole: SystemRole
     functionRole: FunctionRole
-  }
+  },
 ): Promise<IntegrationTestUser> {
   const { data, error } = await admin.auth.admin.createUser({
     email: params.email,
@@ -53,7 +53,9 @@ async function createAuthUser(
     email_confirm: true,
   })
   if (error || !data.user?.id) {
-    throw new Error(`Test-User konnte nicht angelegt werden: ${error?.message ?? 'unknown'}`)
+    throw new Error(
+      `Test-User konnte nicht angelegt werden: ${error?.message ?? 'unknown'}`,
+    )
   }
 
   const { error: profileError } = await admin.from('profiles').upsert({
@@ -85,7 +87,7 @@ async function insertReference(
     approvalInternalStatus?: string
     approvalToken?: string | null
     approvalInternalReviewToken?: string | null
-  }
+  },
 ): Promise<string> {
   const { data, error } = await admin
     .from('references')
@@ -106,13 +108,15 @@ async function insertReference(
     .single()
 
   if (error || !data?.id) {
-    throw new Error(`Test-Referenz konnte nicht angelegt werden: ${error?.message ?? 'unknown'}`)
+    throw new Error(
+      `Test-Referenz konnte nicht angelegt werden: ${error?.message ?? 'unknown'}`,
+    )
   }
   return data.id
 }
 
 export async function seedIntegrationOrgFixtures(
-  admin: SupabaseClient<Database>
+  admin: SupabaseClient<Database>,
 ): Promise<IntegrationOrgFixtures> {
   const runId = randomUUID().slice(0, 8)
   const password = `Test-${runId}!Aa1`
@@ -123,7 +127,9 @@ export async function seedIntegrationOrgFixtures(
     .select('id')
     .single()
   if (orgAError || !orgA?.id) {
-    throw new Error(`Org A konnte nicht angelegt werden: ${orgAError?.message ?? 'unknown'}`)
+    throw new Error(
+      `Org A konnte nicht angelegt werden: ${orgAError?.message ?? 'unknown'}`,
+    )
   }
 
   const { data: orgB, error: orgBError } = await admin
@@ -132,7 +138,9 @@ export async function seedIntegrationOrgFixtures(
     .select('id')
     .single()
   if (orgBError || !orgB?.id) {
-    throw new Error(`Org B konnte nicht angelegt werden: ${orgBError?.message ?? 'unknown'}`)
+    throw new Error(
+      `Org B konnte nicht angelegt werden: ${orgBError?.message ?? 'unknown'}`,
+    )
   }
 
   const { data: companyA, error: companyAError } = await admin
@@ -145,7 +153,9 @@ export async function seedIntegrationOrgFixtures(
     .select('id')
     .single()
   if (companyAError || !companyA?.id) {
-    throw new Error(`Company A konnte nicht angelegt werden: ${companyAError?.message ?? 'unknown'}`)
+    throw new Error(
+      `Company A konnte nicht angelegt werden: ${companyAError?.message ?? 'unknown'}`,
+    )
   }
 
   const { data: companyB, error: companyBError } = await admin
@@ -158,7 +168,9 @@ export async function seedIntegrationOrgFixtures(
     .select('id')
     .single()
   if (companyBError || !companyB?.id) {
-    throw new Error(`Company B konnte nicht angelegt werden: ${companyBError?.message ?? 'unknown'}`)
+    throw new Error(
+      `Company B konnte nicht angelegt werden: ${companyBError?.message ?? 'unknown'}`,
+    )
   }
 
   const salesRep = await createAuthUser(admin, {
@@ -232,11 +244,14 @@ export async function seedIntegrationOrgFixtures(
 
 export async function cleanupIntegrationOrgFixtures(
   admin: SupabaseClient<Database>,
-  fixtures: IntegrationOrgFixtures
+  fixtures: IntegrationOrgFixtures,
 ): Promise<void> {
   const refIds = Object.values(fixtures.references)
   await admin.from('references').delete().in('id', refIds)
-  await admin.from('companies').delete().in('id', [fixtures.companyAId, fixtures.companyBId])
+  await admin
+    .from('companies')
+    .delete()
+    .in('id', [fixtures.companyAId, fixtures.companyBId])
   for (const user of [fixtures.salesRep, fixtures.admin, fixtures.accountManager]) {
     await admin.auth.admin.deleteUser(user.id)
   }

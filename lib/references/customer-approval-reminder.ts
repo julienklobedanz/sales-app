@@ -51,7 +51,7 @@ type PendingReminderRow = {
 export async function markCustomerApprovalEmailSent(
   supabase: SupabaseClient,
   referenceId: string,
-  sentAt?: string
+  sentAt?: string,
 ): Promise<void> {
   const at = sentAt ?? new Date().toISOString()
   const { error } = await supabase
@@ -62,12 +62,16 @@ export async function markCustomerApprovalEmailSent(
     })
     .eq('id', referenceId)
   if (error) {
-    log.error('mark sent failed', { action: 'markCustomerApprovalEmailSent', message: error.message }, error)
+    log.error(
+      'mark sent failed',
+      { action: 'markCustomerApprovalEmailSent', message: error.message },
+      error,
+    )
   }
 }
 
 export async function processCustomerApprovalReminders(
-  admin: SupabaseClient
+  admin: SupabaseClient,
 ): Promise<{ scanned: number; sent: number; skipped: number }> {
   const cutoff = customerApprovalReminderCutoffIso()
 
@@ -85,16 +89,20 @@ export async function processCustomerApprovalReminders(
       approval_requested_at,
       approval_customer_reminder_sent_at,
       companies ( name )
-    `
+    `,
     )
     .eq('customer_approval_status', 'pending')
     .not('approval_token', 'is', null)
     .or(
-      `approval_customer_last_sent_at.lte.${cutoff},and(approval_customer_last_sent_at.is.null,approval_requested_at.lte.${cutoff})`
+      `approval_customer_last_sent_at.lte.${cutoff},and(approval_customer_last_sent_at.is.null,approval_requested_at.lte.${cutoff})`,
     )
 
   if (error) {
-    log.error('query failed', { action: 'processCustomerApprovalReminders.query', message: error.message }, error)
+    log.error(
+      'query failed',
+      { action: 'processCustomerApprovalReminders.query', message: error.message },
+      error,
+    )
     return { scanned: 0, sent: 0, skipped: 0 }
   }
 
@@ -138,7 +146,14 @@ export async function processCustomerApprovalReminders(
         .update({ approval_customer_reminder_sent_at: new Date().toISOString() })
         .eq('id', row.id)
       if (markError) {
-        log.error('mark sent failed', { action: 'processCustomerApprovalReminders.markSent', message: markError.message }, markError)
+        log.error(
+          'mark sent failed',
+          {
+            action: 'processCustomerApprovalReminders.markSent',
+            message: markError.message,
+          },
+          markError,
+        )
       } else {
         sent += 1
       }

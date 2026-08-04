@@ -6,7 +6,10 @@ import { useMemo, useState, useTransition } from 'react'
 import { ChevronDown, RefreshCw, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { MarketSignalsFeed, type FeedSort } from '@/components/market-signals/market-signals-feed'
+import {
+  MarketSignalsFeed,
+  type FeedSort,
+} from '@/components/market-signals/market-signals-feed'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,19 +70,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const [accountPickerOpen, setAccountPickerOpen] = useState(false)
   const [accountQuery, setAccountQuery] = useState('')
 
-  const followingSet = useMemo(() => new Set(model.followingCompanyIds), [model.followingCompanyIds])
+  const followingSet = useMemo(
+    () => new Set(model.followingCompanyIds),
+    [model.followingCompanyIds],
+  )
   const championSet = useMemo(
     () => new Set(model.championWatchlist.map(normalizePersonKey)),
-    [model.championWatchlist]
+    [model.championWatchlist],
   )
   const dealCompanySet = useMemo(
     () => new Set(model.activeDealCompanyIds),
-    [model.activeDealCompanyIds]
+    [model.activeDealCompanyIds],
   )
 
   const watchedCompanies = useMemo(
     () => model.companies.filter((company) => followingSet.has(company.id)),
-    [followingSet, model.companies]
+    [followingSet, model.companies],
   )
 
   const accountOptions = useMemo(() => {
@@ -93,26 +99,32 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const selectedAccountName =
     accountFilter === 'all'
       ? COPY.marketSignals.filterAccountAll
-      : (watchedCompanies.find((c) => c.id === accountFilter)?.name ?? COPY.marketSignals.filterAccount)
+      : (watchedCompanies.find((c) => c.id === accountFilter)?.name ??
+        COPY.marketSignals.filterAccount)
 
   const watchlistNews = useMemo(
     () => model.news.filter((row) => followingSet.has(row.companyId)),
-    [followingSet, model.news]
+    [followingSet, model.news],
   )
 
   const watchlistExecutives = useMemo(
     () =>
       model.executives.filter(
-        (row) => followingSet.has(row.companyId) || championSet.has(normalizePersonKey(row.personName))
+        (row) =>
+          followingSet.has(row.companyId) ||
+          championSet.has(normalizePersonKey(row.personName)),
       ),
-    [championSet, followingSet, model.executives]
+    [championSet, followingSet, model.executives],
   )
 
   const filteredNews = useMemo(() => {
     return watchlistNews.filter((row) => {
       if (accountFilter !== 'all' && row.companyId !== accountFilter) return false
       if (withDealOnly && !dealCompanySet.has(row.companyId)) return false
-      if (typeFilter !== 'all' && resolveNewsSignalBadge(row.body, row.companyName) !== typeFilter) {
+      if (
+        typeFilter !== 'all' &&
+        resolveNewsSignalBadge(row.body, row.companyName) !== typeFilter
+      ) {
         return false
       }
       if (championsOnly) {
@@ -121,14 +133,23 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       }
       return true
     })
-  }, [accountFilter, championSet, championsOnly, dealCompanySet, typeFilter, watchlistNews, withDealOnly])
+  }, [
+    accountFilter,
+    championSet,
+    championsOnly,
+    dealCompanySet,
+    typeFilter,
+    watchlistNews,
+    withDealOnly,
+  ])
 
   const filteredExecutives = useMemo(() => {
     return watchlistExecutives.filter((row) => {
       if (accountFilter !== 'all' && row.companyId !== accountFilter) return false
       if (withDealOnly && !dealCompanySet.has(row.companyId)) return false
       if (typeFilter !== 'all' && resolveExecSignalBadge(row) !== typeFilter) return false
-      if (championsOnly && !championSet.has(normalizePersonKey(row.personName))) return false
+      if (championsOnly && !championSet.has(normalizePersonKey(row.personName)))
+        return false
       return true
     })
   }, [
@@ -148,12 +169,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     const execPart = countLabel(
       watchlistExecutives.length,
       COPY.marketSignals.briefingExecCount,
-      COPY.marketSignals.briefingExecCountPlural
+      COPY.marketSignals.briefingExecCountPlural,
     )
     const companyPart = countLabel(
       watchlistNews.length,
       COPY.marketSignals.briefingCompanyCount,
-      COPY.marketSignals.briefingCompanyCountPlural
+      COPY.marketSignals.briefingCompanyCountPlural,
     )
     return `${COPY.marketSignals.lastUpdatedPrefix}: ${updated} · ${execPart} · ${companyPart}`
   }, [model.lastUpdatedAt, watchlistExecutives.length, watchlistNews.length])
@@ -182,7 +203,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {COPY.nav.marketSignals}
           </h1>
-          <p className="text-sm text-muted-foreground">{COPY.marketSignals.pageSubtitle}</p>
+          <p className="text-sm text-muted-foreground">
+            {COPY.marketSignals.pageSubtitle}
+          </p>
           {hasWatchlist ? (
             <p className="text-[11px] text-muted-foreground/70">{briefingLine}</p>
           ) : null}
@@ -223,10 +246,16 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
       {!hasWatchlist ? (
         <div className="rounded-xl border border-dashed bg-muted/30 px-6 py-10 text-center">
-          <p className="font-medium text-foreground">{COPY.marketSignals.emptyFollowingTitle}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{COPY.marketSignals.emptyFollowingBody}</p>
+          <p className="font-medium text-foreground">
+            {COPY.marketSignals.emptyFollowingTitle}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {COPY.marketSignals.emptyFollowingBody}
+          </p>
           <Button type="button" className="mt-4" asChild>
-            <Link href={ROUTES.marketSignalsManage}>{COPY.marketSignals.emptyFollowingCta}</Link>
+            <Link href={ROUTES.marketSignalsManage}>
+              {COPY.marketSignals.emptyFollowingCta}
+            </Link>
           </Button>
         </div>
       ) : (
@@ -239,7 +268,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   aria-label={COPY.marketSignals.filterAccount}
                   className="flex h-10 w-[200px] shrink-0 items-center justify-between gap-2 rounded-lg border border-input bg-white px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] hover:bg-white focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
-                  <span className="min-w-0 truncate text-left">{selectedAccountName}</span>
+                  <span className="min-w-0 truncate text-left">
+                    {selectedAccountName}
+                  </span>
                   <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden />
                 </button>
               </PopoverTrigger>
@@ -273,7 +304,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     />
                   ))}
                   {accountOptions.length === 0 ? (
-                    <p className="px-2 py-2 text-xs text-muted-foreground">Keine Treffer</p>
+                    <p className="px-2 py-2 text-xs text-muted-foreground">
+                      Keine Treffer
+                    </p>
                   ) : null}
                 </div>
               </PopoverContent>
@@ -302,7 +335,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
                       selected
                         ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
                     )}
                   >
                     {option.label}
@@ -330,7 +363,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
                         selected
                           ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
                       )}
                     >
                       {filter.label}
@@ -339,7 +372,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 })}
               </div>
 
-              <div className="inline-flex h-10 shrink-0 items-center gap-2" aria-label="Kontext-Filter">
+              <div
+                className="inline-flex h-10 shrink-0 items-center gap-2"
+                aria-label="Kontext-Filter"
+              >
                 {(
                   [
                     {
@@ -365,7 +401,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       'inline-flex h-10 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition-colors',
                       filter.pressed
                         ? 'border-primary/40 bg-primary/5 text-primary'
-                        : 'border-border/80 bg-muted/40 text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                        : 'border-border/80 bg-muted/40 text-muted-foreground hover:bg-background/60 hover:text-foreground',
                     )}
                   >
                     {filter.label}

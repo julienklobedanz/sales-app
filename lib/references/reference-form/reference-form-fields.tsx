@@ -263,16 +263,21 @@ export function MagicImportDropzone({
     }
     const ok =
       file.type === 'application/pdf' ||
-      file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      file.type ===
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
       file.type === 'application/msword' ||
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       file.type === 'image/png' ||
       file.type === 'image/jpeg' ||
       file.type === 'image/jpg' ||
       file.type === 'image/webp' ||
       /\.(pdf|pptx|doc|docx|png|jpe?g|webp)$/i.test(file.name)
     if (ok) onFileAccept(file)
-    else toast.error('Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.')
+    else
+      toast.error(
+        'Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.',
+      )
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -344,8 +349,8 @@ export function MagicImportDropzone({
               Hast du schon ein Referenzdokument?
             </p>
             <p className="text-muted-foreground max-w-md text-sm">
-              Lege jetzt deine Word-, PowerPoint-, PDF- oder Bild-Datei (PNG/JPEG) hier ab, um das
-              Formular automatisch zu befüllen.
+              Lege jetzt deine Word-, PowerPoint-, PDF- oder Bild-Datei (PNG/JPEG) hier
+              ab, um das Formular automatisch zu befüllen.
             </p>
           </>
         )}
@@ -418,11 +423,13 @@ export function CompanyCombobox({
       searchCompanies(q)
         .then((result) => {
           if (result.success) {
-            const suggestions = (result.suggestions ?? []).map<ReferenceFormCompany>((s) => ({
-              id: s.id,
-              name: s.name,
-              logo_url: s.logo_url ?? null,
-            }))
+            const suggestions = (result.suggestions ?? []).map<ReferenceFormCompany>(
+              (s) => ({
+                id: s.id,
+                name: s.name,
+                logo_url: s.logo_url ?? null,
+              }),
+            )
             setRemoteSuggestions(suggestions)
             const latestQ = valueRef.current.trim()
             const t = latestQ.toLowerCase()
@@ -525,12 +532,15 @@ export function CompanyCombobox({
                 : 'Suche nach Unternehmen …'}
             </div>
           )}
-          {mergedSuggestions.length === 0 && !searching && !loading && !previewLoading && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              Keine Treffer in euren Accounts. Firmennamen weiter ausformulieren oder Enter drücken,
-              um Markendaten zu laden.
-            </div>
-          )}
+          {mergedSuggestions.length === 0 &&
+            !searching &&
+            !loading &&
+            !previewLoading && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">
+                Keine Treffer in euren Accounts. Firmennamen weiter ausformulieren oder
+                Enter drücken, um Markendaten zu laden.
+              </div>
+            )}
         </div>
       </PopoverContent>
     </Popover>

@@ -5,7 +5,7 @@ import { isSalesAppView } from '@/lib/roles/reference-access'
 /** Sales-Rep-Oberfläche ohne AM/Admin-Rechte. */
 export function profileIsSalesRestricted(
   systemRole: SystemRole,
-  functionRole: FunctionRole
+  functionRole: FunctionRole,
 ): boolean {
   return isSalesAppView(systemRole, functionRole)
 }
@@ -13,7 +13,7 @@ export function profileIsSalesRestricted(
 /** Admin oder Account Manager — z. B. NDA, Account-Pflege. */
 export function profileCanManageOrgData(
   systemRole: SystemRole,
-  functionRole: FunctionRole
+  functionRole: FunctionRole,
 ): boolean {
   return isSystemAdmin(systemRole) || functionRole === 'account_manager'
 }

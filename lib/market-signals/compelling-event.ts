@@ -3,7 +3,7 @@
  */
 export function truncateToCompleteSentences(
   raw: string | null | undefined,
-  maxChars = 180
+  maxChars = 180,
 ): string | null {
   const s = String(raw ?? '')
     .replace(/\s+/g, ' ')
@@ -53,7 +53,7 @@ const BOILERPLATE_ONLY = [
  */
 export function sanitizeCompellingEventForDisplay(
   raw: string | null | undefined,
-  maxChars = 180
+  maxChars = 180,
 ): string | null {
   let s = String(raw ?? '')
     .replace(/\s+/g, ' ')

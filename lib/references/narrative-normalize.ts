@@ -8,8 +8,12 @@ function collapseWrappedLine(line: string, continuation: string): string {
 }
 
 /** Öffentliche Referenz-Ansicht: harte Import-Umbrüche in Fließtext/Bullets zusammenziehen. */
-export function formatShowcaseNarrativeForDisplay(input: string | null | undefined): string {
-  const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
+export function formatShowcaseNarrativeForDisplay(
+  input: string | null | undefined,
+): string {
+  const raw = String(input ?? '')
+    .replace(/\r\n/g, '\n')
+    .trim()
   if (!raw) return ''
 
   const paragraphs = raw.split(/\n\s*\n/)
@@ -21,14 +25,16 @@ export function formatShowcaseNarrativeForDisplay(input: string | null | undefin
         .filter(Boolean)
       if (!lines.length) return ''
 
-      const isBulletBlock = lines.every((line) => /^[-*•]\s/.test(line) || /^\d+[.)]\s/.test(line))
+      const isBulletBlock = lines.every(
+        (line) => /^[-*•]\s/.test(line) || /^\d+[.)]\s/.test(line),
+      )
       if (isBulletBlock) {
         return lines
           .map((line) =>
             line
               .replace(/^[-*•]\s+/, '• ')
               .replace(/^\d+[.)]\s+/, '• ')
-              .replace(/\s{2,}/g, ' ')
+              .replace(/\s{2,}/g, ' '),
           )
           .join('\n')
       }
@@ -75,7 +81,9 @@ export function parseShowcaseBulletItems(input: string): string[] | null {
 }
 
 export function normalizeNarrativeText(input: string | null | undefined): string | null {
-  const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
+  const raw = String(input ?? '')
+    .replace(/\r\n/g, '\n')
+    .trim()
   if (!raw) return null
 
   const lines = raw
@@ -85,7 +93,7 @@ export function normalizeNarrativeText(input: string | null | undefined): string
         .trim()
         .replace(/^[-*•]\s+/, '')
         .replace(/^\d+[.)]\s+/, '')
-        .replace(/\s{2,}/g, ' ')
+        .replace(/\s{2,}/g, ' '),
     )
     .filter(Boolean)
 
@@ -96,13 +104,18 @@ export function normalizeNarrativeText(input: string | null | undefined): string
   const seen = new Set<string>()
   const deduped: string[] = []
   for (const unit of units) {
-    const key = unit.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+    const key = unit
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim()
     if (!key || seen.has(key)) continue
     seen.add(key)
     deduped.push(unit)
   }
 
-  const combined = deduped.join(' ').replace(/\s{2,}/g, ' ').trim()
+  const combined = deduped
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
   return combined || null
 }
-

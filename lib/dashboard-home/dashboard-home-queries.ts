@@ -4,7 +4,7 @@ import { loadReferenceKpisForOrg } from '@/lib/cache/cached-org-reads'
 
 export async function loadReferenceKpis(
   supabase: SupabaseClient,
-  orgId: string
+  orgId: string,
 ): Promise<ReferenceKpiCounts> {
   return loadReferenceKpisForOrg(supabase, orgId)
 }
@@ -14,7 +14,7 @@ export async function countReferencesInWindow(
   orgId: string,
   fromIso: string,
   toIso: string,
-  status?: 'draft' | 'internal_only' | 'approved'
+  status?: 'draft' | 'internal_only' | 'approved',
 ) {
   let q = supabase
     .from('references')

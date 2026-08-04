@@ -20,7 +20,10 @@ import {
   COGNISM_CONTENT_BLEED_CLASS,
   COGNISM_SIDEBAR_EXPANDED,
 } from '@/lib/cognism-shell-styles'
-import { detailRouteNeedsBottomPadding, routeExcludesDashboardContentPadding } from '@/lib/dashboard-ui'
+import {
+  detailRouteNeedsBottomPadding,
+  routeExcludesDashboardContentPadding,
+} from '@/lib/dashboard-ui'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 import { PanelLeft } from 'lucide-react'
@@ -47,11 +50,7 @@ function CognismMobileMenuButton() {
   )
 }
 
-function CognismMobileSidebarSheet({
-  sidebar,
-}: {
-  sidebar: ReactNode
-}) {
+function CognismMobileSidebarSheet({ sidebar }: { sidebar: ReactNode }) {
   const { openMobile, setOpenMobile, isMobile } = useSidebar()
   if (!isMobile) return null
 
@@ -201,7 +200,7 @@ export function DashboardShell({
                   ? COGNISM_CONTENT_BLEED_CLASS
                   : COGNISM_CONTENT_AREA_CLASS,
                 detailRouteNeedsBottomPadding(pathname) && 'pb-10',
-                'h-full min-h-0 overflow-y-auto'
+                'h-full min-h-0 overflow-y-auto',
               )}
             >
               <Suspense fallback={null}>

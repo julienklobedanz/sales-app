@@ -21,7 +21,7 @@ import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 /** Setzt nur `account_status`. Stammdaten inkl. Status: {@link updateCompany}. */
 export async function updateCompanyAccountStatusImpl(
   companyId: string,
-  account_status: CompanyAccountStatusValue | null
+  account_status: CompanyAccountStatusValue | null,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
@@ -39,7 +39,7 @@ export async function updateCompanyAccountStatusImpl(
 
 export async function toggleCompanyFavoriteImpl(
   companyId: string,
-  isFavorite: boolean
+  isFavorite: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
@@ -82,9 +82,11 @@ export async function createCompanyImpl(payload: {
     .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (!profile?.organization_id)
+    return { success: false, error: 'Onboarding unvollständig.' }
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
+  if (profileIsSalesRestricted(systemRole, functionRole))
+    return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
@@ -109,7 +111,11 @@ export async function createCompanyImpl(payload: {
   if (error) return { success: false, error: error.message }
 
   if (data?.id) {
-    scheduleCompanyNewsroomDiscovery(supabase, data.id, payload.website_url?.trim() || null)
+    scheduleCompanyNewsroomDiscovery(
+      supabase,
+      data.id,
+      payload.website_url?.trim() || null,
+    )
   }
 
   revalidatePath(ROUTES.accounts)
@@ -139,9 +145,11 @@ export async function createPartnerImpl(payload: {
     .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (!profile?.organization_id)
+    return { success: false, error: 'Onboarding unvollständig.' }
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
+  if (profileIsSalesRestricted(systemRole, functionRole))
+    return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
@@ -205,7 +213,7 @@ export async function createPartnerImpl(payload: {
 
 export async function bulkCreateCompaniesFromSheetImpl(
   fileBuffer: Uint8Array,
-  options: { entityKind?: 'account' | 'partner' } = {}
+  options: { entityKind?: 'account' | 'partner' } = {},
 ): Promise<{
   success: boolean
   createdCount: number
@@ -217,7 +225,14 @@ export async function bulkCreateCompaniesFromSheetImpl(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Nicht eingeloggt.' }
+  if (!user)
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Nicht eingeloggt.',
+    }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -225,11 +240,23 @@ export async function bulkCreateCompaniesFromSheetImpl(
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) {
-    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Onboarding unvollständig.' }
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Onboarding unvollständig.',
+    }
   }
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (profileIsSalesRestricted(systemRole, functionRole)) {
-    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Berechtigung.' }
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Keine Berechtigung.',
+    }
   }
 
   const entityKind = options.entityKind === 'partner' ? 'partner' : 'account'
@@ -238,20 +265,41 @@ export async function bulkCreateCompaniesFromSheetImpl(
   try {
     workbook = XLSX.read(fileBuffer, { type: 'array' })
   } catch {
-    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Datei konnte nicht gelesen werden.' }
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Datei konnte nicht gelesen werden.',
+    }
   }
   const firstSheetName = workbook.SheetNames[0]
   if (!firstSheetName) {
-    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Tabelle gefunden.' }
+    return {
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Keine Tabelle gefunden.',
+    }
   }
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[firstSheetName]!, { defval: '' })
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+    workbook.Sheets[firstSheetName]!,
+    { defval: '' },
+  )
 
   const { data: existingCompanies } = await supabase
     .from('companies')
     .select('name')
     .eq('organization_id', profile.organization_id)
     .eq('entity_kind', entityKind)
-  const existingNames = new Set((existingCompanies ?? []).map((c) => String(c.name ?? '').trim().toLowerCase()))
+  const existingNames = new Set(
+    (existingCompanies ?? []).map((c) =>
+      String(c.name ?? '')
+        .trim()
+        .toLowerCase(),
+    ),
+  )
 
   let createdCount = 0
   let skippedCount = 0
@@ -282,21 +330,21 @@ export async function bulkCreateCompaniesFromSheetImpl(
     const { data: inserted, error } = await supabase
       .from('companies')
       .insert({
-      organization_id: profile.organization_id,
-      entity_kind: entityKind,
-      name: enriched.name,
-      website_url: enriched.website.trim() || null,
-      industry: enriched.industry.trim() || null,
-      headquarters: enriched.headquarters.trim() || null,
-      employee_count:
-        enriched.employeeCount != null && Number.isFinite(enriched.employeeCount)
-          ? enriched.employeeCount
-          : null,
-      logo_url: ensureBrandfetchDarkLogoUrl(enriched.logo_url),
-      description: enriched.description?.trim() || null,
-      account_status: null,
-      ...(entityKind === 'partner' ? { partner_category } : {}),
-    })
+        organization_id: profile.organization_id,
+        entity_kind: entityKind,
+        name: enriched.name,
+        website_url: enriched.website.trim() || null,
+        industry: enriched.industry.trim() || null,
+        headquarters: enriched.headquarters.trim() || null,
+        employee_count:
+          enriched.employeeCount != null && Number.isFinite(enriched.employeeCount)
+            ? enriched.employeeCount
+            : null,
+        logo_url: ensureBrandfetchDarkLogoUrl(enriched.logo_url),
+        description: enriched.description?.trim() || null,
+        account_status: null,
+        ...(entityKind === 'partner' ? { partner_category } : {}),
+      })
       .select('id')
       .maybeSingle()
     if (error) {
@@ -304,7 +352,11 @@ export async function bulkCreateCompaniesFromSheetImpl(
       continue
     }
     if (inserted?.id && entityKind === 'account') {
-      scheduleCompanyNewsroomDiscovery(supabase, inserted.id, enriched.website.trim() || null)
+      scheduleCompanyNewsroomDiscovery(
+        supabase,
+        inserted.id,
+        enriched.website.trim() || null,
+      )
     }
     existingNames.add(normalizedName)
     createdCount += 1
@@ -336,9 +388,11 @@ export async function updateCompanyImpl(payload: {
     .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (!profile?.organization_id)
+    return { success: false, error: 'Onboarding unvollständig.' }
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
+  if (profileIsSalesRestricted(systemRole, functionRole))
+    return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
@@ -391,7 +445,7 @@ export async function updateCompanyImpl(payload: {
 }
 
 export async function deleteCompanyWithDataImpl(
-  companyId: string
+  companyId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -404,7 +458,8 @@ export async function deleteCompanyWithDataImpl(
     .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (!profile?.organization_id)
+    return { success: false, error: 'Onboarding unvollständig.' }
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (profileIsSalesRestricted(systemRole, functionRole)) {
     return { success: false, error: 'Keine Berechtigung.' }
@@ -416,7 +471,9 @@ export async function deleteCompanyWithDataImpl(
     .eq('id', companyId)
     .single()
   if (companyErr || !company) return { success: false, error: 'Account nicht gefunden.' }
-  if ((company as { organization_id: string }).organization_id !== profile.organization_id) {
+  if (
+    (company as { organization_id: string }).organization_id !== profile.organization_id
+  ) {
     return { success: false, error: 'Keine Berechtigung.' }
   }
 

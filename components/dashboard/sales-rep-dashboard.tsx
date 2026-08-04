@@ -25,7 +25,10 @@ function signalToneFromGap(meddpiccGap: string): 'ok' | 'warn' | 'gap' {
   return 'ok'
 }
 
-function aggregateShareBars(recentShares: SalesRepDashboardModel['recentShares'], fallbackTitle: string) {
+function aggregateShareBars(
+  recentShares: SalesRepDashboardModel['recentShares'],
+  fallbackTitle: string,
+) {
   const counts = new Map<string, number>()
   for (const row of recentShares) {
     const label = row.reference_title?.trim() || fallbackTitle
@@ -113,7 +116,10 @@ export function SalesRepDashboard({
         description={c.signalsDescription}
       >
         {thin || data.strategicAccounts.length === 0 ? (
-          <HonestEmpty title={c.signalsEmptyTitle} description={c.signalsEmptyDescription} />
+          <HonestEmpty
+            title={c.signalsEmptyTitle}
+            description={c.signalsEmptyDescription}
+          />
         ) : (
           <div className="space-y-0">
             {data.strategicAccounts.map((signal) => {
@@ -126,9 +132,17 @@ export function SalesRepDashboard({
                   <SignalStatusPill tone={tone} />
                   <div className="min-w-0 flex-1 text-sm">
                     <span className="font-medium">{signal.companyName}</span>
-                    <span className="text-muted-foreground"> — {signal.signalSummary}</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      — {signal.signalSummary}
+                    </span>
                   </div>
-                  <Button asChild variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 text-xs"
+                  >
                     <Link href={signal.href}>{signal.actionLabel}</Link>
                   </Button>
                 </div>
@@ -141,7 +155,10 @@ export function SalesRepDashboard({
       <div className="grid gap-4 md:grid-cols-2">
         <DashboardSectionCard title={c.coverageTitle} description={c.coverageDescription}>
           {thin || data.activeDeals.length === 0 ? (
-            <HonestEmpty title={c.coverageEmptyTitle} description={c.coverageEmptyDescription} />
+            <HonestEmpty
+              title={c.coverageEmptyTitle}
+              description={c.coverageEmptyDescription}
+            />
           ) : (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <CoverageDonut
@@ -153,10 +170,13 @@ export function SalesRepDashboard({
                 {sortedDeals.map((deal) => {
                   const hasProof = deal.linkedCount > 0
                   const deadline = deal.expiry_date
-                    ? new Date(`${deal.expiry_date}T12:00:00`).toLocaleDateString('de-DE', {
-                        day: 'numeric',
-                        month: 'short',
-                      })
+                    ? new Date(`${deal.expiry_date}T12:00:00`).toLocaleDateString(
+                        'de-DE',
+                        {
+                          day: 'numeric',
+                          month: 'short',
+                        },
+                      )
                     : null
                   return (
                     <div
@@ -164,7 +184,10 @@ export function SalesRepDashboard({
                       className="flex items-center justify-between gap-2 border-t border-border py-2 first:border-t-0 first:pt-0"
                     >
                       <div className="min-w-0 text-sm">
-                        <Link href={ROUTES.deals.detail(deal.id)} className="font-medium hover:underline">
+                        <Link
+                          href={ROUTES.deals.detail(deal.id)}
+                          className="font-medium hover:underline"
+                        >
                           {deal.company_name ?? deal.title}
                         </Link>
                         {deadline ? (
@@ -178,8 +201,15 @@ export function SalesRepDashboard({
                           {c.coverageProofOk}
                         </span>
                       ) : (
-                        <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-                          <Link href={ROUTES.matchWithDeal(deal.id)}>{c.queueFindProof}</Link>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                        >
+                          <Link href={ROUTES.matchWithDeal(deal.id)}>
+                            {c.queueFindProof}
+                          </Link>
                         </Button>
                       )}
                     </div>
@@ -192,7 +222,10 @@ export function SalesRepDashboard({
 
         <DashboardSectionCard title={c.reuseTitle} description={c.reuseDescription}>
           {thin || shareBars.length === 0 ? (
-            <HonestEmpty title={c.reuseEmptyTitle} description={c.reuseEmptyDescription} />
+            <HonestEmpty
+              title={c.reuseEmptyTitle}
+              description={c.reuseEmptyDescription}
+            />
           ) : (
             <HorizontalBarList items={shareBars} />
           )}

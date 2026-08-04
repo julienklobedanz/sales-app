@@ -82,7 +82,10 @@ export function ShareLinkDialog({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium" htmlFor="share-recipient-email">
+                    <label
+                      className="text-sm font-medium"
+                      htmlFor="share-recipient-email"
+                    >
                       E-Mail (optional)
                     </label>
                     <Input
@@ -95,11 +98,13 @@ export function ShareLinkDialog({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Mit Name wird ein personalisierter Link erzeugt (Tracking pro Empfänger).
+                  Mit Name wird ein personalisierter Link erzeugt (Tracking pro
+                  Empfänger).
                 </p>
                 {shareLinkLoading ? (
                   <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <AppIcon icon={Loader} size={16} className="animate-spin" /> Wird geladen…
+                    <AppIcon icon={Loader} size={16} className="animate-spin" /> Wird
+                    geladen…
                   </p>
                 ) : shareLinkUrl ? (
                   <div className="space-y-2">
@@ -150,7 +155,7 @@ export function ShareLinkDialog({
                                 label: recipientName.trim(),
                                 visitorEmail: recipientEmail.trim() || null,
                               }
-                            : null
+                            : null,
                         )
                         if (result.success) {
                           const publicUrl = toAbsoluteUrl(result.url)

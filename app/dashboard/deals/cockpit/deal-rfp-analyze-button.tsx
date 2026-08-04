@@ -28,7 +28,7 @@ async function ensureAusschreibungKind(doc: DealDocumentRow): Promise<boolean> {
 
 export async function runDealRfpAnalyze(
   dealId: string,
-  doc: DealDocumentRow
+  doc: DealDocumentRow,
 ): Promise<{ ok: boolean; error?: string }> {
   const kindOk = await ensureAusschreibungKind(doc)
   if (!kindOk) return { ok: false }
@@ -71,7 +71,9 @@ export function DealRfpAnalyzeButton({
 
   async function handleClick() {
     if (!canManage || !targetDoc) {
-      document.getElementById('dokumente')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document
+        .getElementById('dokumente')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
 

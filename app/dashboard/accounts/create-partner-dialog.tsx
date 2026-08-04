@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,7 +31,10 @@ import {
   type CompanySearchSuggestion,
 } from '@/app/dashboard/references/new/actions'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
-import { PARTNER_CATEGORY_OPTIONS, type PartnerCategory } from '@/lib/accounts/company-entity'
+import {
+  PARTNER_CATEGORY_OPTIONS,
+  type PartnerCategory,
+} from '@/lib/accounts/company-entity'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 
@@ -143,7 +152,7 @@ export function CreatePartnerDialog({
         return
       }
       toast.success(
-        alsoCreateAccount ? 'Partner und Account angelegt.' : 'Partner angelegt.'
+        alsoCreateAccount ? 'Partner und Account angelegt.' : 'Partner angelegt.',
       )
       onOpenChange(false)
       resetForm()
@@ -218,11 +227,15 @@ export function CreatePartnerDialog({
               disabled={pending || enriching}
             />
             <div className="grid gap-0.5">
-              <Label htmlFor="partner-also-account" className="cursor-pointer font-medium">
+              <Label
+                htmlFor="partner-also-account"
+                className="cursor-pointer font-medium"
+              >
                 Partner ist auch Kunde (Account)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Legt zusätzlich einen Account mit denselben Stammdaten an und verknüpft beide Einträge.
+                Legt zusätzlich einen Account mit denselben Stammdaten an und verknüpft
+                beide Einträge.
               </p>
             </div>
           </div>

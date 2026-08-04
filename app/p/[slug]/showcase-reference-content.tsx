@@ -3,7 +3,8 @@ import {
   parseShowcaseBulletItems,
 } from '@/lib/references/narrative-normalize'
 
-const NARRATIVE_BODY_CLASS = 'w-full max-w-none text-sm leading-relaxed text-muted-foreground'
+const NARRATIVE_BODY_CLASS =
+  'w-full max-w-none text-sm leading-relaxed text-muted-foreground'
 
 function ShowcaseSection({ title, text }: { title: string; text: string }) {
   const formatted = formatShowcaseNarrativeForDisplay(text)
@@ -48,9 +49,15 @@ export function ShowcaseReferenceContent({
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      {summaryText ? <ShowcaseSection title="Kurzbeschreibung" text={summaryText} /> : null}
-      {challengeText ? <ShowcaseSection title="Herausforderung" text={challengeText} /> : null}
-      {solutionText ? <ShowcaseSection title="Unsere Lösung" text={solutionText} /> : null}
+      {summaryText ? (
+        <ShowcaseSection title="Kurzbeschreibung" text={summaryText} />
+      ) : null}
+      {challengeText ? (
+        <ShowcaseSection title="Herausforderung" text={challengeText} />
+      ) : null}
+      {solutionText ? (
+        <ShowcaseSection title="Unsere Lösung" text={solutionText} />
+      ) : null}
     </div>
   )
 }

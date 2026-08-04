@@ -65,13 +65,13 @@ describe('buildReferenceInsightLine', () => {
       onlyApprovedReferences: true,
     })
     expect(line).toBe(
-      '2 Referenzen verfügbar — jedoch hat noch keine von diesen die Freigabe für externe Nutzung.'
+      '2 Referenzen verfügbar — jedoch hat noch keine von diesen die Freigabe für externe Nutzung.',
     )
   })
 
   it('returns null for empty pool', () => {
     expect(
-      buildReferenceInsightLine({ references: [], onlyApprovedReferences: true })
+      buildReferenceInsightLine({ references: [], onlyApprovedReferences: true }),
     ).toBeNull()
   })
 })

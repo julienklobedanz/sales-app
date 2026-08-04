@@ -30,7 +30,7 @@ export function buildDealDocumentStoragePath(
   orgId: string,
   dealId: string,
   docId: string,
-  fileName: string
+  fileName: string,
 ): string {
   return `${orgId}/deals/${dealId}/${docId}/${sanitizeDealDocumentFileName(fileName)}`
 }
@@ -66,13 +66,11 @@ function isAnalyzableUpload(file: Pick<File, 'name' | 'type'>): boolean {
   return ANALYZABLE_EXTENSIONS.test(file.name)
 }
 
-export type ValidateDealDocumentUploadResult =
-  | { ok: true }
-  | { ok: false; error: string }
+export type ValidateDealDocumentUploadResult = { ok: true } | { ok: false; error: string }
 
 export function validateDealDocumentUpload(
   file: Pick<File, 'name' | 'type' | 'size'>,
-  kind: DealDocumentKind
+  kind: DealDocumentKind,
 ): ValidateDealDocumentUploadResult {
   if (!file.size) {
     return { ok: false, error: 'Keine gültige Datei.' }
@@ -83,7 +81,9 @@ export function validateDealDocumentUpload(
   }
 
   const maxBytes =
-    kind === 'ausschreibung' ? DEAL_DOCUMENT_ANALYZABLE_MAX_BYTES : DEAL_DOCUMENT_STORAGE_MAX_BYTES
+    kind === 'ausschreibung'
+      ? DEAL_DOCUMENT_ANALYZABLE_MAX_BYTES
+      : DEAL_DOCUMENT_STORAGE_MAX_BYTES
 
   if (file.size > maxBytes) {
     const maxMb = (maxBytes / 1024 / 1024).toFixed(1)

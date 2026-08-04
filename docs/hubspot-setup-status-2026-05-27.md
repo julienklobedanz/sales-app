@@ -6,12 +6,12 @@ Kurzprotokoll, um später nahtlos weiterzumachen. Code in RefStack ist fertig; b
 
 ## Erledigt ✅
 
-| Bereich | Status |
-|---------|--------|
-| DB-Migration | `20260627120000_organization_crm_connections.sql` ausgeführt |
+| Bereich       | Status                                                                      |
+| ------------- | --------------------------------------------------------------------------- |
+| DB-Migration  | `20260627120000_organization_crm_connections.sql` ausgeführt                |
 | RefStack-Code | OAuth-Routen, Import-Dialog, Empty States (Accounts + Deals), Settings-Card |
-| Env lokal | `SUPABASE_SERVICE_ROLE_KEY` gesetzt |
-| Onboarding UX | Wizard → `?welcome=1`, CRM `returnTo` (accounts/deals/settings) |
+| Env lokal     | `SUPABASE_SERVICE_ROLE_KEY` gesetzt                                         |
+| Onboarding UX | Wizard → `?welcome=1`, CRM `returnTo` (accounts/deals/settings)             |
 
 ---
 

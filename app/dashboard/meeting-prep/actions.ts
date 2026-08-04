@@ -27,7 +27,7 @@ async function requireOrgUser(): Promise<
 }
 
 export async function searchMeetingPrepCompaniesAction(
-  query: string
+  query: string,
 ): Promise<{ hits: CompanySearchHit[] } | { error: string }> {
   const auth = await requireOrgUser()
   if ('error' in auth) return { error: auth.error }
@@ -74,7 +74,11 @@ export async function createMeetingPrepSessionAction(input: {
         companyName = exact.name
         companyLogoUrl = exact.logoUrl
       } else {
-        return { success: false, error: 'Mehrere Accounts passen — bitte auswählen.', disambiguation: hits }
+        return {
+          success: false,
+          error: 'Mehrere Accounts passen — bitte auswählen.',
+          disambiguation: hits,
+        }
       }
     }
   } else {
@@ -117,7 +121,7 @@ export async function createMeetingPrepSessionAction(input: {
 }
 
 export async function loadMeetingPrepSessionAction(
-  sessionId: string
+  sessionId: string,
 ): Promise<{ snapshot: MeetingPrepSnapshot; title: string } | { error: string }> {
   const auth = await requireOrgUser()
   if ('error' in auth) return { error: auth.error }
@@ -140,7 +144,7 @@ export async function loadMeetingPrepSessionAction(
 export async function listMeetingPrepSessionsForDashboard(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   orgId: string,
-  userId: string
+  userId: string,
 ): Promise<MeetingPrepSessionListItem[]> {
   const { data } = await supabase
     .from('sales_meeting_prep_sessions')

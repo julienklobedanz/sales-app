@@ -27,7 +27,10 @@ import { updateCompany } from './actions'
 import { COPY } from '@/lib/copy'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
-import { fetchCompanyEnrichment, searchCompanySuggestions } from '@/app/dashboard/references/new/actions'
+import {
+  fetchCompanyEnrichment,
+  searchCompanySuggestions,
+} from '@/app/dashboard/references/new/actions'
 import {
   ACCOUNT_STATUS_FORM_OPTIONS,
   accountStatusFromDb,
@@ -71,7 +74,7 @@ export function EditAccountDialog({
     setEmployeeCount(
       company.employee_count != null && !Number.isNaN(company.employee_count)
         ? formatThousandsDots(String(company.employee_count))
-        : ''
+        : '',
     )
     setDescription(company.description ?? '')
     setAccountStatus(accountStatusFromDb(company.account_status))
@@ -97,7 +100,9 @@ export function EditAccountDialog({
       let enrichInput: string | null = null
       const suggestions = await searchCompanySuggestions(query)
       if (suggestions.success) {
-        const brandfetchCandidate = suggestions.suggestions.find((s) => s.id.startsWith('brandfetch:'))
+        const brandfetchCandidate = suggestions.suggestions.find((s) =>
+          s.id.startsWith('brandfetch:'),
+        )
         if (brandfetchCandidate) {
           enrichInput = brandfetchCandidate.id.slice('brandfetch:'.length)
         }
@@ -120,7 +125,9 @@ export function EditAccountDialog({
       setIndustry(resolveIndustryId(enriched.industry ?? ''))
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
       setEmployeeCount(
-        enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
+        enriched.employee_count != null
+          ? formatThousandsDots(String(enriched.employee_count))
+          : '',
       )
       setDescription(enriched.description ?? '')
     })()
@@ -278,11 +285,18 @@ export function EditAccountDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending || enriching}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending || enriching}
+          >
             Abbrechen
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>
-            {(pending || enriching) && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+            {(pending || enriching) && (
+              <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+            )}
             Speichern
           </Button>
         </DialogFooter>

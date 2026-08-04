@@ -14,11 +14,17 @@ import {
   STATUS_HELP_TEXT,
   STATUS_OPTIONS,
 } from '@/lib/references/reference-form/reference-form-constants'
-import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
+import {
+  RequiredLabel,
+  OptionalLabel,
+} from '@/lib/references/reference-form/reference-form-labels'
 import type { ReferenceFormInitialData } from '@/lib/references/reference-form/reference-form-types'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
 import { FileDropZone } from '@/lib/references/reference-form/reference-form-fields'
-import { getCompetitorSuggestions, getIncumbentSuggestions } from '@/app/dashboard/actions'
+import {
+  getCompetitorSuggestions,
+  getIncumbentSuggestions,
+} from '@/app/dashboard/actions'
 
 export type ReferenceFormFilesSectionProps = Pick<
   ReferenceFormViewModel,
@@ -98,7 +104,7 @@ export function ReferenceFormFilesSection({
                               .split(/[;,]+/)
                               .map((s) => s.trim())
                               .filter((n) => n && n.toLowerCase() !== name.toLowerCase())
-                              .join(', ')
+                              .join(', '),
                           )
                         }}
                         className="rounded-full px-1 hover:bg-accent"
@@ -136,7 +142,10 @@ export function ReferenceFormFilesSection({
                       e.preventDefault()
                       const raw = incumbentInputValue.trim()
                       if (!raw) return
-                      const parts = raw.split(/[;,]+/).map((s) => s.trim()).filter(Boolean)
+                      const parts = raw
+                        .split(/[;,]+/)
+                        .map((s) => s.trim())
+                        .filter(Boolean)
                       const existing = incumbentProvider
                         .split(/[;,]+/)
                         .map((s) => s.trim())
@@ -168,7 +177,9 @@ export function ReferenceFormFilesSection({
                               .split(/[;,]+/)
                               .map((s) => s.trim())
                               .filter(Boolean)
-                            if (!existing.some((n) => n.toLowerCase() === val.toLowerCase())) {
+                            if (
+                              !existing.some((n) => n.toLowerCase() === val.toLowerCase())
+                            ) {
                               setIncumbentProvider([...existing, val].join(', '))
                             }
                             setIncumbentInputValue('')
@@ -210,7 +221,7 @@ export function ReferenceFormFilesSection({
                               .split(/[;,]+/)
                               .map((s) => s.trim())
                               .filter((n) => n && n !== name)
-                              .join(', ')
+                              .join(', '),
                           )
                         }}
                         className="rounded-full px-1 hover:bg-accent"
@@ -249,7 +260,10 @@ export function ReferenceFormFilesSection({
                         e.preventDefault()
                         const raw = competitorInputValue.trim()
                         if (!raw) return
-                        const parts = raw.split(/[;,]+/).map((s) => s.trim()).filter(Boolean)
+                        const parts = raw
+                          .split(/[;,]+/)
+                          .map((s) => s.trim())
+                          .filter(Boolean)
                         const existing = competitors
                           .split(/[;,]+/)
                           .map((s) => s.trim())
@@ -280,7 +294,11 @@ export function ReferenceFormFilesSection({
                                   .split(/[;,]+/)
                                   .map((s) => s.trim())
                                   .filter(Boolean)
-                                if (!existing.some((n) => n.toLowerCase() === val.toLowerCase())) {
+                                if (
+                                  !existing.some(
+                                    (n) => n.toLowerCase() === val.toLowerCase(),
+                                  )
+                                ) {
                                   setCompetitors([...existing, val].join(', '))
                                 }
                                 setCompetitorInputValue('')

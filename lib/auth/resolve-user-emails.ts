@@ -4,7 +4,7 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
 /** E-Mails aus `auth.users` (profiles hat keine email-Spalte). */
 export async function resolveAuthEmailsByUserIds(
-  userIds: string[]
+  userIds: string[],
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>()
   // Service-Role weil: auth.admin.getUserById (kein RLS-Pfad für E-Mails).
@@ -18,7 +18,7 @@ export async function resolveAuthEmailsByUserIds(
       const { data } = await admin.auth.admin.getUserById(id)
       const email = data?.user?.email?.trim()
       if (email) map.set(id, email)
-    })
+    }),
   )
   return map
 }

@@ -50,7 +50,12 @@ export function ShowcaseContactFab({
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" side="top" sideOffset={12} className="w-[260px] px-3 py-2.5">
+      <PopoverContent
+        align="end"
+        side="top"
+        sideOffset={12}
+        className="w-[260px] px-3 py-2.5"
+      >
         <div className="space-y-2">
           <p className="text-xs font-medium text-foreground">Kontakt</p>
           <div className="flex items-center gap-1.5 text-xs text-foreground">

@@ -83,7 +83,7 @@ function formatEmbeddingsApiError(status: number, rawBody: string): string {
 
 export async function embedTextWithOpenAI(
   apiKey: string,
-  input: string
+  input: string,
 ): Promise<{ embedding: number[] } | { error: string }> {
   const trimmed = input.trim()
   if (!trimmed) {

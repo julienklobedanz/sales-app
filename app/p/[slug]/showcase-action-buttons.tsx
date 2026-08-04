@@ -3,7 +3,12 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { Calendar, HelpCircleIcon, FileDownloadIcon, Pencil } from '@hugeicons/core-free-icons'
+import {
+  Calendar,
+  HelpCircleIcon,
+  FileDownloadIcon,
+  Pencil,
+} from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type { ManageApprovalStatusSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
@@ -43,7 +48,7 @@ export function ShowcaseActionButtons({
     }
     if (manageApprovalStatus.isAnonymous != null) {
       statusParts.push(
-        manageApprovalStatus.isAnonymous ? 'Anonymisiert: ja' : 'Anonymisiert: nein'
+        manageApprovalStatus.isAnonymous ? 'Anonymisiert: ja' : 'Anonymisiert: nein',
       )
     }
   }
@@ -71,7 +76,9 @@ export function ShowcaseActionButtons({
             asChild={Boolean(questionHref)}
             className="w-full rounded-lg"
             disabled={!questionHref}
-            title={!questionHref ? 'Keine E-Mail des Ansprechpartners hinterlegt.' : undefined}
+            title={
+              !questionHref ? 'Keine E-Mail des Ansprechpartners hinterlegt.' : undefined
+            }
           >
             {questionHref ? (
               <a href={questionHref}>

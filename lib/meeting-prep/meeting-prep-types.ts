@@ -76,7 +76,12 @@ const RISK_NEWS_RE =
   /\b(risiko|krise|warnung|klage|verlust|rückgang|breach|hack|cyber|insolvenz|entlass|strafe|skandal|krise|gefährd|unsicher)\b/i
 
 export function extractNewsRiskRows(
-  news: Array<{ id: string; body: string; publishedOn: string; insightFact?: string | null }>
+  news: Array<{
+    id: string
+    body: string
+    publishedOn: string
+    insightFact?: string | null
+  }>,
 ): MeetingPrepNewsRiskRow[] {
   const rows: MeetingPrepNewsRiskRow[] = []
   for (const item of news) {
@@ -105,7 +110,9 @@ export function buildTalkingPoints(input: {
 }): string[] {
   const points: string[] = []
   if (!input.hasDeals) {
-    points.push(`Erstgespräch mit ${input.companyName} — noch kein Deal im System; Fokus auf Bedarf und Referenzstory.`)
+    points.push(
+      `Erstgespräch mit ${input.companyName} — noch kein Deal im System; Fokus auf Bedarf und Referenzstory.`,
+    )
   }
   if (input.signals[0]) {
     points.push(`Aktuelles Signal: ${input.signals[0].label}`)
@@ -115,7 +122,7 @@ export function buildTalkingPoints(input: {
   }
   if (input.references[0]) {
     points.push(
-      `Referenz einplanen: „${input.references[0].title}“ (${Math.round(input.references[0].similarity * 100)} % Match).`
+      `Referenz einplanen: „${input.references[0].title}“ (${Math.round(input.references[0].similarity * 100)} % Match).`,
     )
   }
   if (points.length < 3 && input.signals[1]) {

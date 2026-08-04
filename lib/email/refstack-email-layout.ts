@@ -40,7 +40,7 @@ export function getRefstackResendFrom(): string {
 
 export function buildReferenceMetaRows(
   referenceTitle: string,
-  accountOrCompanyName: string
+  accountOrCompanyName: string,
 ): RefstackEmailMetaRow[] {
   return [
     { label: 'Referenz', value: referenceTitle },
@@ -177,8 +177,12 @@ export function buildPortfolioSupplementalHtml(portfolio: {
   heading?: string
   manageButtonLabel?: string
 }): string {
-  const heading = escapeRefstackEmailHtml(portfolio.heading ?? 'Kundenansicht & Zugriff beenden')
-  const manageLabel = escapeRefstackEmailHtml(portfolio.manageButtonLabel ?? 'Persönlicher Link (mit Sperrrecht)')
+  const heading = escapeRefstackEmailHtml(
+    portfolio.heading ?? 'Kundenansicht & Zugriff beenden',
+  )
+  const manageLabel = escapeRefstackEmailHtml(
+    portfolio.manageButtonLabel ?? 'Persönlicher Link (mit Sperrrecht)',
+  )
   const previewUrl = escapeRefstackEmailHtml(portfolio.publicPreviewUrl)
 
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-top:1px solid #e2e8f0;">

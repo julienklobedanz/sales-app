@@ -5,7 +5,10 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2, Circle, HelpCircle, X } from 'lucide-react'
 
-import { RoleHomeDashboard, type RoleHomeDashboardPayload } from '@/components/dashboard/role-home-dashboard'
+import {
+  RoleHomeDashboard,
+  type RoleHomeDashboardPayload,
+} from '@/components/dashboard/role-home-dashboard'
 import type { FunctionRole } from '@/lib/roles/capabilities'
 import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/routes'
@@ -35,7 +38,8 @@ const STEPS: StepDef[] = [
   },
   {
     id: 'hasReferences',
-    label: '2. Erste Referenz sichern: Lade eine Case Study oder ein Projekt-Factsheet hoch.',
+    label:
+      '2. Erste Referenz sichern: Lade eine Case Study oder ein Projekt-Factsheet hoch.',
     href: ROUTES.references.root,
   },
   {
@@ -99,12 +103,13 @@ export function DashboardHome({
 
   const withinThreeDays = useMemo(
     () => isWithinThreeDays(userRegisteredAt),
-    [userRegisteredAt]
+    [userRegisteredAt],
   )
 
   const showFullChecklist =
     isBrandNew && withinThreeDays && (!dismissed || welcomeFromWizard)
-  const showFloatingHelp = isBrandNew && dismissed && withinThreeDays && !welcomeFromWizard
+  const showFloatingHelp =
+    isBrandNew && dismissed && withinThreeDays && !welcomeFromWizard
   const showCommandCenter = !showFullChecklist
 
   function cleanWelcomeParam() {
@@ -183,7 +188,7 @@ function ChecklistCard({
     <div
       className={cn(
         'relative mx-auto max-w-xl rounded-2xl border border-gray-100 bg-white p-6 shadow-sm',
-        className ?? 'mt-12'
+        className ?? 'mt-12',
       )}
     >
       <button
@@ -211,13 +216,13 @@ function ChecklistCard({
                 href={step.href}
                 className={cn(
                   'group flex items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all hover:border-gray-100 hover:bg-gray-50',
-                  done && 'opacity-90'
+                  done && 'opacity-90',
                 )}
               >
                 <span
                   className={cn(
                     'mt-0.5 shrink-0 transition-all duration-300 ease-out',
-                    done ? 'scale-110 text-emerald-600' : 'text-gray-300'
+                    done ? 'scale-110 text-emerald-600' : 'text-gray-300',
                   )}
                 >
                   {done ? (
@@ -229,7 +234,9 @@ function ChecklistCard({
                 <span
                   className={cn(
                     'text-sm leading-snug transition-all duration-300 ease-out',
-                    done ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-800'
+                    done
+                      ? 'text-gray-500 line-through decoration-gray-400'
+                      : 'text-gray-800',
                   )}
                 >
                   {step.label}

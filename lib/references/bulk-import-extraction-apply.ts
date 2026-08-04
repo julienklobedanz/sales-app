@@ -13,7 +13,7 @@ import { asTableUpdate } from '@/lib/supabase/db-types'
 function pushSuggestion(
   out: BulkImportReviewSuggestions,
   key: keyof BulkImportReviewSuggestions,
-  value: string | null | undefined
+  value: string | null | undefined,
 ) {
   const v = String(value ?? '').trim()
   if (!v) return
@@ -44,7 +44,7 @@ export async function applyBulkImportExtractionFromBuffer(
   organizationId: string,
   referenceId: string,
   buffer: Buffer,
-  fileName: string
+  fileName: string,
 ): Promise<BulkImportExtractionResult> {
   const id = String(referenceId ?? '').trim()
   if (!id) return { success: false, error: 'Ungültige Referenz.' }
@@ -52,7 +52,7 @@ export async function applyBulkImportExtractionFromBuffer(
   const { data: ref, error: refErr } = await supabase
     .from('references')
     .select(
-      'id, title, company_id, summary, industry, volume_eur, customer_challenge, our_solution, tags, employee_count, website, country, incumbent_provider, competitors, contract_type, project_start, project_end, project_status'
+      'id, title, company_id, summary, industry, volume_eur, customer_challenge, our_solution, tags, employee_count, website, country, incumbent_provider, competitors, contract_type, project_start, project_end, project_status',
     )
     .eq('id', id)
     .maybeSingle()
@@ -110,15 +110,18 @@ export async function applyBulkImportExtractionFromBuffer(
     const resolved = await resolveOrCreateCompanyForImport(
       supabase,
       organizationId,
-      companyHint
+      companyHint,
     )
     if (resolved.success) {
       const co = resolved.company
       companyId = co.companyId
       if (co.companyId !== refRow.company_id) patch.company_id = companyId
-      if (!String(refRow.website ?? '').trim() && co.website_url) patch.website = co.website_url
-      if (!String(refRow.country ?? '').trim() && co.headquarters) patch.country = co.headquarters
-      if (!String(refRow.industry ?? '').trim() && co.industry) patch.industry = co.industry
+      if (!String(refRow.website ?? '').trim() && co.website_url)
+        patch.website = co.website_url
+      if (!String(refRow.country ?? '').trim() && co.headquarters)
+        patch.country = co.headquarters
+      if (!String(refRow.industry ?? '').trim() && co.industry)
+        patch.industry = co.industry
       if (refRow.employee_count == null && co.employee_count != null) {
         patch.employee_count = co.employee_count
       }
@@ -133,7 +136,10 @@ export async function applyBulkImportExtractionFromBuffer(
 
   if (
     d.title?.trim() &&
-    (!titleNow || titleNow === 'Referenz' || titleLooksLikeFilename || titleLooksLikeBoilerplate)
+    (!titleNow ||
+      titleNow === 'Referenz' ||
+      titleLooksLikeFilename ||
+      titleLooksLikeBoilerplate)
   ) {
     patch.title = d.title.trim()
   } else if (d.title?.trim() && d.title.trim() !== titleNow) {
@@ -151,7 +157,11 @@ export async function applyBulkImportExtractionFromBuffer(
   if (d.customer_challenge?.trim() && !String(refRow.customer_challenge ?? '').trim()) {
     patch.customer_challenge = normalizeNarrativeText(d.customer_challenge)
   } else if (d.customer_challenge?.trim()) {
-    pushSuggestion(suggestions, 'customer_challenge', normalizeNarrativeText(d.customer_challenge))
+    pushSuggestion(
+      suggestions,
+      'customer_challenge',
+      normalizeNarrativeText(d.customer_challenge),
+    )
   }
 
   if (d.our_solution?.trim() && !String(refRow.our_solution ?? '').trim()) {
@@ -168,16 +178,21 @@ export async function applyBulkImportExtractionFromBuffer(
 
   if (d.industry?.trim() && !String(refRow.industry ?? '').trim()) {
     const mapped =
-      mapBrandfetchIndustriesArrayToGermanCategory([{ name: d.industry }]) ?? d.industry.trim()
+      mapBrandfetchIndustriesArrayToGermanCategory([{ name: d.industry }]) ??
+      d.industry.trim()
     patch.industry = mapped
   } else if (d.industry?.trim()) {
     const mapped =
-      mapBrandfetchIndustriesArrayToGermanCategory([{ name: d.industry }]) ?? d.industry.trim()
+      mapBrandfetchIndustriesArrayToGermanCategory([{ name: d.industry }]) ??
+      d.industry.trim()
     pushSuggestion(suggestions, 'industry', mapped)
   }
 
   if (d.tags?.length && !String(refRow.tags ?? '').trim()) {
-    patch.tags = d.tags.map((t) => t.trim()).filter(Boolean).join(', ')
+    patch.tags = d.tags
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .join(', ')
   }
 
   if (d.employee_count != null && refRow.employee_count == null) {
@@ -242,7 +257,10 @@ export async function applyBulkImportExtractionFromBuffer(
   }
 
   if (Object.keys(patch).length > 1) {
-    const { error: updateErr } = await supabase.from('references').update(asTableUpdate<'references'>(patch)).eq('id', id)
+    const { error: updateErr } = await supabase
+      .from('references')
+      .update(asTableUpdate<'references'>(patch))
+      .eq('id', id)
     if (updateErr) {
       extractionError = updateErr.message
       extractionOk = false
@@ -257,7 +275,8 @@ export async function applyBulkImportExtractionFromBuffer(
 
   const title = String(after?.title ?? refRow.title ?? '')
   const needsInput =
-    !String(after?.customer_challenge ?? '').trim() || !String(after?.our_solution ?? '').trim()
+    !String(after?.customer_challenge ?? '').trim() ||
+    !String(after?.our_solution ?? '').trim()
 
   if (needsInput && llmSkipped && !extractionError) {
     extractionError =

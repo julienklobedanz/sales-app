@@ -41,7 +41,11 @@ async function sendToRecipients(args: {
       })
       sent = true
     } catch (e) {
-      log.error('send failed', { action: 'approvalWorkflowInternalNotifications.send' }, e)
+      log.error(
+        'send failed',
+        { action: 'approvalWorkflowInternalNotifications.send' },
+        e,
+      )
     }
   }
 
@@ -60,7 +64,7 @@ type ReferenceNotifyContext = {
 
 export async function loadReferenceNotifyContext(
   admin: SupabaseClient,
-  referenceId: string
+  referenceId: string,
 ): Promise<ReferenceNotifyContext | null> {
   const { data: row, error } = await admin
     .from('references')
@@ -73,7 +77,7 @@ export async function loadReferenceNotifyContext(
       approval_requested_by,
       approval_coordinator_email,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .maybeSingle()
@@ -94,10 +98,11 @@ export async function loadReferenceNotifyContext(
       typeof (row as { organization_id?: string | null }).organization_id === 'string'
         ? (row as { organization_id: string }).organization_id
         : null,
-    requesterId: (row as { approval_requested_by?: string | null }).approval_requested_by ?? null,
+    requesterId:
+      (row as { approval_requested_by?: string | null }).approval_requested_by ?? null,
     coordinatorEmail:
-      typeof (row as { approval_coordinator_email?: string | null }).approval_coordinator_email ===
-      'string'
+      typeof (row as { approval_coordinator_email?: string | null })
+        .approval_coordinator_email === 'string'
         ? (row as { approval_coordinator_email: string }).approval_coordinator_email
         : null,
   }

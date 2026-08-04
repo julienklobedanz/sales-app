@@ -63,7 +63,9 @@ describe('dedupeCustomerContacts', () => {
 
 describe('normalizeContactIdentity', () => {
   it('builds stable identity key', () => {
-    expect(normalizeContactIdentity(['Anna', 'Müller', 'a@x.de'])).toBe('anna|müller|a@x.de')
+    expect(normalizeContactIdentity(['Anna', 'Müller', 'a@x.de'])).toBe(
+      'anna|müller|a@x.de',
+    )
   })
 })
 

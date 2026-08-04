@@ -235,7 +235,7 @@ export function parseRecencyFromQuery(query: string): number | null {
 
   // älter / older than N Jahre|Monate (beliebige N, z. B. „älter als 1 Jahr“)
   const older = q.match(
-    /(?:aelter|älter|older)\s+als\s+(\d{1,2})\s*(jahre?|years?|monate|mons?|months?)?/
+    /(?:aelter|älter|older)\s+als\s+(\d{1,2})\s*(jahre?|years?|monate|mons?|months?)?/,
   )
   if (older?.[1]) {
     const n = Number.parseInt(older[1], 10)
@@ -261,7 +261,7 @@ export function parseRecencyFromQuery(query: string): number | null {
   }
 
   const lastMonths = q.match(
-    /(?:letzte[nrs]?|letzten|vergangene[nrs]?|past|last)\s*(\d{1,2})\s*(?:monate|mons?|months?)/
+    /(?:letzte[nrs]?|letzten|vergangene[nrs]?|past|last)\s*(\d{1,2})\s*(?:monate|mons?|months?)/,
   )
   if (lastMonths?.[1]) {
     const n = Number.parseInt(lastMonths[1], 10)
@@ -269,7 +269,7 @@ export function parseRecencyFromQuery(query: string): number | null {
   }
 
   const lastYears = q.match(
-    /(?:letzte[nrs]?|letzten|vergangene[nrs]?|past|last)\s*(\d{1,2})\s*(?:jahre?|years?)/
+    /(?:letzte[nrs]?|letzten|vergangene[nrs]?|past|last)\s*(\d{1,2})\s*(?:jahre?|years?)/,
   )
   if (lastYears?.[1]) {
     const n = Number.parseInt(lastYears[1], 10)
@@ -340,7 +340,7 @@ export function parseExcludeTermsFromQuery(query: string): string[] {
     // Stopwords / Filter-Fragmente
     if (
       /^(mio|eur|euro|referenz|deal|projekt|branche|volumen|letzte|aelter|älter)/.test(
-        fragment
+        fragment,
       )
     ) {
       continue

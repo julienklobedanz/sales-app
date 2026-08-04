@@ -55,4 +55,3 @@ export const editRequiredSchema = z.object({
     .min(1, 'Lösung ist ein Pflichtfeld.')
     .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Lösung')),
 })
-

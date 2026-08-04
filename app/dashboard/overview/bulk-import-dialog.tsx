@@ -4,12 +4,24 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
-import { UploadIcon, FileText, Cancel01Icon, Loader, PencilEdit01Icon } from '@hugeicons/core-free-icons'
+import {
+  UploadIcon,
+  FileText,
+  Cancel01Icon,
+  Loader,
+  PencilEdit01Icon,
+} from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
 import { cn } from '@/lib/utils'
@@ -40,8 +52,7 @@ const BULK_IMPORT_DIALOG_CLASS =
 const BULK_IMPORT_ROW_GRID_CLASS =
   'grid flex-1 grid-cols-1 gap-2 lg:grid-cols-[minmax(140px,220px)_minmax(0,1fr)_minmax(180px,34%)] lg:items-center lg:gap-4'
 
-const BULK_IMPORT_HEADER_CLASS =
-  'text-xs font-medium text-muted-foreground'
+const BULK_IMPORT_HEADER_CLASS = 'text-xs font-medium text-muted-foreground'
 
 const BULK_IMPORT_FILE_DRAG_MIME = 'application/x-refstack-bulk-import-file'
 
@@ -158,14 +169,20 @@ export function BulkImportDialog({
     setDraggingFileKey(chipKey)
   }
 
-  function handleDocumentsDragOver(event: React.DragEvent<HTMLDivElement>, groupId: string) {
+  function handleDocumentsDragOver(
+    event: React.DragEvent<HTMLDivElement>,
+    groupId: string,
+  ) {
     event.preventDefault()
     event.stopPropagation()
     event.dataTransfer.dropEffect = 'move'
     setDragOverGroupId(groupId)
   }
 
-  function handleDocumentsDrop(event: React.DragEvent<HTMLDivElement>, toGroupId: string) {
+  function handleDocumentsDrop(
+    event: React.DragEvent<HTMLDivElement>,
+    toGroupId: string,
+  ) {
     event.preventDefault()
     event.stopPropagation()
     setDragOverGroupId(null)
@@ -208,7 +225,8 @@ export function BulkImportDialog({
       }
 
       const ids = result.referenceIds
-      let organizationId = 'organizationId' in result ? String(result.organizationId ?? '') : ''
+      let organizationId =
+        'organizationId' in result ? String(result.organizationId ?? '') : ''
       if (!organizationId) {
         const supabase = createClient()
         const {
@@ -233,14 +251,14 @@ export function BulkImportDialog({
             const upload = await uploadBulkImportFilesForReference(
               organizationId,
               refId,
-              group.files
+              group.files,
             )
             if (!upload.ok) {
               uploadFailed = true
               toast.error(
                 upload.error ??
                   `Datei für „${group.projectName}“ konnte nicht gespeichert werden.`,
-                { duration: 8000 }
+                { duration: 8000 },
               )
             }
           }
@@ -291,7 +309,9 @@ export function BulkImportDialog({
         }
         if (!r.needsInput) completeCount++
         const showReview =
-          r.needsInput || !r.extractionOk || Boolean(String(r.extractionError ?? '').trim())
+          r.needsInput ||
+          !r.extractionOk ||
+          Boolean(String(r.extractionError ?? '').trim())
         if (showReview) {
           pendingReview.push({
             referenceId: r.referenceId,
@@ -359,7 +379,7 @@ export function BulkImportDialog({
           'flex w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60',
           compact
             ? 'h-10 gap-2 px-3 text-left text-xs sm:text-sm'
-            : 'min-h-[160px] flex-col gap-2 p-6 text-center text-sm'
+            : 'min-h-[160px] flex-col gap-2 p-6 text-center text-sm',
         )}
       >
         <AppIcon icon={UploadIcon} size={compact ? 16 : 32} className="shrink-0" />
@@ -380,15 +400,15 @@ export function BulkImportDialog({
             <DialogHeader className="shrink-0 space-y-1 text-left">
               <DialogTitle>Referenzen importieren</DialogTitle>
               <DialogDescription>
-                Lege bis zu {BULK_IMPORT_MAX_FILES} Dateien ab. Alle Uploads werden automatisch Kunden
-                zugeordnet.
+                Lege bis zu {BULK_IMPORT_MAX_FILES} Dateien ab. Alle Uploads werden
+                automatisch Kunden zugeordnet.
               </DialogDescription>
             </DialogHeader>
 
             <div
               className={cn(
                 'min-h-0 flex-1 pt-3',
-                hasFiles ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+                hasFiles ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
               )}
             >
               <input
@@ -410,7 +430,9 @@ export function BulkImportDialog({
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-white">
                   <div className="flex shrink-0 gap-3 border-b border-border bg-white px-3 py-2">
                     <div className="size-4 shrink-0" aria-hidden />
-                    <div className={cn(BULK_IMPORT_ROW_GRID_CLASS, BULK_IMPORT_HEADER_CLASS)}>
+                    <div
+                      className={cn(BULK_IMPORT_ROW_GRID_CLASS, BULK_IMPORT_HEADER_CLASS)}
+                    >
                       <span>Kunde</span>
                       <span>Referenztitel</span>
                       <span>Dokumente</span>
@@ -418,150 +440,168 @@ export function BulkImportDialog({
                   </div>
 
                   <div className="min-h-0 flex-1 overflow-y-auto bg-white">
-                  {groups.map((group) => {
-                    const previewPending = isGroupPreviewPending(group)
-                    const suspiciousTitle = isSuspiciousBulkImportProjectName(group.projectName)
-                    const isEditingCompany = editingCompanyId === group.id
+                    {groups.map((group) => {
+                      const previewPending = isGroupPreviewPending(group)
+                      const suspiciousTitle = isSuspiciousBulkImportProjectName(
+                        group.projectName,
+                      )
+                      const isEditingCompany = editingCompanyId === group.id
 
-                    return (
-                      <div
-                        key={group.id}
-                        className="flex items-center gap-3 border-b border-border bg-white px-3 py-2.5 last:border-b-0"
-                      >
-                        <Checkbox
-                          className="self-center"
-                          checked={selectedGroupIds.has(group.id)}
-                          disabled={loading}
-                          onCheckedChange={(checked) =>
-                            toggleGroupSelection(group.id, checked === true)
-                          }
-                          aria-label={`${group.projectName || 'Referenz'} auswählen`}
-                        />
+                      return (
+                        <div
+                          key={group.id}
+                          className="flex items-center gap-3 border-b border-border bg-white px-3 py-2.5 last:border-b-0"
+                        >
+                          <Checkbox
+                            className="self-center"
+                            checked={selectedGroupIds.has(group.id)}
+                            disabled={loading}
+                            onCheckedChange={(checked) =>
+                              toggleGroupSelection(group.id, checked === true)
+                            }
+                            aria-label={`${group.projectName || 'Referenz'} auswählen`}
+                          />
 
-                        <div className={BULK_IMPORT_ROW_GRID_CLASS}>
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            {isEditingCompany ? (
-                              <Input
-                                value={companyDraft}
-                                onChange={(e) => setCompanyDraft(e.target.value)}
-                                onBlur={() => commitCompanyEdit(group.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') commitCompanyEdit(group.id)
-                                  if (e.key === 'Escape') {
-                                    setEditingCompanyId(null)
-                                    setCompanyDraft('')
-                                  }
-                                }}
-                                disabled={loading}
-                                autoFocus
-                                className="h-7 min-w-0 flex-1 text-sm"
-                              />
-                            ) : (
-                              <>
-                                <span
-                                  className={cn(
-                                    'min-w-0 truncate text-sm font-medium',
-                                    group.companyName ? 'text-foreground' : 'text-muted-foreground'
-                                  )}
-                                >
-                                  {group.companyName?.trim() || '—'}
-                                </span>
-                                <AccountsToolbarTooltip label="Kunde bearbeiten">
-                                  <button
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => startCompanyEdit(group)}
-                                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    aria-label="Kunde bearbeiten"
-                                  >
-                                    <AppIcon icon={PencilEdit01Icon} size={14} />
-                                  </button>
-                                </AccountsToolbarTooltip>
-                              </>
-                            )}
-                          </div>
-
-                          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                            <Input
-                              value={group.projectName}
-                              onChange={(e) => setGroupName(group.id, e.target.value)}
-                              disabled={loading}
-                              className="h-8 min-w-0 flex-1 text-sm"
-                              placeholder="Referenztitel"
-                              aria-label="Referenztitel"
-                            />
-                            {previewPending ? (
-                              <RefreshCw
-                                className="size-4 shrink-0 animate-spin text-muted-foreground"
-                                aria-hidden
-                              />
-                            ) : null}
-                            {!previewPending && suspiciousTitle ? (
-                              <AccountsToolbarTooltip label="Projektname prüfen — evtl. Zeitraum statt Titel erkannt">
-                                <span className="inline-flex shrink-0 text-amber-600">
-                                  <AlertTriangle className="size-4" aria-hidden />
-                                </span>
-                              </AccountsToolbarTooltip>
-                            ) : null}
-                          </div>
-
-                          <div
-                            className={cn(
-                              'flex min-h-9 min-w-0 flex-wrap gap-1.5 rounded-md transition-colors lg:justify-end',
-                              dragOverGroupId === group.id &&
-                                'bg-primary/10 ring-1 ring-inset ring-primary/40'
-                            )}
-                            onDragOver={(event) => handleDocumentsDragOver(event, group.id)}
-                            onDragLeave={(event) => {
-                              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-                                setDragOverGroupId((prev) => (prev === group.id ? null : prev))
-                              }
-                            }}
-                            onDrop={(event) => handleDocumentsDrop(event, group.id)}
-                          >
-                            {group.files.map((file, fileIndex) => {
-                              const chipKey = fileChipKey(group.id, file)
-                              return (
-                              <div
-                                key={chipKey}
-                                draggable={!loading}
-                                onDragStart={(event) =>
-                                  handleFileChipDragStart(event, group.id, fileIndex, chipKey)
-                                }
-                                onDragEnd={() => {
-                                  setDraggingFileKey(null)
-                                  setDragOverGroupId(null)
-                                }}
-                                className={cn(
-                                  'flex max-w-full cursor-grab items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm active:cursor-grabbing',
-                                  draggingFileKey === chipKey && 'opacity-50'
-                                )}
-                              >
-                                <AppIcon
-                                  icon={FileText}
-                                  size={12}
-                                  className="shrink-0 text-muted-foreground"
-                                />
-                                <span className="max-w-[100px] truncate sm:max-w-[120px]">
-                                  {file.name}
-                                </span>
-                                <button
-                                  type="button"
+                          <div className={BULK_IMPORT_ROW_GRID_CLASS}>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              {isEditingCompany ? (
+                                <Input
+                                  value={companyDraft}
+                                  onChange={(e) => setCompanyDraft(e.target.value)}
+                                  onBlur={() => commitCompanyEdit(group.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') commitCompanyEdit(group.id)
+                                    if (e.key === 'Escape') {
+                                      setEditingCompanyId(null)
+                                      setCompanyDraft('')
+                                    }
+                                  }}
                                   disabled={loading}
-                                  onClick={() => removeFile(group.id, fileIndex)}
-                                  onMouseDown={(event) => event.stopPropagation()}
-                                  className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                  aria-label={`${file.name} entfernen`}
-                                >
-                                  <AppIcon icon={Cancel01Icon} size={12} />
-                                </button>
-                              </div>
-                            )})}
+                                  autoFocus
+                                  className="h-7 min-w-0 flex-1 text-sm"
+                                />
+                              ) : (
+                                <>
+                                  <span
+                                    className={cn(
+                                      'min-w-0 truncate text-sm font-medium',
+                                      group.companyName
+                                        ? 'text-foreground'
+                                        : 'text-muted-foreground',
+                                    )}
+                                  >
+                                    {group.companyName?.trim() || '—'}
+                                  </span>
+                                  <AccountsToolbarTooltip label="Kunde bearbeiten">
+                                    <button
+                                      type="button"
+                                      disabled={loading}
+                                      onClick={() => startCompanyEdit(group)}
+                                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      aria-label="Kunde bearbeiten"
+                                    >
+                                      <AppIcon icon={PencilEdit01Icon} size={14} />
+                                    </button>
+                                  </AccountsToolbarTooltip>
+                                </>
+                              )}
+                            </div>
+
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                              <Input
+                                value={group.projectName}
+                                onChange={(e) => setGroupName(group.id, e.target.value)}
+                                disabled={loading}
+                                className="h-8 min-w-0 flex-1 text-sm"
+                                placeholder="Referenztitel"
+                                aria-label="Referenztitel"
+                              />
+                              {previewPending ? (
+                                <RefreshCw
+                                  className="size-4 shrink-0 animate-spin text-muted-foreground"
+                                  aria-hidden
+                                />
+                              ) : null}
+                              {!previewPending && suspiciousTitle ? (
+                                <AccountsToolbarTooltip label="Projektname prüfen — evtl. Zeitraum statt Titel erkannt">
+                                  <span className="inline-flex shrink-0 text-amber-600">
+                                    <AlertTriangle className="size-4" aria-hidden />
+                                  </span>
+                                </AccountsToolbarTooltip>
+                              ) : null}
+                            </div>
+
+                            <div
+                              className={cn(
+                                'flex min-h-9 min-w-0 flex-wrap gap-1.5 rounded-md transition-colors lg:justify-end',
+                                dragOverGroupId === group.id &&
+                                  'bg-primary/10 ring-1 ring-inset ring-primary/40',
+                              )}
+                              onDragOver={(event) =>
+                                handleDocumentsDragOver(event, group.id)
+                              }
+                              onDragLeave={(event) => {
+                                if (
+                                  !event.currentTarget.contains(
+                                    event.relatedTarget as Node,
+                                  )
+                                ) {
+                                  setDragOverGroupId((prev) =>
+                                    prev === group.id ? null : prev,
+                                  )
+                                }
+                              }}
+                              onDrop={(event) => handleDocumentsDrop(event, group.id)}
+                            >
+                              {group.files.map((file, fileIndex) => {
+                                const chipKey = fileChipKey(group.id, file)
+                                return (
+                                  <div
+                                    key={chipKey}
+                                    draggable={!loading}
+                                    onDragStart={(event) =>
+                                      handleFileChipDragStart(
+                                        event,
+                                        group.id,
+                                        fileIndex,
+                                        chipKey,
+                                      )
+                                    }
+                                    onDragEnd={() => {
+                                      setDraggingFileKey(null)
+                                      setDragOverGroupId(null)
+                                    }}
+                                    className={cn(
+                                      'flex max-w-full cursor-grab items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm active:cursor-grabbing',
+                                      draggingFileKey === chipKey && 'opacity-50',
+                                    )}
+                                  >
+                                    <AppIcon
+                                      icon={FileText}
+                                      size={12}
+                                      className="shrink-0 text-muted-foreground"
+                                    />
+                                    <span className="max-w-[100px] truncate sm:max-w-[120px]">
+                                      {file.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={loading}
+                                      onClick={() => removeFile(group.id, fileIndex)}
+                                      onMouseDown={(event) => event.stopPropagation()}
+                                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      aria-label={`${file.name} entfernen`}
+                                    >
+                                      <AppIcon icon={Cancel01Icon} size={12} />
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -569,7 +609,11 @@ export function BulkImportDialog({
 
             <div className="shrink-0 border-t border-border py-3">
               <div className="flex items-center gap-3">
-                {hasFiles ? <div className="min-w-0 flex-1">{renderDropZone(true)}</div> : <div className="flex-1" aria-hidden />}
+                {hasFiles ? (
+                  <div className="min-w-0 flex-1">{renderDropZone(true)}</div>
+                ) : (
+                  <div className="flex-1" aria-hidden />
+                )}
 
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   <Button
@@ -612,7 +656,8 @@ export function BulkImportDialog({
               </div>
               {totalFiles > 0 ? (
                 <p className="mt-1.5 text-right text-xs text-muted-foreground">
-                  {groups.length} Gruppe{groups.length !== 1 ? 'n' : ''} · {totalFiles} Datei
+                  {groups.length} Gruppe{groups.length !== 1 ? 'n' : ''} · {totalFiles}{' '}
+                  Datei
                   {totalFiles !== 1 ? 'en' : ''}
                 </p>
               ) : null}
@@ -620,7 +665,11 @@ export function BulkImportDialog({
           </div>
         </DialogContent>
       </Dialog>
-      <BulkImportReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} items={reviewItems} />
+      <BulkImportReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        items={reviewItems}
+      />
     </>
   )
 }

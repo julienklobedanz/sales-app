@@ -47,7 +47,7 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
         companies ( name )
       ),
       requester:profiles ( full_name )
-    `
+    `,
     )
     .order('created_at', { ascending: false })
 
@@ -63,9 +63,11 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
   }
 
   return (data ?? []).map((row: Record<string, unknown>) => {
-    const reference = row.reference as
-      | { id?: string; title?: string; companies?: { name?: string } | { name?: string }[] }
-      | null
+    const reference = row.reference as {
+      id?: string
+      title?: string
+      companies?: { name?: string } | { name?: string }[]
+    } | null
     const companies = reference?.companies
     const companyName =
       Array.isArray(companies) && companies.length > 0
@@ -88,7 +90,7 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
 
 export async function reviewRequestImpl(
   approvalId: string,
-  decision: 'approve_external' | 'approve_internal' | 'reject'
+  decision: 'approve_external' | 'approve_internal' | 'reject',
 ) {
   const supabase = await createServerSupabaseClient()
 
@@ -139,4 +141,3 @@ export async function reviewRequestImpl(
   revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(approval.reference_id)
 }
-

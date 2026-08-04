@@ -97,7 +97,10 @@ describe('resolveApprovalWorkflowNotifyEmails', () => {
   })
 
   it('excludes sales requester but keeps account manager', async () => {
-    const admin = makeAdmin({ requesterRole: 'sales', coordinatorEmail: 'am@account.com' })
+    const admin = makeAdmin({
+      requesterRole: 'sales',
+      coordinatorEmail: 'am@account.com',
+    })
     const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
       companyId: 'company-1',
       requesterId: 'user-requester',

@@ -40,8 +40,7 @@ export function CompanyNameSuggestField({
   const searchAbortRef = useRef(0)
 
   const trimmed = value.trim()
-  const showDropdown =
-    open && !disabled && trimmed.length > 0
+  const showDropdown = open && !disabled && trimmed.length > 0
 
   useEffect(() => {
     if (!trimmed) return
@@ -123,7 +122,7 @@ export function CompanyNameSuggestField({
                   aria-selected={false}
                   className={cn(
                     'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground',
-                    isExisting && 'bg-emerald-50/50 dark:bg-emerald-950/20'
+                    isExisting && 'bg-emerald-50/50 dark:bg-emerald-950/20',
                   )}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
@@ -163,7 +162,9 @@ export function CompanyNameSuggestField({
             <li
               className={cn(
                 'px-3 py-2 text-xs',
-                searchHint ? 'text-amber-800 dark:text-amber-200' : 'text-muted-foreground'
+                searchHint
+                  ? 'text-amber-800 dark:text-amber-200'
+                  : 'text-muted-foreground',
               )}
             >
               {searchHint ??

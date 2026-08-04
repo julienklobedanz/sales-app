@@ -76,7 +76,7 @@ async function DealDetailPageContent({
     },
     user.id,
     systemRole,
-    functionRole
+    functionRole,
   )
   const documentsResult = await listDealDocuments(id)
   const documents = documentsResult.success ? documentsResult.rows : []

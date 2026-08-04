@@ -6,12 +6,15 @@
 ---
 
 ## Vorab lesen
+
 - `docs/ai-coding-agent-guide.md`. Match: `lib/evidence/match.ts` (`embedTextWithOpenAI` → `match_references`-RPC), Command-Center-Suche (`lib/command-center/*`), UI `app/dashboard/match/match-smart-client.tsx`.
 
 ## Ist-Stand (verifiziert)
+
 - `lib/evidence/match.ts:80` synchroner `embedTextWithOpenAI(...)` pro Query, **kein** Cache, kein Debounce. Embedding-Roundtrip (~200–800 ms) ist der dominante Latenz-Anteil.
 
 ## Aufgaben
+
 - **T1 — Query-Embedding-Cache:** identische/normalisierte Queries nicht erneut einbetten (Hash der normalisierten Query → Embedding). Umsetzung pragmatisch: `unstable_cache` mit Tag, oder kleine Cache-Tabelle, oder In-Memory-LRU pro Instanz. Kein neues Infra-Stück, wenn Next-Cache reicht.
   - **Cache-Key = `hash(normalisierter finaler queryText)` + Modellname — und NICHTS sonst.** Ein Embedding ist eine reine Funktion des Eingabetexts. **Kein** `orgId`, **kein** `salesVisibleOnly`, **kein** `dealId` im Key:
     - `orgId`/`salesVisibleOnly` beeinflussen das Embedding nicht (die org-/rollen-spezifische Filterung passiert in der `match_references`-RPC, nicht hier) — sie in den Key zu nehmen, zersplittert den Cache und macht Perf-4 wirkungslos.
@@ -21,14 +24,17 @@
 - **T3 — Modell prüfen (optional):** kleineres/schnelleres Embedding-Modell evaluieren, falls Qualität ausreicht.
 
 ## Akzeptanz
+
 - Wiederholte identische Suche überspringt den Embedding-Call (Perf-1-Timing zeigt 0 ms Embedding bei Cache-Hit).
 - UI reagiert sofort (Skeleton), kein „Klick → Leerlauf bis alles fertig".
 - Match-Ergebnisse unverändert korrekt; `typecheck`/`test`/`build` grün.
 
 ## Verifikation
+
 ```bash
 npm run typecheck && npm test && npm run build
 ```
+
 - Perf-1-Timing: Match-Gesamtdauer sinkt; Cache-Hit-Pfad ohne Embedding-Latenz.
 - Manuell: zweimal dieselbe Suche → zweite spürbar schneller.
 

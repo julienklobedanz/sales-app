@@ -22,7 +22,7 @@ export function FilterMenuCheckboxOption({
       className={cn(
         'flex w-full cursor-default items-center justify-between rounded-md px-2 py-1.5 text-left text-sm outline-none select-none hover:bg-accent',
         selected ? 'font-medium text-primary' : 'text-foreground',
-        className
+        className,
       )}
     >
       <span className="min-w-0 truncate pr-2">{label}</span>

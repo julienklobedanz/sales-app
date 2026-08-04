@@ -3,7 +3,7 @@
  * `theme/light` = helles Logo (für dunkle Hintergründe) — unsichtbar auf Weiß.
  */
 export function ensureBrandfetchDarkLogoUrl(
-  logoUrl: string | null | undefined
+  logoUrl: string | null | undefined,
 ): string | null {
   const raw = String(logoUrl ?? '').trim()
   if (!raw) return null
@@ -35,12 +35,16 @@ export function ensureBrandfetchDarkLogoUrl(
 
 /** @deprecated Alias — nutze ensureBrandfetchDarkLogoUrl. */
 export function rewriteBrandfetchLogoUrlForLightBackground(
-  logoUrl: string | null | undefined
+  logoUrl: string | null | undefined,
 ): string | null {
   return ensureBrandfetchDarkLogoUrl(logoUrl)
 }
 
-export function brandfetchLogoUrlLooksLightTheme(logoUrl: string | null | undefined): boolean {
-  const raw = String(logoUrl ?? '').trim().toLowerCase()
+export function brandfetchLogoUrlLooksLightTheme(
+  logoUrl: string | null | undefined,
+): boolean {
+  const raw = String(logoUrl ?? '')
+    .trim()
+    .toLowerCase()
   return raw.includes('/theme/light')
 }

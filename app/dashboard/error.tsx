@@ -20,7 +20,9 @@ export default function DashboardError({
   return (
     <div className="flex flex-col space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Etwas ist schiefgelaufen</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Etwas ist schiefgelaufen
+        </h1>
         <p className="mt-1 text-muted-foreground">
           Bitte versuche es erneut. Wenn das Problem bestehen bleibt, lade die Seite neu.
         </p>
@@ -35,4 +37,3 @@ export default function DashboardError({
     </div>
   )
 }
-

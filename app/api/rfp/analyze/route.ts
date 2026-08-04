@@ -33,7 +33,10 @@ async function parseAnalyzeRequest(req: NextRequest): Promise<AnalyzeBody | null
   try {
     const formData = await req.formData()
     return {
-      dealId: typeof formData.get('dealId') === 'string' ? formData.get('dealId')!.toString() : undefined,
+      dealId:
+        typeof formData.get('dealId') === 'string'
+          ? formData.get('dealId')!.toString()
+          : undefined,
       dealDocumentId:
         typeof formData.get('dealDocumentId') === 'string'
           ? formData.get('dealDocumentId')!.toString()
@@ -59,14 +62,17 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
+    return NextResponse.json(
+      { success: false, error: 'Nicht angemeldet.' },
+      { status: 401 },
+    )
   }
 
   const visibility = await loadReferenceVisibilityForUser(supabase, user.id)
   if (!visibility) {
     return NextResponse.json(
       { success: false, error: 'Keine Organisation zugeordnet.' },
-      { status: 403 }
+      { status: 403 },
     )
   }
 
@@ -78,15 +84,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'RFP-Analyse ist deaktiviert: OPENAI_API_KEY ist nicht konfiguriert (fehlender OPENAI-Schlüssel).',
+        error:
+          'RFP-Analyse ist deaktiviert: OPENAI_API_KEY ist nicht konfiguriert (fehlender OPENAI-Schlüssel).',
       },
-      { status: 501 }
+      { status: 501 },
     )
   }
 
   const body = await parseAnalyzeRequest(req)
   if (!body) {
-    return NextResponse.json({ success: false, error: 'Ungültige Anfrage.' }, { status: 400 })
+    return NextResponse.json(
+      { success: false, error: 'Ungültige Anfrage.' },
+      { status: 400 },
+    )
   }
 
   const dealId = body.dealId?.trim() ?? ''
@@ -96,7 +106,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'dealId fehlt.' }, { status: 400 })
   }
   if (!dealDocumentId) {
-    return NextResponse.json({ success: false, error: 'dealDocumentId fehlt.' }, { status: 400 })
+    return NextResponse.json(
+      { success: false, error: 'dealDocumentId fehlt.' },
+      { status: 400 },
+    )
   }
 
   const { data: deal, error: dealErr } = await supabase
@@ -109,7 +122,7 @@ export async function POST(req: NextRequest) {
   if (dealErr || !deal) {
     return NextResponse.json(
       { success: false, error: 'Deal nicht gefunden oder keine Berechtigung.' },
-      { status: 404 }
+      { status: 404 },
     )
   }
 
@@ -128,18 +141,20 @@ export async function POST(req: NextRequest) {
       },
       user.id,
       systemRole,
-      functionRole
+      functionRole,
     )
   ) {
     return NextResponse.json(
       { success: false, error: 'Keine Berechtigung für RFP-Analyse an diesem Deal.' },
-      { status: 403 }
+      { status: 403 },
     )
   }
 
   const { data: dealDoc, error: docErr } = await supabase
     .from('deal_documents')
-    .select('id, deal_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes')
+    .select(
+      'id, deal_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes',
+    )
     .eq('id', dealDocumentId)
     .eq('deal_id', dealId)
     .eq('organization_id', orgId)
@@ -148,14 +163,17 @@ export async function POST(req: NextRequest) {
   if (docErr || !dealDoc) {
     return NextResponse.json(
       { success: false, error: 'Dokument nicht gefunden.' },
-      { status: 404 }
+      { status: 404 },
     )
   }
 
   if (dealDoc.kind !== 'ausschreibung') {
     return NextResponse.json(
-      { success: false, error: 'Nur Dokumente vom Typ Ausschreibung können analysiert werden.' },
-      { status: 400 }
+      {
+        success: false,
+        error: 'Nur Dokumente vom Typ Ausschreibung können analysiert werden.',
+      },
+      { status: 400 },
     )
   }
 

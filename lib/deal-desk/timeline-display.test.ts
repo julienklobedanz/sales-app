@@ -26,7 +26,7 @@ describe('formatDealDeadlineLabel', () => {
         dueTime: '13:00',
         title: 'Q&A / Rückfragenfrist',
       },
-      now
+      now,
     )
     expect(label).toBe('12.06.2026 (in 13 Tagen) um 13:00 | Q&A / Rückfragenfrist')
   })
@@ -35,7 +35,7 @@ describe('formatDealDeadlineLabel', () => {
     const now = new Date('2026-05-30T12:00:00')
     const label = formatDealDeadlineLabel(
       { dueDate: '2026-07-15', title: 'Shortlist-Pitch' },
-      now
+      now,
     )
     expect(label).toBe('15.07.2026 (in 46 Tagen) | Shortlist-Pitch')
   })

@@ -2,15 +2,27 @@ import { MASTER_INDUSTRIES } from '@/lib/constants/industries'
 import { parseReferenceVolume } from '@/lib/format'
 
 const INDUSTRY_SEMANTIC_PATTERNS: Array<{ id: string; re: RegExp }> = [
-  { id: 'fin', re: /finanz(sektor|dienstleistung|branche)?|bank(en|ing)?|versicherung|insurance|fintech/i },
+  {
+    id: 'fin',
+    re: /finanz(sektor|dienstleistung|branche)?|bank(en|ing)?|versicherung|insurance|fintech/i,
+  },
   { id: 'ret', re: /handel|retail|konsumgüter|e-?commerce|einzelhandel|cpg/i },
   { id: 'man', re: /automotive|industrie|fertigung|manufacturing|produktion/i },
   { id: 'tech', re: /software|saas|tech|telekom|cloud|cyber|it-?dienst/i },
   { id: 'media', re: /medien|marketing|unterhaltung|entertainment|werbung|publishing/i },
   { id: 'energy', re: /energie|utilities|versorgung|rohstoff|öl|gas|strom/i },
-  { id: 'health', re: /pharma|life\s*science|gesundheits(wesen)?|medizin|chemie|biotech/i },
-  { id: 'pub', re: /öffentlich(er)?\s*sektor|behörde|verwaltung|bildung|education|government/i },
-  { id: 'log', re: /logistik|transport|aviation|luftfahrt|shipping|spedition|reise|gastgewerbe/i },
+  {
+    id: 'health',
+    re: /pharma|life\s*science|gesundheits(wesen)?|medizin|chemie|biotech/i,
+  },
+  {
+    id: 'pub',
+    re: /öffentlich(er)?\s*sektor|behörde|verwaltung|bildung|education|government/i,
+  },
+  {
+    id: 'log',
+    re: /logistik|transport|aviation|luftfahrt|shipping|spedition|reise|gastgewerbe/i,
+  },
   { id: 'cons', re: /beratung|consulting|professional\s+services|audit|advisory/i },
   { id: 'prop', re: /immobilien|bauwirtschaft|construction|real\s+estate|property/i },
   { id: 'other', re: /sonstige|other|misc/i },
@@ -48,9 +60,8 @@ export function parseEuroAmountFromQuery(text: string): number | null {
   }
 
   const mio =
-    q.match(
-      /(\d+(?:[.,]\d+)?)\s*(?:mio\.?|million(?:en)?)(?:\s*(?:€|eur|euro))?/i
-    ) ?? q.match(/(\d+(?:[.,]\d+)?)\s*m\s*€/i)
+    q.match(/(\d+(?:[.,]\d+)?)\s*(?:mio\.?|million(?:en)?)(?:\s*(?:€|eur|euro))?/i) ??
+    q.match(/(\d+(?:[.,]\d+)?)\s*m\s*€/i)
   if (mio) {
     const eur = millionsToEur(mio[1]!)
     if (eur != null) return eur
@@ -72,7 +83,9 @@ export function parseEuroAmountFromQuery(text: string): number | null {
 }
 
 /** Erkennt Volumen-Vergleiche wie „über 2 Millionen“, „>€2Mio“, „unter 500k“. */
-export function parseVolumeConstraintFromQuery(raw: string): VolumeQueryConstraint | null {
+export function parseVolumeConstraintFromQuery(
+  raw: string,
+): VolumeQueryConstraint | null {
   const q = raw.trim()
   if (!q) return null
 
@@ -100,7 +113,7 @@ export function parseVolumeConstraintFromQuery(raw: string): VolumeQueryConstrai
 
 export function referenceVolumeMatchesConstraint(
   volumeEur: string | null | undefined,
-  constraint: VolumeQueryConstraint
+  constraint: VolumeQueryConstraint,
 ): boolean {
   const parsed = parseReferenceVolume(volumeEur)
   if (!parsed) return false
@@ -128,12 +141,12 @@ export function enrichHomepageSemanticQuery(raw: string): string {
     if (constraint.operator === 'gte') {
       hints.push(`Volumen mindestens ${constraint.amountEur} EUR`)
       hints.push(
-        `Projektvolumen größer oder gleich ${(constraint.amountEur / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`
+        `Projektvolumen größer oder gleich ${(constraint.amountEur / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`,
       )
     } else {
       hints.push(`Volumen höchstens ${constraint.amountEur} EUR`)
       hints.push(
-        `Projektvolumen kleiner oder gleich ${(constraint.amountEur / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`
+        `Projektvolumen kleiner oder gleich ${(constraint.amountEur / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`,
       )
     }
   } else if (amountEur != null) {
@@ -141,7 +154,7 @@ export function enrichHomepageSemanticQuery(raw: string): string {
     if (mio >= 1) {
       hints.push(`Volumen: ${amountEur} EUR`)
       hints.push(
-        `Projektvolumen circa ${mio.toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`
+        `Projektvolumen circa ${mio.toLocaleString('de-DE', { maximumFractionDigits: 1 })} Millionen Euro`,
       )
     } else {
       hints.push(`Volumen: ${amountEur} EUR`)

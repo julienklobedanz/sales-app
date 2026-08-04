@@ -41,8 +41,7 @@ export function formatReferenceProofBlock(hit: SignalMatchHit): string {
   const company = hit.companyName?.trim()
   const where = company ? ` (${company})` : ''
   const snippet = hit.snippet.replace(/\s+/g, ' ').trim()
-  const short =
-    snippet.length > 160 ? `${snippet.slice(0, 157).trim()}…` : snippet
+  const short = snippet.length > 160 ? `${snippet.slice(0, 157).trim()}…` : snippet
   if (short && short.toLowerCase() !== title.toLowerCase()) {
     return `Ähnliche Situation: „${title}"${where} — ${short}`
   }
@@ -53,11 +52,17 @@ export function formatReferenceProofBlock(hit: SignalMatchHit): string {
  * Fügt Proof-Blöcke vor dem Abschluss (zwei Leerzeilen + Gruß) ein.
  * Basis-Entwurf bleibt unverändert; bei Toggle immer neu aus Base + Auswahl zusammensetzen.
  */
-export function composeOutreachWithProofBlocks(baseDraft: string, blocks: string[]): string {
+export function composeOutreachWithProofBlocks(
+  baseDraft: string,
+  blocks: string[],
+): string {
   const base = baseDraft.replace(/\s+$/u, '')
   if (!blocks.length) return base
 
-  const proof = blocks.map((b) => b.trim()).filter(Boolean).join('\n\n')
+  const proof = blocks
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .join('\n\n')
   if (!proof) return base
 
   const sep = '\n\n\n'

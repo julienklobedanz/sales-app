@@ -1,8 +1,14 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
+import {
+  isMissingEnrichmentColumnsError,
+  stripEnrichmentFields,
+} from '@/lib/market-signals/enrichment-db'
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
-import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
+import {
+  fetchGoogleNewsRssItems,
+  type GoogleNewsRssItem,
+} from '@/lib/market-signals/google-news-rss'
 import {
   isLeadershipMoveTitle,
   parseLeadershipMoveFromTitle,
@@ -13,7 +19,10 @@ import {
   RSS_MAX_AGE_DAYS_DEFAULT,
   RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from '@/lib/market-signals/sales-signal-relevance'
-import { buildPeoplePackRssQueries, isPeoplePackHost } from '@/lib/market-signals/source-packs'
+import {
+  buildPeoplePackRssQueries,
+  isPeoplePackHost,
+} from '@/lib/market-signals/source-packs'
 
 function normalizeChampionKey(raw: string | null | undefined) {
   return String(raw ?? '')
@@ -22,8 +31,14 @@ function normalizeChampionKey(raw: string | null | undefined) {
     .replace(/\s+/g, ' ')
 }
 
-function intelContentHash(companyId: string, personKey: string, articleUrl: string): string {
-  return createHash('sha256').update(`${companyId}|${personKey}|${articleUrl}`, 'utf8').digest('hex')
+function intelContentHash(
+  companyId: string,
+  personKey: string,
+  articleUrl: string,
+): string {
+  return createHash('sha256')
+    .update(`${companyId}|${personKey}|${articleUrl}`, 'utf8')
+    .digest('hex')
 }
 
 function normalizeCompanyMatchKey(name: string | null | undefined): string {
@@ -34,7 +49,10 @@ function normalizeCompanyMatchKey(name: string | null | undefined): string {
 }
 
 /** Breite Suche: Person + Firma (Google News Index). */
-export function rssQueryPersonAndCompany(personName: string, companyName: string): string {
+export function rssQueryPersonAndCompany(
+  personName: string,
+  companyName: string,
+): string {
   const p = personName.trim()
   const c = companyName.trim()
   if (!p) return ''
@@ -53,13 +71,16 @@ function rssQueryTradePress(personName: string, companyName?: string | null): st
 async function fetchMergedExecutiveArticles(
   personName: string,
   companyName: string,
-  opts: { signal: AbortSignal; maxTotal?: number }
+  opts: { signal: AbortSignal; maxTotal?: number },
 ): Promise<Array<GoogleNewsRssItem & { fromPack: boolean }>> {
   const maxTotal = Math.min(16, Math.max(4, opts.maxTotal ?? 8))
   const packQs = rssQueryTradePress(personName, companyName)
   const broad = rssQueryPersonAndCompany(personName, companyName)
   const queries = [...packQs, broad].filter(Boolean)
-  const perQuery = Math.max(3, Math.ceil(maxTotal / Math.max(1, Math.min(queries.length, 6))) + 1)
+  const perQuery = Math.max(
+    3,
+    Math.ceil(maxTotal / Math.max(1, Math.min(queries.length, 6))) + 1,
+  )
 
   const batches = await Promise.all(
     queries.map(async (q, index) => {
@@ -69,7 +90,7 @@ async function fetchMergedExecutiveArticles(
       }).catch(() => [] as GoogleNewsRssItem[])
       const fromPack = index < packQs.length
       return items.map((item) => ({ ...item, fromPack }))
-    })
+    }),
   )
 
   const byLink = new Map<string, GoogleNewsRssItem & { fromPack: boolean }>()
@@ -108,7 +129,7 @@ export async function runExecutiveIntelIngest(
     organizationId?: string
     maxPeople?: number
     pauseMsBetweenPeople?: number
-  }
+  },
 ): Promise<RunExecutiveIntelIngestResult> {
   const maxPeople = Math.min(150, Math.max(1, options?.maxPeople ?? 35))
   const pauseMs = Math.max(0, options?.pauseMsBetweenPeople ?? 500)
@@ -124,17 +145,31 @@ export async function runExecutiveIntelIngest(
     .limit(4000)
 
   if (watchErr) {
-    return { peopleScanned: 0, signalsInserted: 0, skippedNoCompany: 0, errors: [watchErr.message] }
+    return {
+      peopleScanned: 0,
+      signalsInserted: 0,
+      skippedNoCompany: 0,
+      errors: [watchErr.message],
+    }
   }
 
-  const userIds = [...new Set((watchRaw ?? []).map((w) => String((w as { user_id?: string }).user_id ?? '')))]
+  const userIds = [
+    ...new Set(
+      (watchRaw ?? []).map((w) => String((w as { user_id?: string }).user_id ?? '')),
+    ),
+  ]
   const { data: profs, error: profErr } = await supabase
     .from('profiles')
     .select('id, organization_id')
     .in('id', userIds.filter(Boolean))
 
   if (profErr) {
-    return { peopleScanned: 0, signalsInserted: 0, skippedNoCompany: 0, errors: [profErr.message] }
+    return {
+      peopleScanned: 0,
+      signalsInserted: 0,
+      skippedNoCompany: 0,
+      errors: [profErr.message],
+    }
   }
 
   const orgByUser = new Map<string, string>()
@@ -154,9 +189,12 @@ export async function runExecutiveIntelIngest(
 
   for (const row of watchRaw ?? []) {
     const uid = String((row as { user_id?: string }).user_id ?? '')
-    const personKey = normalizeChampionKey((row as { person_key?: string }).person_key ?? '')
+    const personKey = normalizeChampionKey(
+      (row as { person_key?: string }).person_key ?? '',
+    )
     const personName = String((row as { person_name?: string }).person_name ?? '').trim()
-    const watchlistCompanyName = String((row as { company_name?: string | null }).company_name ?? '').trim() || null
+    const watchlistCompanyName =
+      String((row as { company_name?: string | null }).company_name ?? '').trim() || null
     if (!personKey || !personName) continue
     const orgId = orgByUser.get(uid)
     if (!orgId) continue
@@ -197,7 +235,9 @@ export async function runExecutiveIntelIngest(
         }
       }
 
-      function resolveCompanyIdByWatchlistName(companyName: string | null | undefined): string | null {
+      function resolveCompanyIdByWatchlistName(
+        companyName: string | null | undefined,
+      ): string | null {
         const key = normalizeCompanyMatchKey(companyName)
         if (!key) return null
         const exact = companyIdByNormalizedName.get(key)
@@ -235,7 +275,9 @@ export async function runExecutiveIntelIngest(
           .order('detected_at', { ascending: false })
           .limit(800)
         for (const e of evs ?? []) {
-          const k = normalizeChampionKey(String((e as { person_name?: string }).person_name ?? ''))
+          const k = normalizeChampionKey(
+            String((e as { person_name?: string }).person_name ?? ''),
+          )
           const cid = String((e as { company_id?: string }).company_id ?? '')
           if (!k || !cid || eventCompanyByKey.has(k)) continue
           eventCompanyByKey.set(k, cid)
@@ -254,7 +296,8 @@ export async function runExecutiveIntelIngest(
           continue
         }
 
-        const companyNameFromDb = orgCompanyList.find((c) => c.id === companyId)?.name?.trim() ?? ''
+        const companyNameFromDb =
+          orgCompanyList.find((c) => c.id === companyId)?.name?.trim() ?? ''
         const rssCompanyName = w.watchlistCompanyName?.trim() || companyNameFromDb
 
         try {
@@ -267,7 +310,9 @@ export async function runExecutiveIntelIngest(
             if (title.length < 10) continue
             if (isLowValueRssTitle(title)) continue
             const leadership = isLeadershipMoveTitle(title)
-            const ageDays = leadership ? RSS_MAX_AGE_DAYS_LEADERSHIP : RSS_MAX_AGE_DAYS_DEFAULT
+            const ageDays = leadership
+              ? RSS_MAX_AGE_DAYS_LEADERSHIP
+              : RSS_MAX_AGE_DAYS_DEFAULT
             if (!isRssPubDateWithinDays(item.pubDate, ageDays)) continue
 
             const enrichment = await enrichSignal({
@@ -279,11 +324,15 @@ export async function runExecutiveIntelIngest(
             })
             if (!enrichment.is_relevant) continue
 
-            const move = parseLeadershipMoveFromTitle(title, rssCompanyName || companyNameFromDb)
+            const move = parseLeadershipMoveFromTitle(
+              title,
+              rssCompanyName || companyNameFromDb,
+            )
             const hash = intelContentHash(companyId, w.personKey, item.link)
-            const detectedAt = item.pubDate && Number.isFinite(item.pubDate.getTime())
-              ? item.pubDate.toISOString()
-              : new Date().toISOString()
+            const detectedAt =
+              item.pubDate && Number.isFinite(item.pubDate.getTime())
+                ? item.pubDate.toISOString()
+                : new Date().toISOString()
 
             const insertPayload = {
               company_id: companyId,
@@ -292,7 +341,10 @@ export async function runExecutiveIntelIngest(
               person_title_after: move.titleAfter,
               change_summary: title,
               detected_at: detectedAt,
-              event_kind: move.eventKind === 'role_change' || leadership ? 'role_change' : 'news_mention',
+              event_kind:
+                move.eventKind === 'role_change' || leadership
+                  ? 'role_change'
+                  : 'news_mention',
               source_url: item.link,
               content_hash: hash,
               signal_category: enrichment.signal_category,
@@ -300,13 +352,22 @@ export async function runExecutiveIntelIngest(
               insight_why_now: enrichment.insight_why_now,
               created_by: null,
             }
-            let insErr = (await supabase.from('market_signal_executive_events').insert(insertPayload)).error
+            let insErr = (
+              await supabase.from('market_signal_executive_events').insert(insertPayload)
+            ).error
             if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
-              insErr = (await supabase.from('market_signal_executive_events').insert(stripEnrichmentFields(insertPayload))).error
+              insErr = (
+                await supabase
+                  .from('market_signal_executive_events')
+                  .insert(stripEnrichmentFields(insertPayload))
+              ).error
             }
             if (insErr) {
               const code = (insErr as { code?: string }).code
-              if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {
+              if (
+                code !== '23505' &&
+                !/duplicate key|unique constraint/i.test(insErr.message)
+              ) {
                 errors.push(`${w.personName}: ${insErr.message}`)
               }
             } else {

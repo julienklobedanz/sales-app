@@ -1,8 +1,15 @@
 import type { DealDeskProjectOwner } from '@/lib/deal-desk/deal-desk-project'
 import { resolveProjectLocation } from '@/lib/deal-desk/deal-desk-bid-enrichment'
-import type { DealDeskMockAnalysis, DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type {
+  DealDeskMockAnalysis,
+  DealDeskTimelineItem,
+} from '@/lib/deal-desk/mock-analysis'
 import { formatNumberDe, formatReferenceVolume, parseReferenceVolume } from '@/lib/format'
-import { daysUntil, formatDateDe, normalizeDueTime } from '@/lib/deal-desk/timeline-display'
+import {
+  daysUntil,
+  formatDateDe,
+  normalizeDueTime,
+} from '@/lib/deal-desk/timeline-display'
 import { getTimelineItemKind } from '@/lib/deal-desk/timeline-item-visual'
 import { cn } from '@/lib/utils'
 
@@ -86,9 +93,7 @@ export function formatBidVolumeDisplay(raw: string | null | undefined): BidVolum
 
   const explicitRange =
     withoutTail.match(/([\d,.]+)\s*M\s*[-–]\s*([\d,.]+)\s*M\b/i) ??
-    withoutTail.match(
-      /([\d,.]+)\s*[-–]\s*([\d,.]+)\s*(?:M(?:io)?|Millionen?)\b/i
-    )
+    withoutTail.match(/([\d,.]+)\s*[-–]\s*([\d,.]+)\s*(?:M(?:io)?|Millionen?)\b/i)
   if (explicitRange) {
     const a = Number.parseFloat(explicitRange[1]!.replace(',', '.'))
     const b = Number.parseFloat(explicitRange[2]!.replace(',', '.'))
@@ -101,7 +106,7 @@ export function formatBidVolumeDisplay(raw: string | null | undefined): BidVolum
   }
 
   const explicitEuroRange = withoutTail.match(
-    /([\d.]+)\s*[-–]\s*([\d.]+)\s*€|€\s*([\d.]+)\s*[-–]\s*€?\s*([\d.]+)/i
+    /([\d.]+)\s*[-–]\s*([\d.]+)\s*€|€\s*([\d.]+)\s*[-–]\s*€?\s*([\d.]+)/i,
   )
   if (explicitEuroRange) {
     const aRaw = explicitEuroRange[1] ?? explicitEuroRange[3]
@@ -137,7 +142,7 @@ export function formatBidVolumeDisplay(raw: string | null | undefined): BidVolum
         return { label: formatEuroAmountRange(low, high), isAiEstimate: true }
       }
       const formatted = formatReferenceVolume(
-        `${parsed.currencyCode === 'EUR' ? '€' : parsed.currencyCode} ${parsed.amountDigits}`
+        `${parsed.currencyCode === 'EUR' ? '€' : parsed.currencyCode} ${parsed.amountDigits}`,
       )
       if (formatted) {
         const normalized = formatted.startsWith('€')
@@ -174,7 +179,9 @@ function shortenDeadlineTitle(title: string): string {
   return t.length > 28 ? `${t.slice(0, 26)}…` : t
 }
 
-export function formatDeadlineTimeForMeta(dueTime: string | null | undefined): string | null {
+export function formatDeadlineTimeForMeta(
+  dueTime: string | null | undefined,
+): string | null {
   const normalized = normalizeDueTime(dueTime)
   return normalized ? `${normalized} Uhr` : null
 }
@@ -199,7 +206,7 @@ function parseTimeFromDeadlineText(text: string): string | null {
 export function resolveNextRfpDeadline(
   timelineItems: DealDeskTimelineItem[],
   briefingDeadline?: string | null,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): { dateDe: string; timeDe: string | null; detail: string } | null {
   const nowNorm = new Date(now)
   nowNorm.setHours(0, 0, 0, 0)
@@ -239,13 +246,13 @@ export function resolveNextRfpDeadline(
 
 export function resolveBidOverviewMeta(
   analysis: Pick<DealDeskMockAnalysis, 'executiveBriefing' | 'timelineItems'>,
-  owner: DealDeskProjectOwner | null
+  owner: DealDeskProjectOwner | null,
 ): BidOverviewMeta {
   const briefing = analysis.executiveBriefing
   const volumeDisplay = formatBidVolumeDisplay(briefing?.expectedDealVolume ?? null)
   const next = resolveNextRfpDeadline(
     analysis.timelineItems ?? [],
-    briefing?.submissionDeadline ?? null
+    briefing?.submissionDeadline ?? null,
   )
   const ownerName = owner?.fullName?.trim() || '—'
   const ownerInitials = owner ? initialsFromName(owner.fullName) : '?'
@@ -276,11 +283,10 @@ export function formatRelativeCountdownLabel(days: number): string {
 /** Titel-Spalte: kritische Fristen (z. B. Angebotsabgabe) in Rot. */
 export function deadlineRowTitleClass(days: number, title: string): string {
   const kind = getTimelineItemKind(title)
-  const critical =
-    days >= 0 && (days < 3 || (kind === 'submission' && days < 20))
+  const critical = days >= 0 && (days < 3 || (kind === 'submission' && days < 20))
   return cn(
     'min-w-0 truncate text-sm font-semibold leading-none',
-    critical ? 'text-red-600' : 'text-foreground'
+    critical ? 'text-red-600' : 'text-foreground',
   )
 }
 

@@ -20,6 +20,7 @@
 ## 0. Warum dieses Paket (Problem)
 
 `[verifiziert]`
+
 - Referenz-RLS ist **rein mandanten-isoliert** (`companies.organization_id = current_user_organization_id()`). **Kein** Filter auf `status`/`is_nda_deal`/`approval_scope_confidential_sales`.
 - „Sales sieht keine Entwürfe" ist **nur App-Logik**: der Wert `salesVisibleOnly = (role === 'sales')` wird an **vier** Stellen dupliziert berechnet:
   - `app/dashboard/command-center/actions.ts`
@@ -35,6 +36,7 @@
 ## 1. In Scope / Out of Scope
 
 **In Scope (B1, B2, B4):**
+
 - Step 0: RLS-Loch final belegen (Sales-JWT-Lesetest + Supabase-Advisors).
 - B1: Sichtbarkeits-/Sensibilitäts-Regeln in der references-RLS erzwingen.
 - Zentralisierung der 4 dupliierten `salesVisibleOnly`-Gates auf einen Helper (aus dem Welle-1-Capability-Modell, nicht Legacy-`role`).
@@ -42,6 +44,7 @@
 - B4: Default-Sichtbarkeit für Sales als Firmen-Setting.
 
 **Out of Scope:**
+
 - B3 (Capability-Override pro einzelnem User) — später.
 - Dashboards (Welle 3), Nav-Umbau (Welle 3).
 - Änderungen an Deals/Accounts-RLS über das hier Nötige hinaus.
@@ -51,6 +54,7 @@
 ## 2. Step 0 — RLS-Loch belegen (vor der Umsetzung)
 
 `[Pflicht-Vorabschritt]`
+
 1. **Sales-JWT-Lesetest:** Mit einem echten `sales`-User-JWT (nicht Service Role!) ausführen:
    ```sql
    select id, status, is_nda_deal from references limit 50;
@@ -65,14 +69,14 @@
 
 ### 3.1 Sichtbarkeits-Regeln (Soll)
 
-| Tier | Bedingung (Spalten) | Wer darf SELECT |
-|------|---------------------|-----------------|
-| Freigegeben/extern | `status IN ('approved','external','anonymized')` | alle internen Org-Mitglieder |
-| Intern | `status = 'internal_only'` | alle internen Org-Mitglieder (nicht anonyme Token-Leser) |
-| Entwurf | `status = 'draft'` | Ersteller (`created_by = auth.uid()`), AM, Owner/Admin, RPM-Capability |
-| Vertraulich/NDA | `is_nda_deal = true` OR `approval_scope_confidential_sales = true` | Ersteller, AM, Legal*, Owner/Admin |
+| Tier               | Bedingung (Spalten)                                                | Wer darf SELECT                                                        |
+| ------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Freigegeben/extern | `status IN ('approved','external','anonymized')`                   | alle internen Org-Mitglieder                                           |
+| Intern             | `status = 'internal_only'`                                         | alle internen Org-Mitglieder (nicht anonyme Token-Leser)               |
+| Entwurf            | `status = 'draft'`                                                 | Ersteller (`created_by = auth.uid()`), AM, Owner/Admin, RPM-Capability |
+| Vertraulich/NDA    | `is_nda_deal = true` OR `approval_scope_confidential_sales = true` | Ersteller, AM, Legal\*, Owner/Admin                                    |
 
-(*Legal-Funktions-Rolle existiert erst in späterer Ausbaustufe; bis dahin Owner/Admin.)
+(\*Legal-Funktions-Rolle existiert erst in späterer Ausbaustufe; bis dahin Owner/Admin.)
 
 ### 3.2 SQL-Helfer (RLS-tauglich)
 
@@ -179,6 +183,7 @@ npm run test
 npm run build
 # Migration lokal/Branch anwenden, Supabase-Typen regenerieren
 ```
+
 - Manuell: je ein Testuser pro Funktions-Rolle; pro Sichtbarkeits-Tier prüfen, was sichtbar ist.
 - Supabase Security-Advisor erneut → keine RLS-Warnung auf `references`.
 
@@ -194,5 +199,6 @@ npm run build
 ---
 
 ## 9. Bezug zu Entscheidungen
+
 - B1 = RLS-Härtung (Abschnitt 3). B2 = Settings-Tab (Abschnitt 4). B4 = Sales-Default (Abschnitt 4).
 - Baut auf Welle-1-Capability-Katalog auf (`see_draft_references`, `see_confidential_references`, `manage_reference_program`, …).

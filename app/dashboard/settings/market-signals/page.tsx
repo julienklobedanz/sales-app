@@ -58,7 +58,9 @@ export default async function MarketSignalsManagePage() {
 
   const { data } = await supabase
     .from('companies')
-    .select('id,name,logo_url,is_favorite,account_status,website_url,newsroom_urls,newsroom_discovered_at')
+    .select(
+      'id,name,logo_url,is_favorite,account_status,website_url,newsroom_urls,newsroom_discovered_at',
+    )
     .eq('organization_id', orgId)
     .order('name')
 
@@ -74,15 +76,17 @@ export default async function MarketSignalsManagePage() {
     .order('published_on', { ascending: false })
     .limit(500)
 
-  const initialFollowingCount = ((data ?? []) as CompanyRow[]).filter((row) => Boolean(row.is_favorite)).length
+  const initialFollowingCount = ((data ?? []) as CompanyRow[]).filter((row) =>
+    Boolean(row.is_favorite),
+  ).length
   if (initialFollowingCount === 0) {
     const knownCompanyIds = new Set(((data ?? []) as CompanyRow[]).map((row) => row.id))
     const bootstrapCompanyIds = Array.from(
       new Set(
         [...(execRows ?? []), ...(newsRows ?? [])]
           .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
-          .filter((companyId) => companyId && knownCompanyIds.has(companyId))
-      )
+          .filter((companyId) => companyId && knownCompanyIds.has(companyId)),
+      ),
     ).slice(0, 8)
     if (bootstrapCompanyIds.length > 0) {
       await supabase
@@ -112,10 +116,14 @@ export default async function MarketSignalsManagePage() {
   }))
 
   const companyRows = (data ?? []) as CompanyRow[]
-  const withWebsite = companyRows.filter((row) => Boolean(String(row.website_url ?? '').trim())).length
-  const discovered = companyRows.filter((row) => Boolean(row.newsroom_discovered_at)).length
+  const withWebsite = companyRows.filter((row) =>
+    Boolean(String(row.website_url ?? '').trim()),
+  ).length
+  const discovered = companyRows.filter((row) =>
+    Boolean(row.newsroom_discovered_at),
+  ).length
   const withUrls = companyRows.filter(
-    (row) => (row.newsroom_urls ?? []).filter(Boolean).length > 0
+    (row) => (row.newsroom_urls ?? []).filter(Boolean).length > 0,
   ).length
   const newsroomSummary: NewsroomSummary = {
     withWebsite,
@@ -129,7 +137,7 @@ export default async function MarketSignalsManagePage() {
         urls: (row.newsroom_urls ?? []).filter(Boolean),
       }))
       .sort((a, b) => {
-        if ((a.urls.length > 0) !== (b.urls.length > 0)) {
+        if (a.urls.length > 0 !== b.urls.length > 0) {
           return a.urls.length > 0 ? -1 : 1
         }
         return a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })
@@ -145,7 +153,7 @@ export default async function MarketSignalsManagePage() {
           supabase,
           orgId,
           row.person_name,
-          row.company_name
+          row.company_name,
         )
         if (title) {
           await supabase
@@ -163,7 +171,7 @@ export default async function MarketSignalsManagePage() {
         createdAt: row.created_at,
         isFollowing: row.is_active !== false,
       }
-    })
+    }),
   )
 
   return (

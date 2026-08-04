@@ -62,7 +62,7 @@ export function CrmImportPreviewDialog({
             (json.items ?? []).map((item) => ({
               ...item,
               selected: item.matchStatus !== 'existing',
-            }))
+            })),
           )
         }
       })
@@ -84,14 +84,16 @@ export function CrmImportPreviewDialog({
   const selectedItems = useMemo(() => items.filter((item) => item.selected), [items])
   const selectedOpportunityCount = useMemo(
     () => selectedItems.reduce((sum, item) => sum + item.opportunities.length, 0),
-    [selectedItems]
+    [selectedItems],
   )
 
   function toggleItem(externalAccountId: string, checked: boolean) {
     setItems((prev) =>
       prev.map((item) =>
-        item.externalAccountId === externalAccountId ? { ...item, selected: checked } : item
-      )
+        item.externalAccountId === externalAccountId
+          ? { ...item, selected: checked }
+          : item,
+      ),
     )
   }
 
@@ -107,12 +109,14 @@ export function CrmImportPreviewDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          accounts: selectedItems.map(({ externalAccountId, name, website, opportunities }) => ({
-            externalAccountId,
-            name,
-            website,
-            opportunities,
-          })),
+          accounts: selectedItems.map(
+            ({ externalAccountId, name, website, opportunities }) => ({
+              externalAccountId,
+              name,
+              website,
+              opportunities,
+            }),
+          ),
         }),
       })
       const json = (await res.json()) as {
@@ -129,7 +133,7 @@ export function CrmImportPreviewDialog({
       }
 
       toast.success(
-        `${json.createdAccounts ?? 0} Accounts angelegt, ${json.linkedAccounts ?? 0} verknüpft, ${json.createdDeals ?? 0} Deals importiert.`
+        `${json.createdAccounts ?? 0} Accounts angelegt, ${json.linkedAccounts ?? 0} verknüpft, ${json.createdDeals ?? 0} Deals importiert.`,
       )
       onOpenChange(false)
       router.refresh()
@@ -146,8 +150,8 @@ export function CrmImportPreviewDialog({
         <DialogHeader>
           <DialogTitle>HubSpot-Accounts importieren</DialogTitle>
           <DialogDescription>
-            Wir haben Accounts mit offenen Opportunities in HubSpot gefunden. Wähle aus, welche nach
-            RefStack übernommen werden sollen.
+            Wir haben Accounts mit offenen Opportunities in HubSpot gefunden. Wähle aus,
+            welche nach RefStack übernommen werden sollen.
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +185,9 @@ export function CrmImportPreviewDialog({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <Badge variant="outline">{matchStatusLabel[item.matchStatus]}</Badge>
+                      <Badge variant="outline">
+                        {matchStatusLabel[item.matchStatus]}
+                      </Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {item.opportunities.length} offene{' '}

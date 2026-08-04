@@ -4,7 +4,7 @@ import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 
 /** Eine Zeile pro Dokumenttyp — aktuelle Version; ältere nur im Sheet. */
 export function groupComplianceDocumentsForTable(
-  documents: ComplianceDocumentRow[]
+  documents: ComplianceDocumentRow[],
 ): ComplianceDocumentRow[] {
   const byType = new Map<string, ComplianceDocumentRow[]>()
   for (const doc of documents) {
@@ -21,7 +21,7 @@ export function groupComplianceDocumentsForTable(
       continue
     }
     const sorted = [...versions].sort(
-      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
     )
     if (sorted[0]) rows.push(sorted[0])
   }
@@ -63,7 +63,7 @@ export function filterComplianceDocumentsForTable(args: {
 
 export function countArchivedVersionsForType(
   documents: ComplianceDocumentRow[],
-  documentType: string
+  documentType: string,
 ): number {
   return documents.filter((d) => d.document_type === documentType && !d.is_current).length
 }

@@ -11,10 +11,7 @@ import { Label } from '@/components/ui/label'
 import { ROUTES } from '@/lib/routes'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
-import {
-  confirmInternalApprovalAction,
-  delegateInternalApprovalAction,
-} from './actions'
+import { confirmInternalApprovalAction, delegateInternalApprovalAction } from './actions'
 
 type Props = {
   token: string
@@ -54,7 +51,7 @@ export function InternalApprovalForm({
       toast.success(
         result.alreadyApproved
           ? 'War bereits intern freigegeben.'
-          : 'Interne Freigabe bestätigt.'
+          : 'Interne Freigabe bestätigt.',
       )
       router.refresh()
     })
@@ -77,7 +74,7 @@ export function InternalApprovalForm({
         toast.success(`Interne Freigabe wurde an ${result.delegatedToEmail} delegiert.`)
       } else {
         toast.success(
-          `Verantwortung übertragen an ${result.delegatedToEmail}. E-Mail-Versand nicht möglich — bitte die Person direkt informieren.`
+          `Verantwortung übertragen an ${result.delegatedToEmail}. E-Mail-Versand nicht möglich — bitte die Person direkt informieren.`,
         )
       }
     })
@@ -87,8 +84,9 @@ export function InternalApprovalForm({
     return (
       <div className="space-y-4">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Die interne Freigabe wurde an <span className="font-medium text-foreground">{delegatedTo}</span>{' '}
-          delegiert. Dieser Link ist nicht mehr gültig.
+          Die interne Freigabe wurde an{' '}
+          <span className="font-medium text-foreground">{delegatedTo}</span> delegiert.
+          Dieser Link ist nicht mehr gültig.
         </p>
       </div>
     )
@@ -98,8 +96,8 @@ export function InternalApprovalForm({
     return (
       <div className="space-y-4">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Die Referenz „{referenceTitle}“ ist intern freigegeben. Als Nächstes kann in RefStack die
-          Kundenfreigabe vorbereitet werden.
+          Die Referenz „{referenceTitle}“ ist intern freigegeben. Als Nächstes kann in
+          RefStack die Kundenfreigabe vorbereitet werden.
         </p>
         <Button asChild className="w-full">
           <Link href={detailHref}>Zur Referenz in RefStack</Link>
@@ -122,7 +120,8 @@ export function InternalApprovalForm({
         <p>
           Referenz: <span className="font-medium text-foreground">{referenceTitle}</span>
           <br />
-          Account: <span className="font-medium text-foreground">{accountCompanyName}</span>
+          Account:{' '}
+          <span className="font-medium text-foreground">{accountCompanyName}</span>
         </p>
         {coordinatorEmail ? (
           <p className="text-xs">
@@ -142,14 +141,18 @@ export function InternalApprovalForm({
 
       <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">An andere Person delegieren</p>
+          <p className="text-sm font-medium text-foreground">
+            An andere Person delegieren
+          </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Die neue Person erhält eine E-Mail mit einem eigenen Link zur internen Freigabe. Ihr
-            Link verliert danach die Gültigkeit.
+            Die neue Person erhält eine E-Mail mit einem eigenen Link zur internen
+            Freigabe. Ihr Link verliert danach die Gültigkeit.
           </p>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="delegate-internal-email">E-Mail der neuen Verantwortlichen</Label>
+          <Label htmlFor="delegate-internal-email">
+            E-Mail der neuen Verantwortlichen
+          </Label>
           <Input
             id="delegate-internal-email"
             type="email"

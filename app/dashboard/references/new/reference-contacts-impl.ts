@@ -65,8 +65,10 @@ export async function createContactImpl(formData: FormData) {
 }
 
 export async function createExternalContactImpl(
-  formData: FormData
-): Promise<{ success: false; error: string } | { success: true; contact: ExternalContact }> {
+  formData: FormData,
+): Promise<
+  { success: false; error: string } | { success: true; contact: ExternalContact }
+> {
   const supabase = await createServerSupabaseClient()
 
   const {
@@ -137,7 +139,7 @@ export async function createExternalContactImpl(
 
 export async function updateContactImpl(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -168,7 +170,7 @@ export async function updateContactImpl(
 
 export async function updateExternalContactImpl(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {

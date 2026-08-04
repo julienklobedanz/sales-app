@@ -13,7 +13,10 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
+    return NextResponse.json(
+      { success: false, error: 'Nicht angemeldet.' },
+      { status: 401 },
+    )
   }
 
   try {
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
         error:
           'Ein unerwarteter Fehler ist aufgetreten. Bitte Dateigröße (max. 4,5 MB) und Format prüfen.',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

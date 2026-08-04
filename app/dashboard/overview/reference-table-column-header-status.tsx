@@ -1,20 +1,20 @@
-"use client"
+'use client'
 
-import type * as React from "react"
+import type * as React from 'react'
 
-import { DraggableColumnHead } from "@/components/table/draggable-column-head"
+import { DraggableColumnHead } from '@/components/table/draggable-column-head'
 
-import type { ReferenceTableHeaderRenderContext } from "./reference-table-column-types"
+import type { ReferenceTableHeaderRenderContext } from './reference-table-column-types'
 import {
   buildHeaderDragProps,
   CheckboxFilterHeader,
-} from "./reference-table-column-header-shared"
+} from './reference-table-column-header-shared'
 
 export function renderStatusHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("status", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('status', ctx)}>
       <CheckboxFilterHeader
         label={ctx.COLUMN_LABELS.status}
         filterValue={ctx.statusFilter}
@@ -34,18 +34,16 @@ export function renderStatusHeader(
 }
 
 export function renderProjectStatusHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("project_status", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('project_status', ctx)}>
       <CheckboxFilterHeader
         label={ctx.COLUMN_LABELS.project_status}
         filterValue={ctx.projectStatusFilter}
         setFilter={ctx.setProjectStatusFilter}
         options={ctx.filterOptions.projectStatuses}
-        getLabel={(value) =>
-          value === "active" ? "Aktiv" : "Abgeschlossen"
-        }
+        getLabel={(value) => (value === 'active' ? 'Aktiv' : 'Abgeschlossen')}
         popoverClassName="w-64"
         listClassName="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm"
         search={ctx.projectStatusSearch}

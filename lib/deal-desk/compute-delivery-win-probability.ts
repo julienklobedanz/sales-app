@@ -2,7 +2,10 @@ import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { RfpVerdict } from '@/lib/rfp-relevance'
-import { effectiveSimilarity, isRequirementCovered } from '@/lib/deals/rfp-relevance-coverage'
+import {
+  effectiveSimilarity,
+  isRequirementCovered,
+} from '@/lib/deals/rfp-relevance-coverage'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 
 export type OrgComplianceDoc = {
@@ -60,9 +63,13 @@ const REQUIREMENT_DOC_PATTERNS: { pattern: RegExp; types: string[] }[] = [
 const COMPLIANCE_TEXT_PATTERN =
   /iso\s*\d|soc\s*2|tisax|bsi|c5|gdpr|ds[\s-]?gvo|\bavv\b|\bdpa\b|penetration|pen[\s-]?test|zertifikat|compliance|datenschutz|nachweis|zertifiziert|audit|informationssicherheit/i
 
-export function isComplianceRequirement(req: Pick<ExtractedRfpRequirement, 'text' | 'category'>): boolean {
+export function isComplianceRequirement(
+  req: Pick<ExtractedRfpRequirement, 'text' | 'category'>,
+): boolean {
   const cat = (req.category ?? '').toLowerCase()
-  if (/compliance|security|zertifikat|datenschutz|iso|audit|legal|governance/i.test(cat)) {
+  if (
+    /compliance|security|zertifikat|datenschutz|iso|audit|legal|governance/i.test(cat)
+  ) {
     return true
   }
   return COMPLIANCE_TEXT_PATTERN.test(req.text)
@@ -81,12 +88,10 @@ function isDocValid(doc: OrgComplianceDoc, refDate: Date): boolean {
 function orgHasDocTypes(
   docs: OrgComplianceDoc[],
   types: string[],
-  refDate: Date
+  refDate: Date,
 ): boolean {
   const typeSet = new Set(types)
-  return docs.some(
-    (d) => typeSet.has(d.document_type) && isDocValid(d, refDate)
-  )
+  return docs.some((d) => typeSet.has(d.document_type) && isDocValid(d, refDate))
 }
 
 function orgHasAnyComplianceEvidence(docs: OrgComplianceDoc[], refDate: Date): boolean {
@@ -106,7 +111,7 @@ export function requirementDocTypes(text: string): string[] | null {
 export function isComplianceRequirementFulfilled(
   req: Pick<ExtractedRfpRequirement, 'text'>,
   docs: OrgComplianceDoc[],
-  refDate: Date = new Date()
+  refDate: Date = new Date(),
 ): boolean {
   const specific = requirementDocTypes(req.text)
   if (specific?.length) {
@@ -118,7 +123,7 @@ export function isComplianceRequirementFulfilled(
 function bestSimilarity(
   coverage: RfpCoverageRow[],
   requirementId: string,
-  verdicts?: Record<string, RfpVerdict> | null
+  verdicts?: Record<string, RfpVerdict> | null,
 ): number {
   const row = coverage.find((c) => c.requirementId === requirementId)
   if (!row || row.embedError) return 0
@@ -203,7 +208,7 @@ export function computeDeliveryWinProbability(params: {
     evidenceScore = orgHasAnyComplianceEvidence(complianceDocs, refDate) ? 85 : 50
   } else {
     evidenceScore = Math.round(
-      (fulfilledComplianceRequirements / totalComplianceRequirements) * 100
+      (fulfilledComplianceRequirements / totalComplianceRequirements) * 100,
     )
   }
 
@@ -211,12 +216,9 @@ export function computeDeliveryWinProbability(params: {
   const weightedScore = Math.round(
     portfolioScore * WEIGHTS.portfolio +
       capabilityScore * WEIGHTS.capability +
-      evidenceScore * WEIGHTS.evidence
+      evidenceScore * WEIGHTS.evidence,
   )
-  const finalScore = Math.min(
-    100,
-    Math.max(0, weightedScore - contractPenalty)
-  )
+  const finalScore = Math.min(100, Math.max(0, weightedScore - contractPenalty))
 
   return {
     portfolioScore,
@@ -226,7 +228,9 @@ export function computeDeliveryWinProbability(params: {
     weightedScore,
     finalScore,
     matchedReferences,
-    totalDeliveryRequirements: useAllForDelivery ? requirements.length : totalDeliveryRequirements,
+    totalDeliveryRequirements: useAllForDelivery
+      ? requirements.length
+      : totalDeliveryRequirements,
     fulfilledComplianceRequirements,
     totalComplianceRequirements,
   }

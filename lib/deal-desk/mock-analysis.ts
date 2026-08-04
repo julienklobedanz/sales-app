@@ -97,9 +97,11 @@ export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   strategicAssessment:
     'Die Ausschreibung adressiert Cloud-Migration und SAP-nahe Infrastruktur — exakt euer Kern-ICP (Enterprise IT, DACH, >500 MA). Budgetrahmen und Laufzeit passen zu drei gewonnenen Deals der letzten 18 Monate. Hauptrisiko: aggressive SLA-Pönalen und unbegrenzte Haftungsklausel; ohne Legal-Review kein GO.',
   techFocus: 'Cloud-Migration (AWS/Azure) + SAP S/4HANA Core-Schnittstellen',
-  governance: 'ISO 27001 erforderlich, zwingende Datenhaltung in der Schweiz (Finanz-Compliance)',
+  governance:
+    'ISO 27001 erforderlich, zwingende Datenhaltung in der Schweiz (Finanz-Compliance)',
   economicDecisionMaker: 'Thomas Müller (CPO/CTO, Logistik-Board)',
-  competition: 'Starker Verdacht auf [Mitbewerber A] aufgrund der Formulierung in Kap. 4.2.',
+  competition:
+    'Starker Verdacht auf [Mitbewerber A] aufgrund der Formulierung in Kap. 4.2.',
   ourLeverage: 'Matcht perfekt mit den 2 internen Referenzen (Aurubis & SAP-EMEA-Case).',
   tenderProcedure: 'Digitaler Upload am 19.06., danach Shortlist-Präsentation im Juli.',
   keyTakeaways: [
@@ -161,7 +163,11 @@ export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   ],
 }
 
-export const BID_TEAM_ROLE_DEFS: { key: BidTeamRoleKey; label: string; description: string }[] = [
+export const BID_TEAM_ROLE_DEFS: {
+  key: BidTeamRoleKey
+  label: string
+  description: string
+}[] = [
   {
     key: 'sales_lead',
     label: 'Sales Lead',
@@ -215,7 +221,8 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
     id: 'rf-2',
     severity: 'high',
     title: 'Pönale bei SLA-Bruch',
-    excerpt: 'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 % — ohne Ausschluss höherer Schäden.',
+    excerpt:
+      'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 % — ohne Ausschluss höherer Schäden.',
     pageHint: 'Leistungsbeschreibung Kap. 7',
     sourceFileName: 'Leistungsbeschreibung.pdf',
   },
@@ -223,7 +230,8 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
     id: 'rf-3',
     severity: 'medium',
     title: 'Festpreis ohne Change-Request-Mechanismus',
-    excerpt: 'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
+    excerpt:
+      'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
     pageHint: 'Kap. 3.4',
     sourceFileName: 'Vertragsentwurf.pdf',
   },
@@ -233,13 +241,11 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
 export function buildEmptyDealDeskAnalysis(
   fileNames: string[],
   customerName?: string | null,
-  winProbability?: number | null
+  winProbability?: number | null,
 ): DealDeskMockAnalysis {
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
-    fileNames.length === 1
-      ? primary
-      : `${primary} + ${fileNames.length - 1} weitere`
+    fileNames.length === 1 ? primary : `${primary} + ${fileNames.length - 1} weitere`
   return {
     documentName: docLabel,
     documentNames: fileNames.length > 0 ? [...fileNames] : ['RFP-Paket'],
@@ -266,9 +272,7 @@ export function buildDemoDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
 export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnalysis {
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
-    fileNames.length === 1
-      ? primary
-      : `${primary} + ${fileNames.length - 1} weitere`
+    fileNames.length === 1 ? primary : `${primary} + ${fileNames.length - 1} weitere`
   const multiDocHint =
     fileNames.length > 1
       ? ` Querschnitt aus ${fileNames.length} Dokumenten (u. a. Leistungsbeschreibung, Eignungsmatrix, Vertragsentwurf).`
@@ -277,7 +281,8 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
   const draftRows: DealDeskMockAnalysis['draftRows'] = [
     {
       id: 'd-1',
-      requirement: 'Haben Sie Erfahrung mit Cloud-Migration in der Logistik (SAP S/4, Hybrid)?',
+      requirement:
+        'Haben Sie Erfahrung mit Cloud-Migration in der Logistik (SAP S/4, Hybrid)?',
       answer:
         'Ja. Wir haben eine vergleichbare Migration bei Aurubis durchgeführt: Lift-and-Shift der Kern-Workloads, anschließend Containerisierung der Integrationslayer. Time-to-Value nach 14 Wochen für die erste produktive Umgebung.',
       reference: {
@@ -316,28 +321,31 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
   ]
 
   const redFlags: DealDeskRedFlag[] = [
-      ...DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
-      {
-        id: 'rf-4',
-        severity: 'high',
-        title: 'Subunternehmer-Haftung',
-        excerpt: 'Auftragnehmer haftet für Handlungen und Unterlassungen aller Subunternehmer wie für eigene.',
-        pageHint: 'Vertragsentwurf § 9',
-      },
-      {
-        id: 'rf-5',
-        severity: 'medium',
-        title: 'Audit-Rechte des Auftraggebers',
-        excerpt: 'Jederzeitige Prüfung von Systemen und Prozessen mit 5 Werktagen Vorlauf — ohne Kostenobergrenze.',
-        pageHint: 'Anhang C',
-      },
-      {
-        id: 'rf-6',
-        severity: 'critical',
-        title: 'Konventionalstrafe bei Abbruch',
-        excerpt: 'Bei vorzeitiger Beendigung 15 % des Gesamtauftragswerts als pauschale Vertragsstrafe.',
-        pageHint: 'Kap. 12.1',
-      },
+    ...DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
+    {
+      id: 'rf-4',
+      severity: 'high',
+      title: 'Subunternehmer-Haftung',
+      excerpt:
+        'Auftragnehmer haftet für Handlungen und Unterlassungen aller Subunternehmer wie für eigene.',
+      pageHint: 'Vertragsentwurf § 9',
+    },
+    {
+      id: 'rf-5',
+      severity: 'medium',
+      title: 'Audit-Rechte des Auftraggebers',
+      excerpt:
+        'Jederzeitige Prüfung von Systemen und Prozessen mit 5 Werktagen Vorlauf — ohne Kostenobergrenze.',
+      pageHint: 'Anhang C',
+    },
+    {
+      id: 'rf-6',
+      severity: 'critical',
+      title: 'Konventionalstrafe bei Abbruch',
+      excerpt:
+        'Bei vorzeitiger Beendigung 15 % des Gesamtauftragswerts als pauschale Vertragsstrafe.',
+      pageHint: 'Kap. 12.1',
+    },
   ]
 
   const requirements = draftRows.map((d) => ({
@@ -392,11 +400,13 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       },
       {
         id: 'aggressive_deadline',
-        evidence: 'Abgabefrist 8 Kalendertage nach Veröffentlichung bei Enterprise-Scope.',
+        evidence:
+          'Abgabefrist 8 Kalendertage nach Veröffentlichung bei Enterprise-Scope.',
       },
       {
         id: 'recycled_old_document',
-        evidence: 'Metadaten und Anhang verweisen auf Frist 2019 sowie Vorlage „RFP_2020_final“.',
+        evidence:
+          'Metadaten und Anhang verweisen auf Frist 2019 sowie Vorlage „RFP_2020_final“.',
       },
     ]),
     executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
@@ -456,7 +466,8 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       },
       {
         id: 's-2',
-        question: 'Können wir 99,9 % SLA mit bestehendem Managed-Services-Stack garantieren?',
+        question:
+          'Können wir 99,9 % SLA mit bestehendem Managed-Services-Stack garantieren?',
         category: 'Delivery / CTO',
         dueInDays: 3,
         contextExcerpt:

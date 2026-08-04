@@ -69,7 +69,8 @@ export function TrashDialog({
         <DialogHeader>
           <DialogTitle>Papierkorb ({deletedCount})</DialogTitle>
           <DialogDescription>
-            Gelöschte Referenzen können hier wiederhergestellt oder endgültig entfernt werden.
+            Gelöschte Referenzen können hier wiederhergestellt oder endgültig entfernt
+            werden.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -150,12 +151,14 @@ export function TrashDialog({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Papierkorb unwiderruflich leeren?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Bist du sicher? Alle {trashItems.length} Referenzen im Papierkorb werden
-                    endgültig gelöscht und können nicht wiederhergestellt werden.
+                    Bist du sicher? Alle {trashItems.length} Referenzen im Papierkorb
+                    werden endgültig gelöscht und können nicht wiederhergestellt werden.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={emptyingTrash}>Abbrechen</AlertDialogCancel>
+                  <AlertDialogCancel disabled={emptyingTrash}>
+                    Abbrechen
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     className={cn(buttonVariants({ variant: 'destructive' }))}
                     disabled={emptyingTrash}

@@ -37,7 +37,7 @@ function normalizeWebsite(raw: string | null | undefined): string | null {
 
 async function fetchAllOpenDeals(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<HubSpotDealSearchResponse['results']> {
   const deals: NonNullable<HubSpotDealSearchResponse['results']> = []
   let after: string | undefined
@@ -64,7 +64,7 @@ async function fetchAllOpenDeals(
       supabase,
       organizationId,
       '/crm/v3/objects/deals/search',
-      { method: 'POST', body: JSON.stringify(body) }
+      { method: 'POST', body: JSON.stringify(body) },
     )
 
     if (!res.ok) break
@@ -81,7 +81,7 @@ async function fetchAllOpenDeals(
 async function fetchCompaniesByIds(
   supabase: SupabaseClient,
   organizationId: string,
-  companyIds: string[]
+  companyIds: string[],
 ): Promise<Map<string, { name: string; website: string | null }>> {
   const map = new Map<string, { name: string; website: string | null }>()
   const chunkSize = 100
@@ -98,7 +98,7 @@ async function fetchCompaniesByIds(
           properties: COMPANY_PROPERTIES,
           inputs: chunk.map((id) => ({ id })),
         }),
-      }
+      },
     )
 
     if (!res.ok) continue
@@ -107,7 +107,7 @@ async function fetchCompaniesByIds(
       const name = String(row.properties?.name ?? '').trim()
       if (!name) continue
       const website = normalizeWebsite(
-        row.properties?.website ?? row.properties?.domain ?? null
+        row.properties?.website ?? row.properties?.domain ?? null,
       )
       map.set(row.id, { name, website })
     }
@@ -121,8 +121,10 @@ async function fetchCompaniesByIds(
  */
 export async function listHubSpotAccountsWithOpenOpportunities(
   supabase: SupabaseClient,
-  organizationId: string
-): Promise<{ success: true; accounts: CrmAccountCandidate[] } | { success: false; error: string }> {
+  organizationId: string,
+): Promise<
+  { success: true; accounts: CrmAccountCandidate[] } | { success: false; error: string }
+> {
   const deals = await fetchAllOpenDeals(supabase, organizationId)
   if (!deals?.length) {
     return { success: true, accounts: [] }
@@ -137,7 +139,7 @@ export async function listHubSpotAccountsWithOpenOpportunities(
         stage: deal.properties?.dealstage ?? null,
         closeDate: deal.properties?.closedate ?? null,
       },
-    ])
+    ]),
   )
 
   const dealIds = deals.map((d) => d.id)
@@ -148,7 +150,7 @@ export async function listHubSpotAccountsWithOpenOpportunities(
     {
       method: 'POST',
       body: JSON.stringify({ inputs: dealIds.map((id) => ({ id })) }),
-    }
+    },
   )
 
   if (!associations.ok) {

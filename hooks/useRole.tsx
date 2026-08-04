@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 
-import type { Capability, FunctionRole, SystemRole } from "@/lib/roles/capabilities"
-import { hasCapability } from "@/lib/roles/legacy-mapping"
-import { legacyAppRoleFrom } from "@/lib/roles/legacy-mapping"
-import type { AppRole } from "@/lib/roles/types"
+import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { hasCapability } from '@/lib/roles/legacy-mapping'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import type { AppRole } from '@/lib/roles/types'
 
 export type { AppRole, SystemRole, FunctionRole, Capability }
 
@@ -40,12 +40,12 @@ export function RoleProvider({
 export function useRole() {
   const ctx = React.useContext(RoleContext)
   if (!ctx) {
-    throw new Error("useRole must be used within a RoleProvider.")
+    throw new Error('useRole must be used within a RoleProvider.')
   }
-  const isOwner = ctx.systemRole === "owner"
-  const isAdmin = ctx.systemRole === "owner" || ctx.systemRole === "admin"
-  const isSales = ctx.functionRole === "sales_rep"
-  const isAccountManager = ctx.functionRole === "account_manager"
+  const isOwner = ctx.systemRole === 'owner'
+  const isAdmin = ctx.systemRole === 'owner' || ctx.systemRole === 'admin'
+  const isSales = ctx.functionRole === 'sales_rep'
+  const isAccountManager = ctx.functionRole === 'account_manager'
   const can = (cap: Capability) =>
     hasCapability(ctx.functionRole, ctx.systemRole, ctx.capabilities, cap)
   return { ...ctx, isOwner, isAdmin, isAccountManager, isSales, can }

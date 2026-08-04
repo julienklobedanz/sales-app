@@ -29,7 +29,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { log } from '@/lib/observability/logger'
 
-type MfaFactor = { id: string; factor_type: string; status: string; friendly_name?: string }
+type MfaFactor = {
+  id: string
+  factor_type: string
+  status: string
+  friendly_name?: string
+}
 
 function extractTotpFactors(data: unknown): MfaFactor[] {
   if (!data || typeof data !== 'object') return []
@@ -76,7 +81,8 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
     }
   }, [refreshFactors])
 
-  const verifiedFactor = factors.find((f) => String(f.status).toLowerCase() === 'verified') ?? null
+  const verifiedFactor =
+    factors.find((f) => String(f.status).toLowerCase() === 'verified') ?? null
 
   function resetEnrollUi() {
     setPendingFactorId(null)
@@ -97,7 +103,8 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
       if (error) throw error
       if (!data?.id) throw new Error('Enrollment nicht gestartet.')
       setPendingFactorId(data.id)
-      const svg = (data as { totp?: { qr_code?: string; secret?: string } }).totp?.qr_code ?? null
+      const svg =
+        (data as { totp?: { qr_code?: string; secret?: string } }).totp?.qr_code ?? null
       const sec = (data as { totp?: { secret?: string } }).totp?.secret ?? null
       setQrSvg(svg)
       setSecret(sec ?? null)
@@ -177,7 +184,7 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
       toast.error(
         e instanceof Error
           ? e.message
-          : 'Konnte 2FA nicht entfernen. Bitte zuerst mit Authenticator anmelden (Sitzung AAL2).'
+          : 'Konnte 2FA nicht entfernen. Bitte zuerst mit Authenticator anmelden (Sitzung AAL2).',
       )
     } finally {
       setUnenrollBusy(false)
@@ -185,7 +192,10 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
   }
 
   const qrSrc =
-    qrSvg && (qrSvg.startsWith('data:') ? qrSvg : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`)
+    qrSvg &&
+    (qrSvg.startsWith('data:')
+      ? qrSvg
+      : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`)
 
   return (
     <>
@@ -197,9 +207,15 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
         }
       >
         <div>
-          <p className="text-sm font-medium text-slate-900">Zwei-Faktor-Authentifizierung (TOTP)</p>
+          <p className="text-sm font-medium text-slate-900">
+            Zwei-Faktor-Authentifizierung (TOTP)
+          </p>
           {loading || verifiedFactor ? (
-            <p className={compact ? 'mt-0.5 text-xs text-slate-600' : 'mt-1 text-xs text-slate-600'}>
+            <p
+              className={
+                compact ? 'mt-0.5 text-xs text-slate-600' : 'mt-1 text-xs text-slate-600'
+              }
+            >
               {loading
                 ? 'Status wird geladen …'
                 : 'Authenticator ist eingerichtet. Bei der Anmeldung wird ein Code abgefragt.'}
@@ -209,8 +225,7 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
         <div className="flex flex-wrap items-center gap-2">
           {loading ? (
             <Button type="button" variant="outline" size="sm" disabled>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              …
+              <Loader2 className="mr-2 size-4 animate-spin" />…
             </Button>
           ) : verifiedFactor ? (
             <AlertDialog>
@@ -224,18 +239,26 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
                 <AlertDialogHeader>
                   <AlertDialogTitle>2FA deaktivieren?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Dein Konto ist dann nur noch mit Passwort geschützt. Diese Aktion ist erst möglich, wenn du in
-                    dieser Sitzung bereits den Authenticator-Code eingegeben hast.
+                    Dein Konto ist dann nur noch mit Passwort geschützt. Diese Aktion ist
+                    erst möglich, wenn du in dieser Sitzung bereits den Authenticator-Code
+                    eingegeben hast.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void unenrollVerified()}>Deaktivieren</AlertDialogAction>
+                  <AlertDialogAction onClick={() => void unenrollVerified()}>
+                    Deaktivieren
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           ) : (
-            <Button type="button" size="sm" onClick={() => void startEnroll()} disabled={enrollBusy}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void startEnroll()}
+              disabled={enrollBusy}
+            >
               {enrollBusy ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
@@ -247,18 +270,26 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
         </div>
       </div>
 
-      <Dialog open={enrollOpen} onOpenChange={(open) => void handleEnrollDialogOpenChange(open)}>
+      <Dialog
+        open={enrollOpen}
+        onOpenChange={(open) => void handleEnrollDialogOpenChange(open)}
+      >
         <DialogContent className="max-w-md" showCloseButton={!enrollBusy}>
           <DialogHeader>
             <DialogTitle>Authenticator koppeln</DialogTitle>
             <DialogDescription>
-              Scan den QR-Code oder gib den Secret-Code manuell ein. Danach den 6-stelligen Code aus der App eingeben.
+              Scan den QR-Code oder gib den Secret-Code manuell ein. Danach den
+              6-stelligen Code aus der App eingeben.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-3">
             {qrSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={qrSrc} alt="QR-Code für Authenticator" className="size-44 rounded-lg border bg-white p-2" />
+              <img
+                src={qrSrc}
+                alt="QR-Code für Authenticator"
+                className="size-44 rounded-lg border bg-white p-2"
+              />
             ) : (
               <p className="text-sm text-muted-foreground">QR-Code wird geladen …</p>
             )}
@@ -275,17 +306,28 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
               inputMode="numeric"
               autoComplete="one-time-code"
               value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              onChange={(e) =>
+                setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 8))
+              }
               placeholder="000000"
               disabled={enrollBusy}
               className="text-center font-mono text-lg tracking-widest"
             />
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setEnrollOpen(false)} disabled={enrollBusy}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEnrollOpen(false)}
+              disabled={enrollBusy}
+            >
               Abbrechen
             </Button>
-            <Button type="button" onClick={() => void confirmEnroll()} disabled={enrollBusy}>
+            <Button
+              type="button"
+              onClick={() => void confirmEnroll()}
+              disabled={enrollBusy}
+            >
               {enrollBusy ? <Loader2 className="size-4 animate-spin" /> : 'Aktivieren'}
             </Button>
           </DialogFooter>

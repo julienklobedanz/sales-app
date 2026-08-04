@@ -69,7 +69,7 @@ describe('resolveBidOverviewMeta', () => {
         userId: 'u1',
         fullName: 'Alex Stern',
         avatarUrl: 'https://example.com/a.jpg',
-      }
+      },
     )
     expect(meta.volume).not.toBe('—')
     expect(meta.volumeIsAiEstimate).toBe(true)

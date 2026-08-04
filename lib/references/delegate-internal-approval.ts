@@ -14,7 +14,7 @@ export type DelegateInternalApprovalResult =
 export async function delegateInternalApprovalFromToken(
   admin: SupabaseClient,
   token: string,
-  delegateEmail: string
+  delegateEmail: string,
 ): Promise<DelegateInternalApprovalResult> {
   const trimmedToken = token.trim()
   const email = delegateEmail.trim().toLowerCase()
@@ -34,7 +34,7 @@ export async function delegateInternalApprovalFromToken(
       approval_message,
       approval_coordinator_email,
       companies ( name )
-    `
+    `,
     )
     .eq('approval_internal_review_token', trimmedToken)
     .maybeSingle()
@@ -47,7 +47,9 @@ export async function delegateInternalApprovalFromToken(
   const newToken = randomUUID()
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
   const accountCompanyName =
-    typeof company?.name === 'string' && company.name.trim() ? company.name.trim() : 'Account'
+    typeof company?.name === 'string' && company.name.trim()
+      ? company.name.trim()
+      : 'Account'
   const requesterName = String(row.approval_requester_name ?? '').trim()
   const previousEmail = String(row.approval_coordinator_email ?? '').trim()
 

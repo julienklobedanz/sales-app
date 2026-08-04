@@ -7,8 +7,8 @@ describe('detectReferenceContentLanguage', () => {
     expect(
       detectReferenceContentLanguage(
         'Wir haben die Effizienz im Kerngeschäft deutlich gesteigert.',
-        'Die Herausforderung lag in der Integration.'
-      )
+        'Die Herausforderung lag in der Integration.',
+      ),
     ).toBe('de')
   })
 
@@ -16,8 +16,8 @@ describe('detectReferenceContentLanguage', () => {
     expect(
       detectReferenceContentLanguage(
         'We delivered a scalable cloud platform for our customer.',
-        'The project helped the team accelerate their digital transformation.'
-      )
+        'The project helped the team accelerate their digital transformation.',
+      ),
     ).toBe('en')
   })
 })

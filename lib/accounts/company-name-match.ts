@@ -37,7 +37,7 @@ export function stripLegalSuffixFromCompanyName(name: string): string {
 /** Brandfetch-Name hat Vorrang; sonst Kernname ohne AG/GmbH. */
 export function displayCompanyNameForImport(
   rawName: string,
-  brandfetchName: string | null | undefined
+  brandfetchName: string | null | undefined,
 ): string {
   const fromApi = String(brandfetchName ?? '').trim()
   if (fromApi) return fromApi

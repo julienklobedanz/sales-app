@@ -21,7 +21,7 @@ import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
 export async function searchCompaniesForMeetingPrep(
   supabase: SupabaseClient,
   orgId: string,
-  query: string
+  query: string,
 ): Promise<CompanySearchHit[]> {
   const q = query.trim()
   if (q.length < 2) return []
@@ -48,7 +48,7 @@ export async function buildMeetingPrepSnapshot(
     companyName: string
     companyLogoUrl?: string | null
     nameQuery: string
-  }
+  },
 ): Promise<MeetingPrepSnapshot> {
   const companyId = input.companyId
   const companyName = input.companyName.trim() || input.nameQuery.trim() || 'Account'
@@ -74,7 +74,11 @@ export async function buildMeetingPrepSnapshot(
       }
     }
     deals = (dealRows ?? [])
-      .filter((d) => ACTIVE_DEAL_STATUSES.includes(String(d.status) as (typeof ACTIVE_DEAL_STATUSES)[number]))
+      .filter((d) =>
+        ACTIVE_DEAL_STATUSES.includes(
+          String(d.status) as (typeof ACTIVE_DEAL_STATUSES)[number],
+        ),
+      )
       .map((d) => ({
         id: String(d.id),
         title: String(d.title ?? 'Deal'),
@@ -87,24 +91,33 @@ export async function buildMeetingPrepSnapshot(
   const primaryDealId = deals[0]?.id ?? null
 
   const signals: MeetingPrepSnapshot['signals'] = []
-  const newsForRisk: Array<{ id: string; body: string; publishedOn: string; insightFact?: string | null }> =
-    []
+  const newsForRisk: Array<{
+    id: string
+    body: string
+    publishedOn: string
+    insightFact?: string | null
+  }> = []
 
   if (companyId) {
     const execRes = await supabase
       .from('market_signal_executive_events')
       .select(
-        'id, person_name, change_summary, detected_at, person_title_after, insight_signal_fact, companies(name)'
+        'id, person_name, change_summary, detected_at, person_title_after, insight_signal_fact, companies(name)',
       )
       .eq('company_id', companyId)
       .order('detected_at', { ascending: false })
       .limit(8)
 
-    let execRows: Record<string, unknown>[] | null = (execRes.data ?? []) as Record<string, unknown>[]
+    let execRows: Record<string, unknown>[] | null = (execRes.data ?? []) as Record<
+      string,
+      unknown
+    >[]
     if (execRes.error && isMissingEnrichmentColumnsError(execRes.error.message)) {
       const fallback = await supabase
         .from('market_signal_executive_events')
-        .select('id, person_name, change_summary, detected_at, person_title_after, companies(name)')
+        .select(
+          'id, person_name, change_summary, detected_at, person_title_after, companies(name)',
+        )
         .eq('company_id', companyId)
         .order('detected_at', { ascending: false })
         .limit(8)
@@ -171,7 +184,9 @@ export async function buildMeetingPrepSnapshot(
     ...newsRisks.slice(0, 2).map((n) => n.headline),
   ].join(' · ')
 
-  const matchResult = await matchReferencesImpl(matchQuery, primaryDealId, { matchCount: 5 })
+  const matchResult = await matchReferencesImpl(matchQuery, primaryDealId, {
+    matchCount: 5,
+  })
   const references: MeetingPrepSnapshot['references'] =
     matchResult.success && matchResult.matches.length
       ? matchResult.matches.slice(0, 3).map((hit) => ({
@@ -185,9 +200,13 @@ export async function buildMeetingPrepSnapshot(
 
   const signalReferencePairs: MeetingPrepSnapshot['signalReferencePairs'] = []
   for (const sig of signals.slice(0, 4)) {
-    const pairMatch = await matchReferencesImpl(`${companyName} ${sig.label}`, primaryDealId, {
-      matchCount: 1,
-    })
+    const pairMatch = await matchReferencesImpl(
+      `${companyName} ${sig.label}`,
+      primaryDealId,
+      {
+        matchCount: 1,
+      },
+    )
     const hit = pairMatch.success ? pairMatch.matches[0] : undefined
     if (!hit) continue
     signalReferencePairs.push({

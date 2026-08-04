@@ -36,7 +36,7 @@ async function extractWithLLM(documentText: string): Promise<ExtractedReferenceD
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     throw new Error(
-      'Automatisches Ausfüllen ist nicht konfiguriert (fehlender API-Schlüssel). Bitte die Felder manuell ausfüllen oder einen Administrator informieren.'
+      'Automatisches Ausfüllen ist nicht konfiguriert (fehlender API-Schlüssel). Bitte die Felder manuell ausfüllen oder einen Administrator informieren.',
     )
   }
 
@@ -105,21 +105,21 @@ Dokumenttext (Ausschnitt):
       lower.includes('billing')
     ) {
       throw new Error(
-        'Automatisches Ausfüllen ist gerade nicht möglich: beim KI-Anbieter ist das Kontingent aufgebraucht oder ein Rate-Limit greift. Bitte Abrechnung/API-Plan prüfen oder die Felder manuell ausfüllen.'
+        'Automatisches Ausfüllen ist gerade nicht möglich: beim KI-Anbieter ist das Kontingent aufgebraucht oder ein Rate-Limit greift. Bitte Abrechnung/API-Plan prüfen oder die Felder manuell ausfüllen.',
       )
     }
     if (response.status === 401) {
       throw new Error(
-        'Automatisches Ausfüllen ist nicht möglich: der API-Schlüssel für die KI-Extraktion ist ungültig. Bitte die Konfiguration prüfen.'
+        'Automatisches Ausfüllen ist nicht möglich: der API-Schlüssel für die KI-Extraktion ist ungültig. Bitte die Konfiguration prüfen.',
       )
     }
     if (response.status === 503 || response.status === 502) {
       throw new Error(
-        'Der KI-Dienst ist vorübergehend nicht erreichbar. Bitte später erneut versuchen oder die Felder manuell ausfüllen.'
+        'Der KI-Dienst ist vorübergehend nicht erreichbar. Bitte später erneut versuchen oder die Felder manuell ausfüllen.',
       )
     }
     throw new Error(
-      'Die KI-Antwort konnte nicht verarbeitet werden. Bitte später erneut versuchen oder die Felder manuell ausfüllen.'
+      'Die KI-Antwort konnte nicht verarbeitet werden. Bitte später erneut versuchen oder die Felder manuell ausfüllen.',
     )
   }
 
@@ -131,7 +131,9 @@ Dokumenttext (Ausschnitt):
   return {
     title: typeof parsed.title === 'string' ? parsed.title : null,
     summary:
-      typeof parsed.summary === 'string' ? clampNarrativeTextNullable(parsed.summary) : null,
+      typeof parsed.summary === 'string'
+        ? clampNarrativeTextNullable(parsed.summary)
+        : null,
     industry: (() => {
       if (typeof parsed.industry !== 'string') return null
       const id = resolveIndustryId(parsed.industry.trim())
@@ -143,8 +145,7 @@ Dokumenttext (Ausschnitt):
     tags: Array.isArray(parsed.tags)
       ? parsed.tags.filter((t): t is string => typeof t === 'string')
       : [],
-    company_name:
-      typeof parsed.company_name === 'string' ? parsed.company_name : null,
+    company_name: typeof parsed.company_name === 'string' ? parsed.company_name : null,
     customer_challenge:
       typeof parsed.customer_challenge === 'string'
         ? clampNarrativeTextNullable(parsed.customer_challenge)
@@ -187,7 +188,7 @@ async function extractTextFromPdf(buffer: Buffer): Promise<string> {
 
 function mapDocumentExtractError(
   err: Error,
-  format: 'pdf' | 'pptx' | 'docx' | 'doc' | 'image'
+  format: 'pdf' | 'pptx' | 'docx' | 'doc' | 'image',
 ): string {
   const msg = err.message || ''
   if (err.message === 'DOCX_EXTRACT_FAILED') {
@@ -222,7 +223,7 @@ async function extractTextFromPptx(buffer: Buffer): Promise<string> {
   const JSZip = (await import('jszip')).default
   const zip = await JSZip.loadAsync(buffer)
   const slideFiles = Object.keys(zip.files).filter((n) =>
-    /^ppt\/slides\/slide\d+\.xml$/i.test(n)
+    /^ppt\/slides\/slide\d+\.xml$/i.test(n),
   )
   const texts: string[] = []
   for (const name of slideFiles.sort()) {
@@ -235,7 +236,7 @@ async function extractTextFromPptx(buffer: Buffer): Promise<string> {
         matches
           .map((m) => m.replace(/<\/?a:t>/g, '').trim())
           .filter(Boolean)
-          .join(' ')
+          .join(' '),
       )
   }
   return texts.join('\n\n')
@@ -253,7 +254,11 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
     ).extractRawText({ buffer })
     return typeof result?.value === 'string' ? result.value : ''
   } catch (e) {
-    log.error('extractTextFromDocx failed', { action: 'document-extraction.extractTextFromDocx' }, e)
+    log.error(
+      'extractTextFromDocx failed',
+      { action: 'document-extraction.extractTextFromDocx' },
+      e,
+    )
     throw new Error('DOCX_EXTRACT_FAILED')
   }
 }
@@ -262,7 +267,7 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
 export async function extractPlainTextFromBuffer(
   buffer: Buffer,
   fileName: string,
-  mimeType?: string | null
+  mimeType?: string | null,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   const name = fileName || 'unbenannt'
   const size = buffer.length
@@ -287,7 +292,8 @@ export async function extractPlainTextFromBuffer(
   if (!isPdf && !isPptx && !isDocx && !isDoc && !isImage) {
     return {
       ok: false,
-      error: 'Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.',
+      error:
+        'Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.',
     }
   }
 
@@ -333,7 +339,7 @@ export async function extractDataFromBuffer(
   buffer: Buffer,
   fileName: string,
   mimeType?: string | null,
-  options?: ExtractFromBufferOptions
+  options?: ExtractFromBufferOptions,
 ): Promise<ExtractDataFromDocumentResult> {
   const plain = await extractPlainTextFromBuffer(buffer, fileName, mimeType)
   if (!plain.ok) return { success: false, error: plain.error }
@@ -352,12 +358,14 @@ export async function extractDataFromBuffer(
     employee_count: data.employee_count ?? heuristicData.employee_count,
     tags: data.tags?.length ? data.tags : heuristicData.tags,
     company_name: data.company_name?.trim() || heuristicData.company_name,
-    customer_challenge: data.customer_challenge?.trim() || heuristicData.customer_challenge,
+    customer_challenge:
+      data.customer_challenge?.trim() || heuristicData.customer_challenge,
     our_solution: data.our_solution?.trim() || heuristicData.our_solution,
     duration_months: data.duration_months ?? heuristicData.duration_months,
     project_start: data.project_start ?? heuristicData.project_start,
     project_end: data.project_end ?? heuristicData.project_end,
-    incumbent_provider: data.incumbent_provider?.trim() || heuristicData.incumbent_provider,
+    incumbent_provider:
+      data.incumbent_provider?.trim() || heuristicData.incumbent_provider,
     competitors: data.competitors?.trim() || heuristicData.competitors,
     contract_type: data.contract_type?.trim() || heuristicData.contract_type,
   })
@@ -378,7 +386,7 @@ export async function extractDataFromBuffer(
 }
 
 export async function extractDataFromDocument(
-  formData: FormData
+  formData: FormData,
 ): Promise<ExtractDataFromDocumentResult> {
   try {
     const file = formData.get('file') as File | null

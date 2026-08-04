@@ -28,7 +28,7 @@ export function EntityKindSwitch({ value, onChange }: Props) {
         <span
           className={cn(
             'flex size-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-            isPartner ? 'translate-x-[1.125rem]' : 'translate-x-0'
+            isPartner ? 'translate-x-[1.125rem]' : 'translate-x-0',
           )}
         >
           {isPartner ? (

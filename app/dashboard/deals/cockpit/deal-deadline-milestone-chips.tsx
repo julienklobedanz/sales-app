@@ -23,8 +23,10 @@ function MilestoneChip({ chip }: { chip: DeadlineMilestoneChip }) {
             'flex min-w-[6.5rem] max-w-[11rem] shrink-0 flex-col rounded-lg border px-3 py-2 text-left',
             chip.isNextFuture && 'ring-2 ring-primary/40',
             chip.isOverdue && 'border-destructive/40 bg-destructive/5',
-            chip.isToday && !chip.isOverdue && 'border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/30',
-            !chip.isOverdue && !chip.isToday && 'border-border bg-card'
+            chip.isToday &&
+              !chip.isOverdue &&
+              'border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/30',
+            !chip.isOverdue && !chip.isToday && 'border-border bg-card',
           )}
         >
           <span className="text-[11px] font-medium text-muted-foreground line-clamp-3 leading-tight">
@@ -33,7 +35,7 @@ function MilestoneChip({ chip }: { chip: DeadlineMilestoneChip }) {
           <span
             className={cn(
               'text-sm font-semibold tabular-nums tracking-tight',
-              chip.isOverdue && 'text-destructive'
+              chip.isOverdue && 'text-destructive',
             )}
           >
             {chip.relativeLabel}
@@ -57,7 +59,9 @@ export function DealDeadlineMilestoneChips({
   orgDateDisplayFormat?: OrgDateDisplayFormat
   className?: string
 }) {
-  const chips = buildDeadlineMilestoneChips(deadlines, { dateDisplayFormat: orgDateDisplayFormat })
+  const chips = buildDeadlineMilestoneChips(deadlines, {
+    dateDisplayFormat: orgDateDisplayFormat,
+  })
   if (chips.length === 0) return null
 
   return (
@@ -65,7 +69,7 @@ export function DealDeadlineMilestoneChips({
       <div
         className={cn(
           'flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          className
+          className,
         )}
       >
         {chips.map((chip) => (

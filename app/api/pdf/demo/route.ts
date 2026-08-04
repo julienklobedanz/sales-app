@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ReferencePdfDocument } from '@/lib/references/library/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/references/library/pdf/types'
+import type {
+  PdfOrgBranding,
+  PdfReference,
+  PdfTemplate,
+} from '@/lib/references/library/pdf/types'
 
 export const runtime = 'nodejs'
 
@@ -41,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   const branding: PdfOrgBranding = {
     name: org?.name ?? 'RefStack',
-    logo_url: logoEnabled ? org?.logo_url ?? null : null,
+    logo_url: logoEnabled ? (org?.logo_url ?? null) : null,
     primary_color: org?.primary_color ?? '#2563EB',
     secondary_color: org?.secondary_color ?? '#1D4ED8',
   }
@@ -62,8 +66,10 @@ export async function GET(req: NextRequest) {
     contract_type: 'Projektvertrag',
     incumbent_provider: 'Accenture',
     competitors: 'Atos, BearingPoint',
-    customer_challenge: 'Komplexe Ausschreibung mit vielen Stakeholdern und engen Timelines.',
-    our_solution: 'Strukturierter Prozess, klare Storyline und skalierbare Referenzbausteine.',
+    customer_challenge:
+      'Komplexe Ausschreibung mit vielen Stakeholdern und engen Timelines.',
+    our_solution:
+      'Strukturierter Prozess, klare Storyline und skalierbare Referenzbausteine.',
     customer_contact: null,
     project_status: 'completed',
     project_start: '2023-04-01',
@@ -82,7 +88,7 @@ export async function GET(req: NextRequest) {
       org: branding,
       template,
       exportedAtLabel,
-    })
+    }),
   )
 
   const bytes = new Uint8Array(pdf)
@@ -94,4 +100,3 @@ export async function GET(req: NextRequest) {
     },
   })
 }
-

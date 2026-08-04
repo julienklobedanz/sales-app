@@ -5,12 +5,17 @@ import {
   isMarketSignalSnoozed,
   parseMarketSnoozeUntilMs,
 } from '@/lib/dashboard-home/market-signal-inbox-keys'
-import { scoreCallCandidate, type LeaderCallSignalCandidate } from '@/lib/dashboard-home/build-leader-call-queue'
+import {
+  scoreCallCandidate,
+  type LeaderCallSignalCandidate,
+} from '@/lib/dashboard-home/build-leader-call-queue'
 
 describe('market-signal-inbox-keys', () => {
   it('parses snooze until timestamp', () => {
     const key = 'market_snooze_until:2026-08-01T12:00:00.000Z:market_exec:abc'
-    expect(parseMarketSnoozeUntilMs(key)).toBe(new Date('2026-08-01T12:00:00.000Z').getTime())
+    expect(parseMarketSnoozeUntilMs(key)).toBe(
+      new Date('2026-08-01T12:00:00.000Z').getTime(),
+    )
     expect(extractSignalKeyFromSnoozeNotification(key)).toBe('market_exec:abc')
   })
 
@@ -49,8 +54,13 @@ describe('scoreCallCandidate', () => {
     const withMatch = scoreCallCandidate(
       baseCandidate,
       deal,
-      { referenceId: 'r1', referenceTitle: 'Ref', similarity: 0.55, personMatchHint: true },
-      Date.now()
+      {
+        referenceId: 'r1',
+        referenceTitle: 'Ref',
+        similarity: 0.55,
+        personMatchHint: true,
+      },
+      Date.now(),
     )
     const without = scoreCallCandidate(baseCandidate, deal, null, Date.now())
     expect(withMatch).toBeGreaterThan(without)

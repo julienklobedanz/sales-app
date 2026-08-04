@@ -118,9 +118,13 @@ function addScored(map: Map<string, ScoredDate>, candidate: ScoredDate) {
   }
 }
 
-function extractNumericDates(text: string, baseScore: number, source: string, scored: Map<string, ScoredDate>) {
-  const dmy =
-    /\b(\d{1,2})[./\s-](\d{1,2})[./\s-](\d{4})\b/g
+function extractNumericDates(
+  text: string,
+  baseScore: number,
+  source: string,
+  scored: Map<string, ScoredDate>,
+) {
+  const dmy = /\b(\d{1,2})[./\s-](\d{1,2})[./\s-](\d{4})\b/g
   for (const match of text.matchAll(dmy)) {
     const iso = parseDmy([Number(match[1]), Number(match[2]), Number(match[3])])
     if (iso) addScored(scored, { iso, score: baseScore, source })
@@ -132,8 +136,7 @@ function extractNumericDates(text: string, baseScore: number, source: string, sc
     if (iso) addScored(scored, { iso, score: baseScore + 2, source })
   }
 
-  const dmyShort =
-    /\b(\d{1,2})[./\s-](\d{1,2})[./\s-](\d{2})\b/g
+  const dmyShort = /\b(\d{1,2})[./\s-](\d{1,2})[./\s-](\d{2})\b/g
   for (const match of text.matchAll(dmyShort)) {
     const yy = Number(match[3])
     const year = yy >= 70 ? 1900 + yy : 2000 + yy
@@ -142,9 +145,13 @@ function extractNumericDates(text: string, baseScore: number, source: string, sc
   }
 }
 
-function extractMonthNameDates(text: string, baseScore: number, source: string, scored: Map<string, ScoredDate>) {
-  const re =
-    /\b(\d{1,2})[.\s]+([A-Za-zÀ-ÿ]+)[.\s]+(\d{4})\b/g
+function extractMonthNameDates(
+  text: string,
+  baseScore: number,
+  source: string,
+  scored: Map<string, ScoredDate>,
+) {
+  const re = /\b(\d{1,2})[.\s]+([A-Za-zÀ-ÿ]+)[.\s]+(\d{4})\b/g
   for (const match of text.matchAll(re)) {
     const month = MONTH_NAMES[match[2].toLowerCase().replace(/\./g, '')]
     if (!month) continue
@@ -152,8 +159,7 @@ function extractMonthNameDates(text: string, baseScore: number, source: string, 
     if (iso) addScored(scored, { iso, score: baseScore + 1, source })
   }
 
-  const re2 =
-    /\b([A-Za-zÀ-ÿ]+)[.\s]+(\d{1,2})[,.\s]+(\d{4})\b/g
+  const re2 = /\b([A-Za-zÀ-ÿ]+)[.\s]+(\d{1,2})[,.\s]+(\d{4})\b/g
   for (const match of text.matchAll(re2)) {
     const month = MONTH_NAMES[match[1].toLowerCase().replace(/\./g, '')]
     if (!month) continue
@@ -162,7 +168,9 @@ function extractMonthNameDates(text: string, baseScore: number, source: string, 
   }
 }
 
-function scoreContextWindows(normalized: string): Array<{ start: number; end: number; score: number }> {
+function scoreContextWindows(
+  normalized: string,
+): Array<{ start: number; end: number; score: number }> {
   const windows: Array<{ start: number; end: number; score: number }> = []
   for (const pattern of EXPIRY_CONTEXT_PATTERNS) {
     pattern.lastIndex = 0
@@ -178,7 +186,7 @@ function scoreContextWindows(normalized: string): Array<{ start: number; end: nu
 
 export function extractCertificateExpiryFromText(
   rawText: string,
-  refDate: Date = new Date()
+  refDate: Date = new Date(),
 ): ExtractedCertificateExpiry {
   const normalized = String(rawText ?? '')
     .replace(/\r\n/g, '\n')
@@ -225,7 +233,13 @@ export function extractCertificateExpiryFromText(
   if (!best) return { validUntil: null, confidence: 'none' }
 
   const confidence: ExtractedCertificateExpiry['confidence'] =
-    best.rank >= 50 ? 'high' : best.rank >= 35 ? 'medium' : best.rank >= 20 ? 'low' : 'none'
+    best.rank >= 50
+      ? 'high'
+      : best.rank >= 35
+        ? 'medium'
+        : best.rank >= 20
+          ? 'low'
+          : 'none'
 
   if (confidence === 'none') {
     return { validUntil: null, confidence: 'none' }

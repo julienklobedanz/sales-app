@@ -37,14 +37,14 @@ export function getReferenceVisibilityScope(params: {
     params.systemRole,
     overrides,
     'see_draft_references',
-    org
+    org,
   )
   const canSeeConfidential = hasEffectiveCapability(
     params.functionRole,
     params.systemRole,
     overrides,
     'see_confidential_references',
-    org
+    org,
   )
 
   const restrictToSalesVisibleStatuses = !(canSeeDrafts || canSeeConfidential)

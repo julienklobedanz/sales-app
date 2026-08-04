@@ -2,7 +2,10 @@ import 'server-only'
 
 import * as XLSX from 'xlsx'
 
-import { extractPlainTextFromFile, type ExtractPlainTextResult } from '@/lib/extract-document-plain-text'
+import {
+  extractPlainTextFromFile,
+  type ExtractPlainTextResult,
+} from '@/lib/extract-document-plain-text'
 
 const MAX_BYTES = 4.5 * 1024 * 1024
 
@@ -36,7 +39,7 @@ function extractExcelPlainText(buffer: Buffer): string {
  */
 export async function extractRfpPlainTextFromFile(
   file: File,
-  options?: { maxChars?: number }
+  options?: { maxChars?: number },
 ): Promise<ExtractPlainTextResult> {
   const maxChars = options?.maxChars ?? 120_000
   const fileName = file.name ?? 'unbenannt'
@@ -68,7 +71,8 @@ export async function extractRfpPlainTextFromFile(
     } catch {
       return {
         ok: false,
-        error: 'Excel konnte nicht gelesen werden. Bitte als XLSX speichern oder PDF/Word verwenden.',
+        error:
+          'Excel konnte nicht gelesen werden. Bitte als XLSX speichern oder PDF/Word verwenden.',
       }
     }
   }

@@ -1,21 +1,21 @@
-import type { OrgDateDisplayFormat } from "@/lib/format"
-import type { ReferenceVolumeFilter } from "@/lib/references/reference-volume-filter"
+import type { OrgDateDisplayFormat } from '@/lib/format'
+import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
 /** Muss mit COLUMN_KEYS in reference-overview-columns übereinstimmen */
 export type ReferenceColumnKey =
-  | "company"
-  | "title"
-  | "industry"
-  | "volume_eur"
-  | "status"
-  | "project_status"
-  | "updated_at"
-  | "tags"
-  | "country"
-  | "project_start"
-  | "project_end"
-  | "duration_months"
-  | "created_at"
+  | 'company'
+  | 'title'
+  | 'industry'
+  | 'volume_eur'
+  | 'status'
+  | 'project_status'
+  | 'updated_at'
+  | 'tags'
+  | 'country'
+  | 'project_start'
+  | 'project_end'
+  | 'duration_months'
+  | 'created_at'
 
 export const DEFAULT_REFERENCE_COLUMN_WIDTHS: Record<ReferenceColumnKey, number> = {
   company: 180,
@@ -74,7 +74,7 @@ export type ReferenceTableHeaderRenderContext = {
   volumeFilter: ReferenceVolumeFilter
   setVolumeFilter: (v: ReferenceVolumeFilter) => void
   sortKey: ReferenceColumnKey | null
-  sortDir: "asc" | "desc"
+  sortDir: 'asc' | 'desc'
   handleSort: (column: ReferenceColumnKey) => void
 }
 

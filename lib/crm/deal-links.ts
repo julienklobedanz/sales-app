@@ -8,7 +8,7 @@ export function dealHasCrmSync(deal: {
 }): boolean {
   return Boolean(
     deal.salesforce_opportunity_id?.trim() ||
-      (deal.crm_opportunity_id?.trim() && deal.crm_source?.trim())
+    (deal.crm_opportunity_id?.trim() && deal.crm_source?.trim()),
   )
 }
 
@@ -18,9 +18,11 @@ export function buildCrmDealUrl(
     crm_opportunity_id?: string | null
     crm_source?: string | null
   },
-  options?: { hubspotPortalId?: string | null }
+  options?: { hubspotPortalId?: string | null },
 ): { label: string; href: string } | null {
-  const crmSource = String(deal.crm_source ?? '').trim().toLowerCase()
+  const crmSource = String(deal.crm_source ?? '')
+    .trim()
+    .toLowerCase()
   const genericOppId = String(deal.crm_opportunity_id ?? '').trim()
   const salesforceOppId = String(deal.salesforce_opportunity_id ?? '').trim()
 

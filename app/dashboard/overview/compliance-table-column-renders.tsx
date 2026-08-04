@@ -15,11 +15,7 @@ import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
 import { formatReferenceDate } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-} from '@hugeicons/core-free-icons'
+import { ArrowDown, ArrowUp, ArrowUpDown } from '@hugeicons/core-free-icons'
 
 export const COMPLIANCE_COLUMN_KEYS = [
   'title',
@@ -91,10 +87,16 @@ function SortableHeaderButton({
 
 export function renderComplianceColumnHeader(
   column: ComplianceColumnKey,
-  ctx: ComplianceTableHeaderRenderContext
+  ctx: ComplianceTableHeaderRenderContext,
 ): React.ReactNode {
-  const { dragOverColumn, setDragOverColumn, moveColumnOrder, sortKey, sortDir, handleSort } =
-    ctx
+  const {
+    dragOverColumn,
+    setDragOverColumn,
+    moveColumnOrder,
+    sortKey,
+    sortDir,
+    handleSort,
+  } = ctx
 
   const dragProps = {
     columnKey: column,
@@ -172,7 +174,7 @@ export function renderComplianceColumnHeader(
 export function renderComplianceColumnCell(
   column: ComplianceColumnKey,
   doc: ComplianceDocumentRow,
-  ctx: ComplianceTableCellRenderContext
+  ctx: ComplianceTableCellRenderContext,
 ): React.ReactNode {
   const expired = isComplianceDocumentExpired(doc.valid_until)
 
@@ -229,7 +231,10 @@ export function renderComplianceColumnCell(
               Aktuelle Version
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="text-[10px] font-medium text-muted-foreground"
+            >
               Archiv
             </Badge>
           )}
@@ -241,7 +246,9 @@ export function renderComplianceColumnCell(
           className="text-right text-sm text-muted-foreground"
           alignClassName="justify-end"
         >
-          <span className="leading-none">{formatReferenceDate(doc.updated_at, 'de-DE')}</span>
+          <span className="leading-none">
+            {formatReferenceDate(doc.updated_at, 'de-DE')}
+          </span>
         </TableDataCell>
       )
     default:
@@ -251,7 +258,7 @@ export function renderComplianceColumnCell(
 
 export function renderComplianceActionsCell(
   doc: ComplianceDocumentRow,
-  ctx: ComplianceTableCellRenderContext
+  ctx: ComplianceTableCellRenderContext,
 ): React.ReactNode {
   return (
     <TableCell className="w-[88px] min-w-[88px] align-middle p-2 text-right">
@@ -279,7 +286,7 @@ export function renderComplianceActionsCell(
 
 export function getComplianceSortValue(
   doc: ComplianceDocumentRow,
-  key: ComplianceColumnKey
+  key: ComplianceColumnKey,
 ): string | number {
   switch (key) {
     case 'document_type':

@@ -22,8 +22,7 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
     Boolean(subscriptionId)
 
   const stripeConfigured =
-    typeof process !== 'undefined' &&
-    !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    typeof process !== 'undefined' && !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
   async function handleCheckout() {
     startCheckoutTransition(async () => {
@@ -52,7 +51,9 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-muted-foreground">
         <AppIcon icon={CreditCard} size={16} />
-        <span className="text-sm font-semibold tracking-tight text-foreground">Abonnement</span>
+        <span className="text-sm font-semibold tracking-tight text-foreground">
+          Abonnement
+        </span>
       </div>
 
       {!stripeConfigured ? (
@@ -64,7 +65,12 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
           <p className="text-xs text-muted-foreground">
             Status: <span className="font-medium text-foreground">Aktiv</span>
           </p>
-          <Button size="sm" variant="outline" onClick={handlePortal} disabled={pendingPortal}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePortal}
+            disabled={pendingPortal}
+          >
             {pendingPortal && (
               <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}
@@ -77,7 +83,12 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
             Du nutzt aktuell die Basis-Version. Upgrade auf{' '}
             <span className="font-medium">Pro</span>, um alle Funktionen freizuschalten.
           </p>
-          <Button size="sm" className="gap-2" onClick={handleCheckout} disabled={pendingCheckout}>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={handleCheckout}
+            disabled={pendingCheckout}
+          >
             {pendingCheckout && (
               <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}

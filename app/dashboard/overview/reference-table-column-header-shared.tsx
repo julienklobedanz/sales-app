@@ -1,26 +1,17 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 
-import { Input } from "@/components/ui/input"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { FilterMenuCheckboxOption } from "@/components/table/filter-menu-checkbox-option"
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Filter,
-} from "@hugeicons/core-free-icons"
-import { AppIcon } from "@/lib/icons"
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
+import { ArrowDown, ArrowUp, ArrowUpDown, Filter } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 
 import type {
   ReferenceColumnKey,
   ReferenceTableHeaderRenderContext,
-} from "./reference-table-column-types"
+} from './reference-table-column-types'
 
 export type HeaderDragProps = {
   columnKey: ReferenceColumnKey
@@ -33,7 +24,7 @@ export type HeaderDragProps = {
 
 export function buildHeaderDragProps(
   column: ReferenceColumnKey,
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): HeaderDragProps {
   return {
     columnKey: column,
@@ -54,31 +45,25 @@ export function ColumnSortIcon({
 }: {
   column: ReferenceColumnKey
   sortKey: ReferenceColumnKey | null
-  sortDir: "asc" | "desc"
+  sortDir: 'asc' | 'desc'
   activePrimary?: boolean
 }) {
   if (sortKey === column) {
-    return sortDir === "asc" ? (
+    return sortDir === 'asc' ? (
       <AppIcon
         icon={ArrowUp}
         size={14}
-        className={activePrimary ? "text-primary" : undefined}
+        className={activePrimary ? 'text-primary' : undefined}
       />
     ) : (
       <AppIcon
         icon={ArrowDown}
         size={14}
-        className={activePrimary ? "text-primary" : undefined}
+        className={activePrimary ? 'text-primary' : undefined}
       />
     )
   }
-  return (
-    <AppIcon
-      icon={ArrowUpDown}
-      size={14}
-      className="text-muted-foreground"
-    />
-  )
+  return <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
 }
 
 export function ColumnSortButton({
@@ -88,22 +73,18 @@ export function ColumnSortButton({
   handleSort,
   label,
   activePrimary = false,
-  className = "flex items-center gap-0.5 hover:opacity-80",
+  className = 'flex items-center gap-0.5 hover:opacity-80',
 }: {
   column: ReferenceColumnKey
   sortKey: ReferenceColumnKey | null
-  sortDir: "asc" | "desc"
+  sortDir: 'asc' | 'desc'
   handleSort: (column: ReferenceColumnKey) => void
   label?: string
   activePrimary?: boolean
   className?: string
 }) {
   return (
-    <button
-      type="button"
-      className={className}
-      onClick={() => handleSort(column)}
-    >
+    <button type="button" className={className} onClick={() => handleSort(column)}>
       {label}
       <ColumnSortIcon
         column={column}
@@ -126,17 +107,12 @@ export const FilterColumnTrigger = React.forwardRef<
     <button
       ref={ref}
       type="button"
-      className={`flex items-center gap-1 text-left hover:opacity-80 ${active ? "font-semibold text-foreground" : ""}`}
+      className={`flex items-center gap-1 text-left hover:opacity-80 ${active ? 'font-semibold text-foreground' : ''}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span>{label}</span>
       {active && (
-        <AppIcon
-          icon={Filter}
-          size={14}
-          className="shrink-0 text-primary"
-          aria-hidden
-        />
+        <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />
       )}
     </button>
   )
@@ -150,7 +126,7 @@ export function SearchableRadioFilterMenu({
   filterValue,
   setFilter,
   getLabel,
-  listClassName = "mt-2 max-h-56 space-y-1 overflow-y-auto text-sm",
+  listClassName = 'mt-2 max-h-56 space-y-1 overflow-y-auto text-sm',
 }: {
   search: string
   setSearch: (v: string) => void
@@ -171,17 +147,15 @@ export function SearchableRadioFilterMenu({
         className="h-8 text-xs"
       />
       <div className={listClassName}>
-        {["all", ...options]
+        {['all', ...options]
           .filter((value) => {
             if (!search.trim()) return true
-            const label = value === "all" ? "Alle" : getLabel(value)
-            return label
-              .toLowerCase()
-              .includes(search.trim().toLowerCase())
+            const label = value === 'all' ? 'Alle' : getLabel(value)
+            return label.toLowerCase().includes(search.trim().toLowerCase())
           })
           .map((value) => {
-            const isAll = value === "all"
-            const label = isAll ? "Alle" : getLabel(value)
+            const isAll = value === 'all'
+            const label = isAll ? 'Alle' : getLabel(value)
             const selected = filterValue === value
             return (
               <button
@@ -195,7 +169,7 @@ export function SearchableRadioFilterMenu({
                 <span className="truncate">{label}</span>
                 <div
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                    selected ? "bg-primary border-primary" : "bg-muted"
+                    selected ? 'bg-primary border-primary' : 'bg-muted'
                   }`}
                 >
                   {selected && (
@@ -219,7 +193,7 @@ export function SearchableRadioFilterHeader({
   searchPlaceholder,
   options,
   getLabel,
-  popoverClassName = "w-64",
+  popoverClassName = 'w-64',
   sortColumn,
   sortKey,
   sortDir,
@@ -237,7 +211,7 @@ export function SearchableRadioFilterHeader({
   popoverClassName?: string
   sortColumn: ReferenceColumnKey
   sortKey: ReferenceColumnKey | null
-  sortDir: "asc" | "desc"
+  sortDir: 'asc' | 'desc'
   handleSort: (column: ReferenceColumnKey) => void
   sortActivePrimary?: boolean
 }) {
@@ -246,10 +220,7 @@ export function SearchableRadioFilterHeader({
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <FilterColumnTrigger
-            label={label}
-            active={filterValue !== "all"}
-          />
+          <FilterColumnTrigger label={label} active={filterValue !== 'all'} />
         </PopoverTrigger>
         <PopoverContent
           className={popoverClassName}
@@ -308,29 +279,24 @@ export function CheckboxFilterHeader({
   searchPlaceholder?: string
   sortColumn: ReferenceColumnKey
   sortKey: ReferenceColumnKey | null
-  sortDir: "asc" | "desc"
+  sortDir: 'asc' | 'desc'
   handleSort: (column: ReferenceColumnKey) => void
   sortActivePrimary?: boolean
 }) {
   const values =
     search !== undefined && setSearch
-      ? ["all", ...options].filter((value) => {
+      ? ['all', ...options].filter((value) => {
           if (!search.trim()) return true
-          const optionLabel = value === "all" ? "Alle" : getLabel(value)
-          return optionLabel
-            .toLowerCase()
-            .includes(search.trim().toLowerCase())
+          const optionLabel = value === 'all' ? 'Alle' : getLabel(value)
+          return optionLabel.toLowerCase().includes(search.trim().toLowerCase())
         })
-      : ["all", ...options]
+      : ['all', ...options]
 
   return (
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <FilterColumnTrigger
-            label={label}
-            active={filterValue !== "all"}
-          />
+          <FilterColumnTrigger label={label} active={filterValue !== 'all'} />
         </PopoverTrigger>
         <PopoverContent
           className={popoverClassName}
@@ -349,8 +315,8 @@ export function CheckboxFilterHeader({
           ) : null}
           <div className={listClassName}>
             {values.map((value) => {
-              const isAll = value === "all"
-              const optionLabel = isAll ? "Alle" : getLabel(value)
+              const isAll = value === 'all'
+              const optionLabel = isAll ? 'Alle' : getLabel(value)
               const selected = filterValue === value
               return (
                 <FilterMenuCheckboxOption

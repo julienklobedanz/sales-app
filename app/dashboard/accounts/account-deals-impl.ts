@@ -1,7 +1,9 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { AccountDealRow, DealSignalRow } from './account-action-types'
 
-export async function getActiveDealsByCompanyIdImpl(companyId: string): Promise<AccountDealRow[]> {
+export async function getActiveDealsByCompanyIdImpl(
+  companyId: string,
+): Promise<AccountDealRow[]> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -18,7 +20,9 @@ export async function getActiveDealsByCompanyIdImpl(companyId: string): Promise<
 
   const { data } = await supabase
     .from('deals')
-    .select('id, title, volume, status, expiry_date, salesforce_opportunity_id, crm_opportunity_id, crm_source, crm_synced_at, created_at, updated_at')
+    .select(
+      'id, title, volume, status, expiry_date, salesforce_opportunity_id, crm_opportunity_id, crm_source, crm_synced_at, created_at, updated_at',
+    )
     .eq('organization_id', orgId)
     .eq('company_id', companyId)
     .not('status', 'in', '("won","lost")')
@@ -27,7 +31,7 @@ export async function getActiveDealsByCompanyIdImpl(companyId: string): Promise<
 }
 
 export async function getExpiringDealsByCompanyIdImpl(
-  companyId: string
+  companyId: string,
 ): Promise<DealSignalRow[]> {
   const supabase = await createServerSupabaseClient()
   const {

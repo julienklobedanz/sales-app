@@ -1,8 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ROUTES } from '@/lib/routes'
-import {
-  buildRefstackEmailHtml,
-} from '@/lib/email/refstack-email-layout'
+import { buildRefstackEmailHtml } from '@/lib/email/refstack-email-layout'
 import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -51,7 +49,7 @@ export function parseMarketSignalsDigestRole(raw: unknown): MarketSignalsDigestR
 
 /** Digest-Rolle aus normalisierten Profil-Dimensionen (ohne profiles.role). */
 export function marketSignalsDigestRoleFromProfile(
-  profile: Parameters<typeof parseProfileRoles>[0]
+  profile: Parameters<typeof parseProfileRoles>[0],
 ): MarketSignalsDigestRole {
   const { systemRole, functionRole } = parseProfileRoles(profile)
   return parseMarketSignalsDigestRole(legacyAppRoleFrom(systemRole, functionRole))
@@ -61,7 +59,7 @@ export function marketSignalsDigestRoleFromProfile(
 export async function resolveAllowedCompanyIdsForMarketSignals(
   supabase: SupabaseClient,
   organizationId: string,
-  role: MarketSignalsDigestRole
+  role: MarketSignalsDigestRole,
 ): Promise<Set<string>> {
   const { data: dealRows, error: dealErr } = await supabase
     .from('deals')
@@ -120,11 +118,18 @@ export async function loadMarketSignalsDigestForUser(
     sinceIso: string
     /** YYYY-MM-DD für published_on */
     sinceDate: string
-  }
-): Promise<{ news: MarketSignalsDigestNews[]; executives: MarketSignalsDigestExecutive[] }> {
+  },
+): Promise<{
+  news: MarketSignalsDigestNews[]
+  executives: MarketSignalsDigestExecutive[]
+}> {
   const { organizationId, role, sinceIso, sinceDate } = input
 
-  const allowed = await resolveAllowedCompanyIdsForMarketSignals(supabase, organizationId, role)
+  const allowed = await resolveAllowedCompanyIdsForMarketSignals(
+    supabase,
+    organizationId,
+    role,
+  )
 
   if (!allowed.size) {
     return { news: [], executives: [] }
@@ -142,7 +147,9 @@ export async function loadMarketSignalsDigestForUser(
 
   const { data: execRows } = await supabase
     .from('market_signal_executive_events')
-    .select('id, person_name, change_summary, company_id, detected_at, companies ( name )')
+    .select(
+      'id, person_name, change_summary, company_id, detected_at, companies ( name )',
+    )
     .in('company_id', ids)
     .gte('detected_at', sinceIso)
     .order('detected_at', { ascending: false })
@@ -154,7 +161,9 @@ export async function loadMarketSignalsDigestForUser(
     companyId: String((row as { company_id?: string }).company_id ?? ''),
     companyName: companyNameFromRow(row),
     publishedOn: String((row as { published_on?: string }).published_on ?? ''),
-    sourceLabel: ((row as { source_label?: string | null }).source_label ?? null) as string | null,
+    sourceLabel: ((row as { source_label?: string | null }).source_label ?? null) as
+      | string
+      | null,
   }))
 
   const executives: MarketSignalsDigestExecutive[] = (execRows ?? []).map((row) => ({
@@ -193,7 +202,7 @@ export function buildMarketSignalsDigestEmailHtml(input: {
       : `<ul style="margin:0 0 16px 0;padding-left:20px;">${news
           .map(
             (n) =>
-              `<li style="margin-bottom:10px;"><strong>${escapeHtml(n.companyName)}</strong> · ${escapeHtml(n.publishedOn)}<br/>${escapeHtml(n.body)}${n.sourceLabel ? ` <span style="color:#64748b;">(${escapeHtml(n.sourceLabel)})</span>` : ''}<br/><a href="${origin}${ROUTES.accountsDetail(n.companyId)}" style="color:#2563eb;font-size:13px;">Account öffnen</a></li>`
+              `<li style="margin-bottom:10px;"><strong>${escapeHtml(n.companyName)}</strong> · ${escapeHtml(n.publishedOn)}<br/>${escapeHtml(n.body)}${n.sourceLabel ? ` <span style="color:#64748b;">(${escapeHtml(n.sourceLabel)})</span>` : ''}<br/><a href="${origin}${ROUTES.accountsDetail(n.companyId)}" style="color:#2563eb;font-size:13px;">Account öffnen</a></li>`,
           )
           .join('')}</ul>`
 
@@ -203,7 +212,7 @@ export function buildMarketSignalsDigestEmailHtml(input: {
       : `<ul style="margin:0 0 16px 0;padding-left:20px;">${executives
           .map(
             (e) =>
-              `<li style="margin-bottom:10px;"><strong>${escapeHtml(e.personName)}</strong> · ${escapeHtml(e.companyName)}<br/>${escapeHtml(e.summary)}<br/><a href="${origin}${ROUTES.accountsDetail(e.companyId)}" style="color:#2563eb;font-size:13px;">Account öffnen</a></li>`
+              `<li style="margin-bottom:10px;"><strong>${escapeHtml(e.personName)}</strong> · ${escapeHtml(e.companyName)}<br/>${escapeHtml(e.summary)}<br/><a href="${origin}${ROUTES.accountsDetail(e.companyId)}" style="color:#2563eb;font-size:13px;">Account öffnen</a></li>`,
           )
           .join('')}</ul>`
 

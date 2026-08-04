@@ -8,7 +8,7 @@ describe('suggestApprovalQuote', () => {
       suggestApprovalQuote({
         orgName: 'RefStack',
         proposedQuote: 'Bereits vorgeschlagen.',
-      })
+      }),
     ).toBe('Bereits vorgeschlagen.')
   })
 

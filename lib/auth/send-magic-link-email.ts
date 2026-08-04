@@ -15,7 +15,11 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
 export type SendMagicLinkEmailResult =
   | { ok: true; delivery: 'resend' }
-  | { ok: false; reason: 'not_configured' | 'user_not_found' | 'generate_failed' | 'send_failed'; message?: string }
+  | {
+      ok: false
+      reason: 'not_configured' | 'user_not_found' | 'generate_failed' | 'send_failed'
+      message?: string
+    }
 
 export async function sendMagicLinkEmailViaResend(params: {
   email: string
@@ -44,7 +48,11 @@ export async function sendMagicLinkEmailViaResend(params: {
     if (/user not found/i.test(message) || /not found/i.test(message)) {
       return { ok: false, reason: 'user_not_found', message }
     }
-    log.error('generateLink failed', { action: 'sendMagicLinkEmailViaResend.generateLink' }, error)
+    log.error(
+      'generateLink failed',
+      { action: 'sendMagicLinkEmailViaResend.generateLink' },
+      error,
+    )
     return { ok: false, reason: 'generate_failed', message }
   }
 
@@ -90,7 +98,11 @@ export async function sendMagicLinkEmailViaResend(params: {
             'E-Mail konnte nicht gesendet werden. In Resend sind nur verifizierte Test-Empfänger erlaubt – RESEND_DEV_OVERRIDE_TO setzen oder Domain verifizieren.',
         }
       }
-      log.error('Resend send failed', { action: 'sendMagicLinkEmailViaResend.send' }, sendError)
+      log.error(
+        'Resend send failed',
+        { action: 'sendMagicLinkEmailViaResend.send' },
+        sendError,
+      )
       return { ok: false, reason: 'send_failed', message: sendError.message }
     }
 

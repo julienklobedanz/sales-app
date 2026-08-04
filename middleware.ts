@@ -8,7 +8,8 @@ type RateStore = Map<string, WindowLimit>
 
 function getRateStore(): RateStore {
   const g = globalThis as unknown as { __refstackEdgeRateStore?: RateStore }
-  if (!g.__refstackEdgeRateStore) g.__refstackEdgeRateStore = new Map<string, WindowLimit>()
+  if (!g.__refstackEdgeRateStore)
+    g.__refstackEdgeRateStore = new Map<string, WindowLimit>()
   return g.__refstackEdgeRateStore
 }
 
@@ -18,7 +19,11 @@ function getClientIp(request: NextRequest): string {
   return fwd || real || 'unknown'
 }
 
-function hitLimit(key: string, max: number, windowMs: number): { limited: boolean; remaining: number } {
+function hitLimit(
+  key: string,
+  max: number,
+  windowMs: number,
+): { limited: boolean; remaining: number } {
   const store = getRateStore()
   const now = Date.now()
   const prev = store.get(key)
@@ -44,7 +49,9 @@ export async function middleware(request: NextRequest) {
         status: 429,
         headers: {
           'Retry-After': isPost ? '900' : '60',
-          'X-RateLimit-Policy': isPost ? 'public-link-post-20/15m' : 'public-link-get-180/1m',
+          'X-RateLimit-Policy': isPost
+            ? 'public-link-post-20/15m'
+            : 'public-link-get-180/1m',
           'X-RateLimit-Remaining': '0',
         },
       })
@@ -64,18 +71,16 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           )
         },
       },
-    }
+    },
   )
 
   const user = await safeAuthGetUser(supabase)

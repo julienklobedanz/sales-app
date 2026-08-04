@@ -24,8 +24,12 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('Fehlende Umgebungsvariablen: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.')
-  console.error('Ausführung: npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local')
+  console.error(
+    'Fehlende Umgebungsvariablen: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.',
+  )
+  console.error(
+    'Ausführung: npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local',
+  )
   process.exit(1)
 }
 
@@ -78,7 +82,7 @@ async function fetchBatch(limit: number, afterId: string | null): Promise<RefRow
       competitors,
       project_status,
       companies ( name )
-    `
+    `,
     )
     .order('id', { ascending: true })
     .limit(limit)
@@ -139,18 +143,21 @@ async function run() {
       ? `Backfill: REINDEX_IDS — ${REINDEX_IDS.length} Referenz(en) werden neu vektorisiert…`
       : REINDEX_ALL
         ? 'Backfill: REINDEX_ALL — alle Referenzen werden neu vektorisiert…'
-        : 'Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…'
+        : 'Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…',
   )
 
   let reindexCursor: string | null = null
 
   while (true) {
-    const batch = await fetchBatch(BATCH_SIZE, REINDEX_ALL || REINDEX_IDS.length > 0 ? reindexCursor : null)
+    const batch = await fetchBatch(
+      BATCH_SIZE,
+      REINDEX_ALL || REINDEX_IDS.length > 0 ? reindexCursor : null,
+    )
     if (!batch.length) {
       console.log(
         REINDEX_ALL
           ? 'Fertig – alle Referenzen verarbeitet.'
-          : 'Fertig – keine weiteren Referenzen ohne Embedding.'
+          : 'Fertig – keine weiteren Referenzen ohne Embedding.',
       )
       break
     }
@@ -163,7 +170,9 @@ async function run() {
 
     const inputs = batch.map((r) => {
       const companyRaw = r.companies
-      const companyName = Array.isArray(companyRaw) ? companyRaw[0]?.name : companyRaw?.name
+      const companyName = Array.isArray(companyRaw)
+        ? companyRaw[0]?.name
+        : companyRaw?.name
       return buildReferenceEmbeddingText({
         title: r.title,
         industry: r.industry,
@@ -203,7 +212,10 @@ async function run() {
             })
             .eq('id', row.id)
           if (error) {
-            console.error(`Update-Fehler (NO_TEXT_TO_EMBED) für Referenz ${row.id}:`, error.message)
+            console.error(
+              `Update-Fehler (NO_TEXT_TO_EMBED) für Referenz ${row.id}:`,
+              error.message,
+            )
           } else {
             processed += 1
           }
@@ -268,7 +280,7 @@ async function run() {
         if (error) {
           console.error(
             `Update-Fehler (NO_TEXT_TO_EMBED) für Referenz ${row.id}:`,
-            error.message
+            error.message,
           )
         } else {
           processed += 1
@@ -288,4 +300,3 @@ run().catch((err) => {
   console.error('Backfill abgebrochen wegen Fehler:', err)
   process.exit(1)
 })
-

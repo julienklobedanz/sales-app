@@ -104,7 +104,7 @@ export function CompanyDetailNdaPopover({
       status: a.status,
       valid_until: a.valid_until,
       file_storage_path: a.file_storage_path,
-    }))
+    })),
   )
 
   const expiringSoon = agreements.filter((a) => {
@@ -168,10 +168,12 @@ export function CompanyDetailNdaPopover({
         }
       }
 
-      toast.success(addPdfFile ? 'NDA mit PDF gespeichert.' : 'NDA-Vereinbarung angelegt.')
+      toast.success(
+        addPdfFile ? 'NDA mit PDF gespeichert.' : 'NDA-Vereinbarung angelegt.',
+      )
       if (!res.titlePersisted) {
         toast.warning(
-          'Titel konnte nicht gespeichert werden — bitte Datenbank-Migration für nda_agreements.title ausführen (Supabase SQL Editor).'
+          'Titel konnte nicht gespeichert werden — bitte Datenbank-Migration für nda_agreements.title ausführen (Supabase SQL Editor).',
         )
       }
       setAddOpen(false)
@@ -182,7 +184,11 @@ export function CompanyDetailNdaPopover({
     }
   }
 
-  async function handleUpload(ndaId: string, file: File, meta: { version: string; signedAt: string }) {
+  async function handleUpload(
+    ndaId: string,
+    file: File,
+    meta: { version: string; signedAt: string },
+  ) {
     setUploadingId(ndaId)
     try {
       const fd = new FormData()
@@ -267,14 +273,18 @@ export function CompanyDetailNdaPopover({
           className="flex h-full w-[min(480px,100vw)] max-w-[480px] flex-col gap-0 border-l p-0 sm:max-w-[480px]"
         >
           <SheetHeader className="space-y-3 border-b border-border px-4 py-4 pr-12 text-left">
-            <SheetTitle className="text-base leading-tight">NDA & Vertragsdokumente</SheetTitle>
+            <SheetTitle className="text-base leading-tight">
+              NDA & Vertragsdokumente
+            </SheetTitle>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <NdaStatusBadge status={displayStatus} compact subtle />
               <span>
                 {agreements.length}{' '}
                 {agreements.length === 1 ? 'Vereinbarung' : 'Vereinbarungen'}
               </span>
-              {!canManage ? <span className="text-muted-foreground/80">· Nur Lesen</span> : null}
+              {!canManage ? (
+                <span className="text-muted-foreground/80">· Nur Lesen</span>
+              ) : null}
             </div>
           </SheetHeader>
 
@@ -291,7 +301,7 @@ export function CompanyDetailNdaPopover({
               'min-h-0 flex-1 px-4',
               agreements.length === 0
                 ? 'flex flex-col items-center justify-center text-center'
-                : 'overflow-y-auto py-4'
+                : 'overflow-y-auto py-4',
             )}
           >
             {agreements.length === 0 ? (
@@ -299,13 +309,20 @@ export function CompanyDetailNdaPopover({
                 <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-muted/60">
                   <NdaDocumentIcon className="size-7 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-foreground">Noch keine NDA-Vereinbarung</p>
+                <p className="text-sm font-medium text-foreground">
+                  Noch keine NDA-Vereinbarung
+                </p>
                 <p className="mt-1 max-w-[280px] text-xs text-muted-foreground leading-relaxed">
-                  Dokumentiere hier Vertraulichkeitsvereinbarungen mit {companyName} inkl. PDF und
-                  Laufzeit.
+                  Dokumentiere hier Vertraulichkeitsvereinbarungen mit {companyName} inkl.
+                  PDF und Laufzeit.
                 </p>
                 {canManage ? (
-                  <Button type="button" size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => setAddOpen(true)}
+                  >
                     <AppIcon icon={Plus} size={14} className="mr-1.5" />
                     Vertragsdokumente hinzufügen
                   </Button>
@@ -426,7 +443,11 @@ export function CompanyDetailNdaPopover({
             >
               Abbrechen
             </Button>
-            <Button type="button" onClick={() => void handleCreate()} disabled={addPending}>
+            <Button
+              type="button"
+              onClick={() => void handleCreate()}
+              disabled={addPending}
+            >
               {addPending ? (
                 <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
               ) : null}
@@ -436,7 +457,10 @@ export function CompanyDetailNdaPopover({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && !deleting && setDeleteTarget(null)}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && !deleting && setDeleteTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>NDA löschen?</AlertDialogTitle>
@@ -454,7 +478,11 @@ export function CompanyDetailNdaPopover({
                 void confirmDelete()
               }}
             >
-              {deleting ? <AppIcon icon={Loader} size={16} className="animate-spin" /> : 'Löschen'}
+              {deleting ? (
+                <AppIcon icon={Loader} size={16} className="animate-spin" />
+              ) : (
+                'Löschen'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -502,7 +530,10 @@ function NdaAgreementEntry({
       <div className="p-3">
         <div className="flex items-start gap-2">
           <span
-            className={cn('mt-1.5 size-2 shrink-0 rounded-full', agreementStatusDot(row.status))}
+            className={cn(
+              'mt-1.5 size-2 shrink-0 rounded-full',
+              agreementStatusDot(row.status),
+            )}
             aria-hidden
           />
           <div className="min-w-0 flex-1">
@@ -514,13 +545,19 @@ function NdaAgreementEntry({
               </span>
             </p>
             {row.title?.trim() ? (
-              <p className="text-[11px] text-muted-foreground">{ndaAgreementStatusLabel(row.status)}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {ndaAgreementStatusLabel(row.status)}
+              </p>
             ) : null}
             {row.notes ? (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{row.notes}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                {row.notes}
+              </p>
             ) : null}
             {hasFile && row.file_name ? (
-              <p className="mt-1 truncate text-[11px] text-muted-foreground">{row.file_name}</p>
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                {row.file_name}
+              </p>
             ) : !hasFile && canManage ? (
               <p className="mt-1 text-[11px] text-amber-700/90 dark:text-amber-400/90">
                 Noch kein PDF hochgeladen
@@ -539,7 +576,11 @@ function NdaAgreementEntry({
               disabled={downloading}
               onClick={onDownload}
             >
-              <AppIcon icon={downloading ? Loader : Download} size={14} className="mr-1" />
+              <AppIcon
+                icon={downloading ? Loader : Download}
+                size={14}
+                className="mr-1"
+              />
               PDF
             </Button>
           ) : null}
@@ -574,7 +615,9 @@ function NdaAgreementEntry({
         <div className="space-y-3 border-t border-border/60 bg-muted/20 px-3 py-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">Version (optional)</Label>
+              <Label className="text-[11px] text-muted-foreground">
+                Version (optional)
+              </Label>
               <Input
                 className="h-8 text-xs"
                 placeholder="z. B. v2"

@@ -135,45 +135,50 @@ export function AuthAlternativeSignIn({
 
       {ssoEnabled ? (
         <Dialog open={ssoOpen} onOpenChange={setSsoOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Mit SSO anmelden</DialogTitle>
-            <DialogDescription>
-              Gib deine Firmen-Domain oder geschäftliche E-Mail ein. Du wirst zu deinem
-              Identity-Provider weitergeleitet.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSsoSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="sso-domain">Firmen-Domain oder E-Mail</Label>
-              <Input
-                id="sso-domain"
-                name="domain"
-                type="text"
-                placeholder="firma.de oder name@firma.de"
-                value={ssoDomain}
-                onChange={(event) => setSsoDomain(event.target.value)}
-                disabled={isSsoPending}
-                autoComplete="email"
-                autoFocus
-                className="h-10 rounded-lg"
-              />
-            </div>
-            {ssoError ? (
-              <p role="alert" className="text-sm text-destructive">
-                {ssoError}
-              </p>
-            ) : null}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setSsoOpen(false)} disabled={isSsoPending}>
-                Abbrechen
-              </Button>
-              <Button type="submit" disabled={isSsoPending}>
-                {isSsoPending ? 'Weiterleitung …' : 'Weiter zu SSO'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Mit SSO anmelden</DialogTitle>
+              <DialogDescription>
+                Gib deine Firmen-Domain oder geschäftliche E-Mail ein. Du wirst zu deinem
+                Identity-Provider weitergeleitet.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSsoSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="sso-domain">Firmen-Domain oder E-Mail</Label>
+                <Input
+                  id="sso-domain"
+                  name="domain"
+                  type="text"
+                  placeholder="firma.de oder name@firma.de"
+                  value={ssoDomain}
+                  onChange={(event) => setSsoDomain(event.target.value)}
+                  disabled={isSsoPending}
+                  autoComplete="email"
+                  autoFocus
+                  className="h-10 rounded-lg"
+                />
+              </div>
+              {ssoError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {ssoError}
+                </p>
+              ) : null}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSsoOpen(false)}
+                  disabled={isSsoPending}
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit" disabled={isSsoPending}>
+                  {isSsoPending ? 'Weiterleitung …' : 'Weiter zu SSO'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
         </Dialog>
       ) : null}
     </>

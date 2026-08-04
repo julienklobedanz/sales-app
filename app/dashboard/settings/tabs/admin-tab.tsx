@@ -16,10 +16,7 @@ import {
   updateWorkspaceReferenceHighlightGlossary,
   updateWorkspaceSecurityCompliance,
 } from '../settings-consolidation-actions'
-import {
-  SETTINGS_CARD_CLASS,
-  type RegisterSettingsTab,
-} from './settings-tab-shared'
+import { SETTINGS_CARD_CLASS, type RegisterSettingsTab } from './settings-tab-shared'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
 
 type AdminTabProps = {
@@ -64,19 +61,19 @@ export function AdminTab({
 }: AdminTabProps) {
   const [apiKeyMask, setApiKeyMask] = useState(org.apiSettings.apiKeyMask)
   const [useWorkspaceBranding, setUseWorkspaceBranding] = useState(
-    org.apiSettings.useWorkspaceBranding
+    org.apiSettings.useWorkspaceBranding,
   )
   const [publicLinkMaxTtl, setPublicLinkMaxTtl] = useState(
-    String(org.workflowSettings.publicLinkMaxTtlDays)
+    String(org.workflowSettings.publicLinkMaxTtlDays),
   )
   const [publicLinkReqPwNew, setPublicLinkReqPwNew] = useState(
-    org.workflowSettings.publicLinkRequirePasswordForNew
+    org.workflowSettings.publicLinkRequirePasswordForNew,
   )
   const [auditRetentionDays, setAuditRetentionDays] = useState(
-    String(org.workflowSettings.auditLogRetentionDays)
+    String(org.workflowSettings.auditLogRetentionDays),
   )
   const [referenceHighlightGlossary, setReferenceHighlightGlossary] = useState(
-    org.workflowSettings.referenceHighlightGlossary
+    org.workflowSettings.referenceHighlightGlossary,
   )
   const [workspacePending, startWorkspaceTransition] = useTransition()
   const [securityPending, startSecurityTransition] = useTransition()
@@ -84,7 +81,9 @@ export function AdminTab({
   const [auditActionFilter] = useState('all')
   const [auditSearch, setAuditSearch] = useState('')
   const [auditTimeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('7d')
-  const [auditQuickView, setAuditQuickView] = useState<'all' | 'security' | 'policy'>('all')
+  const [auditQuickView, setAuditQuickView] = useState<'all' | 'security' | 'policy'>(
+    'all',
+  )
   const [auditNowTs] = useState(() => new Date().getTime())
 
   const workspaceSecurityDirty =
@@ -131,7 +130,9 @@ export function AdminTab({
 
   function saveReferenceHighlightGlossary() {
     startGlossaryTransition(async () => {
-      const result = await updateWorkspaceReferenceHighlightGlossary(referenceHighlightGlossary)
+      const result = await updateWorkspaceReferenceHighlightGlossary(
+        referenceHighlightGlossary,
+      )
       if (!result.success) {
         toast.error(result.error)
         return
@@ -165,7 +166,7 @@ export function AdminTab({
       pending: workspacePending || glossaryPending,
       save: saveAdminTab,
     },
-    register
+    register,
   )
 
   useRegisterSettingsTab(
@@ -176,7 +177,7 @@ export function AdminTab({
       save: saveWorkspaceSecurityTab,
     },
     register,
-    'security'
+    'security',
   )
 
   const filteredAuditLogs = auditLogs.filter((row) => {
@@ -198,10 +199,16 @@ export function AdminTab({
     const q = auditSearch.trim().toLowerCase()
     if (!q) return true
     return (
-      String(row.entity_id ?? '').toLowerCase().includes(q) ||
+      String(row.entity_id ?? '')
+        .toLowerCase()
+        .includes(q) ||
       String(row.action).toLowerCase().includes(q) ||
-      String(row.user_id ?? '').toLowerCase().includes(q) ||
-      JSON.stringify(row.action_details ?? {}).toLowerCase().includes(q)
+      String(row.user_id ?? '')
+        .toLowerCase()
+        .includes(q) ||
+      JSON.stringify(row.action_details ?? {})
+        .toLowerCase()
+        .includes(q)
     )
   })
 
@@ -215,9 +222,7 @@ export function AdminTab({
         row.user_id ?? '',
         JSON.stringify(row.action_details ?? {}),
       ]
-      return fields
-        .map((f) => `"${String(f).replace(/"/g, '""')}"`)
-        .join(',')
+      return fields.map((f) => `"${String(f).replace(/"/g, '""')}"`).join(',')
     })
     const csv = [header.join(','), ...lines].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -315,7 +320,9 @@ export function AdminTab({
             </CardHeader>
             <CardContent className="space-y-3 px-0 pb-0 pt-1">
               <div className="space-y-2">
-                <Label htmlFor="ref-highlight-glossary">Workspace-Glossar (optional)</Label>
+                <Label htmlFor="ref-highlight-glossary">
+                  Workspace-Glossar (optional)
+                </Label>
                 <Textarea
                   id="ref-highlight-glossary"
                   value={referenceHighlightGlossary}
@@ -337,11 +344,13 @@ export function AdminTab({
             <CardContent className="space-y-4 px-0 pb-0 pt-1">
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
-                  {([
-                    ['all', 'Alle'],
-                    ['security', 'Security'],
-                    ['policy', 'Policy'],
-                  ] as const).map(([value, label]) => (
+                  {(
+                    [
+                      ['all', 'Alle'],
+                      ['security', 'Security'],
+                      ['policy', 'Policy'],
+                    ] as const
+                  ).map(([value, label]) => (
                     <Button
                       key={value}
                       type="button"
@@ -360,7 +369,12 @@ export function AdminTab({
                   placeholder="Suche in action/entity/user/details"
                   className="h-9 max-w-sm"
                 />
-                <Button type="button" variant="outline" size="sm" onClick={exportAuditCsv}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAuditCsv}
+                >
                   CSV Export
                 </Button>
               </div>
@@ -387,9 +401,15 @@ export function AdminTab({
                           <td className="whitespace-nowrap px-3 py-2 text-slate-600">
                             {new Date(row.timestamp).toLocaleString('de-DE')}
                           </td>
-                          <td className="px-3 py-2 font-medium text-slate-900">{row.action}</td>
-                          <td className="px-3 py-2 font-mono text-slate-700">{row.entity_id ?? '—'}</td>
-                          <td className="px-3 py-2 font-mono text-slate-700">{row.user_id ?? '—'}</td>
+                          <td className="px-3 py-2 font-medium text-slate-900">
+                            {row.action}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-slate-700">
+                            {row.entity_id ?? '—'}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-slate-700">
+                            {row.user_id ?? '—'}
+                          </td>
                         </tr>
                       ))
                     )}

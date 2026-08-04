@@ -37,7 +37,13 @@ export default async function DashboardLayout({
     redirect(ROUTES.onboarding)
   }
 
-  const { profile, effectiveRole, systemRole: effectiveSystemRole, functionRole: effectiveFunctionRole, capabilities: effectiveCapabilities } = effective
+  const {
+    profile,
+    effectiveRole,
+    systemRole: effectiveSystemRole,
+    functionRole: effectiveFunctionRole,
+    capabilities: effectiveCapabilities,
+  } = effective
 
   const serverRoles = parseProfileRoles(profile)
   const cookieStore = await cookies()
@@ -45,10 +51,14 @@ export default async function DashboardLayout({
   const devRolePreviewEnabled = canUseDevRolePreview(serverRoles.systemRole)
   const devRolePreviewActive = devRolePreviewEnabled && previewRoles !== null
 
-  const initialNotifications = await getInboxNotificationsForLayout(user.id, effectiveRole)
+  const initialNotifications = await getInboxNotificationsForLayout(
+    user.id,
+    effectiveRole,
+  )
 
   const orgId = profile.organization_id ?? null
-  let workspaceBranding: { enabled: boolean; primary: string; secondary: string } | null = null
+  let workspaceBranding: { enabled: boolean; primary: string; secondary: string } | null =
+    null
   if (orgId) {
     const supabase = await createServerSupabaseClient()
     const { data: org } = await supabase
@@ -62,8 +72,12 @@ export default async function DashboardLayout({
       apiSettings && typeof apiSettings === 'object'
         ? Boolean((apiSettings as Record<string, unknown>).use_workspace_branding)
         : false
-    const primary = sanitizeHexColor((org as { primary_color?: unknown } | null)?.primary_color) ?? '#2563EB'
-    const secondary = sanitizeHexColor((org as { secondary_color?: unknown } | null)?.secondary_color) ?? '#1D4ED8'
+    const primary =
+      sanitizeHexColor((org as { primary_color?: unknown } | null)?.primary_color) ??
+      '#2563EB'
+    const secondary =
+      sanitizeHexColor((org as { secondary_color?: unknown } | null)?.secondary_color) ??
+      '#1D4ED8'
     workspaceBranding = { enabled: useWorkspaceBranding, primary, secondary }
   }
 

@@ -6,7 +6,10 @@ import { useTheme } from 'next-themes'
 import { Check } from 'lucide-react'
 import { LogOut, Moon, SettingsIcon, Sun } from '@hugeicons/core-free-icons'
 
-import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
+import {
+  clearDevPreviewRole,
+  setDevPreviewRole,
+} from '@/app/dashboard/dev-preview-role-actions'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -20,7 +23,11 @@ import {
 import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { type AppRole, useRole } from '@/hooks/useRole'
-import { DEV_ROLE_PRESETS, formatDevRolePreviewLabel, type DevRolePreview } from '@/lib/dev-role-preview'
+import {
+  DEV_ROLE_PRESETS,
+  formatDevRolePreviewLabel,
+  type DevRolePreview,
+} from '@/lib/dev-role-preview'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -121,7 +128,8 @@ export function DashboardUserMenu({
             {COPY.roleSwitcher.profileMenuSectionTitle}
           </DropdownMenuLabel>
           {DEV_ROLE_PRESETS.map((preset) => {
-            const active = preset.systemRole === systemRole && preset.functionRole === functionRole
+            const active =
+              preset.systemRole === systemRole && preset.functionRole === functionRole
             const label = formatDevRolePreviewLabel(preset)
             return (
               <DropdownMenuItem
@@ -156,7 +164,9 @@ export function DashboardUserMenu({
         </>
       ) : null}
       <DropdownMenuGroup>
-        <DropdownMenuItem onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
+        <DropdownMenuItem
+          onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        >
           {resolvedTheme === 'dark' ? (
             <AppIcon icon={Sun} size={16} className="mr-2" />
           ) : (
@@ -170,7 +180,10 @@ export function DashboardUserMenu({
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={handleLogout} className="text-destructive focus:text-destructive">
+      <DropdownMenuItem
+        onSelect={handleLogout}
+        className="text-destructive focus:text-destructive"
+      >
         <AppIcon icon={LogOut} size={16} className="mr-2" />
         Abmelden
       </DropdownMenuItem>
@@ -180,7 +193,12 @@ export function DashboardUserMenu({
   if (!hydrated) {
     if (compact) {
       return (
-        <button type="button" className="cognism-sidebar-icon-btn overflow-hidden p-0" tabIndex={-1} aria-label={userName}>
+        <button
+          type="button"
+          className="cognism-sidebar-icon-btn overflow-hidden p-0"
+          tabIndex={-1}
+          aria-label={userName}
+        >
           <Avatar className="size-7 rounded-md">
             <AvatarFallback className="rounded-md text-xs">{userInitials}</AvatarFallback>
           </Avatar>
@@ -210,7 +228,9 @@ export function DashboardUserMenu({
             aria-label={userName}
           >
             <Avatar className="size-7 rounded-md">
-              <AvatarFallback className="rounded-md text-xs">{userInitials}</AvatarFallback>
+              <AvatarFallback className="rounded-md text-xs">
+                {userInitials}
+              </AvatarFallback>
             </Avatar>
           </button>
         </DropdownMenuTrigger>
@@ -229,7 +249,9 @@ export function DashboardUserMenu({
             className="rounded-xl px-2 py-2 hover:bg-muted/60 data-[state=open]:bg-muted"
           >
             <Avatar className="h-7 w-7 shrink-0 rounded-lg">
-              <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
+              <AvatarFallback className="rounded-lg text-xs">
+                {userInitials}
+              </AvatarFallback>
             </Avatar>
             <span className="truncate font-medium">{userName}</span>
           </SidebarMenuButton>

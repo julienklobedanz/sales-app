@@ -38,7 +38,7 @@ describe('withTiming', () => {
     await expect(
       withTiming('test.fail', async () => {
         throw new Error('boom')
-      })
+      }),
     ).rejects.toThrow('boom')
   })
 })
@@ -49,7 +49,7 @@ describe('buildServerTimingHeader', () => {
       buildServerTimingHeader([
         { name: 'match.embedding', ms: 120 },
         { name: 'match.rpc', ms: 45 },
-      ])
+      ]),
     ).toBe('match.embedding;dur=120, match.rpc;dur=45')
   })
 })

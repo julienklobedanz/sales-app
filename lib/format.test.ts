@@ -95,16 +95,11 @@ describe('formatDealVolume', () => {
 
 describe('diffMonthsUtc', () => {
   it('berechnet Monat-Diff in UTC, niemals negativ', () => {
-    expect(diffMonthsUtc('2026-01-01T00:00:00.000Z', '2026-04-01T00:00:00.000Z')).toBe(
-      3,
-    )
-    expect(diffMonthsUtc('2026-04-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')).toBe(
-      0,
-    )
+    expect(diffMonthsUtc('2026-01-01T00:00:00.000Z', '2026-04-01T00:00:00.000Z')).toBe(3)
+    expect(diffMonthsUtc('2026-04-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')).toBe(0)
   })
 
   it('liefert null bei invaliden Daten', () => {
     expect(diffMonthsUtc('not-a-date', '2026-01-01T00:00:00.000Z')).toBeNull()
   })
 })
-

@@ -5,7 +5,7 @@ import type { BulkImportExtractionResult } from '@/lib/references/bulk-import-re
 /** Extraktion aus der noch im Browser vorliegenden Datei (unabhängig vom Storage-Upload). */
 export async function extractBulkImportReferenceFromFile(
   referenceId: string,
-  file: File
+  file: File,
 ): Promise<BulkImportExtractionResult> {
   const formData = new FormData()
   formData.append('referenceId', referenceId)

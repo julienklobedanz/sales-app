@@ -14,7 +14,9 @@ export const maxDuration = 180
 
 export default async function NewReferencePage() {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
     redirect(ROUTES.login)
   }
@@ -46,7 +48,10 @@ export default async function NewReferencePage() {
   const { data: externalContacts } = await supabase
     .from('external_contacts')
     .select('id, company_id, first_name, last_name, email, role')
-    .eq('organization_id', (profile as { organization_id?: string | null })?.organization_id ?? '')
+    .eq(
+      'organization_id',
+      (profile as { organization_id?: string | null })?.organization_id ?? '',
+    )
     .order('last_name')
 
   return (

@@ -7,11 +7,7 @@ import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRole } from '@/hooks/useRole'
 import { COPY } from '@/lib/copy'
-import type {
-  ContactPersonRow,
-  StakeholderRole,
-  StakeholderRow,
-} from './actions'
+import type { ContactPersonRow, StakeholderRole, StakeholderRow } from './actions'
 import {
   createContactPerson,
   createStakeholder,
@@ -70,13 +66,18 @@ export function CompanyDetailClient({
   >(initialTab)
 
   const [goals, setGoals] = useState(initialStrategy?.company_goals ?? '')
-  const [valueProposition, setValueProposition] = useState(initialStrategy?.value_proposition ?? '')
+  const [valueProposition, setValueProposition] = useState(
+    initialStrategy?.value_proposition ?? '',
+  )
   const [redFlags, setRedFlags] = useState(initialStrategy?.red_flags ?? '')
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
-  const [metricsPain, setMetricsPain] = useState((initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '')
+  const [metricsPain, setMetricsPain] = useState(
+    (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
+  )
   const [mhAssessment] = useState<Record<string, unknown>>(
-    ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)?.mh_assessment as Record<string, unknown> | null) ?? {}
+    ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)
+      ?.mh_assessment as Record<string, unknown> | null) ?? {},
   )
   const [strategySaving, setStrategySaving] = useState(false)
 
@@ -86,23 +87,30 @@ export function CompanyDetailClient({
     redFlags: initialStrategy?.red_flags ?? '',
     competition: initialStrategy?.competition ?? '',
     nextSteps: initialStrategy?.next_steps ?? '',
-    metricsPain: (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
-    mhAssessment: ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)?.mh_assessment as Record<string, unknown> | null) ?? {},
+    metricsPain:
+      (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
+    mhAssessment:
+      ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)
+        ?.mh_assessment as Record<string, unknown> | null) ?? {},
   })
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
   const [externalContacts, setExternalContacts] = useState(initialExternalContacts)
   const [internalContacts, setInternalContacts] = useState(initialInternalContacts)
-  const [internalRefApprovalContactId, setInternalRefApprovalContactId] = useState<string | null>(
-    company.internal_reference_approval_contact_id ?? null
-  )
+  const [internalRefApprovalContactId, setInternalRefApprovalContactId] = useState<
+    string | null
+  >(company.internal_reference_approval_contact_id ?? null)
 
   useEffect(() => {
-    setInternalRefApprovalContactId(company.internal_reference_approval_contact_id ?? null)
+    setInternalRefApprovalContactId(
+      company.internal_reference_approval_contact_id ?? null,
+    )
   }, [company.internal_reference_approval_contact_id])
 
   const [stakeholderOpen, setStakeholderOpen] = useState(false)
-  const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(null)
+  const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(
+    null,
+  )
   const [shName, setShName] = useState('')
   const [shTitle, setShTitle] = useState('')
   const [shRole, setShRole] = useState<StakeholderRole>('champion')
@@ -129,7 +137,15 @@ export function CompanyDetailClient({
 
   const saveStrategy = async (opts?: { silent?: boolean }) => {
     if (!canEditStrategy) return
-    const snapshot = { goals, valueProposition, redFlags, competition, nextSteps, metricsPain, mhAssessment }
+    const snapshot = {
+      goals,
+      valueProposition,
+      redFlags,
+      competition,
+      nextSteps,
+      metricsPain,
+      mhAssessment,
+    }
     const last = lastSavedRef.current
     const changed =
       snapshot.goals !== last.goals ||
@@ -165,7 +181,12 @@ export function CompanyDetailClient({
 
   const strategyFields = useMemo(
     () => [
-      { key: 'metrics_pain', label: 'Metrics & Pain', value: metricsPain, set: setMetricsPain },
+      {
+        key: 'metrics_pain',
+        label: 'Metrics & Pain',
+        value: metricsPain,
+        set: setMetricsPain,
+      },
       { key: 'company_goals', label: 'Geschäftsziele', value: goals, set: setGoals },
       {
         key: 'value_proposition',
@@ -179,10 +200,20 @@ export function CompanyDetailClient({
         value: redFlags,
         set: setRedFlags,
       },
-      { key: 'competition', label: 'Wettbewerb / Incumbent', value: competition, set: setCompetition },
-      { key: 'next_steps', label: 'Nächste Schritte', value: nextSteps, set: setNextSteps },
+      {
+        key: 'competition',
+        label: 'Wettbewerb / Incumbent',
+        value: competition,
+        set: setCompetition,
+      },
+      {
+        key: 'next_steps',
+        label: 'Nächste Schritte',
+        value: nextSteps,
+        set: setNextSteps,
+      },
     ],
-    [metricsPain, goals, valueProposition, redFlags, competition, nextSteps]
+    [metricsPain, goals, valueProposition, redFlags, competition, nextSteps],
   )
 
   const openStakeholderDialog = (s?: StakeholderRow) => {
@@ -190,12 +221,17 @@ export function CompanyDetailClient({
     setShName(s?.name ?? '')
     setShTitle(s?.title ?? '')
     setShRole(s?.role ?? 'champion')
-    setShInfluence((s as unknown as { influence_level?: string | null })?.influence_level ?? '')
+    setShInfluence(
+      (s as unknown as { influence_level?: string | null })?.influence_level ?? '',
+    )
     setShAttitude((s as unknown as { attitude?: string | null })?.attitude ?? '')
     setShNotes((s as unknown as { notes?: string | null })?.notes ?? '')
     setShLinkedIn((s as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
-    setShPriorities((s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '')
-    const lastI = ((s as unknown as { last_interaction_at?: string | null })?.last_interaction_at ??
+    setShPriorities(
+      (s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '',
+    )
+    const lastI = ((s as unknown as { last_interaction_at?: string | null })
+      ?.last_interaction_at ??
       (s as unknown as { last_contact_at?: string | null })?.last_contact_at ??
       '') as string
     setShLastContact((lastI ?? '').slice(0, 10))
@@ -227,7 +263,9 @@ export function CompanyDetailClient({
         toast.success('Stakeholder aktualisiert.')
         setStakeholderOpen(false)
         setStakeholders((prev) =>
-          prev.map((p) => (p.id === editingStakeholder.id ? ({ ...p, ...payload } as StakeholderRow) : p))
+          prev.map((p) =>
+            p.id === editingStakeholder.id ? ({ ...p, ...payload } as StakeholderRow) : p,
+          ),
         )
       } else {
         const res = await createStakeholder(company.id, payload)
@@ -257,7 +295,9 @@ export function CompanyDetailClient({
     setCLast(c?.last_name ?? '')
     setCEmail(c?.email ?? '')
     setCPhone(c?.phone ?? '')
-    const legacyPosition = (c as unknown as { position?: string | null })?.position?.trim()
+    const legacyPosition = (
+      c as unknown as { position?: string | null }
+    )?.position?.trim()
     setCRole(c?.role?.trim() || legacyPosition || '')
     setCLinkedIn((c as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
     setContactOpen(true)
@@ -278,7 +318,10 @@ export function CompanyDetailClient({
         })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         if (cIsRefApprovalContact) {
-          const ar = await setCompanyInternalReferenceApprovalContact(company.id, editingContact.id)
+          const ar = await setCompanyInternalReferenceApprovalContact(
+            company.id,
+            editingContact.id,
+          )
           if (!ar.success) {
             toast.error(ar.error ?? 'Referenzfreigabe-Zuordnung fehlgeschlagen.')
             return
@@ -306,8 +349,8 @@ export function CompanyDetailClient({
                   linkedin_url: cLinkedIn.trim() || null,
                   role: cRole.trim() || null,
                 } as ContactPersonRow)
-              : p
-          )
+              : p,
+          ),
         )
       } else {
         const res = await createContactPerson(company.id, {
@@ -321,7 +364,10 @@ export function CompanyDetailClient({
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         const created = res.contact
         if (created && cIsRefApprovalContact) {
-          const ar = await setCompanyInternalReferenceApprovalContact(company.id, created.id)
+          const ar = await setCompanyInternalReferenceApprovalContact(
+            company.id,
+            created.id,
+          )
           if (!ar.success) {
             toast.error(ar.error ?? 'Referenzfreigabe-Zuordnung fehlgeschlagen.')
             return
@@ -356,7 +402,11 @@ export function CompanyDetailClient({
         openNdaOnMount={searchParams.get('openNda') === '1'}
       />
 
-      <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />
+      <EditAccountDialog
+        open={editAccountOpen}
+        onOpenChange={setEditAccountOpen}
+        company={company}
+      />
 
       <Tabs
         value={activeTab}
@@ -376,7 +426,10 @@ export function CompanyDetailClient({
         className="w-full gap-6"
       >
         <TabsList className="mb-2 flex h-auto w-full gap-1 rounded-none border-0 bg-transparent p-0">
-          <TabsTrigger value="mission_control" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+          <TabsTrigger
+            value="mission_control"
+            className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}
+          >
             <Compass className="size-4" />
             Strategie
           </TabsTrigger>
@@ -410,13 +463,15 @@ export function CompanyDetailClient({
                 return
               }
               setStakeholders((prev) =>
-                prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s))
+                prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s)),
               )
               if (role !== 'unknown') {
                 setExternalContacts((prev) =>
                   prev.map((c) =>
-                    c.buying_center_role === role ? { ...c, buying_center_role: 'unknown' as const } : c
-                  )
+                    c.buying_center_role === role
+                      ? { ...c, buying_center_role: 'unknown' as const }
+                      : c,
+                  ),
                 )
               }
               toast.success('Rolle aktualisiert.')
@@ -428,11 +483,15 @@ export function CompanyDetailClient({
                 return
               }
               setExternalContacts((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, buying_center_role: role } : c))
+                prev.map((c) => (c.id === id ? { ...c, buying_center_role: role } : c)),
               )
               if (role !== 'unknown') {
                 setStakeholders((prev) =>
-                  prev.map((s) => (s.role === role ? ({ ...s, role: 'unknown' as const } as StakeholderRow) : s))
+                  prev.map((s) =>
+                    s.role === role
+                      ? ({ ...s, role: 'unknown' as const } as StakeholderRow)
+                      : s,
+                  ),
                 )
               }
               toast.success('Rolle aktualisiert.')
@@ -460,7 +519,10 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-2">
-          <CompanyDetailPipelineTab activeDeals={activeDeals} hubspotPortalId={hubspotPortalId} />
+          <CompanyDetailPipelineTab
+            activeDeals={activeDeals}
+            hubspotPortalId={hubspotPortalId}
+          />
         </TabsContent>
 
         <TabsContent value="proof_points" className="mt-2">

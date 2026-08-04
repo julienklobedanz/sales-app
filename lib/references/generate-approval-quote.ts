@@ -15,12 +15,15 @@ export function detectReferenceContentLanguage(
   if (!hay.trim()) return 'de'
 
   const germanHints =
-    (hay.match(
-      /\b(und|der|die|das|mit|für|wir|sie|nicht|auch|eine|einen|wurde|werden|durch|unser|ihre|beim|sowie|bereits)\b/g
-    ) ?? []).length + (hay.match(/[äöüß]/g) ?? []).length * 2
+    (
+      hay.match(
+        /\b(und|der|die|das|mit|für|wir|sie|nicht|auch|eine|einen|wurde|werden|durch|unser|ihre|beim|sowie|bereits)\b/g,
+      ) ?? []
+    ).length +
+    (hay.match(/[äöüß]/g) ?? []).length * 2
   const englishHints = (
     hay.match(
-      /\b(the|and|with|for|our|their|was|were|have|has|been|through|solution|company|project|customer|helped|delivered)\b/g
+      /\b(the|and|with|for|our|their|was|were|have|has|been|through|solution|company|project|customer|helped|delivered)\b/g,
     ) ?? []
   ).length
 
@@ -28,7 +31,10 @@ export function detectReferenceContentLanguage(
 }
 
 function normalizeQuote(text: string): string {
-  return text.replace(/\s+/g, ' ').trim().replace(/^["'„«»]+|["'„«»]+$/g, '')
+  return text
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^["'„«»]+|["'„«»]+$/g, '')
 }
 
 function sentenceCount(text: string): number {
@@ -59,9 +65,7 @@ export async function generateApprovalQuoteWithLlm(input: {
   if (!referenceContext.trim()) return null
 
   const languageInstruction =
-    input.language === 'en'
-      ? 'Write in English.'
-      : 'Schreibe auf Deutsch.'
+    input.language === 'en' ? 'Write in English.' : 'Schreibe auf Deutsch.'
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -134,7 +138,7 @@ export async function resolveApprovalQuoteSuggestion(input: {
     input.summary,
     input.customerChallenge,
     input.ourSolution,
-    input.referenceTitle
+    input.referenceTitle,
   )
 
   const generated = await generateApprovalQuoteWithLlm({

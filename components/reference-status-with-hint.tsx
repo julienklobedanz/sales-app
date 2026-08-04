@@ -35,7 +35,7 @@ export function ReferenceStatusWithHint({
     approvalInternalStatus,
     approvalRequestedAt,
     approvalScopeNamedMention,
-    approvalScopeAnonymousMention
+    approvalScopeAnonymousMention,
   )
   return (
     <div className={cn('inline-flex items-center gap-1', className)}>

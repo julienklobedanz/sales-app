@@ -12,7 +12,7 @@ function appOrigin(): string | null {
 }
 
 export async function sendPasswordResetEmail(
-  formData: FormData
+  formData: FormData,
 ): Promise<ForgotPasswordResult> {
   const email = formData.get('email')?.toString()?.trim()
   if (!email) return { error: 'Bitte E-Mail-Adresse eingeben.' }

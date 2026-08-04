@@ -1,22 +1,22 @@
-"use client"
+'use client'
 
-import type * as React from "react"
+import type * as React from 'react'
 
-import { DraggableColumnHead } from "@/components/table/draggable-column-head"
-import { getIndustryLabelDe } from "@/lib/constants/industries"
+import { DraggableColumnHead } from '@/components/table/draggable-column-head'
+import { getIndustryLabelDe } from '@/lib/constants/industries'
 
-import type { ReferenceTableHeaderRenderContext } from "./reference-table-column-types"
+import type { ReferenceTableHeaderRenderContext } from './reference-table-column-types'
 import {
   buildHeaderDragProps,
   ColumnSortButton,
   SearchableRadioFilterHeader,
-} from "./reference-table-column-header-shared"
+} from './reference-table-column-header-shared'
 
 export function renderCompanyHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("company", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('company', ctx)}>
       <SearchableRadioFilterHeader
         label={ctx.COLUMN_LABELS.company}
         filterValue={ctx.companyFilter}
@@ -36,10 +36,10 @@ export function renderCompanyHeader(
 }
 
 export function renderTitleHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("title", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('title', ctx)}>
       <ColumnSortButton
         column="title"
         sortKey={ctx.sortKey}
@@ -53,10 +53,10 @@ export function renderTitleHeader(
 }
 
 export function renderIndustryHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("industry", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('industry', ctx)}>
       <SearchableRadioFilterHeader
         label={ctx.COLUMN_LABELS.industry}
         filterValue={ctx.industryFilter}
@@ -76,10 +76,10 @@ export function renderIndustryHeader(
 }
 
 export function renderCountryHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("country", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('country', ctx)}>
       <SearchableRadioFilterHeader
         label={ctx.COLUMN_LABELS.country}
         filterValue={ctx.countryFilter}
@@ -99,10 +99,10 @@ export function renderCountryHeader(
 }
 
 export function renderTagsHeader(
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
-    <DraggableColumnHead {...buildHeaderDragProps("tags", ctx)}>
+    <DraggableColumnHead {...buildHeaderDragProps('tags', ctx)}>
       <SearchableRadioFilterHeader
         label={ctx.COLUMN_LABELS.tags}
         filterValue={ctx.tagsFilter}

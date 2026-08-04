@@ -53,10 +53,10 @@ describe('isStoredNewsroomHost', () => {
     expect(
       isStoredNewsroomHost('https://www.aurubis.com/story', [
         'https://www.aurubis.com/de/presse',
-      ])
+      ]),
     ).toBe(true)
     expect(
-      isStoredNewsroomHost('handelsblatt.com', ['https://www.aurubis.com/presse'])
+      isStoredNewsroomHost('handelsblatt.com', ['https://www.aurubis.com/presse']),
     ).toBe(false)
   })
 })

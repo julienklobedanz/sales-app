@@ -13,7 +13,9 @@ export type PendingClientApprovalRow = {
   requestedAt: string
 }
 
-export async function getPendingClientApprovalsImpl(): Promise<PendingClientApprovalRow[]> {
+export async function getPendingClientApprovalsImpl(): Promise<
+  PendingClientApprovalRow[]
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -43,7 +45,7 @@ export async function getPendingClientApprovalsImpl(): Promise<PendingClientAppr
         approval_token,
         companies ( name )
       )
-    `
+    `,
     )
     .eq('status', 'pending')
     .order('created_at', { ascending: false })

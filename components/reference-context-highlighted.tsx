@@ -30,7 +30,7 @@ export function ReferenceContextHighlighted({
           </strong>
         ) : (
           <span key={`t-${i}`}>{seg.text}</span>
-        )
+        ),
       )}
     </>
   )

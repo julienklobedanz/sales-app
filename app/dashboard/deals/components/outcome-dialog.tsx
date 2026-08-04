@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { Trophy } from "@hugeicons/core-free-icons"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Trophy } from '@hugeicons/core-free-icons'
 
-import { Button } from "@/components/ui/button"
-import { AppIcon } from "@/lib/icons"
+import { Button } from '@/components/ui/button'
+import { AppIcon } from '@/lib/icons'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
-import { recordDealOutcome } from "../actions"
+import { recordDealOutcome } from '../actions'
 
-type ReferenceHelpfulChoice = "__none__" | "yes" | "no" | "na"
+type ReferenceHelpfulChoice = '__none__' | 'yes' | 'no' | 'na'
 
 export function OutcomeDialog({
   dealId,
@@ -41,16 +47,17 @@ export function OutcomeDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const setOpen = controlledOnOpenChange ?? setInternalOpen
-  const [outcome, setOutcome] = useState<"won" | "lost" | "withdrawn" | "">("")
-  const [comment, setComment] = useState("")
-  const [referenceHelpful, setReferenceHelpful] = useState<ReferenceHelpfulChoice>("__none__")
+  const [outcome, setOutcome] = useState<'won' | 'lost' | 'withdrawn' | ''>('')
+  const [comment, setComment] = useState('')
+  const [referenceHelpful, setReferenceHelpful] =
+    useState<ReferenceHelpfulChoice>('__none__')
   const [saving, setSaving] = useState(false)
 
   /** `undefined` = keine Angabe (Feld weglassen im Event-Payload). */
   function mapReferenceHelpful(): boolean | null | undefined {
-    if (referenceHelpful === "yes") return true
-    if (referenceHelpful === "no") return false
-    if (referenceHelpful === "na") return null
+    if (referenceHelpful === 'yes') return true
+    if (referenceHelpful === 'no') return false
+    if (referenceHelpful === 'na') return null
     return undefined
   }
 
@@ -66,14 +73,14 @@ export function OutcomeDialog({
         ...(rh !== undefined ? { referenceHelpful: rh } : {}),
       })
       if (!res.success) {
-        toast.error(res.error ?? "Konnte Ausgang nicht speichern.")
+        toast.error(res.error ?? 'Konnte Ausgang nicht speichern.')
         return
       }
-      toast.success("Ausgang gespeichert.")
+      toast.success('Ausgang gespeichert.')
       setOpen(false)
-      setOutcome("")
-      setComment("")
-      setReferenceHelpful("__none__")
+      setOutcome('')
+      setComment('')
+      setReferenceHelpful('__none__')
       router.refresh()
     } finally {
       setSaving(false)
@@ -90,7 +97,11 @@ export function OutcomeDialog({
             variant="outline"
             className={triggerVariant === 'compact' ? 'h-8 shrink-0' : 'w-full'}
           >
-            <AppIcon icon={Trophy} size={16} className={triggerVariant === 'compact' ? 'mr-1' : 'mr-2'} />
+            <AppIcon
+              icon={Trophy}
+              size={16}
+              className={triggerVariant === 'compact' ? 'mr-1' : 'mr-2'}
+            />
             {triggerVariant === 'compact' ? 'Ausgang' : 'Ausgang festhalten'}
           </Button>
         </DialogTrigger>
@@ -98,14 +109,18 @@ export function OutcomeDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ausgang des Deals</DialogTitle>
-          <DialogDescription>Kurz festhalten, wie der Deal ausgegangen ist.</DialogDescription>
+          <DialogDescription>
+            Kurz festhalten, wie der Deal ausgegangen ist.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Outcome</Label>
             <Select
-              value={outcome || "__none__"}
-              onValueChange={(v) => setOutcome(v === "__none__" ? "" : (v as "won" | "lost" | "withdrawn"))}
+              value={outcome || '__none__'}
+              onValueChange={(v) =>
+                setOutcome(v === '__none__' ? '' : (v as 'won' | 'lost' | 'withdrawn'))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Auswählen …" />
@@ -151,11 +166,10 @@ export function OutcomeDialog({
             Abbrechen
           </Button>
           <Button onClick={submit} disabled={saving || !outcome}>
-            {saving ? "Speichern …" : "Speichern"}
+            {saving ? 'Speichern …' : 'Speichern'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-

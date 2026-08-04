@@ -21,7 +21,9 @@ const LEADERSHIP_HINT =
   /\b(ceo|cto|cio|cfo|ciso|coo|vorstand|geschäftsführ|chief\s+\w+|executive\s+chairman|nachfolger|tritt\s+zurück|rücktritt|ernennt|ernannt|berufen|übernimmt|wird\s+neuer|wird\s+neue|to\s+become|named\s+|appointed\s+|succeeds|nachfolge)\b/i
 
 export function isLeadershipMoveTitle(title: string): boolean {
-  const t = String(title ?? '').replace(/\s+/g, ' ').trim()
+  const t = String(title ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!t) return false
   return LEADERSHIP_HINT.test(t)
 }
@@ -35,7 +37,7 @@ export function isLeadershipMoveTitle(title: string): boolean {
  */
 export function parseLeadershipMoveFromTitle(
   title: string,
-  companyName?: string | null
+  companyName?: string | null,
 ): LeadershipMoveParse {
   void companyName
   const raw = String(title ?? '')
@@ -52,15 +54,15 @@ export function parseLeadershipMoveFromTitle(
 
   const deWird = new RegExp(
     `([A-ZÄÖÜ][\\wÄÖÜäöüß.'-]+(?:\\s+[A-ZÄÖÜ][\\wÄÖÜäöüß.'-]+){0,3})\\s+wird(?:\\s+(?:neuer|neue|nächster|nächste))?\\s+(${ROLE})\\b`,
-    'gi'
+    'gi',
   )
   const enBecome = new RegExp(
     `([A-Z][\\w.'-]+(?:\\s+[A-Z][\\w.'-]+){0,3})\\s+(?:to\\s+become|named|appointed)\\s+(?:[A-Z][\\w.&-]+\\s+)?(${ROLE})\\b`,
-    'gi'
+    'gi',
   )
   const enAs = new RegExp(
     `([A-Z][\\w.'-]+(?:\\s+[A-Z][\\w.'-]+){0,3})\\s+(?:as|to)\\s+(${ROLE})\\b`,
-    'gi'
+    'gi',
   )
 
   const candidates: Array<{ personName: string; titleAfter: string }> = []
@@ -140,7 +142,10 @@ export function formatSignalSourceLabel(input: {
     fromTitle?.[1] && !/news\.google/i.test(fromTitle[1]) ? fromTitle[1].trim() : null
 
   const isGenericGoogleNews =
-    !label || /^https?:\/\//i.test(label) || /news\.google/i.test(label) || /^google\s*news$/i.test(label)
+    !label ||
+    /^https?:\/\//i.test(label) ||
+    /news\.google/i.test(label) ||
+    /^google\s*news$/i.test(label)
 
   if (label && !isGenericGoogleNews) {
     return label
@@ -153,7 +158,10 @@ export function formatSignalSourceLabel(input: {
       const u = new URL(url)
       const host = u.hostname.replace(/^www\./i, '')
       const path = u.pathname.toLowerCase()
-      if (/newsroom|\/news\/|\/press|\/presse|mitteilung/.test(path) || /newsroom/.test(host)) {
+      if (
+        /newsroom|\/news\/|\/press|\/presse|mitteilung/.test(path) ||
+        /newsroom/.test(host)
+      ) {
         const brand = company || host.split('.')[0] || 'Newsroom'
         const pretty = brand.charAt(0).toUpperCase() + brand.slice(1)
         return `${pretty} Newsroom`

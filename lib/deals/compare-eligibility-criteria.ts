@@ -39,13 +39,15 @@ function fuzzyContains(haystack: string, needle: string): boolean {
   const h = normalizeToken(haystack)
   const n = normalizeToken(needle)
   if (!n) return false
-  return h.includes(n) || n.split(' ').every((part) => part.length >= 3 && h.includes(part))
+  return (
+    h.includes(n) || n.split(' ').every((part) => part.length >= 3 && h.includes(part))
+  )
 }
 
 function compareNumeric(
   actual: number | undefined,
   operator: EligibilityCriterion['operator'],
-  expected: number
+  expected: number,
 ): EligibilityCompareStatus {
   if (actual === undefined || !Number.isFinite(actual)) return 'unknown'
   if (operator === 'gte') return actual >= expected ? 'met' : 'not_met'
@@ -78,7 +80,7 @@ function countMatchingComplianceDocs(docs: OrgComplianceDoc[], token: string): n
 
 function compareCriterion(
   criterion: EligibilityCriterion,
-  ctx: EligibilityCompareContext
+  ctx: EligibilityCompareContext,
 ): EligibilityCriterionResult {
   const { profile, complianceDocs, referenceCount } = ctx
 
@@ -91,9 +93,14 @@ function compareCriterion(
           detail: 'Mitarbeiterzahl im Profil fehlt — kein automatisches K.O.',
         }
       }
-      const expected = typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
+      const expected =
+        typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return { ...criterion, status: 'unknown', detail: 'Schwellenwert nicht interpretierbar.' }
+        return {
+          ...criterion,
+          status: 'unknown',
+          detail: 'Schwellenwert nicht interpretierbar.',
+        }
       }
       const status = compareNumeric(profile.employeeCount, criterion.operator, expected)
       const actual = profile.employeeCount
@@ -111,11 +118,20 @@ function compareCriterion(
           detail: 'Umsatz im Profil fehlt — kein automatisches K.O.',
         }
       }
-      const expected = typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
+      const expected =
+        typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return { ...criterion, status: 'unknown', detail: 'Schwellenwert nicht interpretierbar.' }
+        return {
+          ...criterion,
+          status: 'unknown',
+          detail: 'Schwellenwert nicht interpretierbar.',
+        }
       }
-      const status = compareNumeric(profile.annualRevenueEur, criterion.operator, expected)
+      const status = compareNumeric(
+        profile.annualRevenueEur,
+        criterion.operator,
+        expected,
+      )
       const actualMio =
         profile.annualRevenueEur != null
           ? `${Math.round(profile.annualRevenueEur / 1_000_000)} Mio €`
@@ -128,9 +144,14 @@ function compareCriterion(
       }
     }
     case 'reference_count': {
-      const expected = typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
+      const expected =
+        typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return { ...criterion, status: 'unknown', detail: 'Schwellenwert nicht interpretierbar.' }
+        return {
+          ...criterion,
+          status: 'unknown',
+          detail: 'Schwellenwert nicht interpretierbar.',
+        }
       }
       const status = compareNumeric(referenceCount, criterion.operator, expected)
       return {
@@ -190,7 +211,9 @@ function compareCriterion(
           detail: 'Regionen im Profil nicht hinterlegt.',
         }
       }
-      const match = regions.some((r) => fuzzyContains(r, token) || fuzzyContains(token, r))
+      const match = regions.some(
+        (r) => fuzzyContains(r, token) || fuzzyContains(token, r),
+      )
       return {
         ...criterion,
         status: match ? 'met' : 'not_met',
@@ -210,21 +233,26 @@ function compareCriterion(
 
 function isKoSignal(
   result: EligibilityCriterionResult,
-  confidence: EligibilityConfidence
+  confidence: EligibilityConfidence,
 ): boolean {
   if (!result.mandatory) return false
   if (result.status !== 'not_met') return false
   return confidence === 'high' || confidence === 'medium'
 }
 
-function resolveVerdict(results: EligibilityCriterionResult[], profileEmpty: boolean): EligibilityVerdict {
+function resolveVerdict(
+  results: EligibilityCriterionResult[],
+  profileEmpty: boolean,
+): EligibilityVerdict {
   if (profileEmpty || results.length === 0) return 'unknown'
   if (results.every((r) => r.status === 'unknown')) return 'unknown'
 
   if (results.some((r) => isKoSignal(r, r.confidence))) return 'ko'
 
   const mandatoryPartial = results.some(
-    (r) => r.mandatory && (r.status === 'partial' || (r.status === 'not_met' && r.confidence === 'low'))
+    (r) =>
+      r.mandatory &&
+      (r.status === 'partial' || (r.status === 'not_met' && r.confidence === 'low')),
   )
   if (mandatoryPartial) return 'partner_required'
 
@@ -239,7 +267,10 @@ function resolveVerdict(results: EligibilityCriterionResult[], profileEmpty: boo
   return 'unknown'
 }
 
-function buildSummary(verdict: EligibilityVerdict, results: EligibilityCriterionResult[]): string {
+function buildSummary(
+  verdict: EligibilityVerdict,
+  results: EligibilityCriterionResult[],
+): string {
   const koCount = results.filter((r) => isKoSignal(r, r.confidence)).length
   const unknownCount = results.filter((r) => r.status === 'unknown').length
 
@@ -259,7 +290,7 @@ function buildSummary(verdict: EligibilityVerdict, results: EligibilityCriterion
 
 export function compareEligibilityCriteria(
   criteria: EligibilityCriterion[],
-  ctx: EligibilityCompareContext
+  ctx: EligibilityCompareContext,
 ): EligibilityAssessment {
   const profileEmpty = isCapabilityProfileEmpty(ctx.profile)
   const results = criteria.map((c) => compareCriterion(c, ctx))
@@ -286,7 +317,9 @@ export function eligibilityVerdictLabel(verdict: EligibilityVerdict): string {
 
 export type EligibilityVerdictTone = 'go' | 'caution' | 'no-bid' | 'muted'
 
-export function eligibilityVerdictTone(verdict: EligibilityVerdict): EligibilityVerdictTone {
+export function eligibilityVerdictTone(
+  verdict: EligibilityVerdict,
+): EligibilityVerdictTone {
   switch (verdict) {
     case 'eligible':
       return 'go'

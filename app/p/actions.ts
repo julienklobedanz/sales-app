@@ -98,7 +98,7 @@ async function getUnlockTokenForSlug(slug: string): Promise<string | null> {
 /** Öffentliches Portfolio per Slug laden (RPC; berücksichtigt Passwort-Session-Cookie). */
 export async function getPublicPortfolio(
   slug: string,
-  manageToken?: string | null
+  manageToken?: string | null,
 ): Promise<PublicPortfolioResult> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
@@ -106,20 +106,18 @@ export async function getPublicPortfolio(
     p_slug: slug,
     p_unlock_token: nullToUndefined(token),
     p_manage_token: nullToUndefined(
-      manageToken && manageToken.length > 0 ? manageToken : undefined
+      manageToken && manageToken.length > 0 ? manageToken : undefined,
     ),
   })
   if (error) return { found: false, reason: 'not_found' }
-  const payload = data as
-    | {
-        access?: string
-        reason?: string
-        slug?: string
-        found?: boolean
-        view_count?: number
-        references?: PublicReference[]
-      }
-    | null
+  const payload = data as {
+    access?: string
+    reason?: string
+    slug?: string
+    found?: boolean
+    view_count?: number
+    references?: PublicReference[]
+  } | null
 
   if (payload?.access === 'denied') {
     const r = payload.reason === 'expired' ? 'expired' : 'not_found'
@@ -167,7 +165,7 @@ export async function incrementPortfolioViews(slug: string): Promise<void> {
 }
 
 export async function getPublicPortfolioBranding(
-  slug: string
+  slug: string,
 ): Promise<PublicPortfolioBranding> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
@@ -194,7 +192,7 @@ export async function getPublicPortfolioBranding(
 }
 
 export async function getPublicPortfolioShareOwner(
-  slug: string
+  slug: string,
 ): Promise<PublicShareOwner> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
@@ -237,9 +235,7 @@ export type UnlockPortfolioResult =
         | 'unknown'
     }
 
-function extractClientIpFromHeaders(
-  headerMap: Pick<Headers, 'get'>
-): string | null {
+function extractClientIpFromHeaders(headerMap: Pick<Headers, 'get'>): string | null {
   const forwarded = headerMap.get('x-forwarded-for') ?? headerMap.get('x-real-ip') ?? null
   if (!forwarded) return null
   const ip = forwarded.split(',')[0]?.trim() ?? ''
@@ -247,7 +243,7 @@ function extractClientIpFromHeaders(
 }
 
 async function getUnlockAuditContext(
-  slug: string
+  slug: string,
 ): Promise<{ orgId: string | null; referenceId: string | null }> {
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
@@ -258,7 +254,7 @@ async function getUnlockAuditContext(
     .maybeSingle()
   const referenceId =
     data && Array.isArray((data as { reference_ids?: unknown }).reference_ids)
-      ? (data as { reference_ids: string[] }).reference_ids[0] ?? null
+      ? ((data as { reference_ids: string[] }).reference_ids[0] ?? null)
       : null
   if (!referenceId) return { orgId: null, referenceId: null }
   const { data: ref } = await supabase
@@ -272,7 +268,7 @@ async function getUnlockAuditContext(
 /** Kundenansicht: Passwort prüfen und Session-Cookie setzen (ohne Login). */
 export async function unlockPublicPortfolio(
   slug: string,
-  password: string
+  password: string,
 ): Promise<UnlockPortfolioResult> {
   const supabase = await createServerSupabaseClient()
   const reqHeaders = await headers()
@@ -300,7 +296,11 @@ export async function unlockPublicPortfolio(
         userId: null,
         action: 'unlock_rate_limited',
         entityId: slug,
-        actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: String(ipHash) },
+        actionDetails: {
+          slug,
+          reference_id: unlockCtx.referenceId,
+          ip_hash: String(ipHash),
+        },
       })
       return { success: false, error: 'rate_limited' }
     }
@@ -325,12 +325,17 @@ export async function unlockPublicPortfolio(
       userId: null,
       action: 'unlock_failed',
       entityId: slug,
-      actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: ipHash ?? null },
+      actionDetails: {
+        slug,
+        reference_id: unlockCtx.referenceId,
+        ip_hash: ipHash ?? null,
+      },
     })
     const e = payload?.error
     if (e === 'expired') return { success: false, error: 'expired' }
     if (e === 'invalid_password') return { success: false, error: 'invalid_password' }
-    if (e === 'no_password_required') return { success: false, error: 'no_password_required' }
+    if (e === 'no_password_required')
+      return { success: false, error: 'no_password_required' }
     if (e === 'not_found') return { success: false, error: 'not_found' }
     return { success: false, error: 'unknown' }
   }
@@ -373,7 +378,7 @@ export async function unlockPublicPortfolio(
 export async function getPublicPortfolioManageInsights(
   slug: string,
   manageToken: string | null | undefined,
-  referenceId?: string | null
+  referenceId?: string | null,
 ): Promise<
   | {
       found: true
@@ -416,8 +421,7 @@ export async function getPublicPortfolioManageInsights(
     viewCount: Number(payload.view_count) || 0,
     linkExpiresAt: payload.link_expires_at ?? null,
     approvalRespondedAt: payload.approval_responded_at ?? null,
-    isAnonymous:
-      typeof payload.is_anonymous === 'boolean' ? payload.is_anonymous : null,
+    isAnonymous: typeof payload.is_anonymous === 'boolean' ? payload.is_anonymous : null,
     lastView: lv?.started_at
       ? {
           countryCode: lv.country_code ?? null,
@@ -430,7 +434,7 @@ export async function getPublicPortfolioManageInsights(
 
 export async function resolvePublicPortfolioRecipient(
   slug: string,
-  token: string | null | undefined
+  token: string | null | undefined,
 ): Promise<ResolvedPortfolioRecipient> {
   if (!token?.trim()) return { found: false }
   const supabase = await createServerSupabaseClient()
@@ -462,7 +466,7 @@ export async function resolvePublicPortfolioRecipient(
 export async function unlockPublicPortfolioEmail(
   slug: string,
   name: string,
-  email: string
+  email: string,
 ): Promise<UnlockPortfolioResult> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase.rpc('try_unlock_shared_portfolio_email', {
@@ -501,13 +505,17 @@ export async function unlockPublicPortfolioEmail(
     maxAge: maxAgeSec,
   })
 
-  jar.set(`portfolio_email_gate_${slug}`, JSON.stringify({ name: payload.visitor_name, email: payload.visitor_email }), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: maxAgeSec,
-  })
+  jar.set(
+    `portfolio_email_gate_${slug}`,
+    JSON.stringify({ name: payload.visitor_name, email: payload.visitor_email }),
+    {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: maxAgeSec,
+    },
+  )
 
   return { success: true }
 }
@@ -515,13 +523,13 @@ export async function unlockPublicPortfolioEmail(
 /** Kunden-Killswitch: nur mit gültigem ?manage=-Token (oder authentifiziert als Org). */
 export async function deactivatePortfolio(
   slug: string,
-  manageToken?: string | null
+  manageToken?: string | null,
 ): Promise<{ success: boolean }> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase.rpc('deactivate_portfolio', {
     p_slug: slug,
     p_manage_token: nullToUndefined(
-      manageToken && manageToken.length > 0 ? manageToken : undefined
+      manageToken && manageToken.length > 0 ? manageToken : undefined,
     ),
   })
   if (error) return { success: false }

@@ -130,4 +130,4 @@ Diese Datei fasst alle in dieser Session umgesetzten Anpassungen am Referenz-For
 
 ---
 
-*Stand: Session-Zusammenfassung Referenz-Formular.*
+_Stand: Session-Zusammenfassung Referenz-Formular._

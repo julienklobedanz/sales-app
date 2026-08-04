@@ -26,7 +26,7 @@ export type FinalizeRfpAnalysisInput = {
  */
 export async function finalizeRfpAnalysis(
   supabase: SupabaseClient,
-  input: FinalizeRfpAnalysisInput
+  input: FinalizeRfpAnalysisInput,
 ): Promise<PersistedDealDeskAnalysisSnapshot> {
   const { projectId, organizationId, dealId, analyzed } = input
 

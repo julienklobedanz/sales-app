@@ -9,7 +9,7 @@ describe('isStaleInternalPending', () => {
         customerApprovalStatus: null,
         referenceStatus: 'internal_only',
         approvalRequestedAt: null,
-      })
+      }),
     ).toBe(false)
   })
 
@@ -20,7 +20,7 @@ describe('isStaleInternalPending', () => {
         customerApprovalStatus: 'approved',
         referenceStatus: 'external',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      })
+      }),
     ).toBe(true)
   })
 
@@ -31,7 +31,7 @@ describe('isStaleInternalPending', () => {
         customerApprovalStatus: null,
         referenceStatus: 'external',
         approvalRequestedAt: null,
-      })
+      }),
     ).toBe(false)
   })
 })

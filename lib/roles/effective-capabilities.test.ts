@@ -58,8 +58,6 @@ describe('effectiveCapabilities', () => {
   })
 
   it('hasCapability delegates to effective set', () => {
-    expect(
-      hasCapability('sales_rep', 'admin', {}, 'manage_settings')
-    ).toBe(true)
+    expect(hasCapability('sales_rep', 'admin', {}, 'manage_settings')).toBe(true)
   })
 })

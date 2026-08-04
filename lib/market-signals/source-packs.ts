@@ -206,14 +206,16 @@ export function normalizeSourceHost(raw: string | null | undefined): string {
   return s && s.includes('.') ? s : ''
 }
 
-export function getIndustrySourcePack(industryRaw: string | null | undefined): SourcePackDomain[] {
+export function getIndustrySourcePack(
+  industryRaw: string | null | undefined,
+): SourcePackDomain[] {
   const id = resolveIndustryId(industryRaw) || 'other'
   return INDUSTRY_SOURCE_PACKS[id] ?? INDUSTRY_SOURCE_PACKS.other
 }
 
 export function isHostInSourcePack(
   urlOrHost: string | null | undefined,
-  pack: SourcePackDomain[]
+  pack: SourcePackDomain[],
 ): boolean {
   const host = normalizeSourceHost(urlOrHost)
   if (!host) return false
@@ -222,7 +224,7 @@ export function isHostInSourcePack(
 
 export function isIndustryPackHost(
   urlOrHost: string | null | undefined,
-  industryRaw: string | null | undefined
+  industryRaw: string | null | undefined,
 ): boolean {
   return isHostInSourcePack(urlOrHost, getIndustrySourcePack(industryRaw))
 }
@@ -261,31 +263,29 @@ const JOB_EXCLUSIONS = [
  */
 export function buildIndustryPackRssQueries(
   companyName: string,
-  industryRaw: string | null | undefined
+  industryRaw: string | null | undefined,
 ): string[] {
   const name = companyName.trim()
   if (!name) return []
   const pack = getIndustrySourcePack(industryRaw)
   const chunks = chunkDomains(
     pack.map((p) => p.domain),
-    4
+    4,
   ).slice(0, 3)
-  return chunks.map(
-    (domains) => `"${name}" ${siteOrClause(domains)} ${JOB_EXCLUSIONS}`
-  )
+  return chunks.map((domains) => `"${name}" ${siteOrClause(domains)} ${JOB_EXCLUSIONS}`)
 }
 
 /** Personen-Pack: Name (+ optional Firma) auf Führung-/Karriere-Fachmedien. */
 export function buildPeoplePackRssQueries(
   personName: string,
-  companyName?: string | null
+  companyName?: string | null,
 ): string[] {
   const person = personName.trim()
   if (!person) return []
   const company = String(companyName ?? '').trim()
   const chunks = chunkDomains(
     PEOPLE_SOURCE_PACK.map((p) => p.domain),
-    4
+    4,
   ).slice(0, 2)
   const subject = company ? `"${person}" "${company}"` : `"${person}"`
   return chunks.map((domains) => `${subject} ${siteOrClause(domains)}`)

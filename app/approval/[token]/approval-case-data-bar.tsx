@@ -27,7 +27,7 @@ function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boo
       className={cn(
         'grid min-w-0 flex-1 grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3',
         'xl:grid-cols-5',
-        compact && 'xl:gap-x-3'
+        compact && 'xl:gap-x-3',
       )}
     >
       {items.map((item) => (
@@ -35,9 +35,7 @@ function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boo
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {item.label}
           </p>
-          <p
-            className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
-          >
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             {item.icon ? (
               <span className="shrink-0 text-muted-foreground/80">{item.icon}</span>
             ) : null}
@@ -94,7 +92,11 @@ export function ApprovalCaseDataBar({
   const isGlass = isPinned && isScrolled
 
   const barContent = (floating: boolean) => (
-    <div className={cn(floating && 'flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5')}>
+    <div
+      className={cn(
+        floating && 'flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5',
+      )}
+    >
       {floating ? (
         <p
           className="shrink-0 text-sm font-semibold text-foreground lg:max-w-[11rem] lg:border-r lg:border-border/50 lg:pr-5"
@@ -112,14 +114,14 @@ export function ApprovalCaseDataBar({
       className={cn(
         BAR_SHELL_CLASS,
         isGlass &&
-          'border-border/60 bg-background/95 shadow-md backdrop-blur-md supports-[backdrop-filter]:bg-background/90'
+          'border-border/60 bg-background/95 shadow-md backdrop-blur-md supports-[backdrop-filter]:bg-background/90',
       )}
     >
       {revokeMode ? (
         <div
           className={cn(
             'flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400',
-            isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25'
+            isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25',
           )}
         >
           <span>
@@ -148,7 +150,7 @@ export function ApprovalCaseDataBar({
       <div
         className={cn(
           BAR_BODY_CLASS,
-          isGlass && 'bg-background/80 supports-[backdrop-filter]:bg-background/75'
+          isGlass && 'bg-background/80 supports-[backdrop-filter]:bg-background/75',
         )}
       >
         {barContent(floating)}
@@ -162,7 +164,9 @@ export function ApprovalCaseDataBar({
 
       {isPinned ? (
         <div className="pointer-events-none fixed inset-x-0 top-0 z-50 w-full px-4 pt-4">
-          <div className="pointer-events-auto mx-auto w-full max-w-7xl">{renderBarShell(true)}</div>
+          <div className="pointer-events-auto mx-auto w-full max-w-7xl">
+            {renderBarShell(true)}
+          </div>
         </div>
       ) : null}
 

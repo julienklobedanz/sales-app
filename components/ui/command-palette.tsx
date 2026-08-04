@@ -1,13 +1,8 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import {
-  FileText,
-  Handshake,
-  Sparkles,
-  Plus,
-} from "@hugeicons/core-free-icons"
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
+import { FileText, Handshake, Sparkles, Plus } from '@hugeicons/core-free-icons'
 
 import {
   CommandDialog,
@@ -16,12 +11,15 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command"
-import { CompanyLogo } from "@/components/ui/company-logo"
-import { CommandCenterSearchResults } from "@/components/dashboard/command-center-search-results"
-import { createClient } from "@/lib/supabase/client"
-import { COPY } from "@/lib/copy"
-import { consumeCommandPalettePendingQuery, useCommandPalette } from "@/hooks/useCommandPalette"
+} from '@/components/ui/command'
+import { CompanyLogo } from '@/components/ui/company-logo'
+import { CommandCenterSearchResults } from '@/components/dashboard/command-center-search-results'
+import { createClient } from '@/lib/supabase/client'
+import { COPY } from '@/lib/copy'
+import {
+  consumeCommandPalettePendingQuery,
+  useCommandPalette,
+} from '@/hooks/useCommandPalette'
 import {
   emptyCommandSearchGroups,
   formatReferenceListLabel,
@@ -32,22 +30,22 @@ import {
   type CommandSearchGroups,
   type CommandSearchResult,
   type GlobalSearchResult,
-} from "@/lib/command-center/global-search"
-import { hrefForCommandSearchResult } from "@/lib/command-center/search-navigation"
-import { pushCommandRecent } from "@/lib/command-center/push-recent"
+} from '@/lib/command-center/global-search'
+import { hrefForCommandSearchResult } from '@/lib/command-center/search-navigation'
+import { pushCommandRecent } from '@/lib/command-center/push-recent'
 import {
   COMMAND_RECENTS_KEY,
   loadCommandRecents,
   type CommandRecentItem,
-} from "@/lib/command-center/recents"
-import { useRole } from "@/hooks/useRole"
-import { AppIcon } from "@/lib/icons"
-import { ROUTES } from "@/lib/routes"
-import { cn } from "@/lib/utils"
+} from '@/lib/command-center/recents'
+import { useRole } from '@/hooks/useRole'
+import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
+import { cn } from '@/lib/utils'
 
 type RecentItem = CommandRecentItem
 
-type DealHit = { kind: "deal"; id: string; title: string }
+type DealHit = { kind: 'deal'; id: string; title: string }
 
 function matchesSearch(haystack: string, needle: string): boolean {
   const n = needle.trim().toLowerCase()
@@ -56,7 +54,7 @@ function matchesSearch(haystack: string, needle: string): boolean {
 }
 
 function RecentRowIcon({ item }: { item: RecentItem }) {
-  if (item.kind === "account") {
+  if (item.kind === 'account') {
     return (
       <CompanyLogo
         src={item.logoUrl}
@@ -67,34 +65,34 @@ function RecentRowIcon({ item }: { item: RecentItem }) {
       />
     )
   }
-  if (item.kind === "deal") {
+  if (item.kind === 'deal') {
     return <AppIcon icon={Handshake} size={16} />
   }
   return <AppIcon icon={FileText} size={16} />
 }
 
 function pushRecentFromSearch(item: CommandSearchResult | DealHit | RecentItem) {
-  if (item.kind === "reference") {
+  if (item.kind === 'reference') {
     pushCommandRecent({
-      kind: "reference",
+      kind: 'reference',
       id: item.id,
       title: item.title,
-      accountName: "accountName" in item ? item.accountName : undefined,
+      accountName: 'accountName' in item ? item.accountName : undefined,
     })
     return
   }
-  if (item.kind === "account" || item.kind === "partner") {
+  if (item.kind === 'account' || item.kind === 'partner') {
     pushCommandRecent({
-      kind: "account",
+      kind: 'account',
       id: item.id,
       title: item.title,
-      logoUrl: "logoUrl" in item ? item.logoUrl ?? null : null,
+      logoUrl: 'logoUrl' in item ? (item.logoUrl ?? null) : null,
     })
     return
   }
-  if (item.kind === "deal") {
+  if (item.kind === 'deal') {
     pushCommandRecent({
-      kind: "deal",
+      kind: 'deal',
       id: item.id,
       title: item.title,
     })
@@ -118,9 +116,11 @@ export function CommandPalette() {
     setMounted(true)
   }, [])
 
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [groups, setGroups] = React.useState<CommandSearchGroups>(() => emptyCommandSearchGroups())
+  const [groups, setGroups] = React.useState<CommandSearchGroups>(() =>
+    emptyCommandSearchGroups(),
+  )
   const [dealHits, setDealHits] = React.useState<DealHit[]>([])
   const [recents, setRecents] = React.useState<RecentItem[]>([])
   /** Transition erst nach dem Öffnen — sonst animiert padding von 0 → Mitte (Box fällt nach unten). */
@@ -134,21 +134,26 @@ export function CommandPalette() {
     setRecents(current)
 
     const missingIds = current
-      .filter((r) => r.kind === "account" && r.logoUrl === undefined)
+      .filter((r) => r.kind === 'account' && r.logoUrl === undefined)
       .map((r) => r.id)
     if (missingIds.length === 0) return
 
     let cancelled = false
     const client = supabaseRef.current
     void (async () => {
-      const { data } = await client.from("companies").select("id, logo_url").in("id", missingIds)
+      const { data } = await client
+        .from('companies')
+        .select('id, logo_url')
+        .in('id', missingIds)
       if (cancelled) return
       const byId = new Map(
-        (data ?? []).map((row) => [String(row.id), (row.logo_url as string | null) ?? null] as const)
+        (data ?? []).map(
+          (row) => [String(row.id), (row.logo_url as string | null) ?? null] as const,
+        ),
       )
       setRecents((prev) => {
         const next = prev.map((r) => {
-          if (r.kind !== "account" || r.logoUrl !== undefined) return r
+          if (r.kind !== 'account' || r.logoUrl !== undefined) return r
           return { ...r, logoUrl: byId.get(r.id) ?? null }
         })
         try {
@@ -167,7 +172,7 @@ export function CommandPalette() {
 
   React.useEffect(() => {
     if (!open) {
-      setQuery("")
+      setQuery('')
       setGroups(emptyCommandSearchGroups())
       setDealHits([])
       setLoading(false)
@@ -205,17 +210,17 @@ export function CommandPalette() {
       const [nextGroups, dealsRes] = await Promise.all([
         searchCommandCenter(client, q),
         safe
-          ? client.from("deals").select("id,title").ilike("title", `%${safe}%`).limit(8)
+          ? client.from('deals').select('id,title').ilike('title', `%${safe}%`).limit(8)
           : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
       ])
       if (cancelled) return
       setGroups(nextGroups)
       setDealHits(
         (dealsRes.data ?? []).map((d) => ({
-          kind: "deal" as const,
+          kind: 'deal' as const,
           id: String(d.id),
-          title: String(d.title ?? ""),
-        }))
+          title: String(d.title ?? ''),
+        })),
       )
       setLoading(false)
     }, 80)
@@ -237,7 +242,7 @@ export function CommandPalette() {
       visible: boolean
     }> = [
       {
-        key: "new-reference",
+        key: 'new-reference',
         label: COPY.commandPalette.actionNewReference,
         icon: <AppIcon icon={FileText} size={14} />,
         onSelect: () => {
@@ -247,7 +252,7 @@ export function CommandPalette() {
         visible: canCreate,
       },
       {
-        key: "new-account",
+        key: 'new-account',
         label: COPY.commandPalette.actionNewAccount,
         icon: <AppIcon icon={Plus} size={14} />,
         onSelect: () => {
@@ -257,7 +262,7 @@ export function CommandPalette() {
         visible: canCreate,
       },
       {
-        key: "match",
+        key: 'match',
         label: COPY.commandPalette.actionStartMatch,
         icon: <AppIcon icon={Sparkles} size={14} />,
         onSelect: () => {
@@ -274,7 +279,7 @@ export function CommandPalette() {
     const q = query.trim()
     if (!q) return recents
     return recents.filter((r) => {
-      if (r.kind === "reference") {
+      if (r.kind === 'reference') {
         const label = formatReferenceListLabel(r.title, r.accountName ?? null)
         return matchesSearch(label, q) || matchesSearch(r.title, q)
       }
@@ -323,22 +328,22 @@ export function CommandPalette() {
       description={COPY.commandPalette.description}
       className={cn(
         // Fullscreen-Host: Card immer horizontal+vertikal zentriert.
-        "!top-0 !left-0 !h-full !w-full !max-w-none !translate-x-0 !translate-y-0",
-        "!rounded-none !border-0 !bg-transparent !p-0 !shadow-none",
-        "!flex items-center justify-center overflow-hidden",
-        "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-100",
-        "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100"
+        '!top-0 !left-0 !h-full !w-full !max-w-none !translate-x-0 !translate-y-0',
+        '!rounded-none !border-0 !bg-transparent !p-0 !shadow-none',
+        '!flex items-center justify-center overflow-hidden',
+        'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-100',
+        'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100',
       )}
       overlayClassName="bg-slate-950/45 backdrop-blur-sm"
       commandClassName={cn(
         // Wichtig: nicht h-full — sonst füllt die Card den Fullscreen-Host end-to-end.
-        "!h-auto w-full max-w-[min(56rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-[0_8px_30px_rgba(15,23,42,0.12)]",
-        "**:data-[slot=command-input-wrapper]:h-16 [&_[cmdk-input]]:h-16 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5",
+        '!h-auto w-full max-w-[min(56rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-[0_8px_30px_rgba(15,23,42,0.12)]',
+        '**:data-[slot=command-input-wrapper]:h-16 [&_[cmdk-input]]:h-16 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5',
         // Vom Zentrum nach oben gleiten (erst nach Open, sonst kein Mount-Ruckler).
         glideReady
-          ? "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          : "!transition-none",
-        hasSearchQuery ? "-translate-y-[min(22vh,10rem)]" : "translate-y-0"
+          ? 'transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
+          : '!transition-none',
+        hasSearchQuery ? '-translate-y-[min(22vh,10rem)]' : 'translate-y-0',
       )}
       commandProps={{
         shouldFilter: false,
@@ -358,15 +363,15 @@ export function CommandPalette() {
       {quickActions.length > 0 ? (
         <div
           className={cn(
-            "grid transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            hasSearchQuery ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+            'grid transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+            hasSearchQuery ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
           )}
         >
           <div className="min-h-0 overflow-hidden">
             <div
               className={cn(
-                "flex flex-wrap items-center gap-1.5 border-b border-border/60 px-4 py-2.5 transition-opacity duration-150",
-                hasSearchQuery ? "opacity-0" : "opacity-100"
+                'flex flex-wrap items-center gap-1.5 border-b border-border/60 px-4 py-2.5 transition-opacity duration-150',
+                hasSearchQuery ? 'opacity-0' : 'opacity-100',
               )}
             >
               {quickActions.map((a) => (
@@ -376,8 +381,8 @@ export function CommandPalette() {
                   onClick={a.onSelect}
                   tabIndex={hasSearchQuery ? -1 : 0}
                   className={cn(
-                    "inline-flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 text-xs font-medium text-foreground",
-                    "transition-colors hover:bg-muted/70"
+                    'inline-flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 text-xs font-medium text-foreground',
+                    'transition-colors hover:bg-muted/70',
                   )}
                 >
                   {a.icon}
@@ -392,15 +397,19 @@ export function CommandPalette() {
       {/* Nur max-h — Box bleibt kompakt, scrollt bei vielen Treffern */}
       <CommandList
         className={cn(
-          hasSearchQuery ? "max-h-[min(420px,55vh)]" : "max-h-[min(280px,40vh)]"
+          hasSearchQuery ? 'max-h-[min(420px,55vh)]' : 'max-h-[min(280px,40vh)]',
         )}
       >
         {loading && hasSearchQuery ? (
-          <div className="px-4 py-3 text-sm text-muted-foreground">{COPY.commandPalette.searchLoading}</div>
+          <div className="px-4 py-3 text-sm text-muted-foreground">
+            {COPY.commandPalette.searchLoading}
+          </div>
         ) : null}
 
         {showEmptyState ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">{COPY.commandPalette.searchEmpty}</div>
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            {COPY.commandPalette.searchEmpty}
+          </div>
         ) : null}
 
         {showRecentsBlock ? (
@@ -418,7 +427,7 @@ export function CommandPalette() {
                 >
                   <RecentRowIcon item={r} />
                   <span>
-                    {r.kind === "reference"
+                    {r.kind === 'reference'
                       ? formatReferenceListLabel(r.title, r.accountName ?? null)
                       : r.title}
                   </span>

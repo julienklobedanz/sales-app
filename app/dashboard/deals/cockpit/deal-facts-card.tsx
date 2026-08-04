@@ -18,7 +18,10 @@ export function DealFactsCard({
   hubspotPortalId?: string | null
   orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
-  const rows = buildDealFactRows(deal, { hubspotPortalId, dateDisplayFormat: orgDateDisplayFormat })
+  const rows = buildDealFactRows(deal, {
+    hubspotPortalId,
+    dateDisplayFormat: orgDateDisplayFormat,
+  })
 
   return (
     <Card>
@@ -39,7 +42,9 @@ export function DealFactsCard({
                 {row.linkLabel}
               </Link>
             ) : (
-              <span className="max-w-[60%] truncate text-right font-medium">{row.value}</span>
+              <span className="max-w-[60%] truncate text-right font-medium">
+                {row.value}
+              </span>
             )}
           </div>
         ))}

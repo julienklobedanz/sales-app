@@ -24,12 +24,16 @@ export type InsightsPageModel = {
 export function resolveInsightsScope(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<string, boolean>> = {}
+  capabilityOverrides: Partial<Record<string, boolean>> = {},
 ): InsightsScope | null {
-  if (hasCapability(functionRole, systemRole, capabilityOverrides, 'view_analytics_all')) {
+  if (
+    hasCapability(functionRole, systemRole, capabilityOverrides, 'view_analytics_all')
+  ) {
     return 'all'
   }
-  if (hasCapability(functionRole, systemRole, capabilityOverrides, 'view_analytics_own')) {
+  if (
+    hasCapability(functionRole, systemRole, capabilityOverrides, 'view_analytics_own')
+  ) {
     return 'own'
   }
   return null
@@ -40,7 +44,7 @@ async function countEvents(
   orgId: string,
   sinceIso: string,
   eventType: string | string[],
-  ownRefIds: string[] | null
+  ownRefIds: string[] | null,
 ): Promise<number> {
   if (ownRefIds && ownRefIds.length === 0) return 0
   let query = supabase
@@ -61,7 +65,7 @@ async function countEvents(
 export async function loadInsightsPageData(
   supabase: SupabaseClient,
   userId: string,
-  scope: InsightsScope
+  scope: InsightsScope,
 ): Promise<InsightsPageModel> {
   const windowDays = 30
   const since = new Date()
@@ -98,7 +102,10 @@ export async function loadInsightsPageData(
       countEvents(supabase, orgId, sinceIso, 'reference_shared', ownRefIds),
       countEvents(supabase, orgId, sinceIso, 'share_link_viewed', ownRefIds),
       countEvents(supabase, orgId, sinceIso, 'reference_matched', ownRefIds),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId),
       supabase
         .from('evidence_events')
         .select('created_by')
@@ -113,7 +120,9 @@ export async function loadInsightsPageData(
     }
     adoption.teamSize = teamRes.count ?? 0
     const wauSet = new Set(
-      (wauRes.data ?? []).map((r) => String((r as { created_by?: string }).created_by ?? '')).filter(Boolean)
+      (wauRes.data ?? [])
+        .map((r) => String((r as { created_by?: string }).created_by ?? ''))
+        .filter(Boolean),
     )
     adoption.wau = wauSet.size
 
@@ -127,11 +136,22 @@ export async function loadInsightsPageData(
 
     const counts = new Map<string, { id: string; title: string; count: number }>()
     for (const row of refEvents ?? []) {
-      const ref = (row as { references?: { id: string; title: string } | { id: string; title: string }[] | null }).references
+      const ref = (
+        row as {
+          references?:
+            | { id: string; title: string }
+            | { id: string; title: string }[]
+            | null
+        }
+      ).references
       const refRow = Array.isArray(ref) ? ref[0] : ref
       if (!refRow?.id) continue
       if (ownRefIds && !ownRefIds.includes(refRow.id)) continue
-      const cur = counts.get(refRow.id) ?? { id: refRow.id, title: refRow.title ?? 'Referenz', count: 0 }
+      const cur = counts.get(refRow.id) ?? {
+        id: refRow.id,
+        title: refRow.title ?? 'Referenz',
+        count: 0,
+      }
       cur.count += 1
       counts.set(refRow.id, cur)
     }
@@ -139,7 +159,7 @@ export async function loadInsightsPageData(
       ...Array.from(counts.values())
         .sort((a, b) => b.count - a.count)
         .slice(0, 8)
-        .map((r) => ({ id: r.id, title: r.title, eventCount: r.count }))
+        .map((r) => ({ id: r.id, title: r.title, eventCount: r.count })),
     )
 
     const { data: zeroRows } = await supabase
@@ -150,7 +170,8 @@ export async function loadInsightsPageData(
       .gte('timestamp', sinceIso)
       .limit(50)
     for (const row of zeroRows ?? []) {
-      const details = (row as { action_details?: { query?: string } | null }).action_details
+      const details = (row as { action_details?: { query?: string } | null })
+        .action_details
       const term = String(details?.query ?? '').trim()
       if (!term) continue
       const existing = coverageGaps.find((g) => g.term === term)
@@ -183,7 +204,10 @@ export async function loadInsightsPageData(
       withoutReference: {
         won: wonWithout,
         total: withoutRef.length,
-        rate: withoutRef.length > 0 ? Math.round((wonWithout / withoutRef.length) * 100) : null,
+        rate:
+          withoutRef.length > 0
+            ? Math.round((wonWithout / withoutRef.length) * 100)
+            : null,
       },
       meaningful,
       minDealsRequired,

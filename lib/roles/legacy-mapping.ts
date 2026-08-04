@@ -13,7 +13,10 @@ export function isSystemAdmin(systemRole: SystemRole): boolean {
 }
 
 /** Legacy AppRole aus System- + Funktions-Rolle (konsistent mit DB-Trigger). */
-export function legacyAppRoleFrom(systemRole: SystemRole, functionRole: FunctionRole): AppRole {
+export function legacyAppRoleFrom(
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
+): AppRole {
   if (functionRole === 'account_manager') return 'account_manager'
   if (isSystemAdmin(systemRole)) return 'admin'
   return 'sales'
@@ -36,7 +39,7 @@ export function legacyRoleToDimensions(legacyRole: string | null | undefined): {
 export function effectiveCapabilities(
   functionRole: FunctionRole,
   systemRole: SystemRole,
-  overrides: Partial<Record<Capability, boolean>> = {}
+  overrides: Partial<Record<Capability, boolean>> = {},
 ): Set<Capability> {
   const caps = new Set<Capability>(FUNCTION_ROLE_CAPS[functionRole])
   if (isSystemAdmin(systemRole)) {
@@ -54,7 +57,7 @@ export function hasCapability(
   functionRole: FunctionRole,
   systemRole: SystemRole,
   overrides: Partial<Record<Capability, boolean>>,
-  cap: Capability
+  cap: Capability,
 ): boolean {
   return effectiveCapabilities(functionRole, systemRole, overrides).has(cap)
 }
@@ -85,7 +88,9 @@ export function appRoleCanManageOrg(role: AppRole): boolean {
   return appRoleIsAdmin(role) || appRoleIsAccountManager(role)
 }
 
-export function commandCenterSuggestionsBranch(role: AppRole): 'admin' | 'account_manager' | 'sales' {
+export function commandCenterSuggestionsBranch(
+  role: AppRole,
+): 'admin' | 'account_manager' | 'sales' {
   if (appRoleIsAdmin(role)) return 'admin'
   if (appRoleIsAccountManager(role)) return 'account_manager'
   return 'sales'

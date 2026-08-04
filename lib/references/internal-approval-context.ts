@@ -18,7 +18,7 @@ export type InternalApprovalPageContext =
 
 export async function getInternalApprovalPageContext(
   admin: SupabaseClient,
-  token: string
+  token: string,
 ): Promise<InternalApprovalPageContext> {
   const trimmed = token.trim()
   if (!trimmed) return { ok: false, reason: 'invalid' }
@@ -35,7 +35,7 @@ export async function getInternalApprovalPageContext(
       approval_message,
       approval_coordinator_email,
       companies ( name )
-    `
+    `,
     )
     .eq('approval_internal_review_token', trimmed)
     .maybeSingle()
@@ -45,7 +45,9 @@ export async function getInternalApprovalPageContext(
   const internal = String(row.approval_internal_status ?? '').toLowerCase()
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
   const accountCompanyName =
-    typeof company?.name === 'string' && company.name.trim() ? company.name.trim() : 'Account'
+    typeof company?.name === 'string' && company.name.trim()
+      ? company.name.trim()
+      : 'Account'
 
   if (internal === 'approved_internal') {
     return {
@@ -56,7 +58,9 @@ export async function getInternalApprovalPageContext(
       requesterName: String(row.approval_requester_name ?? '').trim(),
       message: typeof row.approval_message === 'string' ? row.approval_message : null,
       coordinatorEmail:
-        typeof row.approval_coordinator_email === 'string' ? row.approval_coordinator_email : null,
+        typeof row.approval_coordinator_email === 'string'
+          ? row.approval_coordinator_email
+          : null,
       alreadyApproved: true,
       canAct: false,
     }
@@ -74,7 +78,9 @@ export async function getInternalApprovalPageContext(
     requesterName: String(row.approval_requester_name ?? '').trim(),
     message: typeof row.approval_message === 'string' ? row.approval_message : null,
     coordinatorEmail:
-      typeof row.approval_coordinator_email === 'string' ? row.approval_coordinator_email : null,
+      typeof row.approval_coordinator_email === 'string'
+        ? row.approval_coordinator_email
+        : null,
     alreadyApproved: false,
     canAct: true,
   }

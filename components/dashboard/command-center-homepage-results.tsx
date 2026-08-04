@@ -105,8 +105,8 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-12 text-center">
         <p className="text-sm font-medium text-slate-800">Keine Treffer</p>
         <p className="mt-2 text-sm text-slate-500">
-          Für „{query}“ wurden keine Ergebnisse gefunden. Formuliere die Anfrage anders oder probiere
-          eine der Vorschläge.
+          Für „{query}“ wurden keine Ergebnisse gefunden. Formuliere die Anfrage anders
+          oder probiere eine der Vorschläge.
         </p>
       </div>
     )
@@ -114,7 +114,9 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
 
   const total = countHomepageSearchHits(referenceHits, groups)
   const gapToNext =
-    referenceHits.length > 1 ? referenceHits[0]!.similarity - referenceHits[1]!.similarity : null
+    referenceHits.length > 1
+      ? referenceHits[0]!.similarity - referenceHits[1]!.similarity
+      : null
 
   function openResult(item: CommandSearchResult) {
     router.push(hrefForCommandSearchResult(item))

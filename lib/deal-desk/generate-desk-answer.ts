@@ -10,7 +10,7 @@ export async function generateDealDeskAnswerForRequirement(
     referenceTitle: string
     companyName: string | null
     matchPercent: number
-  }
+  },
 ): Promise<{ text: string } | { error: string }> {
   const refLabel = input.companyName
     ? `${input.referenceTitle} (${input.companyName})`

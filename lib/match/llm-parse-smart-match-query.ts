@@ -43,7 +43,11 @@ function coerceParsed(raw: unknown): ParsedSmartMatchConstraints | null {
   const industryIds = new Set(MASTER_INDUSTRIES.map((i) => i.id))
 
   let minVolume: number | null = null
-  if (typeof o.minVolumeEur === 'number' && Number.isFinite(o.minVolumeEur) && o.minVolumeEur > 0) {
+  if (
+    typeof o.minVolumeEur === 'number' &&
+    Number.isFinite(o.minVolumeEur) &&
+    o.minVolumeEur > 0
+  ) {
     minVolume = snapMinVolumeEur(o.minVolumeEur)
   }
 
@@ -53,7 +57,11 @@ function coerceParsed(raw: unknown): ParsedSmartMatchConstraints | null {
   }
 
   let monthsBack: number | null = null
-  if (typeof o.monthsBack === 'number' && Number.isFinite(o.monthsBack) && o.monthsBack !== 0) {
+  if (
+    typeof o.monthsBack === 'number' &&
+    Number.isFinite(o.monthsBack) &&
+    o.monthsBack !== 0
+  ) {
     monthsBack = Math.trunc(o.monthsBack)
   }
 
@@ -64,7 +72,9 @@ function coerceParsed(raw: unknown): ParsedSmartMatchConstraints | null {
     : []
 
   const excludeIndustryIds = Array.isArray(o.excludeIndustryIds)
-    ? o.excludeIndustryIds.filter((id): id is string => typeof id === 'string' && industryIds.has(id))
+    ? o.excludeIndustryIds.filter(
+        (id): id is string => typeof id === 'string' && industryIds.has(id),
+      )
     : []
 
   const excludeTerms = Array.isArray(o.excludeTerms)
@@ -95,16 +105,20 @@ function coerceParsed(raw: unknown): ParsedSmartMatchConstraints | null {
 
 function mergeParsed(
   primary: ParsedSmartMatchConstraints,
-  fallback: ParsedSmartMatchConstraints
+  fallback: ParsedSmartMatchConstraints,
 ): ParsedSmartMatchConstraints {
   const minVolume = primary.minVolume ?? fallback.minVolume
   const industryId = primary.industryId ?? fallback.industryId
   const monthsBack = primary.monthsBack ?? fallback.monthsBack
-  const excludeYears = primary.excludeYears.length ? primary.excludeYears : fallback.excludeYears
+  const excludeYears = primary.excludeYears.length
+    ? primary.excludeYears
+    : fallback.excludeYears
   const excludeIndustryIds = primary.excludeIndustryIds.length
     ? primary.excludeIndustryIds
     : fallback.excludeIndustryIds
-  const excludeTerms = primary.excludeTerms.length ? primary.excludeTerms : fallback.excludeTerms
+  const excludeTerms = primary.excludeTerms.length
+    ? primary.excludeTerms
+    : fallback.excludeTerms
   return {
     minVolume,
     industryId,
@@ -129,7 +143,7 @@ function mergeParsed(
  */
 export async function resolveSmartMatchConstraints(
   query: string,
-  apiKey?: string | null
+  apiKey?: string | null,
 ): Promise<ParsedSmartMatchConstraints> {
   const heuristic = parseSmartMatchQuery(query)
   const key = apiKey ?? process.env.OPENAI_API_KEY
@@ -157,7 +171,10 @@ export async function resolveSmartMatchConstraints(
 
     if (!res.ok) {
       const t = await res.text()
-      log.warn('smartMatchParse.openAiFailed', { status: res.status, detail: formatOpenAiHttpError(res.status, t, 'Smart-Match-Filter') })
+      log.warn('smartMatchParse.openAiFailed', {
+        status: res.status,
+        detail: formatOpenAiHttpError(res.status, t, 'Smart-Match-Filter'),
+      })
       return heuristic
     }
 

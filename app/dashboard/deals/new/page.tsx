@@ -10,10 +10,16 @@ import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export default async function NewDealPage() {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect(ROUTES.login)
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
   const orgId = profile?.organization_id
   if (!orgId) redirect(ROUTES.onboarding)
 
@@ -39,10 +45,7 @@ export default async function NewDealPage() {
           </Button>
         </Link>
         <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Deal anlegen</h1>
-        <DealForm
-          companies={companies ?? []}
-          orgProfiles={orgProfiles ?? []}
-        />
+        <DealForm companies={companies ?? []} orgProfiles={orgProfiles ?? []} />
       </div>
     </div>
   )

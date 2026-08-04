@@ -21,23 +21,24 @@ import { cn } from '@/lib/utils'
 
 function riskPillLabel(tone: 'gap' | 'warn' | 'ok') {
   const h = COPY.dashboard.home
-  return tone === 'ok' ? h.signalPillChance : tone === 'warn' ? h.signalPillRisk : h.signalPillCritical
+  return tone === 'ok'
+    ? h.signalPillChance
+    : tone === 'warn'
+      ? h.signalPillRisk
+      : h.signalPillCritical
 }
 
 function riskPillClass(tone: 'gap' | 'warn' | 'ok') {
   return cn(
     'text-[11px]',
     tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
-    tone === 'warn' && 'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
-    tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive'
+    tone === 'warn' &&
+      'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
+    tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive',
   )
 }
 
-function RiskDealRow({
-  deal,
-}: {
-  deal: AdminDashboardModel['riskDeals'][number]
-}) {
+function RiskDealRow({ deal }: { deal: AdminDashboardModel['riskDeals'][number] }) {
   return (
     <div className="flex items-center gap-3 border-t border-border py-3 first:border-t-0 first:pt-0">
       <CompanyLogo
@@ -95,7 +96,9 @@ export function SalesLeaderDashboard({
 
   const win = data.winRateCompare
   const delta =
-    win.available && win.withReferencePercent != null && win.withoutReferencePercent != null
+    win.available &&
+    win.withReferencePercent != null &&
+    win.withoutReferencePercent != null
       ? win.withReferencePercent - win.withoutReferencePercent
       : null
 
@@ -121,11 +124,17 @@ export function SalesLeaderDashboard({
       <LeaderCallQueueSection rows={data.callQueue ?? []} thin={thin} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <SalesLeaderMeetingPrepSection sessions={data.meetingPrepSessions ?? []} thin={thin} />
+        <SalesLeaderMeetingPrepSection
+          sessions={data.meetingPrepSessions ?? []}
+          thin={thin}
+        />
 
         <DashboardSectionCard title={c.covPipeTitle} description={c.covPipeDescription}>
           {thin || data.coveragePipeline.length === 0 ? (
-            <HonestEmpty title={c.covPipeEmptyTitle} description={c.covPipeEmptyDescription} />
+            <HonestEmpty
+              title={c.covPipeEmptyTitle}
+              description={c.covPipeEmptyDescription}
+            />
           ) : (
             <div className="space-y-0">
               {data.coveragePipeline.map((row) => (
@@ -137,7 +146,9 @@ export function SalesLeaderDashboard({
                     <span>{row.label}</span>
                     <p className="text-xs text-muted-foreground">{row.sublabel}</p>
                   </div>
-                  <SignalStatusPill tone={row.tone === 'ok' ? 'ok' : row.tone === 'warn' ? 'warn' : 'gap'} />
+                  <SignalStatusPill
+                    tone={row.tone === 'ok' ? 'ok' : row.tone === 'warn' ? 'warn' : 'gap'}
+                  />
                 </div>
               ))}
             </div>
@@ -145,9 +156,15 @@ export function SalesLeaderDashboard({
         </DashboardSectionCard>
       </div>
 
-      <DashboardSectionCard title={c.signalRiskTitle} description={c.signalRiskDescription}>
+      <DashboardSectionCard
+        title={c.signalRiskTitle}
+        description={c.signalRiskDescription}
+      >
         {thin || data.signalRisks.length === 0 ? (
-          <HonestEmpty title={c.signalRiskEmptyTitle} description={c.signalRiskEmptyDescription} />
+          <HonestEmpty
+            title={c.signalRiskEmptyTitle}
+            description={c.signalRiskEmptyDescription}
+          />
         ) : (
           <div className="space-y-0">
             {data.signalRisks.map((row, idx) => (
@@ -177,7 +194,9 @@ export function SalesLeaderDashboard({
         }
         description={c.winDescription}
       >
-        {!win.available || win.withReferencePercent == null || win.withoutReferencePercent == null ? (
+        {!win.available ||
+        win.withReferencePercent == null ||
+        win.withoutReferencePercent == null ? (
           <HonestEmpty
             title={c.winEmptyTitle}
             description={formatCopy(c.winEmptyDescription, {

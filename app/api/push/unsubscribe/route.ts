@@ -24,7 +24,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
   }
 
-  const { error } = await supabase.from('push_subscriptions').delete().eq('user_id', user.id).eq('endpoint', endpoint)
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('endpoint', endpoint)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

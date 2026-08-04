@@ -12,7 +12,7 @@ RAN and Cloud RAN implementation
 • Expand network capacity with 5G`
 
     expect(formatShowcaseNarrativeForDisplay(input)).toBe(
-      '• Modernize infrastructure to enable Open RAN and Cloud RAN implementation\n• Expand network capacity with 5G'
+      '• Modernize infrastructure to enable Open RAN and Cloud RAN implementation\n• Expand network capacity with 5G',
     )
   })
 
@@ -21,7 +21,7 @@ RAN and Cloud RAN implementation
 and operations to meet rising data demands.`
 
     expect(formatShowcaseNarrativeForDisplay(input)).toBe(
-      'Modernizing network infrastructure and operations to meet rising data demands.'
+      'Modernizing network infrastructure and operations to meet rising data demands.',
     )
   })
 })
@@ -30,8 +30,8 @@ describe('parseShowcaseBulletItems', () => {
   it('liefert Bullet-Items für Listen', () => {
     expect(
       parseShowcaseBulletItems(
-        '• Modernize infrastructure to enable Open RAN\n• Expand network capacity with 5G'
-      )
+        '• Modernize infrastructure to enable Open RAN\n• Expand network capacity with 5G',
+      ),
     ).toEqual([
       'Modernize infrastructure to enable Open RAN',
       'Expand network capacity with 5G',

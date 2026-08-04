@@ -1,7 +1,10 @@
 'use server'
 
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
-import { clampNarrativeText, REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
+import {
+  clampNarrativeText,
+  REFERENCE_NARRATIVE_MAX_CHARS,
+} from '@/lib/references/reference-narrative-limits'
 import { log } from '@/lib/observability/logger'
 
 export type GenerateSummaryResult =
@@ -11,17 +14,23 @@ export type GenerateSummaryResult =
 export async function generateSummaryFromStoryImpl(
   customerChallenge: string | null,
   ourSolution: string | null,
-  referenceId?: string | null
+  referenceId?: string | null,
 ): Promise<GenerateSummaryResult> {
   const challenge = customerChallenge?.trim() ?? ''
   const solution = ourSolution?.trim() ?? ''
   if (!challenge && !solution) {
-    return { success: false, error: 'Keine Inhalte für Herausforderung oder Lösung angegeben.' }
+    return {
+      success: false,
+      error: 'Keine Inhalte für Herausforderung oder Lösung angegeben.',
+    }
   }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
+    return {
+      success: false,
+      error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).',
+    }
   }
 
   const prompt = `Du bist ein Vertriebs-Assistent. Erstelle aus den folgenden Angaben eine prägnante, vertriebsorientierte Zusammenfassung in 3–4 Sätzen auf Deutsch. Maximal ${REFERENCE_NARRATIVE_MAX_CHARS} Zeichen. Betone den Mehrwert und das Ergebnis für den Kunden. Schreibe nur die Zusammenfassung, ohne Überschriften oder Bullet-Points.
@@ -53,7 +62,11 @@ Zusammenfassung:`
       const status = response.status
       const raw = await response.text()
       if (status === 429) {
-        log.error('generateSummaryFromStory.rateLimited', { referenceId, status: 429, raw })
+        log.error('generateSummaryFromStory.rateLimited', {
+          referenceId,
+          status: 429,
+          raw,
+        })
         return {
           success: false,
           error:
@@ -66,7 +79,9 @@ Zusammenfassung:`
       }
     }
 
-    const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const json = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
     const summary = json?.choices?.[0]?.message?.content?.trim()
     if (!summary) {
       return { success: false, error: 'Keine Antwort von der KI erhalten.' }
@@ -84,4 +99,3 @@ Zusammenfassung:`
     return { success: false, error: message }
   }
 }
-

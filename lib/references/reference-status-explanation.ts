@@ -12,7 +12,7 @@ export function getReferenceStatusExplanation(
   approvalInternalStatus?: string | null,
   approvalRequestedAt?: string | null,
   approvalScopeNamedMention?: boolean | null,
-  approvalScopeAnonymousMention?: boolean | null
+  approvalScopeAnonymousMention?: boolean | null,
 ): string {
   const input: ReferenceTitleBadgeInput = {
     referenceStatus: status,

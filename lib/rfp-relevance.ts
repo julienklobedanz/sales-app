@@ -33,7 +33,7 @@ export type RfpRelevanceItem = {
  */
 export async function judgeRfpRelevance(
   apiKey: string,
-  items: RfpRelevanceItem[]
+  items: RfpRelevanceItem[],
 ): Promise<Record<string, RfpVerdict>> {
   const usable = items.filter((it) => it.candidates.length > 0)
   if (usable.length === 0) return {}
@@ -79,7 +79,9 @@ Antworte NUR mit JSON, ohne Markdown:
       }),
     })
     if (!res.ok) return {}
-    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
     const raw = json?.choices?.[0]?.message?.content?.trim() ?? ''
     return parseVerdicts(raw)
   } catch {
@@ -101,7 +103,8 @@ function parseVerdicts(raw: string): Record<string, RfpVerdict> {
       const row = v as Record<string, unknown>
       const id = typeof row.requirementId === 'string' ? row.requirementId : null
       const verdict = row.verdict
-      if (!id || (verdict !== 'covers' && verdict !== 'partial' && verdict !== 'none')) continue
+      if (!id || (verdict !== 'covers' && verdict !== 'partial' && verdict !== 'none'))
+        continue
       out[id] = {
         verdict,
         chosenId: typeof row.chosenId === 'string' ? row.chosenId : null,

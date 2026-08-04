@@ -1,5 +1,8 @@
 import { parseGermanEmployeeCountInput } from '@/lib/format'
-import type { ExternalContactDisplay, ReferenceFormInitialData } from '@/lib/references/reference-form/reference-form-types'
+import type {
+  ExternalContactDisplay,
+  ReferenceFormInitialData,
+} from '@/lib/references/reference-form/reference-form-types'
 
 export type ReferenceFormSharedFieldState = {
   title: string
@@ -28,7 +31,10 @@ export type ReferenceFormSharedFieldState = {
   tags: string[]
 }
 
-export function appendSharedReferenceFields(fd: FormData, state: ReferenceFormSharedFieldState) {
+export function appendSharedReferenceFields(
+  fd: FormData,
+  state: ReferenceFormSharedFieldState,
+) {
   fd.set('title', state.title.trim())
   fd.set('summary', state.summary.trim())
   fd.set('industry', state.industry)
@@ -41,11 +47,17 @@ export function appendSharedReferenceFields(fd: FormData, state: ReferenceFormSh
   fd.set('customer_challenge', state.customerChallenge)
   fd.set('our_solution', state.ourSolution)
   fd.set('contactId', state.contactId === '__none__' ? '' : state.contactId)
-  fd.set('customer_contact_id', state.customer_contact_id === '__none__' ? '' : state.customer_contact_id)
-  const selectedCustomer = state.displayCustomerContacts.find((c) => c.id === state.customer_contact_id)
+  fd.set(
+    'customer_contact_id',
+    state.customer_contact_id === '__none__' ? '' : state.customer_contact_id,
+  )
+  const selectedCustomer = state.displayCustomerContacts.find(
+    (c) => c.id === state.customer_contact_id,
+  )
   const customerDisplay = selectedCustomer
-    ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
-      (selectedCustomer.role ? `, ${selectedCustomer.role}` : '')
+    ? [selectedCustomer.first_name, selectedCustomer.last_name]
+        .filter(Boolean)
+        .join(' ') + (selectedCustomer.role ? `, ${selectedCustomer.role}` : '')
     : ''
   fd.set('customer_contact', customerDisplay)
   fd.set('project_status', state.projectStatus === '__none__' ? '' : state.projectStatus)
@@ -65,7 +77,7 @@ export function appendSharedReferenceFields(fd: FormData, state: ReferenceFormSh
 export function buildFormDataCreate(
   shared: ReferenceFormSharedFieldState,
   companyId: string,
-  newCompanyName: string
+  newCompanyName: string,
 ): FormData {
   const fd = new FormData()
   appendSharedReferenceFields(fd, shared)
@@ -74,10 +86,12 @@ export function buildFormDataCreate(
   return fd
 }
 
-export function buildFormDataEdit(shared: ReferenceFormSharedFieldState, editCompanyName: string): FormData {
+export function buildFormDataEdit(
+  shared: ReferenceFormSharedFieldState,
+  editCompanyName: string,
+): FormData {
   const fd = new FormData()
   appendSharedReferenceFields(fd, shared)
   fd.set('company_name', editCompanyName.trim())
   return fd
 }
-

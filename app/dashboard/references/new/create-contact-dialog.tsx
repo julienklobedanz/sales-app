@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createContact, createExternalContact, updateContact, updateExternalContact, type ExternalContact } from './actions'
+import {
+  createContact,
+  createExternalContact,
+  updateContact,
+  updateExternalContact,
+  type ExternalContact,
+} from './actions'
 import { AppIcon } from '@/lib/icons'
 import type { CreatedContact } from '@/lib/references/reference-form/reference-form-types'
 
@@ -43,12 +49,14 @@ function validateContact(formData: FormData): FieldErrors {
   if (!firstName) {
     errors.firstName = 'Vorname ist erforderlich.'
   } else if (!NAME_REGEX.test(firstName)) {
-    errors.firstName = 'Vorname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
+    errors.firstName =
+      'Vorname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
   }
   if (!lastName) {
     errors.lastName = 'Nachname ist erforderlich.'
   } else if (!NAME_REGEX.test(lastName)) {
-    errors.lastName = 'Nachname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
+    errors.lastName =
+      'Nachname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
   }
   if (!email) {
     errors.email = 'E-Mail ist erforderlich.'
@@ -99,7 +107,8 @@ export function CreateContactDialog({
     const hasErrors = Object.keys(errors).length > 0
     setFieldErrors(errors)
     if (hasErrors) {
-      const firstMessage = errors.firstName ?? errors.lastName ?? errors.email ?? errors.phone
+      const firstMessage =
+        errors.firstName ?? errors.lastName ?? errors.email ?? errors.phone
       toast.error(firstMessage)
       return
     }
@@ -125,7 +134,7 @@ export function CreateContactDialog({
                 role: formData.get('role')?.toString().trim() || null,
                 phone: formData.get('phone')?.toString().trim() || null,
               } as ExternalContact,
-              formData.get('role')?.toString().trim() || undefined
+              formData.get('role')?.toString().trim() || undefined,
             )
             setOpen(false)
           } else {
@@ -139,7 +148,9 @@ export function CreateContactDialog({
             onContactCreated(result.contact, result.contact.role ?? undefined)
             setOpen(false)
           } else {
-            toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+            toast.error(
+              !result.success && 'error' in result ? result.error : 'Fehler beim Anlegen',
+            )
           }
         }
       } else {
@@ -164,7 +175,9 @@ export function CreateContactDialog({
             onContactCreated(result.contact as CreatedContact)
             setOpen(false)
           } else {
-            toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+            toast.error(
+              !result.success && 'error' in result ? result.error : 'Fehler beim Anlegen',
+            )
           }
         }
       }
@@ -189,7 +202,11 @@ export function CreateContactDialog({
           type="button"
           variant="default"
           size="icon"
-          title={variant === 'external' && disabled ? 'Bitte zuerst ein Unternehmen auswählen' : 'Neuen Kontakt anlegen'}
+          title={
+            variant === 'external' && disabled
+              ? 'Bitte zuerst ein Unternehmen auswählen'
+              : 'Neuen Kontakt anlegen'
+          }
           disabled={disabled}
         >
           <AppIcon icon={CirclePlus} size={16} />
@@ -221,7 +238,11 @@ export function CreateContactDialog({
                   aria-describedby={fieldErrors.firstName ? 'firstName-error' : undefined}
                 />
                 {fieldErrors.firstName && (
-                  <p id="firstName-error" className="text-xs text-destructive" role="alert">
+                  <p
+                    id="firstName-error"
+                    className="text-xs text-destructive"
+                    role="alert"
+                  >
                     {fieldErrors.firstName}
                   </p>
                 )}
@@ -242,7 +263,11 @@ export function CreateContactDialog({
                   aria-describedby={fieldErrors.lastName ? 'lastName-error' : undefined}
                 />
                 {fieldErrors.lastName && (
-                  <p id="lastName-error" className="text-xs text-destructive" role="alert">
+                  <p
+                    id="lastName-error"
+                    className="text-xs text-destructive"
+                    role="alert"
+                  >
                     {fieldErrors.lastName}
                   </p>
                 )}
@@ -306,11 +331,10 @@ export function CreateContactDialog({
             )}
           </div>
           <DialogFooter>
-            <Button
-              type="submit"
-              disabled={loading}
-            >
-              {loading && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+            <Button type="submit" disabled={loading}>
+              {loading && (
+                <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+              )}
               Speichern
             </Button>
           </DialogFooter>

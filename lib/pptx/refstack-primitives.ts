@@ -40,7 +40,10 @@ export const PPTX_LAYOUT = {
 export const PPTX_BULLET_FONT_PT = 10
 export const PPTX_FACT_FONT_PT = 10
 
-export function clipPptxHeader(text: string | null | undefined, maxChars: number): string {
+export function clipPptxHeader(
+  text: string | null | undefined,
+  maxChars: number,
+): string {
   const t = String(text ?? '')
     .trim()
     .replace(/\s+/g, ' ')
@@ -53,7 +56,7 @@ export function addPptxSectionLabel(
   label: string,
   x: number,
   y: number,
-  w: number
+  w: number,
 ) {
   slide.addText(label.toUpperCase(), {
     x,
@@ -75,7 +78,7 @@ export function addPptxFixedBullets(
   x: number,
   y: number,
   w: number,
-  h: number
+  h: number,
 ) {
   if (bullets.length === 0) {
     slide.addText('—', {
@@ -124,7 +127,7 @@ export function addPptxPremiumHeaderBand(
     summary?: string | null
     titleW: number
     contentW: number
-  }
+  },
 ) {
   slide.addShape(pptx.ShapeType.rect, {
     x: 0,
@@ -184,7 +187,7 @@ export function addPptxSidebarCard(
   slide: PptxGenJS.Slide,
   pptx: PptxGenJS,
   box: { x: number; y: number; w: number; h: number },
-  options?: { accentTop?: boolean }
+  options?: { accentTop?: boolean },
 ) {
   slide.addShape(pptx.ShapeType.roundRect, {
     x: box.x,
@@ -214,7 +217,7 @@ export function addPptxFactRowsCard(
   box: { x: number; y: number; w: number; h: number },
   title: string,
   rows: PptxFactRow[],
-  options?: { accentTop?: boolean }
+  options?: { accentTop?: boolean },
 ) {
   addPptxSidebarCard(slide, pptx, box, options)
 
@@ -301,7 +304,7 @@ export function addPptxHorizontalRule(
   pptx: PptxGenJS,
   x: number,
   y: number,
-  w: number
+  w: number,
 ) {
   slide.addShape(pptx.ShapeType.rect, {
     x,

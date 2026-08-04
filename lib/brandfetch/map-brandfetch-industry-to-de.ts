@@ -10,7 +10,15 @@ import { isIndustryId, resolveIndustryId } from '@/lib/constants/industries'
 const INDUSTRIES_MAP: { id: string; keywords: string[] }[] = [
   {
     id: 'fin',
-    keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung', 'fintech', 'asset management'],
+    keywords: [
+      'finance',
+      'finanz',
+      'banking',
+      'insurance',
+      'versicherung',
+      'fintech',
+      'asset management',
+    ],
   },
   {
     id: 'ret',
@@ -115,7 +123,17 @@ const INDUSTRIES_MAP: { id: string; keywords: string[] }[] = [
   },
   {
     id: 'energy',
-    keywords: ['energy', 'utilities', 'oil', 'gas', 'power', 'renewable', 'mining', 'resources', 'utility'],
+    keywords: [
+      'energy',
+      'utilities',
+      'oil',
+      'gas',
+      'power',
+      'renewable',
+      'mining',
+      'resources',
+      'utility',
+    ],
   },
   {
     id: 'health',
@@ -195,17 +213,17 @@ const INDUSTRY_DEFAULT_ID = 'other'
 
 /** Alle Brandfetch-Industry-Namen zu einem String (für Keyword-Matching). */
 export function joinBrandfetchIndustryNames(
-  industries: { name?: string | null }[] | null | undefined
+  industries: { name?: string | null }[] | null | undefined,
 ): string | null {
   if (!industries?.length) return null
-  const parts = industries
-    .map((i) => String(i?.name ?? '').trim())
-    .filter(Boolean)
+  const parts = industries.map((i) => String(i?.name ?? '').trim()).filter(Boolean)
   if (!parts.length) return null
   return parts.join(' | ')
 }
 
-export function mapBrandfetchIndustryToGermanCategory(name: string | null | undefined): string | null {
+export function mapBrandfetchIndustryToGermanCategory(
+  name: string | null | undefined,
+): string | null {
   const id = mapBrandfetchIndustryToMasterId(name)
   return id
 }
@@ -226,7 +244,7 @@ function mapBrandfetchIndustryToMasterId(name: string | null | undefined): strin
 
 /** Direkt aus Brandfetch `company.industries` mappen (mehrere Einträge berücksichtigen). */
 export function mapBrandfetchIndustriesArrayToGermanCategory(
-  industries: { name?: string | null }[] | null | undefined
+  industries: { name?: string | null }[] | null | undefined,
 ): string | null {
   const raw = joinBrandfetchIndustryNames(industries)
   if (!raw) return null
@@ -235,7 +253,7 @@ export function mapBrandfetchIndustriesArrayToGermanCategory(
 
 /** Expliziter Export für neue Call-Sites. */
 export function mapBrandfetchIndustriesArrayToMasterId(
-  industries: { name?: string | null }[] | null | undefined
+  industries: { name?: string | null }[] | null | undefined,
 ): string | null {
   return mapBrandfetchIndustriesArrayToGermanCategory(industries)
 }

@@ -73,7 +73,11 @@ export async function createInvite(): Promise<CreateInviteResult> {
   return {
     success: true,
     link,
-    expiresAt: expiresAt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    expiresAt: expiresAt.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
   }
 }
 
@@ -90,7 +94,7 @@ export type InviteByEmailResult =
 
 export async function inviteByEmail(
   email: string,
-  roles: InviteRoleDimensions = DEFAULT_INVITE_ROLES
+  roles: InviteRoleDimensions = DEFAULT_INVITE_ROLES,
 ): Promise<InviteByEmailResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -121,7 +125,9 @@ export async function inviteByEmail(
     .single()
 
   const apiSettings =
-    org?.api_settings && typeof org.api_settings === 'object' && !Array.isArray(org.api_settings)
+    org?.api_settings &&
+    typeof org.api_settings === 'object' &&
+    !Array.isArray(org.api_settings)
       ? (org.api_settings as Record<string, unknown>)
       : {}
   const allowedDomainsRaw =
@@ -257,7 +263,7 @@ export async function resendInviteEmail(params: {
 
   const { data: inviteDataRaw, error: inviteErr } = await supabase.rpc(
     'get_organization_invite_for_resend',
-    { p_invite_id: params.inviteId }
+    { p_invite_id: params.inviteId },
   )
 
   if (inviteErr) return { success: false, error: inviteErr.message }
@@ -357,7 +363,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   ])
 
   const emailByUserId = await resolveAuthEmailsByUserIds(
-    (profilesResult.data ?? []).map((p) => p.id)
+    (profilesResult.data ?? []).map((p) => p.id),
   )
 
   const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => {
@@ -374,7 +380,11 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   })
 
   if (invitesRpc.error) {
-    log.error('list pending invites failed', { action: 'getTeamMembers.listPendingInvites' }, invitesRpc.error)
+    log.error(
+      'list pending invites failed',
+      { action: 'getTeamMembers.listPendingInvites' },
+      invitesRpc.error,
+    )
   }
 
   const rawPending = invitesRpc.data as unknown

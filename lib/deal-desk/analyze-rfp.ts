@@ -6,12 +6,18 @@ import { analyzeBenchmarkRisk } from '@/lib/deal-desk/benchmark-risk-analysis'
 import { analyzeDealDeskRisks } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import { extractExecutiveBriefingFromRfp } from '@/lib/deal-desk/executive-briefing-extract'
 import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-desk'
-import type { DealDeskMockAnalysis, DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type {
+  DealDeskMockAnalysis,
+  DealDeskTimelineItem,
+} from '@/lib/deal-desk/mock-analysis'
 import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
 import { buildRfpCoverageWithRelevance } from '@/lib/deals/rfp-coverage-pipeline'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { RfpVerdict } from '@/lib/rfp-relevance'
-import { extractRequirementsFromRfpText, type ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import {
+  extractRequirementsFromRfpText,
+  type ExtractedRfpRequirement,
+} from '@/lib/rfp-requirements'
 import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
 import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
@@ -62,7 +68,7 @@ function quotaFromError(error: string, explicit?: boolean): boolean {
  * Baut den vollen Snapshot inkl. Coverage, Requirements, Win-Score, Red Flags, Draft-Zeilen, SME-Tasks.
  */
 export async function analyzeRfp(
-  input: AnalyzeRfpInput
+  input: AnalyzeRfpInput,
 ): Promise<AnalyzeRfpResult | AnalyzeRfpError> {
   const {
     apiKey,
@@ -101,17 +107,20 @@ export async function analyzeRfp(
     eligibilityCriteria = eligibilityRes.criteria
   }
 
-  const { coverage, verdicts: rfpVerdicts } = await buildRfpCoverageWithRelevance(supabase, {
-    apiKey,
-    organizationId,
-    salesVisibleOnly,
-    deal: deal ?? {
-      title: projectName,
-      industry: null,
-      volume: null,
+  const { coverage, verdicts: rfpVerdicts } = await buildRfpCoverageWithRelevance(
+    supabase,
+    {
+      apiKey,
+      organizationId,
+      salesVisibleOnly,
+      deal: deal ?? {
+        title: projectName,
+        industry: null,
+        volume: null,
+      },
+      requirements: extracted.requirements,
     },
-    requirements: extracted.requirements,
-  })
+  )
 
   const [riskResult, briefingResult, benchmarkRiskResult] = await Promise.all([
     analyzeDealDeskRisks(apiKey, mergedText, projectName, fileNames),
@@ -123,13 +132,22 @@ export async function analyzeRfp(
     return { error: riskResult.error, isQuotaError: quotaFromError(riskResult.error) }
   }
   if ('error' in briefingResult) {
-    return { error: briefingResult.error, isQuotaError: quotaFromError(briefingResult.error) }
+    return {
+      error: briefingResult.error,
+      isQuotaError: quotaFromError(briefingResult.error),
+    }
   }
   if ('error' in benchmarkRiskResult) {
-    return { error: benchmarkRiskResult.error, isQuotaError: quotaFromError(benchmarkRiskResult.error) }
+    return {
+      error: benchmarkRiskResult.error,
+      isQuotaError: quotaFromError(benchmarkRiskResult.error),
+    }
   }
 
-  const linkedRedFlags = enrichRedFlagsWithDocuments(riskResult.redFlags, projectDocuments)
+  const linkedRedFlags = enrichRedFlagsWithDocuments(
+    riskResult.redFlags,
+    projectDocuments,
+  )
 
   const snapshot = await mapRfpAnalysisToDealDeskSnapshot({
     apiKey,

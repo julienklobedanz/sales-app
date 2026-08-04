@@ -28,9 +28,11 @@
 ## T1 — Drift ermitteln & dokumentieren
 
 **Soll:** Den genauen Rückstand bestimmen:
+
 ```bash
 supabase migration list   # zeigt lokale vs. remote angewandte Migrationen
 ```
+
 Alle Repo-Migrationen auflisten, die am Remote (`oxxzczmibzyusonwzdvc`) **nicht** angewandt sind (mind. die zwei oben).
 **Akzeptanz:** Liste der ausstehenden Migrationen dokumentiert (in PR-Beschreibung oder `docs/`).
 
@@ -39,10 +41,12 @@ Alle Repo-Migrationen auflisten, die am Remote (`oxxzczmibzyusonwzdvc`) **nicht*
 ## T2 — Remote nachziehen + Typen neu
 
 **Soll:** Ausstehende Migrationen am Remote anwenden, dann Typen regenerieren.
+
 ```bash
 supabase db push           # ausstehende Migrationen anwenden
 npm run db:types           # database.types.ts neu generieren
 ```
+
 **Sicherheit:** Vor `db push` die ausstehenden Migrationen **inhaltlich prüfen** — nur additive Änderungen (`ADD COLUMN`, wie `tags`/`archived_at`) sind risikoarm; bei destruktiven Schritten zuerst auf Branch/Staging testen. Bei Historie-Mismatch ggf. `supabase migration repair`.
 **Akzeptanz:** `supabase migration list` zeigt keinen Rückstand mehr; `lib/database.types.ts` enthält `tags`/`archived_at` etc.; `npm run typecheck` grün.
 
@@ -51,20 +55,22 @@ npm run db:types           # database.types.ts neu generieren
 ## T3 — `looseSelect`-Escape-Hatches entfernen
 
 **Soll:** Da die Spalten jetzt in den Typen existieren:
+
 - in `deal-desk/actions.ts` (4×) und `accounts/actions.ts` die `looseSelect(...)`-Aufrufe durch **normale, typisierte** `.select(...)` ersetzen.
 - `lib/supabase/loose-select.ts` entfernen (oder, falls ein einzelner berechtigter Rest bleibt, mit klarem Kommentar einschränken — Ziel: keine Gewohnheits-Schlupflöcher).
-**Akzeptanz:** `grep -rn "looseSelect" app lib` → 0 (oder nur dokumentierter Rest); `npm run typecheck` grün.
+  **Akzeptanz:** `grep -rn "looseSelect" app lib` → 0 (oder nur dokumentierter Rest); `npm run typecheck` grün.
 
 ---
 
 ## T4 (E7) — CI-Migrations-Gate
 
 **Soll:** Einen CI-Job ergänzen, der **alle Migrationen von Null gegen eine Wegwerf-DB** anwendet — fängt SQL-Fehler und nicht-replaybare Migrationen, **bevor** sie auf Remote treffen.
+
 - Variante A: Postgres-Service-Container in `ci.yml`, Migrationen via `supabase db reset`/`psql` einspielen.
 - Variante B: `supabase start` (lokaler Stack) im CI, `supabase db reset`.
 - Voraussetzung: `supabase init` (erzeugt `supabase/config.toml`) + Projekt-Link dokumentieren.
 - Optional: Drift-Check `supabase db diff` (meldet, wenn Remote-Schema von Migrationen abweicht).
-**Akzeptanz:** CI bricht ab, wenn eine Migration nicht sauber von Grund auf durchläuft; Job grün auf `main`.
+  **Akzeptanz:** CI bricht ab, wenn eine Migration nicht sauber von Grund auf durchläuft; Job grün auf `main`.
 
 ---
 

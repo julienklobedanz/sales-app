@@ -18,7 +18,7 @@ export async function markNotificationReadImpl(notificationKey: string) {
       notification_key: notificationKey,
       read_at: new Date().toISOString(),
     },
-    { onConflict: 'user_id,notification_key' }
+    { onConflict: 'user_id,notification_key' },
   )
 
   if (error) {
@@ -49,7 +49,11 @@ export async function markAllNotificationsReadImpl(notificationKeys: string[]) {
   })
 
   if (error) {
-    log.error('markAllNotificationsRead.failed', { count: notificationKeys.length }, error)
+    log.error(
+      'markAllNotificationsRead.failed',
+      { count: notificationKeys.length },
+      error,
+    )
     return { success: false as const, error: error.message }
   }
   revalidatePath(ROUTES.home, 'layout')

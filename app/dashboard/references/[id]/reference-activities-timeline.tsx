@@ -5,7 +5,11 @@ import { ChevronDown } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { ReferenceActivityItem } from './reference-detail-activities'
 
-export function ReferenceActivitiesTimeline({ items }: { items: ReferenceActivityItem[] }) {
+export function ReferenceActivitiesTimeline({
+  items,
+}: {
+  items: ReferenceActivityItem[]
+}) {
   const [open, setOpen] = useState(false)
   const hasMore = items.length > 1
   const visible = open ? items : items.slice(0, 1)
@@ -30,7 +34,9 @@ export function ReferenceActivitiesTimeline({ items }: { items: ReferenceActivit
                 })}
               </div>
             </div>
-            {a.detail ? <div className="mt-1 text-xs text-muted-foreground">{a.detail}</div> : null}
+            {a.detail ? (
+              <div className="mt-1 text-xs text-muted-foreground">{a.detail}</div>
+            ) : null}
           </li>
         ))}
       </ol>

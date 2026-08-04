@@ -37,7 +37,9 @@ describe('buildRefstackEmailHtml', () => {
       badge: 'Freigabe-Anfrage',
       greeting: 'Hallo Max!',
       bodyHtml: '<p style="margin:0 0 16px;">Bitte prüfen Sie die Referenz.</p>',
-      ctas: [{ label: 'Zur Freigabe-Seite', href: 'https://app.refstack.test/approval/tok' }],
+      ctas: [
+        { label: 'Zur Freigabe-Seite', href: 'https://app.refstack.test/approval/tok' },
+      ],
     })
 
     expect(html).toContain('Referenz-Freigabe')
@@ -48,6 +50,8 @@ describe('buildRefstackEmailHtml', () => {
 
 describe('escapeRefstackEmailHtml', () => {
   it('escapes html characters', () => {
-    expect(escapeRefstackEmailHtml(`a & b <c> "d"`)).toBe('a &amp; b &lt;c&gt; &quot;d&quot;')
+    expect(escapeRefstackEmailHtml(`a & b <c> "d"`)).toBe(
+      'a &amp; b &lt;c&gt; &quot;d&quot;',
+    )
   })
 })

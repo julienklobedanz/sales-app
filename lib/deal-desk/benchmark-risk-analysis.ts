@@ -38,7 +38,7 @@ const CRITERION_PROMPT = BENCHMARK_RISK_CRITERION_IDS.map((id) => {
 export async function analyzeBenchmarkRisk(
   apiKey: string,
   plainText: string,
-  documentFileNames: string[] = []
+  documentFileNames: string[] = [],
 ): Promise<BenchmarkRiskAnalysis | { error: string }> {
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {
@@ -119,6 +119,8 @@ Regeln:
 
     return buildBenchmarkRiskAnalysis(hits)
   } catch (e) {
-    return { error: e instanceof Error ? e.message : 'Benchmark-Risiko-Analyse fehlgeschlagen.' }
+    return {
+      error: e instanceof Error ? e.message : 'Benchmark-Risiko-Analyse fehlgeschlagen.',
+    }
   }
 }

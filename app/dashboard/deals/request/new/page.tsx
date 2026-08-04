@@ -2,7 +2,10 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { RequestNewClient, type DealRequestPrefill } from './request-new-client'
-import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import {
+  DASHBOARD_PAGE_SUBTITLE_CLASS,
+  DASHBOARD_PAGE_TITLE_CLASS,
+} from '@/lib/dashboard-ui'
 import { parseOptionalDealStatus } from '@/lib/deals/normalize-deal-status'
 
 export const dynamic = 'force-dynamic'

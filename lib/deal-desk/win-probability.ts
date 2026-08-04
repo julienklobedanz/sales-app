@@ -29,12 +29,16 @@ export function winProbabilityScoreLegend(): string {
   return `Lieferfähigkeit: Portfolio 40% · Capabilities 35% · Nachweise 25% · Vertragsrisiko als Abzug. ≥${goMin}% GO · ${cautionMin}–${goMin - 1}% prüfen · <${cautionMin}% NO-BID`
 }
 
-export function winProbabilityBreakdownTooltip(breakdown: WinProbabilityBreakdown): string {
+export function winProbabilityBreakdownTooltip(
+  breakdown: WinProbabilityBreakdown,
+): string {
   const lines = [
     `Portfolio (Referenzen): ${breakdown.portfolioScore}%`,
     `Capabilities (Match-Tiefe): ${breakdown.capabilityScore}%`,
     `Nachweise (Compliance): ${breakdown.evidenceScore}%`,
-    breakdown.contractPenalty > 0 ? `Vertragsrisiko: −${breakdown.contractPenalty} Punkte` : null,
+    breakdown.contractPenalty > 0
+      ? `Vertragsrisiko: −${breakdown.contractPenalty} Punkte`
+      : null,
     `Gewichtet: ${breakdown.weightedScore}% → ${breakdown.finalScore}%`,
   ].filter(Boolean)
   return lines.join('\n')

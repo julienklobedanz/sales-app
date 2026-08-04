@@ -3,7 +3,10 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
 
-export async function addReferenceToDealImpl(dealId: string, referenceId: string): Promise<{ error?: string }> {
+export async function addReferenceToDealImpl(
+  dealId: string,
+  referenceId: string,
+): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
     .from('deal_references')
@@ -37,7 +40,10 @@ export async function suggestReferencesForDealActionImpl(dealId: string) {
   return suggestDealReferenceMatches(dealId)
 }
 
-export async function removeReferenceFromDealImpl(dealId: string, referenceId: string): Promise<{ error?: string }> {
+export async function removeReferenceFromDealImpl(
+  dealId: string,
+  referenceId: string,
+): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
     .from('deal_references')

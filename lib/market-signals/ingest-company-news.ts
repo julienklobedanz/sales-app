@@ -1,8 +1,14 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
+import {
+  isMissingEnrichmentColumnsError,
+  stripEnrichmentFields,
+} from '@/lib/market-signals/enrichment-db'
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
-import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
+import {
+  fetchGoogleNewsRssItems,
+  type GoogleNewsRssItem,
+} from '@/lib/market-signals/google-news-rss'
 import {
   formatSignalSourceLabel,
   isLeadershipMoveTitle,
@@ -50,9 +56,12 @@ function hostFromWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
-function segmentFromAccountStatus(status: string | null | undefined): 'customer' | 'prospect' {
+function segmentFromAccountStatus(
+  status: string | null | undefined,
+): 'customer' | 'prospect' {
   const s = String(status ?? '').trim()
-  if (s === 'active_customer' || s === 'former_customer' || s === 'at_risk') return 'customer'
+  if (s === 'active_customer' || s === 'former_customer' || s === 'at_risk')
+    return 'customer'
   return 'prospect'
 }
 
@@ -60,8 +69,14 @@ function contentHash(companyId: string, articleUrl: string): string {
   return createHash('sha256').update(`${companyId}|${articleUrl}`, 'utf8').digest('hex')
 }
 
-function execContentHash(companyId: string, personKey: string, articleUrl: string): string {
-  return createHash('sha256').update(`${companyId}|${personKey}|${articleUrl}`, 'utf8').digest('hex')
+function execContentHash(
+  companyId: string,
+  personKey: string,
+  articleUrl: string,
+): string {
+  return createHash('sha256')
+    .update(`${companyId}|${personKey}|${articleUrl}`, 'utf8')
+    .digest('hex')
 }
 
 function publishedOnIso(itemPub: Date | null): string {
@@ -70,10 +85,7 @@ function publishedOnIso(itemPub: Date | null): string {
 }
 
 function normalizePersonKey(raw: string) {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
+  return raw.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 export type RunCompanyNewsIngestResult = {
@@ -88,7 +100,7 @@ async function fetchMergedCompanyArticles(
   websiteHost: string | null,
   industry: string | null,
   newsroomUrls: string[] | null,
-  opts: { signal: AbortSignal; maxItems: number }
+  opts: { signal: AbortSignal; maxItems: number },
 ): Promise<Array<GoogleNewsRssItem & { fromPack: boolean; fromNewsroom: boolean }>> {
   const storedNewsroomQs = buildStoredNewsroomRssQueries(companyName, newsroomUrls)
   const packQs = buildIndustryPackRssQueries(companyName, industry)
@@ -97,7 +109,10 @@ async function fetchMergedCompanyArticles(
     storedNewsroomQs.length > 0 ? [] : buildNewsroomRssQueries(companyName, websiteHost)
   // Gespeicherte Newsrooms zuerst, dann Industry-Pack, dann Fallback.
   const queries = [...storedNewsroomQs, ...packQs, primary, ...newsroomQs].filter(Boolean)
-  const perQuery = Math.max(3, Math.ceil(opts.maxItems / Math.max(1, Math.min(queries.length, 8))) + 1)
+  const perQuery = Math.max(
+    3,
+    Math.ceil(opts.maxItems / Math.max(1, Math.min(queries.length, 8))) + 1,
+  )
 
   const batches = await Promise.all(
     queries.map(async (q, index) => {
@@ -106,14 +121,15 @@ async function fetchMergedCompanyArticles(
         maxItems: perQuery,
       }).catch(() => [] as GoogleNewsRssItem[])
       const fromNewsroom = index < storedNewsroomQs.length
-      const fromPack =
-        !fromNewsroom &&
-        index < storedNewsroomQs.length + packQs.length
+      const fromPack = !fromNewsroom && index < storedNewsroomQs.length + packQs.length
       return items.map((item) => ({ ...item, fromPack, fromNewsroom }))
-    })
+    }),
   )
 
-  const byLink = new Map<string, GoogleNewsRssItem & { fromPack: boolean; fromNewsroom: boolean }>()
+  const byLink = new Map<
+    string,
+    GoogleNewsRssItem & { fromPack: boolean; fromNewsroom: boolean }
+  >()
   for (const item of batches.flat()) {
     if (!item.link) continue
     const prev = byLink.get(item.link)
@@ -130,16 +146,12 @@ async function fetchMergedCompanyArticles(
     .sort((a, b) => {
       const aScore =
         (a.fromNewsroom || isStoredNewsroomHost(a.link, newsroomUrls) ? 2 : 0) +
-        (a.fromPack ||
-        isIndustryPackHost(a.link, industry) ||
-        isPeoplePackHost(a.link)
+        (a.fromPack || isIndustryPackHost(a.link, industry) || isPeoplePackHost(a.link)
           ? 1
           : 0)
       const bScore =
         (b.fromNewsroom || isStoredNewsroomHost(b.link, newsroomUrls) ? 2 : 0) +
-        (b.fromPack ||
-        isIndustryPackHost(b.link, industry) ||
-        isPeoplePackHost(b.link)
+        (b.fromPack || isIndustryPackHost(b.link, industry) || isPeoplePackHost(b.link)
           ? 1
           : 0)
       if (aScore !== bScore) return bScore - aScore
@@ -166,19 +178,25 @@ export async function runCompanyNewsIngest(
     perCompanyMaxArticles?: number
     maxAgeDays?: number
     pauseMsBetweenCompanies?: number
-  }
+  },
 ): Promise<RunCompanyNewsIngestResult> {
   const ingestMode = options?.ingestMode ?? 'focus_only'
   const maxCompanies = Math.min(200, Math.max(1, options?.maxCompanies ?? 60))
   const perCompanyMax = Math.min(8, Math.max(1, options?.perCompanyMaxArticles ?? 5))
-  const maxAgeDays = Math.min(180, Math.max(7, options?.maxAgeDays ?? RSS_MAX_AGE_DAYS_DEFAULT))
+  const maxAgeDays = Math.min(
+    180,
+    Math.max(7, options?.maxAgeDays ?? RSS_MAX_AGE_DAYS_DEFAULT),
+  )
   const pauseMs = Math.max(0, options?.pauseMsBetweenCompanies ?? 400)
   const errors: string[] = []
   let articlesInserted = 0
   let leadershipMovesInserted = 0
 
   const dealCompanyIds = new Set<string>()
-  let dealQuery = supabase.from('deals').select('company_id,status,organization_id').not('company_id', 'is', null)
+  let dealQuery = supabase
+    .from('deals')
+    .select('company_id,status,organization_id')
+    .not('company_id', 'is', null)
   if (options?.organizationId) {
     dealQuery = dealQuery.eq('organization_id', options.organizationId)
   }
@@ -197,7 +215,7 @@ export async function runCompanyNewsIngest(
   let coQuery = supabase
     .from('companies')
     .select(
-      'id, organization_id, name, website_url, account_status, is_favorite, industry, newsroom_urls'
+      'id, organization_id, name, website_url, account_status, is_favorite, industry, newsroom_urls',
     )
     .not('organization_id', 'is', null)
 
@@ -217,9 +235,10 @@ export async function runCompanyNewsIngest(
 
   const candidates =
     ingestMode === 'all_accounts'
-      ? ((allCompanies ?? []) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
+      ? ((allCompanies ?? []) as CompanyNewsIngestCompanyRow[] &
+          { is_favorite?: boolean }[])
       : ((allCompanies ?? []).filter((row) =>
-          Boolean((row as { is_favorite?: boolean | null }).is_favorite)
+          Boolean((row as { is_favorite?: boolean | null }).is_favorite),
         ) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
 
   const seen = new Set<string>()
@@ -235,9 +254,8 @@ export async function runCompanyNewsIngest(
       website_url: (row.website_url as string | null) ?? null,
       account_status: (row.account_status as string | null) ?? null,
       industry: (row as { industry?: string | null }).industry ?? null,
-      newsroom_urls: ((row as { newsroom_urls?: string[] | null }).newsroom_urls ?? null) as
-        | string[]
-        | null,
+      newsroom_urls: ((row as { newsroom_urls?: string[] | null }).newsroom_urls ??
+        null) as string[] | null,
     })
     if (uniqueList.length >= maxCompanies) break
   }
@@ -257,7 +275,7 @@ export async function runCompanyNewsIngest(
           {
             signal: controller.signal,
             maxItems: Math.min(28, perCompanyMax * 5),
-          }
+          },
         )
         let insertedForCompany = 0
         for (const item of items) {
@@ -321,20 +339,30 @@ export async function runCompanyNewsIngest(
               event_kind: 'role_change',
               source_url: item.link,
               content_hash: hash,
-              signal_category: enrichment.signal_category === 'people' ? 'people' : enrichment.signal_category,
+              signal_category:
+                enrichment.signal_category === 'people'
+                  ? 'people'
+                  : enrichment.signal_category,
               insight_signal_fact: enrichment.insight_signal_fact,
               insight_why_now: enrichment.insight_why_now,
               created_by: null,
             }
-            let insErr = (await supabase.from('market_signal_executive_events').insert(execPayload)).error
+            let insErr = (
+              await supabase.from('market_signal_executive_events').insert(execPayload)
+            ).error
             if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
               insErr = (
-                await supabase.from('market_signal_executive_events').insert(stripEnrichmentFields(execPayload))
+                await supabase
+                  .from('market_signal_executive_events')
+                  .insert(stripEnrichmentFields(execPayload))
               ).error
             }
             if (insErr) {
               const code = (insErr as { code?: string }).code
-              if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {
+              if (
+                code !== '23505' &&
+                !/duplicate key|unique constraint/i.test(insErr.message)
+              ) {
                 errors.push(`${company.name}: ${insErr.message}`)
               }
             } else {
@@ -360,13 +388,22 @@ export async function runCompanyNewsIngest(
             insight_why_now: enrichment.insight_why_now,
             created_by: null,
           }
-          let insErr = (await supabase.from('market_signal_account_news').insert(insertPayload)).error
+          let insErr = (
+            await supabase.from('market_signal_account_news').insert(insertPayload)
+          ).error
           if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
-            insErr = (await supabase.from('market_signal_account_news').insert(stripEnrichmentFields(insertPayload))).error
+            insErr = (
+              await supabase
+                .from('market_signal_account_news')
+                .insert(stripEnrichmentFields(insertPayload))
+            ).error
           }
           if (insErr) {
             const code = (insErr as { code?: string }).code
-            if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {
+            if (
+              code !== '23505' &&
+              !/duplicate key|unique constraint/i.test(insErr.message)
+            ) {
               errors.push(`${company.name}: ${insErr.message}`)
             }
           } else {

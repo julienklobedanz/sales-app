@@ -2,7 +2,10 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { CompaniesGrid } from './companies-grid'
-import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
+import {
+  resolveNdaDisplayStatus,
+  type NdaDisplayStatus,
+} from '@/lib/accounts/company-entity'
 import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
 import {
@@ -77,7 +80,7 @@ export default async function AccountsPage() {
       const withFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, account_status, crm_account_id'
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, account_status, crm_account_id',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -85,7 +88,9 @@ export default async function AccountsPage() {
       if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
         const basic = await supabase
           .from('companies')
-          .select('id, name, logo_url, website_url, headquarters, industry, employee_count')
+          .select(
+            'id, name, logo_url, website_url, headquarters, industry, employee_count',
+          )
           .eq('organization_id', orgId)
           .order('name')
         companies = (basic.data ?? []).map((c) => ({
@@ -111,7 +116,7 @@ export default async function AccountsPage() {
       const withoutFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id'
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -120,7 +125,7 @@ export default async function AccountsPage() {
       const withoutSource = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, crm_account_id'
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, crm_account_id',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -139,7 +144,7 @@ export default async function AccountsPage() {
     ...new Set(
       (companies ?? [])
         .map((c) => c.linked_account_id)
-        .filter((id): id is string => Boolean(id))
+        .filter((id): id is string => Boolean(id)),
     ),
   ]
 
@@ -201,7 +206,11 @@ export default async function AccountsPage() {
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin && profile.organization_id
-      ? await getOrganizationCrmConnectionPublicStatus(supabase, profile.organization_id, 'hubspot')
+      ? await getOrganizationCrmConnectionPublicStatus(
+          supabase,
+          profile.organization_id,
+          'hubspot',
+        )
       : { connected: false, externalAccountId: null, lastSyncAt: null }
 
   if (hubspotStatus.connected && isAdmin) {
@@ -212,96 +221,116 @@ export default async function AccountsPage() {
     }
   }
 
-  const [dealsRows, refRows, stakeholderRows, strategyRows, executiveSignalRows, newsSignalRows] =
-    await Promise.all([
-      companyIds.length
-        ? supabase
-            .from('deals')
-            .select('id, company_id, status, title, expiry_date, contract_end_date, updated_at, created_at')
-            .in('company_id', companyIds)
-            .eq('organization_id', orgId)
-        : Promise.resolve({
-            data: [] as {
-              id: string
-              company_id: string | null
-              status: string
-              title: string
-              expiry_date: string | null
-              contract_end_date: string | null
-              updated_at: string | null
-              created_at: string | null
-            }[] | null,
-          }),
-      companyIds.length
-        ? supabase
-            .from('references')
-            .select('id, company_id, title, approval_expires_at, approval_grace_until')
-            .in('company_id', companyIds)
-            .is('deleted_at', null)
-        : Promise.resolve({
-            data: [] as {
-              id: string
-              company_id: string | null
-              title: string | null
-              approval_expires_at: string | null
-              approval_grace_until: string | null
-            }[] | null,
-          }),
-      companyIds.length
-        ? supabase
-            .from('stakeholders')
-            .select('id, company_id')
-            .in('company_id', companyIds)
-        : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
-      companyIds.length
-        ? supabase
-            .from('company_strategies')
-            .select('company_id, main_goals, red_flags, competitive_situation, next_steps')
-            .in('company_id', companyIds)
-        : Promise.resolve({
-            data: [] as {
-              company_id: string
-              main_goals: string | null
-              red_flags: string | null
-              competitive_situation: string | null
-              next_steps: string | null
-            }[] | null,
-          }),
-      companyIds.length
-        ? supabase
-            .from('market_signal_executive_events')
-            .select(
-              'company_id, change_summary, person_name, person_title_after, detected_at, insight_signal_fact'
-            )
-            .in('company_id', companyIds)
-            .order('detected_at', { ascending: false })
-            .limit(4000)
-        : Promise.resolve({
-            data: [] as {
-              company_id: string | null
-              change_summary: string
-              person_name: string
-              person_title_after: string | null
-              detected_at: string
-              insight_signal_fact: string | null
-            }[] | null,
-          }),
-      companyIds.length
-        ? supabase
-            .from('market_signal_account_news')
-            .select('company_id, body, insight_signal_fact, published_on')
-            .in('company_id', companyIds)
-            .order('published_on', { ascending: false })
-            .limit(4000)
-        : Promise.resolve({
-            data: [] as {
-              company_id: string | null
-              body: string
-              insight_signal_fact: string | null
-              published_on: string
-            }[] | null,
-          }),
-    ])
+  const [
+    dealsRows,
+    refRows,
+    stakeholderRows,
+    strategyRows,
+    executiveSignalRows,
+    newsSignalRows,
+  ] = await Promise.all([
+    companyIds.length
+      ? supabase
+          .from('deals')
+          .select(
+            'id, company_id, status, title, expiry_date, contract_end_date, updated_at, created_at',
+          )
+          .in('company_id', companyIds)
+          .eq('organization_id', orgId)
+      : Promise.resolve({
+          data: [] as
+            | {
+                id: string
+                company_id: string | null
+                status: string
+                title: string
+                expiry_date: string | null
+                contract_end_date: string | null
+                updated_at: string | null
+                created_at: string | null
+              }[]
+            | null,
+        }),
+    companyIds.length
+      ? supabase
+          .from('references')
+          .select('id, company_id, title, approval_expires_at, approval_grace_until')
+          .in('company_id', companyIds)
+          .is('deleted_at', null)
+      : Promise.resolve({
+          data: [] as
+            | {
+                id: string
+                company_id: string | null
+                title: string | null
+                approval_expires_at: string | null
+                approval_grace_until: string | null
+              }[]
+            | null,
+        }),
+    companyIds.length
+      ? supabase
+          .from('stakeholders')
+          .select('id, company_id')
+          .in('company_id', companyIds)
+      : Promise.resolve({
+          data: [] as { id: string; company_id: string | null }[] | null,
+        }),
+    companyIds.length
+      ? supabase
+          .from('company_strategies')
+          .select('company_id, main_goals, red_flags, competitive_situation, next_steps')
+          .in('company_id', companyIds)
+      : Promise.resolve({
+          data: [] as
+            | {
+                company_id: string
+                main_goals: string | null
+                red_flags: string | null
+                competitive_situation: string | null
+                next_steps: string | null
+              }[]
+            | null,
+        }),
+    companyIds.length
+      ? supabase
+          .from('market_signal_executive_events')
+          .select(
+            'company_id, change_summary, person_name, person_title_after, detected_at, insight_signal_fact',
+          )
+          .in('company_id', companyIds)
+          .order('detected_at', { ascending: false })
+          .limit(4000)
+      : Promise.resolve({
+          data: [] as
+            | {
+                company_id: string | null
+                change_summary: string
+                person_name: string
+                person_title_after: string | null
+                detected_at: string
+                insight_signal_fact: string | null
+              }[]
+            | null,
+        }),
+    companyIds.length
+      ? supabase
+          .from('market_signal_account_news')
+          .select('company_id, body, insight_signal_fact, published_on')
+          .in('company_id', companyIds)
+          .order('published_on', { ascending: false })
+          .limit(4000)
+      : Promise.resolve({
+          data: [] as
+            | {
+                company_id: string | null
+                body: string
+                insight_signal_fact: string | null
+                published_on: string
+              }[]
+            | null,
+        }),
+  ])
 
   type DealEnrichRow = {
     id: string
@@ -355,7 +384,7 @@ export default async function AccountsPage() {
         entity_kind: c.entity_kind ?? 'account',
       })),
       dealsData,
-      refsData
+      refsData,
     )
   } catch {
     for (const c of companies ?? []) {
@@ -386,16 +415,17 @@ export default async function AccountsPage() {
   const stakeholderCountByCompany: Record<string, number> = {}
   for (const s of stakeholderRows.data ?? []) {
     if (!s.company_id) continue
-    stakeholderCountByCompany[s.company_id] = (stakeholderCountByCompany[s.company_id] ?? 0) + 1
+    stakeholderCountByCompany[s.company_id] =
+      (stakeholderCountByCompany[s.company_id] ?? 0) + 1
   }
   const strategyFilledByCompany: Record<string, boolean> = {}
   for (const st of strategyRows.data ?? []) {
     if (!st.company_id) continue
     const filled = Boolean(
       (st.main_goals ?? '').trim() ||
-        (st.red_flags ?? '').trim() ||
-        (st.competitive_situation ?? '').trim() ||
-        (st.next_steps ?? '').trim()
+      (st.red_flags ?? '').trim() ||
+      (st.competitive_situation ?? '').trim() ||
+      (st.next_steps ?? '').trim(),
     )
     strategyFilledByCompany[st.company_id] = filled
   }
@@ -434,7 +464,7 @@ export default async function AccountsPage() {
   for (const r of refsData) {
     if (!r.company_id) continue
     const candidates = [r.approval_expires_at, r.approval_grace_until].filter(
-      (v): v is string => Boolean(v?.trim())
+      (v): v is string => Boolean(v?.trim()),
     )
     for (const expiresAt of candidates) {
       const end = new Date(expiresAt.includes('T') ? expiresAt : `${expiresAt}T12:00:00`)
@@ -487,7 +517,9 @@ export default async function AccountsPage() {
       })
       return {
         ...c,
-        entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as 'account' | 'partner',
+        entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as
+          | 'account'
+          | 'partner',
         account_status: accountStatus,
         open_deals_count: openDealsCount,
         reference_count: referenceCount,
@@ -496,7 +528,7 @@ export default async function AccountsPage() {
         signal_count: signalCountByCompany[c.id] ?? 0,
         nda_status: ndaStatus,
         linked_account_name: c.linked_account_id
-          ? linkedAccountNameById[c.linked_account_id] ?? null
+          ? (linkedAccountNameById[c.linked_account_id] ?? null)
           : null,
         primary_action,
         secondary_meta: buildAccountCardSecondaryMeta({

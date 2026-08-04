@@ -17,10 +17,7 @@ export default function CompaniesLoading() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="space-y-3 rounded-3xl border bg-card/60 p-4"
-            >
+            <div key={i} className="space-y-3 rounded-3xl border bg-card/60 p-4">
               <Skeleton className="h-6 w-[70%] rounded-md" />
               <Skeleton className="h-4 w-[50%] rounded-md" />
               <Skeleton className="h-4 w-full rounded-md" />
@@ -32,4 +29,3 @@ export default function CompaniesLoading() {
     </div>
   )
 }
-

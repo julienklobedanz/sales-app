@@ -50,10 +50,22 @@ describe('countDueMarketSnoozes', () => {
 
 describe('meddpiccAccountAction', () => {
   it('prioritizes economic buyer then champion then goals', () => {
-    expect(meddpiccAccountAction({ hasChampion: true, hasEconomic: false, hasGoals: true }).actionLabel).toBe('Fix')
-    expect(meddpiccAccountAction({ hasChampion: false, hasEconomic: true, hasGoals: true }).meddpiccGap).toContain('Champion')
-    expect(meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: false }).meddpiccGap).toContain('Metrics')
-    expect(meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: true }).actionLabel).toBe('Send')
+    expect(
+      meddpiccAccountAction({ hasChampion: true, hasEconomic: false, hasGoals: true })
+        .actionLabel,
+    ).toBe('Fix')
+    expect(
+      meddpiccAccountAction({ hasChampion: false, hasEconomic: true, hasGoals: true })
+        .meddpiccGap,
+    ).toContain('Champion')
+    expect(
+      meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: false })
+        .meddpiccGap,
+    ).toContain('Metrics')
+    expect(
+      meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: true })
+        .actionLabel,
+    ).toBe('Send')
   })
 })
 

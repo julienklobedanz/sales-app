@@ -8,7 +8,7 @@ export type WorkflowSettingsPatch = {
 
 export function mergeWorkflowSettings(
   current: unknown,
-  patch: WorkflowSettingsPatch
+  patch: WorkflowSettingsPatch,
 ): Record<string, unknown> {
   const base =
     current && typeof current === 'object' && !Array.isArray(current)

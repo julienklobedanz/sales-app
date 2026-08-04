@@ -9,7 +9,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { AppIcon } from '@/lib/icons'
-import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
+import {
+  RequiredLabel,
+  OptionalLabel,
+} from '@/lib/references/reference-form/reference-form-labels'
 import type {
   ContactPerson,
   ExternalContactDisplay,
@@ -108,24 +111,31 @@ export function ReferenceFormContactsSection({
             </div>
             <CreateContactDialog onContactCreated={handleContactCreated} />
           </div>
-          {contactId && contactId !== '__none__' && (() => {
-            const c = displayContacts.find((x) => x.id === contactId)
-            return c?.email ? (
-              <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-[10px]">
-                <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
-                  <AppIcon icon={Email} size={14} />
-                  {c.email}
-                </a>
-              </div>
-            ) : null
-          })()}
+          {contactId &&
+            contactId !== '__none__' &&
+            (() => {
+              const c = displayContacts.find((x) => x.id === contactId)
+              return c?.email ? (
+                <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-[10px]">
+                  <a
+                    href={`mailto:${c.email}`}
+                    className="inline-flex items-center gap-1 hover:underline"
+                  >
+                    <AppIcon icon={Email} size={14} />
+                    {c.email}
+                  </a>
+                </div>
+              ) : null
+            })()}
           <p className="text-muted-foreground text-[10px] italic">
             Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
           </p>
         </div>
 
         <div className="space-y-2">
-          <OptionalLabel htmlFor="customer_contact_id">Kundenansprechpartner</OptionalLabel>
+          <OptionalLabel htmlFor="customer_contact_id">
+            Kundenansprechpartner
+          </OptionalLabel>
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -177,25 +187,33 @@ export function ReferenceFormContactsSection({
               disabled={!currentCompanyId}
             />
           </div>
-          {customer_contact_id && customer_contact_id !== '__none__' && (() => {
-            const c = displayCustomerContacts.find((x) => x.id === customer_contact_id)
-            return (c?.email || c?.phone) ? (
-              <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[10px]">
-                {c.email && (
-                  <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
-                    <AppIcon icon={Email} size={14} />
-                    {c.email}
-                  </a>
-                )}
-                {c.phone && (
-                  <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 hover:underline">
-                    <AppIcon icon={Phone} size={14} />
-                    {c.phone}
-                  </a>
-                )}
-              </div>
-            ) : null
-          })()}
+          {customer_contact_id &&
+            customer_contact_id !== '__none__' &&
+            (() => {
+              const c = displayCustomerContacts.find((x) => x.id === customer_contact_id)
+              return c?.email || c?.phone ? (
+                <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[10px]">
+                  {c.email && (
+                    <a
+                      href={`mailto:${c.email}`}
+                      className="inline-flex items-center gap-1 hover:underline"
+                    >
+                      <AppIcon icon={Email} size={14} />
+                      {c.email}
+                    </a>
+                  )}
+                  {c.phone && (
+                    <a
+                      href={`tel:${c.phone}`}
+                      className="inline-flex items-center gap-1 hover:underline"
+                    >
+                      <AppIcon icon={Phone} size={14} />
+                      {c.phone}
+                    </a>
+                  )}
+                </div>
+              ) : null
+            })()}
           {!currentCompanyId && (
             <p className="text-muted-foreground text-[10px] italic">
               {newCompanyName.trim()
@@ -215,7 +233,7 @@ export function ReferenceFormContactsSection({
             setAdditionalContacts((prev) =>
               prev.some((p) => p.id === u.id)
                 ? prev.map((p) => (p.id === u.id ? u : p))
-                : [...prev, u]
+                : [...prev, u],
             )
             setEditingInternalContact(null)
           }}
@@ -233,7 +251,7 @@ export function ReferenceFormContactsSection({
             setAdditionalCustomerContacts((prev) =>
               prev.some((p) => p.id === u.id)
                 ? prev.map((p) => (p.id === u.id ? u : p))
-                : [...prev, u]
+                : [...prev, u],
             )
             setEditingCustomerContact(null)
           }}

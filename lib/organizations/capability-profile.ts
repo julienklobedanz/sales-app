@@ -8,7 +8,10 @@ import {
 } from '@/lib/organizations/capability-profile-types'
 import { log } from '@/lib/observability/logger'
 
-export type { CapabilityProfile, OrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
+export type {
+  CapabilityProfile,
+  OrgCapabilitySettings,
+} from '@/lib/organizations/capability-profile-types'
 export {
   parseCapabilityProfile,
   parseOrgCapabilitySettings,
@@ -16,7 +19,7 @@ export {
 
 export async function loadOrgCapabilitySettings(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<OrgCapabilitySettings> {
   const { data, error } = await supabase
     .from('organizations')
@@ -34,7 +37,7 @@ export async function loadOrgCapabilitySettings(
 
 export async function loadOrgReferenceCount(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<number> {
   const { count, error } = await supabase
     .from('references')

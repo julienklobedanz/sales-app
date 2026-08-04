@@ -23,7 +23,7 @@ export type CachedEmbeddingResult =
  */
 export async function embedTextWithOpenAICached(
   apiKey: string,
-  finalQueryText: string
+  finalQueryText: string,
 ): Promise<CachedEmbeddingResult> {
   const normalized = normalizeEmbeddingQueryText(finalQueryText)
   if (!normalized) {
@@ -36,7 +36,7 @@ export async function embedTextWithOpenAICached(
   const getCached = unstable_cache(
     async () => embedTextWithOpenAI(apiKey, finalQueryText),
     ['query-embedding', keyHash, OPENAI_EMBEDDING_MODEL],
-    { revalidate: false }
+    { revalidate: false },
   )
 
   const result = await getCached()

@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { useMemo, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { StarIcon } from "@hugeicons/core-free-icons"
+import * as React from 'react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { StarIcon } from '@hugeicons/core-free-icons'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -13,48 +13,62 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
-} from "@tanstack/react-table"
+} from '@tanstack/react-table'
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { AppIcon } from "@/lib/icons"
-import { cn } from "@/lib/utils"
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { AppIcon } from '@/lib/icons'
+import { cn } from '@/lib/utils'
 
-import { ReferenceStatusBadge } from "@/components/reference-status-badge"
+import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 
 import {
   getReferenceAssets,
   toggleFavorite,
   type ReferenceAssetRow,
-} from "@/app/dashboard/actions"
-import type { Profile } from "@/app/dashboard/dashboard-shell"
+} from '@/app/dashboard/actions'
+import type { Profile } from '@/app/dashboard/dashboard-shell'
 
-import { PdfExportDialog } from "@/app/dashboard/references/[id]/pdf-export-dialog"
-import { ShareLinkButton } from "@/app/dashboard/references/[id]/share-link-button"
+import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
+import { ShareLinkButton } from '@/app/dashboard/references/[id]/share-link-button'
 
-import type { ConceptReferenceRow } from "./types"
-import { splitTags } from "./types"
-import { ReferenceDetailPane } from "./reference-detail-pane"
+import type { ConceptReferenceRow } from './types'
+import { splitTags } from './types'
+import { ReferenceDetailPane } from './reference-detail-pane'
 
-type SortKey = "created_at" | "title" | "company_name"
-type StatusFilter = "all" | ConceptReferenceRow["status"] | "approval_pending"
+type SortKey = 'created_at' | 'title' | 'company_name'
+type StatusFilter = 'all' | ConceptReferenceRow['status'] | 'approval_pending'
 
 function referenceRowShowsApprovalPending(ref: ConceptReferenceRow): boolean {
-  if (String(ref.customer_approval_status ?? "").toLowerCase() === "pending") return true
-  return String(ref.status ?? "").toLowerCase() === "pending"
+  if (String(ref.customer_approval_status ?? '').toLowerCase() === 'pending') return true
+  return String(ref.status ?? '').toLowerCase() === 'pending'
 }
 
 function useSelectedId() {
   const params = useSearchParams()
-  return params.get("id")
+  return params.get('id')
 }
 
-function buildUrl(pathname: string, searchParams: URLSearchParams, patch: Record<string, string | null>) {
+function buildUrl(
+  pathname: string,
+  searchParams: URLSearchParams,
+  patch: Record<string, string | null>,
+) {
   const next = new URLSearchParams(searchParams)
   for (const [k, v] of Object.entries(patch)) {
     if (v === null) next.delete(k)
@@ -79,9 +93,9 @@ function InboxRow({
     <Link
       href={href}
       className={cn(
-        "block rounded-lg border px-3 py-2 transition-colors",
-        "hover:bg-muted/50",
-        active ? "bg-muted border-foreground/15" : "bg-background"
+        'block rounded-lg border px-3 py-2 transition-colors',
+        'hover:bg-muted/50',
+        active ? 'bg-muted border-foreground/15' : 'bg-background',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -101,22 +115,25 @@ function InboxRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <div className="truncate text-sm font-medium">{item.title}</div>
-              {item.status === "draft" ? (
+              {item.status === 'draft' ? (
                 <span className="h-2 w-2 rounded-full bg-blue-600" />
               ) : null}
             </div>
             <div className="truncate text-xs text-muted-foreground">
-              {item.status === "anonymized" ? "Anonymisierter Kunde" : item.company_name}
+              {item.status === 'anonymized' ? 'Anonymisierter Kunde' : item.company_name}
             </div>
           </div>
         </div>
         <div className="shrink-0">
-          <ReferenceStatusBadge status={item.status} customerApprovalStatus={item.customer_approval_status} />
+          <ReferenceStatusBadge
+            status={item.status}
+            customerApprovalStatus={item.customer_approval_status}
+          />
         </div>
       </div>
 
       <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-        {item.summary ?? item.customer_challenge ?? "—"}
+        {item.summary ?? item.customer_challenge ?? '—'}
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -139,11 +156,11 @@ export function InboxReferencesConceptClient({
   references,
   profileRole,
   externalContacts,
-  variant = "standalone",
+  variant = 'standalone',
 }: {
   references: ConceptReferenceRow[]
-  profileRole: Profile["role"]
-  variant?: "standalone" | "embedded"
+  profileRole: Profile['role']
+  variant?: 'standalone' | 'embedded'
   externalContacts: {
     id: string
     company_id: string
@@ -161,36 +178,40 @@ export function InboxReferencesConceptClient({
 
   const data = useMemo(() => references, [references])
 
-  const [globalFilter, setGlobalFilter] = useState("")
+  const [globalFilter, setGlobalFilter] = useState('')
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }])
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }])
 
   const columns = useMemo<ColumnDef<ConceptReferenceRow>[]>(
     () => [
-      { id: "title", accessorKey: "title" },
-      { id: "company_name", accessorKey: "company_name" },
+      { id: 'title', accessorKey: 'title' },
+      { id: 'company_name', accessorKey: 'company_name' },
       {
-        id: "status",
-        accessorKey: "status",
+        id: 'status',
+        accessorKey: 'status',
         filterFn: (row, _columnId, filterValue) => {
-          if (filterValue === undefined || filterValue === null || filterValue === "all") return true
-          if (filterValue === "approval_pending") return referenceRowShowsApprovalPending(row.original)
+          if (filterValue === undefined || filterValue === null || filterValue === 'all')
+            return true
+          if (filterValue === 'approval_pending')
+            return referenceRowShowsApprovalPending(row.original)
           if (referenceRowShowsApprovalPending(row.original)) return false
           return row.original.status === filterValue
         },
       },
-      { id: "created_at", accessorKey: "created_at" },
+      { id: 'created_at', accessorKey: 'created_at' },
       {
-        id: "tags",
-        accessorFn: (row) => splitTags(row.tags).join(" "),
+        id: 'tags',
+        accessorFn: (row) => splitTags(row.tags).join(' '),
       },
       {
-        id: "text",
+        id: 'text',
         accessorFn: (row) =>
-          [row.summary, row.customer_challenge, row.our_solution].filter(Boolean).join(" "),
+          [row.summary, row.customer_challenge, row.our_solution]
+            .filter(Boolean)
+            .join(' '),
       },
     ],
-    []
+    [],
   )
 
   const table = useReactTable({
@@ -204,7 +225,9 @@ export function InboxReferencesConceptClient({
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue ?? "").trim().toLowerCase()
+      const q = String(filterValue ?? '')
+        .trim()
+        .toLowerCase()
       if (!q) return true
       const v = [
         row.original.title,
@@ -216,15 +239,14 @@ export function InboxReferencesConceptClient({
         row.original.status,
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase()
       return v.includes(q)
     },
   })
 
   const rows = table.getRowModel().rows
-  const selected =
-    selectedId ? data.find((d) => d.id === selectedId) ?? null : null
+  const selected = selectedId ? (data.find((d) => d.id === selectedId) ?? null) : null
 
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assets, setAssets] = useState<ReferenceAssetRow[]>([])
@@ -276,19 +298,21 @@ export function InboxReferencesConceptClient({
   }, [selectedId, data, router, pathname, searchParams])
 
   const statusValue =
-    (table.getColumn("status")?.getFilterValue() as StatusFilter | undefined) ??
-    "all"
-  const sortKey = (sorting[0]?.id as SortKey | undefined) ?? "created_at"
-  const sortDir = sorting[0]?.desc ? "desc" : "asc"
+    (table.getColumn('status')?.getFilterValue() as StatusFilter | undefined) ?? 'all'
+  const sortKey = (sorting[0]?.id as SortKey | undefined) ?? 'created_at'
+  const sortDir = sorting[0]?.desc ? 'desc' : 'asc'
 
   const rootClass =
-    variant === "embedded"
-      ? "flex min-h-[480px] h-[min(calc(100svh-11rem),56rem)] flex-col gap-2"
-      : "flex h-[calc(100svh-7rem)] flex-col gap-4 p-4"
+    variant === 'embedded'
+      ? 'flex min-h-[480px] h-[min(calc(100svh-11rem),56rem)] flex-col gap-2'
+      : 'flex h-[calc(100svh-7rem)] flex-col gap-4 p-4'
 
   return (
     <div className={rootClass}>
-      <ResizablePanelGroup direction="horizontal" className="min-h-0 flex-1 rounded-lg border bg-background">
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="min-h-0 flex-1 rounded-lg border bg-background"
+      >
         <ResizablePanel defaultSize="42%" minSize={28}>
           <div className="flex h-full flex-col">
             <div className="border-b p-4">
@@ -303,8 +327,8 @@ export function InboxReferencesConceptClient({
                 <Select
                   value={`${sortKey}:${sortDir}`}
                   onValueChange={(v) => {
-                    const [id, dir] = v.split(":") as [SortKey, "asc" | "desc"]
-                    setSorting([{ id, desc: dir === "desc" }])
+                    const [id, dir] = v.split(':') as [SortKey, 'asc' | 'desc']
+                    setSorting([{ id, desc: dir === 'desc' }])
                   }}
                 >
                   <SelectTrigger className="h-9" aria-label="Sortierung">
@@ -320,13 +344,13 @@ export function InboxReferencesConceptClient({
                   </SelectContent>
                 </Select>
 
-                {variant === "standalone" ? (
+                {variant === 'standalone' ? (
                   <Select
                     value={statusValue}
                     onValueChange={(v) => {
-                      const col = table.getColumn("status")
+                      const col = table.getColumn('status')
                       if (!col) return
-                      col.setFilterValue(v === "all" ? undefined : v)
+                      col.setFilterValue(v === 'all' ? undefined : v)
                     }}
                   >
                     <SelectTrigger className="h-9" aria-label="Status Filter">
@@ -336,7 +360,9 @@ export function InboxReferencesConceptClient({
                       <SelectItem value="all">Alle Status</SelectItem>
                       <SelectItem value="draft">Entwurf</SelectItem>
                       <SelectItem value="internal_only">Intern</SelectItem>
-                      <SelectItem value="approval_pending">Freigabe ausstehend</SelectItem>
+                      <SelectItem value="approval_pending">
+                        Freigabe ausstehend
+                      </SelectItem>
                       <SelectItem value="approved">Freigegeben</SelectItem>
                       <SelectItem value="anonymized">Anonymisiert</SelectItem>
                     </SelectContent>
@@ -351,9 +377,9 @@ export function InboxReferencesConceptClient({
                   size="sm"
                   className="h-7 px-2"
                   onClick={() => {
-                    setGlobalFilter("")
+                    setGlobalFilter('')
                     setColumnFilters([])
-                    setSorting([{ id: "created_at", desc: true }])
+                    setSorting([{ id: 'created_at', desc: true }])
                     router.push(buildUrl(pathname, searchParams, { id: null }))
                   }}
                 >
@@ -396,11 +422,11 @@ export function InboxReferencesConceptClient({
                           size={16}
                           className={
                             selected.is_favorited
-                              ? "text-amber-500 dark:text-amber-400"
-                              : "text-muted-foreground opacity-80"
+                              ? 'text-amber-500 dark:text-amber-400'
+                              : 'text-muted-foreground opacity-80'
                           }
                         />
-                        {selected.is_favorited ? "Favorit" : "Favorisieren"}
+                        {selected.is_favorited ? 'Favorit' : 'Favorisieren'}
                       </Button>
                     </form>
                     <div className="hidden sm:block">
@@ -411,7 +437,9 @@ export function InboxReferencesConceptClient({
                     </div>
                   </>
                 ) : (
-                  <div className="text-xs text-muted-foreground">Wähle links eine Referenz aus.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Wähle links eine Referenz aus.
+                  </div>
                 )}
               </div>
             </div>
@@ -432,4 +460,3 @@ export function InboxReferencesConceptClient({
     </div>
   )
 }
-

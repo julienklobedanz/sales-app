@@ -1,9 +1,7 @@
 'use client'
 
 import type { ComponentProps } from 'react'
-import {
-  ReferenceForm as ReferenceFormBase,
-} from '@/lib/references/reference-form/reference-form'
+import { ReferenceForm as ReferenceFormBase } from '@/lib/references/reference-form/reference-form'
 import { searchCompanySuggestions } from './actions'
 
 export type {
@@ -16,7 +14,7 @@ export type {
 export function ReferenceForm(
   props: Omit<ComponentProps<typeof ReferenceFormBase>, 'searchCompanies'> & {
     searchCompanies?: ComponentProps<typeof ReferenceFormBase>['searchCompanies']
-  }
+  },
 ) {
   return (
     <ReferenceFormBase

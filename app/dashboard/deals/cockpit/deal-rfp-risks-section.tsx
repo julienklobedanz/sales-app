@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
@@ -62,7 +66,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
     group.items.map((item) => ({
       ...item,
       topic: group.topic,
-    }))
+    })),
   )
   const totalCount = redFlags.length + smeOpenCount + evidenceGaps.length
 
@@ -78,7 +82,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                   size={16}
                   className={cn(
                     'shrink-0 text-muted-foreground transition-transform',
-                    expanded && 'rotate-90'
+                    expanded && 'rotate-90',
                   )}
                 />
                 <CardTitle className="text-base">
@@ -95,17 +99,22 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                   {redFlags.length > 0 ? ` · ${redFlags.length}` : ''}
                 </p>
                 {redFlags.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.risksGeneralEmpty}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {COPY.deals.cockpit.risksGeneralEmpty}
+                  </p>
                 ) : (
                   <ul className="space-y-0 divide-y divide-border/60">
                     {redFlags.map((flag) => {
                       const badge = severityBadge(flag.severity)
                       return (
-                        <li key={flag.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                        <li
+                          key={flag.id}
+                          className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                        >
                           <span
                             className={cn(
                               'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide',
-                              badge.className
+                              badge.className,
                             )}
                           >
                             {badge.label}
@@ -113,7 +122,9 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium">{flag.title}</p>
                             {flag.excerpt ? (
-                              <p className="mt-1 text-xs text-muted-foreground">{flag.excerpt}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {flag.excerpt}
+                              </p>
                             ) : null}
                           </div>
                         </li>
@@ -135,7 +146,10 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                 ) : (
                   <ul className="space-y-0 divide-y divide-border/60">
                     {evidenceGaps.map((gap) => (
-                      <li key={gap.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <li
+                        key={gap.id}
+                        className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                      >
                         <span
                           className={cn(
                             'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide',
@@ -143,7 +157,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                               ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
                               : gap.severity === 'partial'
                                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
                           )}
                         >
                           {gap.severity === 'missing'
@@ -155,7 +169,9 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium">{gap.label}</p>
                           {gap.detail ? (
-                            <p className="mt-1 text-xs text-muted-foreground">{gap.detail}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {gap.detail}
+                            </p>
                           ) : null}
                         </div>
                       </li>
@@ -178,18 +194,24 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                 ) : (
                   <ul className="space-y-0 divide-y divide-border/60">
                     {openItems.map((item) => (
-                      <li key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <li
+                        key={item.id}
+                        className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                      >
                         <span
                           className={cn(
                             'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
-                            topicBadgeClass(item.topic)
+                            topicBadgeClass(item.topic),
                           )}
                         >
                           {item.topic}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-snug">{item.question}</p>
-                          {item.contextExcerpt && item.contextExcerpt !== item.question ? (
+                          <p className="text-sm font-medium leading-snug">
+                            {item.question}
+                          </p>
+                          {item.contextExcerpt &&
+                          item.contextExcerpt !== item.question ? (
                             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                               {item.contextExcerpt}
                             </p>

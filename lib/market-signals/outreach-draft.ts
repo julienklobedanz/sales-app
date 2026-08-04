@@ -34,7 +34,9 @@ export function recipientLastName(fullName: string | null | undefined): string |
   return parts.length ? parts[parts.length - 1]! : null
 }
 
-export function buildOutreachGreeting(recipientFullName: string | null | undefined): string {
+export function buildOutreachGreeting(
+  recipientFullName: string | null | undefined,
+): string {
   const last = recipientLastName(recipientFullName)
   if (!last) return 'Guten Tag [Name],'
   return `Guten Tag Herr/Frau ${last},`
@@ -104,7 +106,10 @@ export function buildHeuristicOutreachDraft(input: OutreachDraftInput): string {
 }
 
 /** Normalize model output to the required email structure. */
-export function normalizeOutreachDraftText(raw: string, fallback: OutreachDraftInput): string {
+export function normalizeOutreachDraftText(
+  raw: string,
+  fallback: OutreachDraftInput,
+): string {
   const trimmed = raw.trim()
   if (!trimmed) return buildHeuristicOutreachDraft(fallback)
 
@@ -119,7 +124,9 @@ export function normalizeOutreachDraftText(raw: string, fallback: OutreachDraftI
   }
 
   const greeting = nonEmpty[0]!
-  const closingIdx = nonEmpty.findIndex((l, i) => i > 0 && /grüße|gruesse|vielen dank|freundliche/i.test(l))
+  const closingIdx = nonEmpty.findIndex(
+    (l, i) => i > 0 && /grüße|gruesse|vielen dank|freundliche/i.test(l),
+  )
   let closing = DEFAULT_CLOSING
   let sender = fallback.senderFullName?.trim() || '[Ihr Name]'
   let bodyLines: string[]
@@ -132,7 +139,10 @@ export function normalizeOutreachDraftText(raw: string, fallback: OutreachDraftI
     }
   } else {
     bodyLines = nonEmpty.slice(1)
-    if (bodyLines.length > 1 && bodyLines[bodyLines.length - 1]!.split(/\s+/).length <= 4) {
+    if (
+      bodyLines.length > 1 &&
+      bodyLines[bodyLines.length - 1]!.split(/\s+/).length <= 4
+    ) {
       sender = bodyLines.pop()!
     }
   }

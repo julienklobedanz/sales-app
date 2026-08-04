@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
-import { Pencil } from "@hugeicons/core-free-icons"
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { Pencil } from '@hugeicons/core-free-icons'
 
-import { Button } from "@/components/ui/button"
-import { AppIcon } from "@/lib/icons"
+import { Button } from '@/components/ui/button'
+import { AppIcon } from '@/lib/icons'
 import {
   Dialog,
   DialogContent,
@@ -14,19 +14,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
-import { DEAL_STATUS_LABELS, type DealStatus, type DealWithReferences } from "../types"
-import { updateDeal } from "../actions"
-import { IndustrySelect } from "@/components/forms/industry-select"
-import { resolveIndustryId } from "@/lib/constants/industries"
-import { COPY } from "@/lib/copy"
+import { DEAL_STATUS_LABELS, type DealStatus, type DealWithReferences } from '../types'
+import { updateDeal } from '../actions'
+import { IndustrySelect } from '@/components/forms/industry-select'
+import { resolveIndustryId } from '@/lib/constants/industries'
+import { COPY } from '@/lib/copy'
 
-const EDITABLE_DEAL_STATUSES: DealStatus[] = ["open", "rfp", "negotiation", "withdrawn", "archived"]
+const EDITABLE_DEAL_STATUSES: DealStatus[] = [
+  'open',
+  'rfp',
+  'negotiation',
+  'withdrawn',
+  'archived',
+]
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -52,19 +64,19 @@ export function EditDealDialog({
   const [saving, setSaving] = useState(false)
 
   const [title, setTitle] = useState(deal.title)
-  const [companyId, setCompanyId] = useState(deal.company_id ?? "")
-  const [industry, setIndustry] = useState(() => resolveIndustryId(deal.industry ?? ""))
-  const [volume, setVolume] = useState(deal.volume ?? "")
+  const [companyId, setCompanyId] = useState(deal.company_id ?? '')
+  const [industry, setIndustry] = useState(() => resolveIndustryId(deal.industry ?? ''))
+  const [volume, setVolume] = useState(deal.volume ?? '')
   const [status, setStatus] = useState<DealStatus>(deal.status)
-  const [expiry, setExpiry] = useState(deal.expiry_date ?? "")
+  const [expiry, setExpiry] = useState(deal.expiry_date ?? '')
   const [isPublic, setIsPublic] = useState(Boolean(deal.is_public))
-  const [amId, setAmId] = useState(deal.account_manager_id ?? "")
-  const [smId, setSmId] = useState(deal.sales_manager_id ?? "")
-  const [requirements, setRequirements] = useState(deal.requirements_text ?? "")
+  const [amId, setAmId] = useState(deal.account_manager_id ?? '')
+  const [smId, setSmId] = useState(deal.sales_manager_id ?? '')
+  const [requirements, setRequirements] = useState(deal.requirements_text ?? '')
 
   useEffect(() => {
     if (!open) return
-    setIndustry(resolveIndustryId(deal.industry ?? ""))
+    setIndustry(resolveIndustryId(deal.industry ?? ''))
   }, [open, deal.industry])
 
   async function submit() {
@@ -85,10 +97,10 @@ export function EditDealDialog({
         incumbent_provider: deal.incumbent_provider ?? null,
       })
       if (!res.success) {
-        toast.error(res.error ?? "Konnte Deal nicht speichern.")
+        toast.error(res.error ?? 'Konnte Deal nicht speichern.')
         return
       }
-      toast.success("Deal gespeichert.")
+      toast.success('Deal gespeichert.')
       setOpen(false)
     } finally {
       setSaving(false)
@@ -114,12 +126,19 @@ export function EditDealDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="deal-title">Titel *</Label>
-            <Input id="deal-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input
+              id="deal-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Unternehmen</Label>
-            <Select value={companyId || "__none__"} onValueChange={(v) => setCompanyId(v === "__none__" ? "" : v)}>
+            <Select
+              value={companyId || '__none__'}
+              onValueChange={(v) => setCompanyId(v === '__none__' ? '' : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Optional auswählen …" />
               </SelectTrigger>
@@ -146,26 +165,33 @@ export function EditDealDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="deal-volume">Volumen</Label>
-              <Input id="deal-volume" value={volume} onChange={(e) => setVolume(e.target.value)} />
+              <Input
+                id="deal-volume"
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
-              {status === "won" || status === "lost" ? (
+              {status === 'won' || status === 'lost' ? (
                 <>
                   <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
                     {DEAL_STATUS_LABELS[status]}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Abschluss Gewonnen/Verloren läuft über „Ausgang festhalten“ in der Seitenleiste (inkl. Feedback &
-                    Ereignis).
+                    Abschluss Gewonnen/Verloren läuft über „Ausgang festhalten“ in der
+                    Seitenleiste (inkl. Feedback & Ereignis).
                   </p>
                 </>
               ) : (
                 <>
-                  <Select value={status} onValueChange={(v) => setStatus(v as DealStatus)}>
+                  <Select
+                    value={status}
+                    onValueChange={(v) => setStatus(v as DealStatus)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -185,13 +211,21 @@ export function EditDealDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="deal-expiry">Ablaufdatum</Label>
-              <Input id="deal-expiry" type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
+              <Input
+                id="deal-expiry"
+                type="date"
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+              />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Sichtbarkeit</Label>
-            <Select value={isPublic ? "public" : "private"} onValueChange={(v) => setIsPublic(v === "public")}>
+            <Select
+              value={isPublic ? 'public' : 'private'}
+              onValueChange={(v) => setIsPublic(v === 'public')}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -205,7 +239,10 @@ export function EditDealDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{COPY.roles.accountManager}</Label>
-              <Select value={amId || "__none__"} onValueChange={(v) => setAmId(v === "__none__" ? "" : v)}>
+              <Select
+                value={amId || '__none__'}
+                onValueChange={(v) => setAmId(v === '__none__' ? '' : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
                 </SelectTrigger>
@@ -221,7 +258,10 @@ export function EditDealDialog({
             </div>
             <div className="space-y-2">
               <Label>{COPY.roles.salesManager}</Label>
-              <Select value={smId || "__none__"} onValueChange={(v) => setSmId(v === "__none__" ? "" : v)}>
+              <Select
+                value={smId || '__none__'}
+                onValueChange={(v) => setSmId(v === '__none__' ? '' : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
                 </SelectTrigger>
@@ -253,11 +293,10 @@ export function EditDealDialog({
             Abbrechen
           </Button>
           <Button onClick={submit} disabled={saving || !title.trim()}>
-            {saving ? "Speichern …" : "Speichern"}
+            {saving ? 'Speichern …' : 'Speichern'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-

@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReferenceRow } from '../actions'
-import {
-  filterAndSortReferences,
-  normalizeTagLabel,
-} from './filter-sort-references'
+import { filterAndSortReferences, normalizeTagLabel } from './filter-sort-references'
 
-function makeRef(overrides: Partial<ReferenceRow> & Pick<ReferenceRow, 'id' | 'title'>): ReferenceRow {
+function makeRef(
+  overrides: Partial<ReferenceRow> & Pick<ReferenceRow, 'id' | 'title'>,
+): ReferenceRow {
   return {
     summary: null,
     industry: null,

@@ -17,6 +17,7 @@
 ## Warum (Befund am Code)
 
 `[verifiziert]`
+
 - `app/dashboard/settings/settings-tabs.tsx` ist durch den neuen `roles`-Tab auf **1505 Zeilen** gewachsen (7 `TabsContent`-Blöcke inline: profile, workspace, admin, team, roles, integrations, workflow). Der Boy-Scout-Schritt „bei der Gelegenheit zerlegen" wurde nicht gemacht.
 - Trotz neuer zentraler Helfer bestehen **viele verstreute `role === 'sales'`-Checks** weiter (u. a. `evidence/[id]/page.tsx` ~10×, `evidence-client.tsx`, `evidence/new/page.tsx`, `evidence/[id]/edit/page.tsx`, `evidence/[id]/actions.ts`, `dashboard-home-data.ts:1277`, `settings/page.tsx:262`, `settings/actions.ts:96`).
 - `app/dashboard/settings/user-role.ts` nutzt noch `updateUserRoleImpl(role: 'admin' | 'sales')` (Legacy-Zweiwertigkeit), aufgerufen aus `app/dashboard/actions.ts:375`.
@@ -36,6 +37,7 @@
 > Setzt den **Strangler-Schritt 3** aus dem Welle-1-Paket für die von Welle 2 berührten Bereiche um.
 
 **Soll:** Legacy-Vergleiche durch das neue Modell ersetzen:
+
 - **Sicherheitsrelevante Sichtbarkeit** (z. B. `evidence/[id]/page.tsx:254` `isReferenceVisibleToSales`, Redirects in `new/page.tsx`, `edit/page.tsx`, `[id]/actions.ts`): auf die **zentralen Helfer** (`reference-visibility-scope` / `load-reference-visibility` / Capabilities) umstellen — damit UI-Sicht und RLS dieselbe Quelle haben und nicht auseinanderdriften.
 - **Reine UI-Layout-Entscheidungen** (order-1/order-2, Karten ein-/ausblenden in `evidence/[id]/page.tsx`): auf `useRole()`/`functionRole`/`can()` umstellen statt String-Vergleich `role === 'sales'`.
 - `dashboard-home-data.ts:1277`, `evidence-client.tsx:50`: analog.
@@ -48,9 +50,10 @@
 ## T3 — `user-role.ts` mit dem neuen Modell abgleichen
 
 **Soll:** Prüfen, ob `updateUserRoleImpl('admin'|'sales')` noch gebraucht wird:
+
 - Wenn es nur die Legacy-Spalte `role` setzt → auf System-/Funktions-Rolle umstellen (bzw. an `invite-roles.ts`/Profil-Update-Pfad angleichen) **oder** als bewusst transitorisch markieren (Kommentar + Verweis auf Sync-Trigger), bis die Legacy-`role`-Spalte in Welle 5 entfällt.
 - Aufrufer `app/dashboard/actions.ts:375` entsprechend anpassen.
-**Akzeptanz:** Kein zweiter, widersprüchlicher Pfad zur Rollensetzung; Verhalten dokumentiert; Tests grün.
+  **Akzeptanz:** Kein zweiter, widersprüchlicher Pfad zur Rollensetzung; Verhalten dokumentiert; Tests grün.
 
 ---
 
@@ -69,6 +72,7 @@
 npm run test    # muss bei 261/261 (oder mehr) bleiben
 npm run build
 ```
+
 - T2 manuell: je ein Testuser pro Funktions-Rolle (sales_rep / account_manager / admin) — Referenz-Sichtbarkeit & Evidence-Detail-Layout identisch zu vorher.
 - `grep -rnE "role === 'sales'" app` in den T2-Dateien → 0 Treffer.
 

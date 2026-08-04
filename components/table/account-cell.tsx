@@ -1,4 +1,4 @@
-import { CompanyLogo } from "@/components/ui/company-logo"
+import { CompanyLogo } from '@/components/ui/company-logo'
 import Link from 'next/link'
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 import { cn } from '@/lib/utils'

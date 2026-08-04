@@ -8,7 +8,11 @@ import {
   applyClientSideStructuralFilters,
   BROWSE_SIMILARITY_SENTINEL,
 } from '@/lib/match/match-hit-helpers'
-import type { MatchReferenceHit, MatchReferencesOptions, MatchReferencesResult } from '@/lib/match/match-types'
+import type {
+  MatchReferenceHit,
+  MatchReferencesOptions,
+  MatchReferencesResult,
+} from '@/lib/match/match-types'
 import type { Database } from '@/lib/database.types'
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>
@@ -21,7 +25,7 @@ export async function browseRecentReferences(
     matchCount: number
     filters?: MatchReferencesOptions['filters']
     dealId: string | null
-  }
+  },
 ): Promise<MatchReferencesResult> {
   const { orgId, salesVisibleOnly, matchCount, filters, dealId } = params
   const start = performance.now()
@@ -36,12 +40,15 @@ export async function browseRecentReferences(
     Boolean(filters?.excludeTerms?.length) ||
     typeof filters?.minVolume === 'number' ||
     typeof filters?.maxVolume === 'number'
-  const fetchLimit = Math.min(Math.max(needsClientOr ? matchCount * 4 : matchCount, 1), 80)
+  const fetchLimit = Math.min(
+    Math.max(needsClientOr ? matchCount * 4 : matchCount, 1),
+    80,
+  )
 
   let q = supabase
     .from('references')
     .select(
-      'id, title, summary, industry, volume_eur, status, created_at, project_start, project_end, company_id'
+      'id, title, summary, industry, volume_eur, status, created_at, project_start, project_end, company_id',
     )
     .eq('organization_id', orgId)
     .is('deleted_at', null)
@@ -101,7 +108,7 @@ export async function browseRecentReferences(
   if (matches.length > 0) {
     const companyByRef = await fetchCompanyFieldsForReferenceIds(
       supabase,
-      matches.map((m) => m.id)
+      matches.map((m) => m.id),
     )
     matches = matches.map((m) => {
       const co = companyByRef.get(m.id)

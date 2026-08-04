@@ -2,7 +2,12 @@ import { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT } from './signal-intelligence-
 
 export { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT }
 
-export type RoleTransitionKind = 'promotion' | 'lateral' | 'step_down' | 'new_hire' | 'unknown'
+export type RoleTransitionKind =
+  | 'promotion'
+  | 'lateral'
+  | 'step_down'
+  | 'new_hire'
+  | 'unknown'
 
 export type MarketSignalActionTriggerType = 'direct_outreach' | 'warm_intro'
 
@@ -70,7 +75,8 @@ export function titleSeniorityScore(title: string): number {
   const t = normalizeTitle(title).toLowerCase()
   if (!t) return 0
   if (/\b(ceo|geschäftsführ|vorstand|chief executive)\b/.test(t)) return 100
-  if (/\b(cfo|cto|cio|ciso|chief information|chief technology|chief executive)\b/.test(t)) return 92
+  if (/\b(cfo|cto|cio|ciso|chief information|chief technology|chief executive)\b/.test(t))
+    return 92
   if (/\bcpo\b|chief product/.test(t)) return 86
   if (/\b(ev)?p\b|vice president|vizepräsident/.test(t)) return 82
   if (/\bdirector\b|geschäftsbereichsleiter/.test(t)) return 72
@@ -82,7 +88,7 @@ export function titleSeniorityScore(title: string): number {
 export function classifyRoleTransition(
   before: string | null | undefined,
   after: string | null | undefined,
-  changeSummary?: string
+  changeSummary?: string,
 ): { kind: RoleTransitionKind; is_step_down: boolean; is_demission: boolean } {
   const summary = String(changeSummary ?? '')
   const is_demission = DEMISSION_RE.test(summary)
@@ -90,7 +96,8 @@ export function classifyRoleTransition(
   const a = normalizeTitle(after ?? '')
   if (!b && a) return { kind: 'new_hire', is_step_down: false, is_demission }
   if (!a && b) return { kind: 'unknown', is_step_down: false, is_demission: is_demission }
-  if (!b && !a) return { kind: 'unknown', is_step_down: false, is_demission: is_demission }
+  if (!b && !a)
+    return { kind: 'unknown', is_step_down: false, is_demission: is_demission }
 
   const sb = titleSeniorityScore(b)
   const sa = titleSeniorityScore(a)
@@ -172,7 +179,10 @@ export function extractEmbeddedSignalHook(input: {
     .filter((s) => s.length >= 24)
 
   const name = normalizeTitle(input.personName ?? '')
-  const companyToken = normalizeTitle(input.companyName ?? '').split(/\s+/)[0]?.toLowerCase() ?? ''
+  const companyToken =
+    normalizeTitle(input.companyName ?? '')
+      .split(/\s+/)[0]
+      ?.toLowerCase() ?? ''
 
   const scored = sentences.map((sentence) => {
     let score = 0
@@ -219,7 +229,9 @@ export function buildSalesWhyNow(input: {
   const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 160)
   if (hook) {
     const sentence = /[.!?]$/.test(hook) ? hook : `${hook}.`
-    return solution ? `${sentence} Das kann den Bedarf an ${solution} kurzfristig erhöhen.` : sentence
+    return solution
+      ? `${sentence} Das kann den Bedarf an ${solution} kurzfristig erhöhen.`
+      : sentence
   }
   return `Aktuelle Entwicklung bei ${company}.`
 }
@@ -260,7 +272,8 @@ export function deriveActionTriggers(input: {
     })
   }
   if (input.warmIntro?.colleagueName && input.warmIntro?.stakeholderName) {
-    const colleague = input.warmIntro.colleagueName.split(/\s+/)[0] ?? input.warmIntro.colleagueName
+    const colleague =
+      input.warmIntro.colleagueName.split(/\s+/)[0] ?? input.warmIntro.colleagueName
     triggers.push({
       type: 'warm_intro',
       label: `Warm-Intro über ${colleague} anfordern`,
@@ -271,11 +284,13 @@ export function deriveActionTriggers(input: {
   return triggers
 }
 
-export function buildMarketSignalIntelligence(input: BuildIntelligenceInput): MarketSignalIntelligence {
+export function buildMarketSignalIntelligence(
+  input: BuildIntelligenceInput,
+): MarketSignalIntelligence {
   const transition = classifyRoleTransition(
     input.personTitleBefore,
     input.personTitleAfter,
-    input.changeSummary
+    input.changeSummary,
   )
   const signal_fact =
     input.signalKind === 'exec'
@@ -328,7 +343,9 @@ export function buildMarketSignalIntelligence(input: BuildIntelligenceInput): Ma
 }
 
 /** Parse „Dein Kollege X kennt Y …“ bridge lines from decision-maker mocks. */
-export function parseWarmIntroBridge(line: string): { colleague: string; stakeholder: string } | null {
+export function parseWarmIntroBridge(
+  line: string,
+): { colleague: string; stakeholder: string } | null {
   const m = String(line ?? '')
     .trim()
     .match(/^Dein Kollege (.+?) kennt (.+?) – starker Einstieg für ein Warm-Intro\.?$/)

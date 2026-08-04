@@ -75,7 +75,7 @@ export function PdfExportDialog({
     try {
       const res = await fetch(
         `/api/pdf?referenceId=${encodeURIComponent(referenceId)}&template=${encodeURIComponent(template)}`,
-        { method: 'GET', credentials: 'same-origin' }
+        { method: 'GET', credentials: 'same-origin' },
       )
       if (!res.ok) {
         const err = await res.json().catch(() => null)
@@ -83,7 +83,9 @@ export function PdfExportDialog({
       }
       const blob = await res.blob()
       const fallback = 'RefStack.pdf'
-      const fromHeader = parseFilenameFromContentDisposition(res.headers.get('Content-Disposition'))
+      const fromHeader = parseFilenameFromContentDisposition(
+        res.headers.get('Content-Disposition'),
+      )
       const fileName = fromHeader
         ? decodeURIComponent(fromHeader.replace(/^"|"$/g, ''))
         : fallback
@@ -141,7 +143,9 @@ export function PdfExportDialog({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold">{opt.title}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">{opt.description}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {opt.description}
+                    </div>
                   </div>
                   <div className="inline-flex items-end gap-1 rounded-md border bg-background px-2 py-1">
                     {Array.from({ length: opt.mini.pages }).map((_, i) => (

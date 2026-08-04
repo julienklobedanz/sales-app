@@ -35,7 +35,7 @@ export async function loadDealRfpRisksData(
   supabase: SupabaseClient,
   organizationId: string,
   projectId: string,
-  snapshotFallback: PersistedDealDeskAnalysisSnapshot | null
+  snapshotFallback: PersistedDealDeskAnalysisSnapshot | null,
 ): Promise<DealRfpRisksData> {
   const [flagsRes, smeRes] = await Promise.all([
     supabase
@@ -54,7 +54,14 @@ export async function loadDealRfpRisksData(
   let redFlags: DealDeskRedFlag[] = []
   if (flagsRes.data?.length) {
     redFlags = flagsRes.data.map((row) =>
-      mapDbRedFlag(row as { id: string; flag_key: string | null; label: string; severity: string | null })
+      mapDbRedFlag(
+        row as {
+          id: string
+          flag_key: string | null
+          label: string
+          severity: string | null
+        },
+      ),
     )
   } else if (snapshotFallback?.redFlags?.length) {
     redFlags = snapshotFallback.redFlags.map((f) => ({ ...f, markedForLegal: undefined }))
@@ -62,7 +69,9 @@ export async function loadDealRfpRisksData(
 
   const snapshotTasks: DealDeskSmeTask[] = snapshotFallback?.smeTasks ?? []
   const dbKeys = new Set(
-    (smeRes.data ?? []).map((r) => String((r as { requirement_key: string }).requirement_key))
+    (smeRes.data ?? []).map((r) =>
+      String((r as { requirement_key: string }).requirement_key),
+    ),
   )
 
   let smeTasks = snapshotTasks

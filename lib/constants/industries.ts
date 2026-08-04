@@ -11,17 +11,53 @@ export interface Industry {
 }
 
 export const MASTER_INDUSTRIES: Industry[] = [
-  { id: 'fin', labelDe: 'Finanzdienstleistungen & Versicherung', labelEn: 'Financial Services & Insurance' },
+  {
+    id: 'fin',
+    labelDe: 'Finanzdienstleistungen & Versicherung',
+    labelEn: 'Financial Services & Insurance',
+  },
   { id: 'ret', labelDe: 'Handel & Konsumgüter', labelEn: 'Retail & Consumer Goods' },
   { id: 'man', labelDe: 'Industrie & Automotive', labelEn: 'Manufacturing & Automotive' },
-  { id: 'tech', labelDe: 'Software, Tech & Telekommunikation', labelEn: 'Software, Tech & Telecom' },
-  { id: 'media', labelDe: 'Medien, Marketing & Unterhaltung', labelEn: 'Media, Entertainment & Marketing' },
-  { id: 'energy', labelDe: 'Energie, Versorgung & Rohstoffe', labelEn: 'Energy, Utilities & Resources' },
-  { id: 'health', labelDe: 'Gesundheitswesen, Life Sciences & Chemie', labelEn: 'Healthcare, Life Sciences & Chemical' },
-  { id: 'pub', labelDe: 'Öffentlicher Sektor & Bildung', labelEn: 'Public Sector & Education' },
-  { id: 'log', labelDe: 'Logistik, Transport & Aviation', labelEn: 'Logistics, Transport & Aviation' },
-  { id: 'cons', labelDe: 'Beratung & Professional Services', labelEn: 'Professional Services & Consulting' },
-  { id: 'prop', labelDe: 'Immobilien & Bauwirtschaft', labelEn: 'Real Estate & Construction' },
+  {
+    id: 'tech',
+    labelDe: 'Software, Tech & Telekommunikation',
+    labelEn: 'Software, Tech & Telecom',
+  },
+  {
+    id: 'media',
+    labelDe: 'Medien, Marketing & Unterhaltung',
+    labelEn: 'Media, Entertainment & Marketing',
+  },
+  {
+    id: 'energy',
+    labelDe: 'Energie, Versorgung & Rohstoffe',
+    labelEn: 'Energy, Utilities & Resources',
+  },
+  {
+    id: 'health',
+    labelDe: 'Gesundheitswesen, Life Sciences & Chemie',
+    labelEn: 'Healthcare, Life Sciences & Chemical',
+  },
+  {
+    id: 'pub',
+    labelDe: 'Öffentlicher Sektor & Bildung',
+    labelEn: 'Public Sector & Education',
+  },
+  {
+    id: 'log',
+    labelDe: 'Logistik, Transport & Aviation',
+    labelEn: 'Logistics, Transport & Aviation',
+  },
+  {
+    id: 'cons',
+    labelDe: 'Beratung & Professional Services',
+    labelEn: 'Professional Services & Consulting',
+  },
+  {
+    id: 'prop',
+    labelDe: 'Immobilien & Bauwirtschaft',
+    labelEn: 'Real Estate & Construction',
+  },
   { id: 'other', labelDe: 'Sonstige', labelEn: 'Other' },
 ]
 

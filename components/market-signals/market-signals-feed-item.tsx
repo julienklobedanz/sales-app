@@ -52,7 +52,7 @@ export function MarketSignalsFeedItem({
 }) {
   const sourceHref = resolveSourceUrl(
     item.sourceUrl,
-    [item.sourceLabel, item.companyName, item.headline].filter(Boolean).join(' ')
+    [item.sourceLabel, item.companyName, item.headline].filter(Boolean).join(' '),
   )
   const dealLabel =
     item.dealCount > 0
@@ -63,7 +63,7 @@ export function MarketSignalsFeedItem({
       : null
   const linkedInUrl = item.personName
     ? `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
-        `${item.personName} ${item.companyName}`
+        `${item.personName} ${item.companyName}`,
       )}`
     : null
 
@@ -71,7 +71,7 @@ export function MarketSignalsFeedItem({
     <li
       className={cn(
         'rounded-xl border p-4 shadow-sm transition-opacity',
-        unread ? 'border-border/70 bg-card' : 'border-border/40 bg-muted/25 opacity-45'
+        unread ? 'border-border/70 bg-card' : 'border-border/40 bg-muted/25 opacity-45',
       )}
     >
       <div className="flex gap-3.5">
@@ -101,7 +101,9 @@ export function MarketSignalsFeedItem({
                     ? COPY.marketSignals.signalTypeExec
                     : COPY.marketSignals.signalTypeCompany}
               </Badge>
-              <span className="text-xs text-muted-foreground">{relativeTimeLabel(item.at)}</span>
+              <span className="text-xs text-muted-foreground">
+                {relativeTimeLabel(item.at)}
+              </span>
             </div>
             {unread ? (
               <span
@@ -112,7 +114,9 @@ export function MarketSignalsFeedItem({
             ) : null}
           </div>
 
-          <p className="text-sm font-semibold leading-snug text-foreground">{item.headline}</p>
+          <p className="text-sm font-semibold leading-snug text-foreground">
+            {item.headline}
+          </p>
 
           {item.compellingEvent ? (
             <p className="text-sm text-muted-foreground">
@@ -135,7 +139,10 @@ export function MarketSignalsFeedItem({
                 >
                   {matchCount === 1
                     ? COPY.marketSignals.matchingRefsSingular
-                    : COPY.marketSignals.matchingRefsPlural.replace('{count}', String(matchCount))}
+                    : COPY.marketSignals.matchingRefsPlural.replace(
+                        '{count}',
+                        String(matchCount),
+                      )}
                 </button>
               </>
             ) : null}
@@ -171,7 +178,13 @@ export function MarketSignalsFeedItem({
             >
               {COPY.marketSignals.outreachCta}
             </Button>
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              asChild
+            >
               <Link href={ROUTES.accountsDetail(item.companyId)}>
                 <AppIcon icon={Building2} size={14} className="mr-1" />
                 {COPY.marketSignals.openAccount}
@@ -288,7 +301,9 @@ export function MarketSignalsOutreachDialog({
                       >
                         <span className="font-medium text-foreground">{hit.title}</span>
                         {hit.companyName ? (
-                          <span className="mt-0.5 block text-muted-foreground">{hit.companyName}</span>
+                          <span className="mt-0.5 block text-muted-foreground">
+                            {hit.companyName}
+                          </span>
                         ) : null}
                       </label>
                     </li>

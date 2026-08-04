@@ -24,8 +24,20 @@ export const SME_ROUTE_META = [
 ] as const
 
 export const SME_DEFAULT_EXPERTS: SmeExpertOption[] = [
-  { id: 'ex-ck', name: 'Christian K.', route: 'legal', department: 'Legal', email: 'christian.k@example.com' },
-  { id: 'ex-lh', name: 'Lena Hoffmann', route: 'cto', department: 'Delivery / CTO', email: 'lena.h@example.com' },
+  {
+    id: 'ex-ck',
+    name: 'Christian K.',
+    route: 'legal',
+    department: 'Legal',
+    email: 'christian.k@example.com',
+  },
+  {
+    id: 'ex-lh',
+    name: 'Lena Hoffmann',
+    route: 'cto',
+    department: 'Delivery / CTO',
+    email: 'lena.h@example.com',
+  },
   { id: 'ex-mw', name: 'Markus Weber', route: 'cto', department: 'Delivery / CTO' },
   { id: 'ex-sk', name: 'Sarah Klein', route: 'cfo', department: 'Finance' },
   { id: 'ex-ts', name: 'Tobias Schneider', route: 'security', department: 'Security' },
@@ -76,7 +88,7 @@ export function routeLabel(route: string): string {
 export function expertsForRoute(
   route: string,
   pool: SmeExpertOption[],
-  custom: SmeExpertOption[]
+  custom: SmeExpertOption[],
 ): SmeExpertOption[] {
   return [...pool, ...custom].filter((e) => e.route === route)
 }
@@ -105,7 +117,7 @@ export function smeContextPreview(task: DealDeskSmeTask): {
 
 export function parseSmeAssignments(
   raw: unknown,
-  legacyRoutes: Record<string, string> = {}
+  legacyRoutes: Record<string, string> = {},
 ): Record<string, DealDeskSmeAssignment> {
   const out: Record<string, DealDeskSmeAssignment> = {}
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {

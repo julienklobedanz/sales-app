@@ -7,7 +7,7 @@ export function dashboardFirstName(fullName: string | null | undefined): string 
 export function computeWinRateMetrics(
   closedDealsCount: number,
   wonCount: number,
-  minClosedForWinRate: number
+  minClosedForWinRate: number,
 ): {
   available: boolean
   percent: number | null
@@ -46,7 +46,7 @@ export function meddpiccAccountAction(flags: {
 }
 
 export function integrationConnectionStatus(
-  val: unknown
+  val: unknown,
 ): 'healthy' | 'warning' | 'down' {
   if (val === true || val === 'connected') return 'healthy'
   if (val === 'error' || val === 'down') return 'down'

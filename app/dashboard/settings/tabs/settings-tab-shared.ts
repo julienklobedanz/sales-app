@@ -1,4 +1,5 @@
-export const SETTINGS_CARD_CLASS = 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
+export const SETTINGS_CARD_CLASS =
+  'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
 /** Kompaktere Card für den Persönlich-Tab (weniger Padding, gleicher Card-Look). */
 export const SETTINGS_CARD_CLASS_COMPACT =
   'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'
@@ -19,7 +20,7 @@ export type SettingsTabHandlers = {
 export type RegisterSettingsTab = (
   tabId: SettingsTabId,
   handlers: SettingsTabHandlers | null,
-  partKey?: string
+  partKey?: string,
 ) => void
 
 /** Maps old ?tab= values and synonyms onto the 4-tab IA. */

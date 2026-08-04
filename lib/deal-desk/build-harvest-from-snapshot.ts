@@ -13,12 +13,14 @@ function firstSentence(text: string, max = 320): string {
 /**
  * Leitet Inkubator-/Referenz-Felder aus dem echten Deal-Desk-Analyse-Snapshot ab.
  */
-export function buildHarvestFromAnalysis(analysis: DealDeskMockAnalysis): ReferenceIncubatorHarvest {
+export function buildHarvestFromAnalysis(
+  analysis: DealDeskMockAnalysis,
+): ReferenceIncubatorHarvest {
   const customerName = analysis.customerName?.trim() || 'Kunde'
 
   const challenge = firstSentence(
     buildCustomerChallengeBullets(analysis).join(' ') || analysis.icpSummary,
-    520
+    520,
   )
 
   const answerParts = analysis.draftRows
@@ -28,8 +30,9 @@ export function buildHarvestFromAnalysis(analysis: DealDeskMockAnalysis): Refere
   const solution = firstSentence(
     answerParts.length > 0
       ? answerParts.join(' ')
-      : analysis.icpSummary || 'Lösung wird aus RFP-Kontext und internen Referenzen abgeleitet.',
-    620
+      : analysis.icpSummary ||
+          'Lösung wird aus RFP-Kontext und internen Referenzen abgeleitet.',
+    620,
   )
 
   const topMatch = analysis.draftRows.find((r) => r.reference)
@@ -66,7 +69,7 @@ export type DealDeskReferencePrefill = {
 
 export function buildReferencePrefillFromAnalysis(
   analysis: DealDeskMockAnalysis,
-  projectName: string
+  projectName: string,
 ): DealDeskReferencePrefill {
   const harvest = buildHarvestFromAnalysis(analysis)
   return {

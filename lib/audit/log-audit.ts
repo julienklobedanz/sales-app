@@ -32,28 +32,30 @@ export async function writeAuditLog(input: AuditLogInput): Promise<void> {
       log.error('writeAuditLog.insertFailed', { action: input.action }, error)
       return
     }
-      if (input.orgId) {
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('workflow_settings')
-          .eq('id', input.orgId)
-          .single()
-        const settings =
-          org?.workflow_settings && typeof org.workflow_settings === 'object'
-            ? (org.workflow_settings as Record<string, unknown>)
-            : {}
-        const retentionRaw = settings.audit_log_retention_days
-        const retentionDays =
-          typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
-            ? Math.max(30, Math.min(3650, Math.trunc(retentionRaw)))
-            : 365
-        const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
-        await supabase
-          .from('audit_logs')
-          .delete()
-          .eq('org_id', input.orgId)
-          .lt('timestamp', cutoff)
-      }
+    if (input.orgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('workflow_settings')
+        .eq('id', input.orgId)
+        .single()
+      const settings =
+        org?.workflow_settings && typeof org.workflow_settings === 'object'
+          ? (org.workflow_settings as Record<string, unknown>)
+          : {}
+      const retentionRaw = settings.audit_log_retention_days
+      const retentionDays =
+        typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
+          ? Math.max(30, Math.min(3650, Math.trunc(retentionRaw)))
+          : 365
+      const cutoff = new Date(
+        Date.now() - retentionDays * 24 * 60 * 60 * 1000,
+      ).toISOString()
+      await supabase
+        .from('audit_logs')
+        .delete()
+        .eq('org_id', input.orgId)
+        .lt('timestamp', cutoff)
+    }
     if (
       input.orgId &&
       (input.action === 'unlock_failed' || input.action === 'unlock_rate_limited')

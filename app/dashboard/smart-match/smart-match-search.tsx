@@ -61,7 +61,7 @@ export function SmartMatchSearchBar({
       <div
         className={cn(
           'flex items-center gap-2 rounded-full border border-border/80 bg-card px-2 py-1.5 shadow-sm',
-          'transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40'
+          'transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40',
         )}
       >
         {!embedded ? (
@@ -76,7 +76,7 @@ export function SmartMatchSearchBar({
                       className={cn(
                         'flex size-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors',
                         'hover:bg-muted',
-                        selectedDeal && 'bg-primary/10 text-primary'
+                        selectedDeal && 'bg-primary/10 text-primary',
                       )}
                     >
                       <Plus className="size-5" strokeWidth={1.75} />
@@ -84,8 +84,8 @@ export function SmartMatchSearchBar({
                   </PopoverTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px] text-left">
-                  Deal verknüpfen: Füge einen Deal als Kontext hinzu, um bessere Ergebnisse zu
-                  erhalten.
+                  Deal verknüpfen: Füge einen Deal als Kontext hinzu, um bessere
+                  Ergebnisse zu erhalten.
                 </TooltipContent>
               </Tooltip>
               <PopoverContent align="start" side="top" className="w-72 p-1.5">
@@ -118,7 +118,9 @@ export function SmartMatchSearchBar({
                     ))
                   ) : (
                     <div className="px-2 py-3 text-sm text-muted-foreground">
-                      {deals.length ? 'Keine Deals gefunden.' : 'Noch keine Deals angelegt.'}
+                      {deals.length
+                        ? 'Keine Deals gefunden.'
+                        : 'Noch keine Deals angelegt.'}
                     </div>
                   )}
                 </div>
@@ -146,7 +148,7 @@ export function SmartMatchSearchBar({
           className={cn(
             'flex size-9 shrink-0 items-center justify-center rounded-full transition-opacity',
             'bg-primary text-primary-foreground shadow-sm',
-            'hover:opacity-90 disabled:opacity-60'
+            'hover:opacity-90 disabled:opacity-60',
           )}
         >
           {loading ? (
@@ -161,14 +163,14 @@ export function SmartMatchSearchBar({
       <div
         className={cn(
           'grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          showMetaRow ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          showMetaRow ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
         )}
       >
         <div className="min-h-0 overflow-hidden">
           <div
             className={cn(
               'flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-3 transition-opacity duration-200 ease-out',
-              showMetaRow ? 'opacity-100' : 'opacity-0'
+              showMetaRow ? 'opacity-100' : 'opacity-0',
             )}
           >
             <div className="flex min-h-6 items-center gap-2 text-xs text-muted-foreground">
@@ -219,9 +221,7 @@ export function SmartMatchSearchBar({
             <div
               className={cn(
                 'ml-auto flex flex-wrap items-center justify-end gap-1 text-[11px] leading-none text-muted-foreground transition-opacity duration-200 ease-out',
-                showSuggestions
-                  ? 'opacity-100'
-                  : 'pointer-events-none opacity-0'
+                showSuggestions ? 'opacity-100' : 'pointer-events-none opacity-0',
               )}
               aria-hidden={!showSuggestions}
             >

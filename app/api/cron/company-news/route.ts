@@ -25,8 +25,10 @@ export async function GET(request: Request) {
     }
   } else if (!isDev) {
     return NextResponse.json(
-      { error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).' },
-      { status: 503 }
+      {
+        error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).',
+      },
+      { status: 503 },
     )
   }
 
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
   if (!admin) {
     return NextResponse.json(
       { error: 'SUPABASE_SERVICE_ROLE_KEY fehlt – Ingest nicht möglich.' },
-      { status: 503 }
+      { status: 503 },
     )
   }
 
@@ -54,7 +56,12 @@ export async function GET(request: Request) {
     maxPeople: Number.isFinite(maxExecPeople) ? maxExecPeople : 40,
   })
 
-  let instant: { emailed: number; pushed: number; skipped: boolean; errors: string[] } | null = null
+  let instant: {
+    emailed: number
+    pushed: number
+    skipped: boolean
+    errors: string[]
+  } | null = null
   if (process.env.MARKET_SIGNALS_INSTANT_ALERTS_DISABLED !== '1') {
     instant = await notifyInstantMarketSignalsAfterIngest(admin, {
       sinceIso: ingestSince,
@@ -72,9 +79,11 @@ export async function GET(request: Request) {
   const orgIds = Array.from(
     new Set(
       (favoriteOrgs ?? [])
-        .map((row) => String((row as { organization_id?: string | null }).organization_id ?? ''))
-        .filter(Boolean)
-    )
+        .map((row) =>
+          String((row as { organization_id?: string | null }).organization_id ?? ''),
+        )
+        .filter(Boolean),
+    ),
   )
   if (orgIds.length) {
     await admin.from('audit_logs').insert(
@@ -95,7 +104,7 @@ export async function GET(request: Request) {
           execErrors: executives.errors.length,
           at: finishedAt,
         },
-      }))
+      })),
     )
   }
 

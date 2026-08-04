@@ -12,12 +12,14 @@ import {
 describe('reference-onepager-pptx', () => {
   it('normalizePptxFlowText merges continuation lines but keeps bullets', () => {
     const raw = 'Line one\ncontinued thought\n• Bullet A\n• Bullet B'
-    expect(normalizePptxFlowText(raw)).toBe('Line one continued thought\n• Bullet A\n• Bullet B')
+    expect(normalizePptxFlowText(raw)).toBe(
+      'Line one continued thought\n• Bullet A\n• Bullet B',
+    )
   })
 
   it('extractChallengeBulletsForPptx keeps at most five bullets', () => {
     const bullets = extractChallengeBulletsForPptx(
-      '• One\n• Two\n• Three\n• Four\n• Five\n• Six should drop'
+      '• One\n• Two\n• Three\n• Four\n• Five\n• Six should drop',
     )
     expect(bullets).toHaveLength(5)
   })
@@ -60,8 +62,11 @@ describe('reference-onepager-pptx', () => {
   it('estimateBulletBlockHeight grows with more wrapped bullets', () => {
     const short = estimateBulletBlockHeight(['Kurz.'], 5.5)
     const long = estimateBulletBlockHeight(
-      ['Ein deutlich längerer Bulletpoint der über mehrere Zeilen umbrechen sollte.', 'Noch einer.'],
-      5.5
+      [
+        'Ein deutlich längerer Bulletpoint der über mehrere Zeilen umbrechen sollte.',
+        'Noch einer.',
+      ],
+      5.5,
     )
     expect(long).toBeGreaterThan(short)
   })

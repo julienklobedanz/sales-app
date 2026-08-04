@@ -19,7 +19,7 @@ function formatDateDe(iso: string): string {
 
 function timelineDateByPattern(
   items: DealDeskMockAnalysis['timelineItems'],
-  patterns: RegExp[]
+  patterns: RegExp[],
 ): string | null {
   const hit = items.find((t) => patterns.some((p) => p.test(t.title)))
   return hit?.dueDate ? formatDateDe(hit.dueDate) : null
@@ -107,7 +107,7 @@ export function resolveExecutiveBriefingPptxData(params: {
 
   const capabilityFromBriefing = briefing?.capabilityRisks ?? []
   const contractFlags = redFlags.filter(
-    (f) => f.severity === 'critical' || f.severity === 'high'
+    (f) => f.severity === 'critical' || f.severity === 'high',
   )
 
   const riskBullets: string[] = []

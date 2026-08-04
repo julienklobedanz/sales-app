@@ -29,8 +29,8 @@ const LEGACY_CONTRACT_TYPE_LABELS: Record<string, string> = {
   'Subscription (Per User/Tiered)': 'Abo pro Nutzer / Staffel',
   'Usage-Based': 'Nutzungsbasiert',
   'Full Managed': 'Komplett-Managed',
-  'Projektvertrag': 'Projektvertrag',
-  'Wartungsvertrag': 'Wartungsvertrag',
+  Projektvertrag: 'Projektvertrag',
+  Wartungsvertrag: 'Wartungsvertrag',
   'SaaS / Subscription': 'Abo pro Nutzer / Staffel',
 }
 

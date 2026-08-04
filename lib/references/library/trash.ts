@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { revalidateOrgCachesForReference, revalidateOrgReferences } from '@/lib/cache/revalidate-org'
+import {
+  revalidateOrgCachesForReference,
+  revalidateOrgReferences,
+} from '@/lib/cache/revalidate-org'
 
 export async function deleteReferenceImpl(id: string) {
   const supabase = await createServerSupabaseClient()
@@ -24,7 +27,10 @@ export async function deleteReferenceImpl(id: string) {
 export async function restoreReferenceImpl(id: string) {
   const supabase = await createServerSupabaseClient()
 
-  const { error } = await supabase.from('references').update({ deleted_at: null }).eq('id', id)
+  const { error } = await supabase
+    .from('references')
+    .update({ deleted_at: null })
+    .eq('id', id)
 
   if (error) {
     throw new Error(error.message)
@@ -84,4 +90,3 @@ export async function emptyTrashImpl(): Promise<EmptyTrashResult> {
   revalidatePath(ROUTES.home)
   return { success: true, deleted }
 }
-

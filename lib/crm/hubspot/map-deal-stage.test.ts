@@ -26,7 +26,7 @@ describe('dealHasCrmSync', () => {
       dealHasCrmSync({
         crm_source: 'hubspot',
         crm_opportunity_id: '123',
-      })
+      }),
     ).toBe(true)
   })
 })

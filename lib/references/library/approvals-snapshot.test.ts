@@ -25,8 +25,8 @@ describe('computeApprovalStatusSnapshot', () => {
           customer_approval_status: 'pending',
           approval_reference_status_snapshot: 'internal_only',
           status: 'external',
-        })
-      )
+        }),
+      ),
     ).toBe('internal_only')
   })
 

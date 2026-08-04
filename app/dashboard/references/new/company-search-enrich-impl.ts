@@ -2,7 +2,10 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-import'
-import { fetchBrandfetchCompany, pickBestLogoUrlFromBrandfetchJson } from '@/lib/accounts/brandfetch-accounts-refresh'
+import {
+  fetchBrandfetchCompany,
+  pickBestLogoUrlFromBrandfetchJson,
+} from '@/lib/accounts/brandfetch-accounts-refresh'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import {
@@ -18,21 +21,36 @@ import type {
 } from './reference-new-action-types'
 
 const COUNTRY_MAP: Record<string, string> = {
-  germany: 'Deutschland', deutschland: 'Deutschland',
-  austria: 'Österreich', österreich: 'Österreich',
-  switzerland: 'Schweiz', schweiz: 'Schweiz',
-  france: 'Frankreich', frankreich: 'Frankreich',
-  'united kingdom': 'Großbritannien', uk: 'Großbritannien', großbritannien: 'Großbritannien',
-  'united states': 'USA', usa: 'USA', us: 'USA',
+  germany: 'Deutschland',
+  deutschland: 'Deutschland',
+  austria: 'Österreich',
+  österreich: 'Österreich',
+  switzerland: 'Schweiz',
+  schweiz: 'Schweiz',
+  france: 'Frankreich',
+  frankreich: 'Frankreich',
+  'united kingdom': 'Großbritannien',
+  uk: 'Großbritannien',
+  großbritannien: 'Großbritannien',
+  'united states': 'USA',
+  usa: 'USA',
+  us: 'USA',
 }
 const COUNTRY_CODE_MAP: Record<string, string> = {
-  DE: 'Deutschland', AT: 'Österreich', CH: 'Schweiz', FR: 'Frankreich',
-  GB: 'Großbritannien', US: 'USA',
+  DE: 'Deutschland',
+  AT: 'Österreich',
+  CH: 'Schweiz',
+  FR: 'Frankreich',
+  GB: 'Großbritannien',
+  US: 'USA',
 }
 
 export function normalizeDomain(input: string): string {
   const t = input.trim().toLowerCase()
-  const withoutProtocol = t.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  const withoutProtocol = t
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
   return withoutProtocol || t
 }
 
@@ -51,7 +69,10 @@ export function inputToDomain(input: string): string | null {
   return `${slug}.com`
 }
 
-function mapBrandfetchCountry(countryName: string | undefined, countryCode?: string | undefined): string | null {
+function mapBrandfetchCountry(
+  countryName: string | undefined,
+  countryCode?: string | undefined,
+): string | null {
   if (countryCode) {
     const mapped = COUNTRY_CODE_MAP[countryCode.trim().toUpperCase()]
     if (mapped) return mapped
@@ -65,13 +86,22 @@ function mapBrandfetchCountry(countryName: string | undefined, countryCode?: str
 export function looksLikeDomain(s: string): boolean {
   const t = s.trim().toLowerCase()
   if (!t || t.includes(' ')) return false
-  return /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
+  return (
+    /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
+  )
 }
 
 /** Konvertiert Domain zu lesbarem Namen: TLD entfernen, großschreiben (z. B. "biontechse.com" → "Biontechse"). */
 export function domainToDisplayName(domain: string): string {
-  const withoutProtocol = domain.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] ?? domain
-  const withoutTld = withoutProtocol.replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '').trim()
+  const withoutProtocol =
+    domain
+      .trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .split('/')[0] ?? domain
+  const withoutTld = withoutProtocol
+    .replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '')
+    .trim()
   const name = withoutTld || withoutProtocol
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
 }
@@ -83,7 +113,7 @@ export function domainToDisplayName(domain: string): string {
 type BrandfetchSuggestionsMeta = { rateLimited?: boolean; notConfigured?: boolean }
 
 async function brandfetchSuggestionsForQuery(
-  query: string
+  query: string,
 ): Promise<{ suggestions: CompanySearchSuggestion[]; meta: BrandfetchSuggestionsMeta }> {
   const q = query.trim()
   if (q.length < 1) return { suggestions: [], meta: {} }
@@ -104,7 +134,7 @@ async function brandfetchSuggestionsForQuery(
     try {
       const res = await fetch(
         `https://api.brandfetch.io/v2/search/${encodeURIComponent(q)}?c=${encodeURIComponent(clientId)}`,
-        { cache: 'no-store' }
+        { cache: 'no-store' },
       )
       if (!res.ok) return
       const arr = (await res.json()) as Array<{
@@ -133,7 +163,8 @@ async function brandfetchSuggestionsForQuery(
 
   const pushFromResolvedDomain = async (): Promise<void> => {
     if (out.length >= 8) return
-    const direct = inputToDomain(q) ?? (normalizeDomain(q).includes('.') ? normalizeDomain(q) : null)
+    const direct =
+      inputToDomain(q) ?? (normalizeDomain(q).includes('.') ? normalizeDomain(q) : null)
     const domain =
       direct && direct.includes('.') ? direct : await resolveDomainForCompanyName(q)
     if (!domain || !domain.includes('.') || seen.has(domain)) return
@@ -146,7 +177,9 @@ async function brandfetchSuggestionsForQuery(
 
     seen.add(domain)
     const displayName = fetched.data.companyName?.trim() || q
-    const duplicateName = out.some((s) => s.name.trim().toLowerCase() === displayName.toLowerCase())
+    const duplicateName = out.some(
+      (s) => s.name.trim().toLowerCase() === displayName.toLowerCase(),
+    )
     if (!duplicateName) {
       out.push({
         id: `brandfetch:${domain}`,
@@ -164,7 +197,9 @@ async function brandfetchSuggestionsForQuery(
 }
 
 /** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation + Brandfetch). */
-export async function searchCompanySuggestionsImpl(input: string): Promise<CompanySearchResult> {
+export async function searchCompanySuggestionsImpl(
+  input: string,
+): Promise<CompanySearchResult> {
   const query = input.trim()
   if (!query) {
     return { success: true, suggestions: [] }
@@ -236,12 +271,20 @@ export async function searchCompanySuggestionsImpl(input: string): Promise<Compa
   return { success: true, suggestions, hint }
 }
 
-export async function enrichAndSaveCompanyImpl(domain: string): Promise<EnrichCompanyResult> {
+export async function enrichAndSaveCompanyImpl(
+  domain: string,
+): Promise<EnrichCompanyResult> {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
   const organizationId = profile?.organization_id ?? null
   if (!organizationId) {
     return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
@@ -273,7 +316,16 @@ export async function enrichAndSaveCompanyImpl(domain: string): Promise<EnrichCo
   const fetched = await fetchBrandfetchData(normalizedDomain)
   if (!fetched.success) return fetched
 
-  const { company_name: companyName, website_url: websiteUrl, industry, headquarters, country, employee_count: employeeCount, logo_url: logoUrl, description } = fetched
+  const {
+    company_name: companyName,
+    website_url: websiteUrl,
+    industry,
+    headquarters,
+    country,
+    employee_count: employeeCount,
+    logo_url: logoUrl,
+    description,
+  } = fetched
 
   const { data: existingByName } = await supabase
     .from('companies')
@@ -307,7 +359,10 @@ export async function enrichAndSaveCompanyImpl(domain: string): Promise<EnrichCo
   }
 
   if (existing?.id) {
-    const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
+    const { error } = await supabase
+      .from('companies')
+      .update(payload)
+      .eq('id', existing.id)
     if (error) return { success: false, error: error.message }
     if (websiteUrl) {
       void discoverAndSaveCompanyNewsrooms(supabase, existing.id, {
@@ -329,9 +384,14 @@ export async function enrichAndSaveCompanyImpl(domain: string): Promise<EnrichCo
     }
   }
 
-  const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
+  const { data: inserted, error } = await supabase
+    .from('companies')
+    .insert(payload)
+    .select('id')
+    .single()
   if (error) return { success: false, error: error.message }
-  if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
+  if (!inserted?.id)
+    return { success: false, error: 'Firma konnte nicht angelegt werden.' }
   scheduleCompanyNewsroomDiscovery(supabase, inserted.id, websiteUrl || null)
   revalidatePath(ROUTES.references.new)
   return {
@@ -347,23 +407,34 @@ export async function enrichAndSaveCompanyImpl(domain: string): Promise<EnrichCo
   }
 }
 
-async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnrichmentResult> {
+async function fetchBrandfetchData(
+  normalizedDomain: string,
+): Promise<FetchEnrichmentResult> {
   const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) return { success: false, error: 'Brandfetch API ist nicht konfiguriert (BRANDFETCH_API_KEY).' }
+  if (!apiKey)
+    return {
+      success: false,
+      error: 'Brandfetch API ist nicht konfiguriert (BRANDFETCH_API_KEY).',
+    }
 
   let res: Response
   try {
-    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(normalizedDomain)}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: 0 },
-    })
+    res = await fetch(
+      `https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(normalizedDomain)}`,
+      {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        next: { revalidate: 0 },
+      },
+    )
   } catch {
     return { success: false, error: 'Brandfetch-Anfrage fehlgeschlagen.' }
   }
 
   if (!res.ok) {
-    if (res.status === 404) return { success: false, error: 'Unternehmen für diese Domain nicht gefunden.' }
-    if (res.status === 401) return { success: false, error: 'Brandfetch API-Schlüssel ungültig.' }
+    if (res.status === 404)
+      return { success: false, error: 'Unternehmen für diese Domain nicht gefunden.' }
+    if (res.status === 401)
+      return { success: false, error: 'Brandfetch API-Schlüssel ungültig.' }
     if (res.status === 429) return { success: false, error: 'Brandfetch-Limit erreicht.' }
     return { success: false, error: `Brandfetch-Fehler: ${res.status}` }
   }
@@ -376,7 +447,12 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
     company?: {
       employees?: number | null
       industries?: { name?: string }[]
-      location?: { city?: string; country?: string; countryCode?: string; region?: string }
+      location?: {
+        city?: string
+        country?: string
+        countryCode?: string
+        region?: string
+      }
     }
     logos?: {
       theme?: string | null
@@ -390,16 +466,24 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
     return { success: false, error: 'Ungültige Brandfetch-Antwort.' }
   }
 
-  const rawName = (data.name ?? data.brand ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
+  const rawName =
+    (data.name ?? data.brand ?? data.domain ?? normalizedDomain).toString().trim() ||
+    normalizedDomain
   let companyName: string
   if (looksLikeDomain(rawName)) {
     companyName = domainToDisplayName(rawName)
   } else {
     companyName = rawName
   }
-  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '').replace(/^www\./, '')}` : `https://${normalizedDomain}`
+  const websiteUrl = data.domain
+    ? `https://${data.domain
+        .toString()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')}`
+    : `https://${normalizedDomain}`
   const description = data.description?.toString().trim() || null
-  const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
+  const employeeCount =
+    typeof data.company?.employees === 'number' ? data.company.employees : null
   const industry = mapBrandfetchIndustriesArrayToGermanCategory(data.company?.industries)
   const loc = data.company?.location
   const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
@@ -428,7 +512,9 @@ async function resolveDomainForEnrichmentInput(input: string): Promise<string | 
   return resolveDomainForCompanyName(trimmed)
 }
 
-export async function fetchCompanyEnrichmentImpl(input: string): Promise<FetchEnrichmentResult> {
+export async function fetchCompanyEnrichmentImpl(
+  input: string,
+): Promise<FetchEnrichmentResult> {
   const domain = await resolveDomainForEnrichmentInput(input)
   if (!domain) {
     return {

@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { formatNumberDe } from '@/lib/format'
@@ -36,7 +40,7 @@ export function DealRfpLotsSection({ lots }: { lots: TenderLot[] }) {
                 size={16}
                 className={cn(
                   'mt-0.5 shrink-0 text-muted-foreground transition-transform',
-                  expanded && 'rotate-90'
+                  expanded && 'rotate-90',
                 )}
               />
               <CardTitle className="text-base">{title}</CardTitle>
@@ -69,7 +73,9 @@ export function DealRfpLotsSection({ lots }: { lots: TenderLot[] }) {
                     ) : null}
                   </div>
                   {lot.description ? (
-                    <p className="text-sm leading-relaxed text-muted-foreground">{lot.description}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {lot.description}
+                    </p>
                   ) : null}
                 </div>
               )

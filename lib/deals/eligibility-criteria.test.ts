@@ -41,7 +41,10 @@ const DEMO_FIXTURE_JSON = {
   ],
 }
 
-function criterion(partial: Partial<EligibilityCriterion> & Pick<EligibilityCriterion, 'dimension' | 'label' | 'value'>): EligibilityCriterion {
+function criterion(
+  partial: Partial<EligibilityCriterion> &
+    Pick<EligibilityCriterion, 'dimension' | 'label' | 'value'>,
+): EligibilityCriterion {
   return {
     id: partial.id ?? 'test',
     operator: partial.operator ?? 'gte',
@@ -69,7 +72,9 @@ describe('parseEligibilityCriteriaResponse', () => {
 
   it('defaults confidence to medium when missing', () => {
     const criteria = parseEligibilityCriteriaResponse({
-      criteria: [{ dimension: 'employee_count', label: 'MA', operator: 'gte', value: 10 }],
+      criteria: [
+        { dimension: 'employee_count', label: 'MA', operator: 'gte', value: 10 },
+      ],
     })
     expect(criteria[0]?.confidence).toBe('medium')
   })
@@ -119,7 +124,7 @@ describe('compareEligibilityCriteria', () => {
 
   it('low-confidence mandatory not_met does not trigger K.O.', () => {
     const lowConf = demoCriteria.map((c) =>
-      c.id === 'min-employees' ? { ...c, confidence: 'low' as const } : c
+      c.id === 'min-employees' ? { ...c, confidence: 'low' as const } : c,
     )
     const assessment = compareEligibilityCriteria(lowConf, {
       profile: { employeeCount: 100, annualRevenueEur: 80_000_000 },

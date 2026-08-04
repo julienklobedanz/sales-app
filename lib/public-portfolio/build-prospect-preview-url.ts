@@ -1,5 +1,8 @@
 /** Kundenlink wie von Sales geteilt — ohne Manage/Sperr-Parameter. */
-export function buildPublicProspectPreviewUrl(slug: string, recipientToken?: string | null): string {
+export function buildPublicProspectPreviewUrl(
+  slug: string,
+  recipientToken?: string | null,
+): string {
   const params = new URLSearchParams()
   const r = recipientToken?.trim()
   if (r) params.set('r', r)

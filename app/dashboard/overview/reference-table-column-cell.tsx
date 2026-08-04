@@ -1,47 +1,50 @@
-"use client"
+'use client'
 
-import type * as React from "react"
+import type * as React from 'react'
 
-import { TableDataCell } from "@/components/table/table-row-align"
-import { ReferenceStatusBadge } from "@/components/reference-status-badge"
-import { TableAccountLinkContent } from "@/components/table/table-account-link-content"
-import { TableTitleHoverContent } from "@/components/table/table-title-hover-content"
+import { TableDataCell } from '@/components/table/table-row-align'
+import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
+import { TableTitleHoverContent } from '@/components/table/table-title-hover-content'
 import {
   formatReferenceDate,
   formatReferenceVolumeCompact,
   normalizeOrgDateDisplayFormat,
-} from "@/lib/format"
-import { formatIndustryDisplay } from "@/lib/constants/industries"
-import { ROUTES } from "@/lib/routes"
+} from '@/lib/format'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
+import { ROUTES } from '@/lib/routes'
 
-import type { ReferenceRow } from "../actions"
+import type { ReferenceRow } from '../actions'
 import {
   type ReferenceColumnKey,
   type ReferenceTableCellRenderContext,
-} from "./reference-table-column-types"
-import { columnWidthStyle } from "./reference-table-column-shared"
+} from './reference-table-column-types'
+import { columnWidthStyle } from './reference-table-column-shared'
 
 export function renderReferenceColumnCell(
   column: ReferenceColumnKey,
   ref: ReferenceRow,
-  ctx: ReferenceTableCellRenderContext
+  ctx: ReferenceTableCellRenderContext,
 ): React.ReactNode {
-  const { PROJECT_STATUS_LABELS, companyLogoById, companyIndustryById, columnWidths } = ctx
+  const { PROJECT_STATUS_LABELS, companyLogoById, companyIndustryById, columnWidths } =
+    ctx
   const dateFmt = normalizeOrgDateDisplayFormat(ctx.orgDateDisplayFormat)
   const widthStyle = columnWidthStyle(columnWidths[column])
   switch (column) {
-    case "company":
+    case 'company':
       return (
         <TableDataCell className="min-w-0 overflow-hidden" style={widthStyle}>
           <TableAccountLinkContent
             companyId={ref.company_id}
             companyName={ref.company_name}
-            companyLogoUrl={companyLogoById.get(ref.company_id) ?? ref.company_logo_url ?? null}
+            companyLogoUrl={
+              companyLogoById.get(ref.company_id) ?? ref.company_logo_url ?? null
+            }
           />
         </TableDataCell>
       )
-    case "title": {
-      const summaryText = String(ref.summary ?? "").trim()
+    case 'title': {
+      const summaryText = String(ref.summary ?? '').trim()
       return (
         <TableDataCell className="min-w-0" style={widthStyle}>
           <TableTitleHoverContent
@@ -54,21 +57,25 @@ export function renderReferenceColumnCell(
         </TableDataCell>
       )
     }
-    case "industry": {
+    case 'industry': {
       const industryRaw =
-        String(ref.industry ?? '').trim() ||
-        companyIndustryById.get(ref.company_id) ||
-        ''
+        String(ref.industry ?? '').trim() || companyIndustryById.get(ref.company_id) || ''
       const industryLabel = formatIndustryDisplay(industryRaw)
       return (
-        <TableDataCell className="min-w-0 overflow-hidden text-muted-foreground" style={widthStyle}>
-          <span className="block min-w-0 truncate leading-normal" title={industryLabel || undefined}>
+        <TableDataCell
+          className="min-w-0 overflow-hidden text-muted-foreground"
+          style={widthStyle}
+        >
+          <span
+            className="block min-w-0 truncate leading-normal"
+            title={industryLabel || undefined}
+          >
             {industryLabel}
           </span>
         </TableDataCell>
       )
     }
-    case "volume_eur":
+    case 'volume_eur':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm tabular-nums"
@@ -80,7 +87,7 @@ export function renderReferenceColumnCell(
           </span>
         </TableDataCell>
       )
-    case "status":
+    case 'status':
       return (
         <TableDataCell style={widthStyle}>
           <ReferenceStatusBadge
@@ -91,17 +98,17 @@ export function renderReferenceColumnCell(
           />
         </TableDataCell>
       )
-    case "project_status":
+    case 'project_status':
       return (
         <TableDataCell className="text-sm text-muted-foreground" style={widthStyle}>
           <span className="leading-none">
             {ref.project_status
-              ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
+              ? (PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status)
               : ''}
           </span>
         </TableDataCell>
       )
-    case "updated_at":
+    case 'updated_at':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
@@ -113,7 +120,7 @@ export function renderReferenceColumnCell(
           </span>
         </TableDataCell>
       )
-    case "tags":
+    case 'tags':
       return (
         <TableDataCell style={widthStyle}>
           {ref.tags ? (
@@ -135,13 +142,13 @@ export function renderReferenceColumnCell(
           ) : null}
         </TableDataCell>
       )
-    case "country":
+    case 'country':
       return (
         <TableDataCell className="text-muted-foreground" style={widthStyle}>
           <span className="leading-none">{ref.country ?? ''}</span>
         </TableDataCell>
       )
-    case "project_start":
+    case 'project_start':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
@@ -153,7 +160,7 @@ export function renderReferenceColumnCell(
           </span>
         </TableDataCell>
       )
-    case "project_end":
+    case 'project_end':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
@@ -165,7 +172,7 @@ export function renderReferenceColumnCell(
           </span>
         </TableDataCell>
       )
-    case "duration_months":
+    case 'duration_months':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
@@ -177,14 +184,16 @@ export function renderReferenceColumnCell(
           </span>
         </TableDataCell>
       )
-    case "created_at":
+    case 'created_at':
       return (
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
           style={widthStyle}
         >
-          <span className="leading-none">{formatReferenceDate(ref.created_at, dateFmt)}</span>
+          <span className="leading-none">
+            {formatReferenceDate(ref.created_at, dateFmt)}
+          </span>
         </TableDataCell>
       )
     default:

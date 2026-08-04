@@ -1,4 +1,8 @@
-import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
+import {
+  MASTER_INDUSTRIES,
+  getIndustryLabelDe,
+  resolveIndustryId,
+} from '@/lib/constants/industries'
 import { parseReferenceVolume } from '@/lib/format'
 import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
 import {
@@ -22,7 +26,7 @@ export function normalizeTagLabel(raw: string): string {
 export function buildReferenceFilterOptions(
   initialReferences: ReferenceRow[],
   _companyIndustryById: Map<string, string>,
-  normalizeTag: (raw: string) => string
+  normalizeTag: (raw: string) => string,
 ) {
   const countries = new Set<string>()
   const projectStatuses = new Set<string>()
@@ -53,7 +57,7 @@ export function buildReferenceFilterOptions(
 export function getReferenceSortValue(
   ref: ReferenceRow,
   key: (typeof COLUMN_KEYS)[number],
-  companyIndustryById: Map<string, string>
+  companyIndustryById: Map<string, string>,
 ): string | number {
   switch (key) {
     case 'status':
@@ -138,8 +142,7 @@ export function filterAndSortReferences({
     const q = search.trim().toLowerCase()
     list = list.filter(
       (r) =>
-        r.company_name.toLowerCase().includes(q) ||
-        r.title.toLowerCase().includes(q)
+        r.company_name.toLowerCase().includes(q) || r.title.toLowerCase().includes(q),
     )
   }
   if (statusFilter !== 'all') {
@@ -147,7 +150,7 @@ export function filterAndSortReferences({
       list = list.filter(referenceRowShowsApprovalPending)
     } else {
       list = list.filter(
-        (r) => r.status === statusFilter && !referenceRowShowsApprovalPending(r)
+        (r) => r.status === statusFilter && !referenceRowShowsApprovalPending(r),
       )
     }
   }

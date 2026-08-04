@@ -15,16 +15,19 @@ import {
 } from '@/lib/crm/hubspot/oauth-return'
 import { log } from '@/lib/observability/logger'
 
-function redirectWithStatus(status: 'success' | 'error', returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>) {
+function redirectWithStatus(
+  status: 'success' | 'error',
+  returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>,
+) {
   return NextResponse.redirect(
-    `${getAppOrigin()}${buildHubSpotOAuthCallbackPath(returnTo, status)}`
+    `${getAppOrigin()}${buildHubSpotOAuthCallbackPath(returnTo, status)}`,
   )
 }
 
 export async function GET(request: Request) {
   const cookieStore = await cookies()
   const returnTo = parseHubSpotOAuthReturnTo(
-    cookieStore.get(HUBSPOT_OAUTH_RETURN_COOKIE)?.value
+    cookieStore.get(HUBSPOT_OAUTH_RETURN_COOKIE)?.value,
   )
   cookieStore.set(HUBSPOT_OAUTH_RETURN_COOKIE, '', { path: '/', maxAge: 0 })
 
@@ -52,7 +55,11 @@ export async function GET(request: Request) {
 
     const tokens = await exchangeHubSpotAuthorizationCode(code)
     if (!tokens.success) {
-      log.error('token exchange failed', { action: 'hubspot.callback.tokenExchange' }, tokens.error)
+      log.error(
+        'token exchange failed',
+        { action: 'hubspot.callback.tokenExchange' },
+        tokens.error,
+      )
       return redirectWithStatus('error', returnTo)
     }
 

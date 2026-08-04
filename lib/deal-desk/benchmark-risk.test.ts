@@ -22,7 +22,7 @@ describe('benchmark risk score', () => {
         { id: 'incumbent_spec_sheet' },
         { id: 'aggressive_deadline' },
         { id: 'extreme_price_focus' },
-      ])
+      ]),
     ).toBe(100)
   })
 
@@ -31,7 +31,7 @@ describe('benchmark risk score', () => {
       computeBenchmarkRiskScore([
         { id: 'budgetary_quote_only' },
         { id: 'budgetary_quote_only' },
-      ])
+      ]),
     ).toBe(10)
   })
 

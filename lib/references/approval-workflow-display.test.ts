@@ -15,9 +15,11 @@ describe('approval-workflow-display', () => {
 
   it('formats delegated recipient', () => {
     expect(formatApprovalDelegatedRecipientLine('Maria', 'maria@example.com')).toBe(
-      'Maria (maria@example.com)'
+      'Maria (maria@example.com)',
     )
-    expect(formatApprovalDelegatedRecipientLine(null, 'maria@example.com')).toBe('maria@example.com')
+    expect(formatApprovalDelegatedRecipientLine(null, 'maria@example.com')).toBe(
+      'maria@example.com',
+    )
   })
 
   it('prefers customer-facing coordinator name', () => {
@@ -26,7 +28,7 @@ describe('approval-workflow-display', () => {
         customerFacingName: 'Maria AM',
         coordinatorName: 'Alex',
         coordinatorEmail: 'alex@example.com',
-      })
+      }),
     ).toBe('Maria AM')
   })
 
@@ -34,7 +36,7 @@ describe('approval-workflow-display', () => {
     expect(
       resolveApprovalCoordinatorDisplay({
         coordinatorEmail: 'julien.klobedanz@gmail.com',
-      })
+      }),
     ).toBe('Julien Klobedanz')
   })
 
@@ -43,13 +45,13 @@ describe('approval-workflow-display', () => {
       resolveCustomerApprovalIntro({
         customerFacingName: 'Maria AM',
         orgName: 'RefStack',
-      })
+      }),
     ).toEqual({ mode: 'person', personName: 'Maria AM', orgName: 'RefStack' })
 
     expect(
       resolveCustomerApprovalIntro({
         orgName: 'RefStack',
-      })
+      }),
     ).toEqual({ mode: 'org', personName: null, orgName: 'RefStack' })
   })
 })

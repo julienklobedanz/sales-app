@@ -70,7 +70,7 @@ export function ComplianceDocumentsTable({
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [columnOrder, setColumnOrder] = useState<ComplianceColumnKey[]>(() =>
-    loadComplianceColumnOrderFromStorage()
+    loadComplianceColumnOrderFromStorage(),
   )
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<ComplianceColumnKey | null>(null)
@@ -95,11 +95,14 @@ export function ComplianceDocumentsTable({
   useEffect(() => {
     const loaded = loadComplianceColumnOrderFromStorage()
     setColumnOrder(loaded)
-    if (typeof window !== 'undefined' && loaded.length !== COMPLIANCE_COLUMN_KEYS.length) {
+    if (
+      typeof window !== 'undefined' &&
+      loaded.length !== COMPLIANCE_COLUMN_KEYS.length
+    ) {
       try {
         localStorage.setItem(
           COMPLIANCE_COLUMN_ORDER_STORAGE_KEY,
-          JSON.stringify([...COMPLIANCE_COLUMN_KEYS])
+          JSON.stringify([...COMPLIANCE_COLUMN_KEYS]),
         )
       } catch {
         /* ignore */
@@ -110,7 +113,10 @@ export function ComplianceDocumentsTable({
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      localStorage.setItem(COMPLIANCE_COLUMN_ORDER_STORAGE_KEY, JSON.stringify(columnOrder))
+      localStorage.setItem(
+        COMPLIANCE_COLUMN_ORDER_STORAGE_KEY,
+        JSON.stringify(columnOrder),
+      )
     } catch {
       /* ignore */
     }
@@ -162,20 +168,20 @@ export function ComplianceDocumentsTable({
 
   const selectedDocs = useMemo(
     () => documents.filter((doc) => selectedIds.has(doc.id)),
-    [documents, selectedIds]
+    [documents, selectedIds],
   )
 
   const selectedFilteredCount = useMemo(
     () => filtered.filter((doc) => selectedIds.has(doc.id)).length,
-    [filtered, selectedIds]
+    [filtered, selectedIds],
   )
 
   const hiddenExpiredCount = useMemo(
     () =>
       groupComplianceDocumentsForTable(documents).filter((doc) =>
-        isComplianceDocumentExpired(doc.valid_until)
+        isComplianceDocumentExpired(doc.valid_until),
       ).length,
-    [documents]
+    [documents],
   )
 
   const allFilteredSelected =
@@ -236,7 +242,7 @@ export function ComplianceDocumentsTable({
   }
 
   async function resolveAccessUrls(
-    doc: ComplianceDocumentRow
+    doc: ComplianceDocumentRow,
   ): Promise<ComplianceDocumentAccessUrls | null> {
     const cached = urlCacheRef.current.get(doc.id)
     if (cached) return cached
@@ -313,7 +319,7 @@ export function ComplianceDocumentsTable({
       return
     }
     toast.success(
-      `${opened} Zertifikat${opened !== 1 ? 'e' : ''} werden heruntergeladen.`
+      `${opened} Zertifikat${opened !== 1 ? 'e' : ''} werden heruntergeladen.`,
     )
   }
 
@@ -386,8 +392,9 @@ export function ComplianceDocumentsTable({
       <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
         {!showExpired && hiddenExpiredCount > 0 ? (
           <p className="border-b border-border/70 bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-            {hiddenExpiredCount} abgelaufene Zertifikat{hiddenExpiredCount !== 1 ? 'e' : ''}{' '}
-            ausgeblendet — Auge-Symbol in der Toolbar zum Anzeigen.
+            {hiddenExpiredCount} abgelaufene Zertifikat
+            {hiddenExpiredCount !== 1 ? 'e' : ''} ausgeblendet — Auge-Symbol in der
+            Toolbar zum Anzeigen.
           </p>
         ) : null}
         <Table className="min-w-[800px] w-full">
@@ -450,7 +457,7 @@ export function ComplianceDocumentsTable({
                     className={cn(
                       expired ? 'bg-muted/30 opacity-80' : 'group hover:bg-accent/35',
                       selectedIds.has(doc.id) && 'bg-accent/25',
-                      'cursor-pointer'
+                      'cursor-pointer',
                     )}
                     onClick={(event) => handleRowClick(event, doc)}
                   >

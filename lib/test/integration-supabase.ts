@@ -30,7 +30,7 @@ export function createIntegrationServiceClient(): SupabaseClient<Database> {
   const config = getIntegrationSupabaseConfig()
   if (!config) {
     throw new Error(
-      'Integration Supabase nicht konfiguriert. Starte `supabase start` und setze SUPABASE_TEST_* oder nutze `supabase status -o env`.'
+      'Integration Supabase nicht konfiguriert. Starte `supabase start` und setze SUPABASE_TEST_* oder nutze `supabase status -o env`.',
     )
   }
   return createClient<Database>(config.url, config.serviceRoleKey, {
@@ -50,12 +50,14 @@ export function createIntegrationAnonClient(): SupabaseClient<Database> {
 
 export async function signInIntegrationUser(
   email: string,
-  password: string
+  password: string,
 ): Promise<SupabaseClient<Database>> {
   const client = createIntegrationAnonClient()
   const { data, error } = await client.auth.signInWithPassword({ email, password })
   if (error || !data.session) {
-    throw new Error(`Integration login fehlgeschlagen (${email}): ${error?.message ?? 'no session'}`)
+    throw new Error(
+      `Integration login fehlgeschlagen (${email}): ${error?.message ?? 'no session'}`,
+    )
   }
   return client
 }

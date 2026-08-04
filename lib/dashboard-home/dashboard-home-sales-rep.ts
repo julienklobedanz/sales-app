@@ -2,7 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { ROUTES } from '@/lib/routes'
-import { ACTIVE_DEAL_STATUSES, type RecentShareRow, type SalesRepDashboardModel, type SalesRepDealCard } from '@/lib/dashboard-home/dashboard-home-types'
+import {
+  ACTIVE_DEAL_STATUSES,
+  type RecentShareRow,
+  type SalesRepDashboardModel,
+  type SalesRepDealCard,
+} from '@/lib/dashboard-home/dashboard-home-types'
 import {
   countDueMarketSnoozes,
   dashboardFirstName,
@@ -13,16 +18,14 @@ export async function loadSalesRepDashboardData(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  orgId: string | undefined
+  orgId: string | undefined,
 ): Promise<SalesRepDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
 
   const allDeals = await getDeals()
   const activeDeals: SalesRepDealCard[] = allDeals
     .filter(
-      (d) =>
-        d.sales_manager_id === userId &&
-        ACTIVE_DEAL_STATUSES.includes(d.status)
+      (d) => d.sales_manager_id === userId && ACTIVE_DEAL_STATUSES.includes(d.status),
     )
     .map((d: DealRow) => ({
       id: d.id,
@@ -52,53 +55,56 @@ export async function loadSalesRepDashboardData(
     const since7 = new Date()
     since7.setDate(since7.getDate() - 7)
 
-    const [signalReadRows, execRows, newsRows, intentRows, matchCountRes, shareCountRes] = await Promise.all([
-      supabase
-        .from('notification_inbox_reads')
-        .select('notification_key,read_at')
-        .eq('user_id', userId)
-        .or(
-          'notification_key.like.market_snooze_until:%,notification_key.like.market_priority:today:%'
-        )
-        .limit(1200),
-      supabase
-        .from('market_signal_executive_events')
-        .select('id,person_name,change_summary,detected_at,company_id,companies(name)')
-        .order('detected_at', { ascending: false })
-        .limit(120),
-      supabase
-        .from('market_signal_account_news')
-        .select('id,body,published_on,company_id,companies(name)')
-        .order('published_on', { ascending: false })
-        .limit(120),
-      supabase
-        .from('evidence_events')
-        .select('id,event_type,created_at,payload,reference_id')
-        .eq('organization_id', orgId)
-        .in('event_type', ['share_link_viewed', 'reference_viewed', 'reference_shared'])
-        .order('created_at', { ascending: false })
-        .limit(50),
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('created_by', userId)
-        .eq('event_type', 'reference_matched')
-        .gte('created_at', since7.toISOString()),
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('created_by', userId)
-        .in('event_type', ['reference_shared', 'share_link_viewed'])
-        .gte('created_at', since7.toISOString()),
-    ])
+    const [signalReadRows, execRows, newsRows, intentRows, matchCountRes, shareCountRes] =
+      await Promise.all([
+        supabase
+          .from('notification_inbox_reads')
+          .select('notification_key,read_at')
+          .eq('user_id', userId)
+          .or(
+            'notification_key.like.market_snooze_until:%,notification_key.like.market_priority:today:%',
+          )
+          .limit(1200),
+        supabase
+          .from('market_signal_executive_events')
+          .select('id,person_name,change_summary,detected_at,company_id,companies(name)')
+          .order('detected_at', { ascending: false })
+          .limit(120),
+        supabase
+          .from('market_signal_account_news')
+          .select('id,body,published_on,company_id,companies(name)')
+          .order('published_on', { ascending: false })
+          .limit(120),
+        supabase
+          .from('evidence_events')
+          .select('id,event_type,created_at,payload,reference_id')
+          .eq('organization_id', orgId)
+          .in('event_type', ['share_link_viewed', 'reference_viewed', 'reference_shared'])
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('created_by', userId)
+          .eq('event_type', 'reference_matched')
+          .gte('created_at', since7.toISOString()),
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('created_by', userId)
+          .in('event_type', ['reference_shared', 'share_link_viewed'])
+          .gte('created_at', since7.toISOString()),
+      ])
 
     matches7d = matchCountRes.count ?? 0
     shares7d = shareCountRes.count ?? 0
 
     const snoozeKeys = (signalReadRows.data ?? [])
-      .map((row) => String((row as { notification_key?: string | null }).notification_key ?? ''))
+      .map((row) =>
+        String((row as { notification_key?: string | null }).notification_key ?? ''),
+      )
       .filter((k) => k.startsWith('market_snooze_until:'))
     snoozedSignalsCount = snoozeKeys.length
     const nowMs = Date.now()
@@ -111,7 +117,9 @@ export async function loadSalesRepDashboardData(
       payload?: { slug?: string | null } | null
       reference_id?: string | null
     }>
-    const intentRefIds = Array.from(new Set(intentEvents.map((e) => e.reference_id).filter(Boolean) as string[]))
+    const intentRefIds = Array.from(
+      new Set(intentEvents.map((e) => e.reference_id).filter(Boolean) as string[]),
+    )
     const { data: intentRefRows } = intentRefIds.length
       ? await supabase
           .from('references')
@@ -131,7 +139,7 @@ export async function loadSalesRepDashboardData(
             companyId: String((row as { company_id?: string | null }).company_id ?? ''),
           },
         ]
-      })
+      }),
     )
     liveIntent = intentEvents.slice(0, 6).map((e) => {
       const ref = e.reference_id ? intentRefById.get(e.reference_id) : null
@@ -150,7 +158,10 @@ export async function loadSalesRepDashboardData(
       }
     })
 
-    const signalCountByCompany = new Map<string, { companyName: string; count: number; latestSummary: string }>()
+    const signalCountByCompany = new Map<
+      string,
+      { companyName: string; count: number; latestSummary: string }
+    >()
     for (const row of (execRows.data ?? []) as Array<Record<string, unknown>>) {
       const companyId = String(row.company_id ?? '')
       if (!companyId) continue
@@ -195,11 +206,20 @@ export async function loadSalesRepDashboardData(
             .select('company_id, company_goals, next_steps')
             .in('company_id', strategicCompanyIds)
             .limit(2000)
-        : Promise.resolve({ data: [] as Array<{ company_id: string; company_goals: string | null; next_steps: string | null }> }),
+        : Promise.resolve({
+            data: [] as Array<{
+              company_id: string
+              company_goals: string | null
+              next_steps: string | null
+            }>,
+          }),
     ])
 
     const rolesByCompany = new Map<string, Set<string>>()
-    for (const row of (stakeholderRows.data ?? []) as Array<{ company_id?: string | null; role?: string | null }>) {
+    for (const row of (stakeholderRows.data ?? []) as Array<{
+      company_id?: string | null
+      role?: string | null
+    }>) {
       const companyId = String(row.company_id ?? '')
       if (!companyId) continue
       const set = rolesByCompany.get(companyId) ?? new Set<string>()
@@ -210,7 +230,7 @@ export async function loadSalesRepDashboardData(
       (strategyRows.data ?? []).map((row) => [
         String((row as { company_id?: string | null }).company_id ?? ''),
         row as { company_goals?: string | null; next_steps?: string | null },
-      ])
+      ]),
     )
     strategicAccounts = strategicCompanyIds
       .map((companyId) => {
@@ -221,7 +241,11 @@ export async function loadSalesRepDashboardData(
         const hasChampion = roles.has('champion')
         const hasEconomic = roles.has('economic_buyer')
         const hasGoals = Boolean(String(strategy?.company_goals ?? '').trim())
-        const { meddpiccGap, actionLabel } = meddpiccAccountAction({ hasChampion, hasEconomic, hasGoals })
+        const { meddpiccGap, actionLabel } = meddpiccAccountAction({
+          hasChampion,
+          hasEconomic,
+          hasGoals,
+        })
         return {
           companyId,
           companyName: signal.companyName,
@@ -265,8 +289,8 @@ export async function loadSalesRepDashboardData(
         (sharedRows ?? [])
           .flatMap((row) => (Array.isArray(row.reference_ids) ? row.reference_ids : []))
           .map((id) => String(id))
-          .filter(Boolean)
-      )
+          .filter(Boolean),
+      ),
     )
 
     const { data: refRows } = referenceIds.length
@@ -282,7 +306,10 @@ export async function loadSalesRepDashboardData(
           }>,
         }
 
-    const refMetaById = new Map<string, { title: string | null; accountName: string | null }>()
+    const refMetaById = new Map<
+      string,
+      { title: string | null; accountName: string | null }
+    >()
     for (const row of (refRows ?? []) as Array<{
       id: string
       title: string | null
@@ -298,8 +325,13 @@ export async function loadSalesRepDashboardData(
     }
 
     const shareBySlug = new Map<string, { firstReferenceId: string | null }>()
-    for (const row of (sharedRows ?? []) as Array<{ slug: string; reference_ids: string[] | null }>) {
-      const ids = Array.isArray(row.reference_ids) ? row.reference_ids.map((id) => String(id)) : []
+    for (const row of (sharedRows ?? []) as Array<{
+      slug: string
+      reference_ids: string[] | null
+    }>) {
+      const ids = Array.isArray(row.reference_ids)
+        ? row.reference_ids.map((id) => String(id))
+        : []
       shareBySlug.set(String(row.slug), { firstReferenceId: ids[0] ?? null })
     }
 
@@ -324,7 +356,7 @@ export async function loadSalesRepDashboardData(
   }
 
   const signalByCompany = new Map(
-    strategicAccounts.map((s) => [s.companyId, s.signalCount24h] as const)
+    strategicAccounts.map((s) => [s.companyId, s.signalCount24h] as const),
   )
   const dealsWithSignals = activeDeals.map((deal) => ({
     ...deal,

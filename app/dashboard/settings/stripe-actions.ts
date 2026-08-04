@@ -5,13 +5,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { getAppOrigin } from '@/lib/env/app-origin'
 
-type CheckoutResult =
-  | { success: true; url: string }
-  | { success: false; error: string }
+type CheckoutResult = { success: true; url: string } | { success: false; error: string }
 
-type PortalResult =
-  | { success: true; url: string }
-  | { success: false; error: string }
+type PortalResult = { success: true; url: string } | { success: false; error: string }
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_PRICE_ID_PRO = process.env.STRIPE_PRICE_ID_PRO
@@ -23,8 +19,10 @@ function stripeReturnUrl(): string {
 }
 
 function stripeNotConfigured(): string | null {
-  if (!STRIPE_SECRET_KEY) return 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.'
-  if (!STRIPE_PRICE_ID_PRO) return 'Stripe Preis-ID (STRIPE_PRICE_ID_PRO) ist nicht gesetzt.'
+  if (!STRIPE_SECRET_KEY)
+    return 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.'
+  if (!STRIPE_PRICE_ID_PRO)
+    return 'Stripe Preis-ID (STRIPE_PRICE_ID_PRO) ist nicht gesetzt.'
   return null
 }
 
@@ -82,7 +80,9 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
     if (!response.ok || !json.url) {
       return {
         success: false,
-        error: json.error?.message || `Stripe-Checkout konnte nicht erstellt werden (${response.status}).`,
+        error:
+          json.error?.message ||
+          `Stripe-Checkout konnte nicht erstellt werden (${response.status}).`,
       }
     }
 
@@ -118,11 +118,17 @@ export async function createPortalSession(): Promise<PortalResult> {
     .single()
 
   if (!org?.stripe_customer_id) {
-    return { success: false, error: 'Für diesen Arbeitsbereich ist noch kein Stripe-Kunde hinterlegt.' }
+    return {
+      success: false,
+      error: 'Für diesen Arbeitsbereich ist noch kein Stripe-Kunde hinterlegt.',
+    }
   }
 
   if (!STRIPE_SECRET_KEY) {
-    return { success: false, error: 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.' }
+    return {
+      success: false,
+      error: 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.',
+    }
   }
 
   try {
@@ -144,7 +150,9 @@ export async function createPortalSession(): Promise<PortalResult> {
     if (!response.ok || !json.url) {
       return {
         success: false,
-        error: json.error?.message || `Stripe-Portal konnte nicht erstellt werden (${response.status}).`,
+        error:
+          json.error?.message ||
+          `Stripe-Portal konnte nicht erstellt werden (${response.status}).`,
       }
     }
 
@@ -154,4 +162,3 @@ export async function createPortalSession(): Promise<PortalResult> {
     return { success: false, error: message }
   }
 }
-

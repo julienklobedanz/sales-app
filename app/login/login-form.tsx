@@ -36,7 +36,9 @@ export function LoginForm({
 
   return (
     <form action={formActionWithState} className="space-y-6">
-      {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
+      {inviteToken ? (
+        <input type="hidden" name="invite_token" value={inviteToken} />
+      ) : null}
       <div className="space-y-6">
         <div className="space-y-3">
           <Label htmlFor="email">E-Mail</Label>
@@ -83,7 +85,11 @@ export function LoginForm({
             {state.error}
           </div>
         )}
-        <Button type="submit" className="h-12 w-full rounded-lg text-base" disabled={isPending}>
+        <Button
+          type="submit"
+          className="h-12 w-full rounded-lg text-base"
+          disabled={isPending}
+        >
           {isPending ? 'Wird angemeldet …' : 'Anmelden'}
         </Button>
       </div>

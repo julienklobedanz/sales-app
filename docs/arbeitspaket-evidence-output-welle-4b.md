@@ -37,10 +37,11 @@
 
 **Problem:** `[verifiziert]` Nicht alle Mails nutzen `refstack-email-layout`: u. a. **Registrierungs-Mail** (`app/register/actions.ts` rohes `html:`, Absender `onboarding@resend.dev`). Volumen-**Filter** fehlt weiter (Spalte/Sortierung vorhanden, aber kein Filter; auf `/dashboard/evidence` ganz ohne).
 **Soll:**
+
 1. **Alle** `resend.emails.send`-Aufrufe auditieren und auf `refstack-email-layout` umstellen (Registrierung sicher; weitere Kandidaten: `deals/actions.ts`, `market-signals/actions.ts`-Digest, `evidence/[id]/actions.ts` prüfen). Branded Absender-Domain statt `resend.dev`, wo möglich.
 2. **Volumen-Filter** ergänzen: als Filter-Popover analog Branche/Status auf der Startseiten-Tabelle **und** unter `/dashboard/evidence` (Spalten-/Filter-Parität beider Referenz-Oberflächen).
-**Dateien:** `app/register/actions.ts`, `lib/email/*`, jeweilige Action-Dateien mit Mailversand; `app/dashboard/overview/*` (Tabelle/Filter), `app/dashboard/evidence/*`.
-**Akzeptanz:** Kein ungebrandeter Produktiv-Mailversand mehr; Volumen-Filter auf beiden Referenz-Oberflächen verfügbar; Tests grün.
+   **Dateien:** `app/register/actions.ts`, `lib/email/*`, jeweilige Action-Dateien mit Mailversand; `app/dashboard/overview/*` (Tabelle/Filter), `app/dashboard/evidence/*`.
+   **Akzeptanz:** Kein ungebrandeter Produktiv-Mailversand mehr; Volumen-Filter auf beiden Referenz-Oberflächen verfügbar; Tests grün.
 
 ---
 
@@ -81,6 +82,7 @@
 npm run test
 npm run build
 ```
+
 - T1 manuell: beide Proof-Segmente sichtbar/benannt; je Rolle korrekte Sichtbarkeit.
 - T2 manuell: neue Referenz → Original im Bucket + `reference_assets`.
 - T3: `grep -rnE "resend.emails.send" app lib` → jeder Treffer nutzt das Layout; Volumen-Filter auf beiden Oberflächen.

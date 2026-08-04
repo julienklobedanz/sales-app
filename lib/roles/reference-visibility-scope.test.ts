@@ -40,7 +40,10 @@ describe('getReferenceVisibilityScope', () => {
     const restricted = getReferenceVisibilityScope({
       systemRole: 'member',
       functionRole: 'account_manager',
-      capabilityOverrides: { see_draft_references: false, see_confidential_references: false },
+      capabilityOverrides: {
+        see_draft_references: false,
+        see_confidential_references: false,
+      },
     })
     expect(restricted.restrictToSalesVisibleStatuses).toBe(true)
 

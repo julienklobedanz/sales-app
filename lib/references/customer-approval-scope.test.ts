@@ -17,7 +17,7 @@ describe('customerApprovalScopeFromDb', () => {
         approval_scope_reference_call: true,
         approval_scope_confidential_sales: true,
         approval_reference_call_frequency: 'twice_yearly',
-      })
+      }),
     ).toEqual({
       approvalType: 'named',
       namentlichPublic: true,
@@ -37,7 +37,7 @@ describe('customerApprovalScopeToDbPatch', () => {
         namentlichConfidential: true,
         referenceCallsEnabled: true,
         referenceCallFrequency: 'quarterly',
-      })
+      }),
     ).toEqual({
       approval_scope_named_mention: true,
       approval_scope_anonymous_mention: false,
@@ -59,8 +59,8 @@ describe('customerApprovalScopeToDbPatch', () => {
     })
     expect(cleared.namentlichPublic).toBe(false)
     expect(cleared.referenceCallsEnabled).toBe(false)
-    expect(
-      customerApprovalScopeToDbPatch(cleared).approval_scope_anonymous_mention
-    ).toBe(true)
+    expect(customerApprovalScopeToDbPatch(cleared).approval_scope_anonymous_mention).toBe(
+      true,
+    )
   })
 })

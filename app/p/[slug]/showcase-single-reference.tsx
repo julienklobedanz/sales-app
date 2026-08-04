@@ -27,7 +27,7 @@ function pushCaseItem(
   label: string,
   raw: string | null | undefined,
   revokeMode: boolean,
-  icon?: React.ReactNode
+  icon?: React.ReactNode,
 ) {
   const { show, value } = showcaseFieldDisplay(raw, revokeMode)
   if (!show) return
@@ -90,21 +90,24 @@ export function ShowcaseSingleReference({
         })
       : null
 
-  const caseDataItems: Array<{ label: string; value: React.ReactNode; icon?: React.ReactNode }> =
-    []
+  const caseDataItems: Array<{
+    label: string
+    value: React.ReactNode
+    icon?: React.ReactNode
+  }> = []
   pushCaseItem(
     caseDataItems,
     'Branche',
     formatIndustryDisplay(reference.industry) || null,
     revokeMode,
-    <AppIcon icon={Building2} size={14} />
+    <AppIcon icon={Building2} size={14} />,
   )
   pushCaseItem(
     caseDataItems,
     'Land',
     reference.country,
     revokeMode,
-    <AppIcon icon={Globe} size={14} />
+    <AppIcon icon={Globe} size={14} />,
   )
   pushCaseItem(caseDataItems, 'Volumen', volRaw, revokeMode)
   pushCaseItem(caseDataItems, 'Projektstart', startRaw, revokeMode)
@@ -127,7 +130,9 @@ export function ShowcaseSingleReference({
                 className="h-10 max-w-[140px] object-contain"
               />
               {buyerCompanyName ? (
-                <span className="text-xs text-muted-foreground">für {buyerCompanyName}</span>
+                <span className="text-xs text-muted-foreground">
+                  für {buyerCompanyName}
+                </span>
               ) : null}
             </div>
           ) : null}
@@ -142,7 +147,10 @@ export function ShowcaseSingleReference({
           <p className="text-sm font-medium" style={{ color: branding.secondary_color }}>
             {workspaceName}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight" style={{ color: branding.primary_color }}>
+          <h1
+            className="text-3xl font-semibold tracking-tight"
+            style={{ color: branding.primary_color }}
+          >
             {reference.title}
           </h1>
           <p className="text-sm text-muted-foreground">

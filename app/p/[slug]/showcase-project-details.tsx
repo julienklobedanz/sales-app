@@ -40,7 +40,7 @@ function websiteLabel(raw: string): string {
 function detailValue(
   raw: string | null | undefined,
   manageMode: boolean,
-  websiteNode?: ReactNode
+  websiteNode?: ReactNode,
 ): { show: boolean; value: ReactNode } {
   if (websiteNode) {
     return { show: true, value: websiteNode }
@@ -69,7 +69,9 @@ export function ShowcaseProjectDetails({
 }) {
   const contractType = formatContractTypeDisplay(reference.contract_type) || null
   const projectStatus =
-    formatProjectStatusDe(reference.project_status) || reference.project_status?.trim() || null
+    formatProjectStatusDe(reference.project_status) ||
+    reference.project_status?.trim() ||
+    null
   const incumbent = reference.incumbent_provider?.trim() || null
   const competitors = reference.competitors?.trim() || null
   const employees = formatEmployees(reference.employee_count)

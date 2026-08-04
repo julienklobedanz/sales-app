@@ -9,18 +9,27 @@ import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
-import { canEditInternalApprovalCoordinator, canEditPreCustomerApprovalRecipient } from '@/lib/references/pre-customer-approval-edit'
+import {
+  canEditInternalApprovalCoordinator,
+  canEditPreCustomerApprovalRecipient,
+} from '@/lib/references/pre-customer-approval-edit'
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
 import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
-import type { ApproveInternalRecipientOptions, ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
+import type {
+  ApproveInternalRecipientOptions,
+  ReferenceApprovalRow,
+  ResolvedApprovalRecipient,
+} from '@/lib/references/library/approvals-types'
 import { log } from '@/lib/observability/logger'
 
 export async function updateApprovalRecipientImpl(
   referenceId: string,
-  recipient: ApproveInternalRecipientOptions
-): Promise<{ success: true; customerEmailSent?: boolean } | { success: false; error: string }> {
+  recipient: ApproveInternalRecipientOptions,
+): Promise<
+  { success: true; customerEmailSent?: boolean } | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -52,7 +61,7 @@ export async function updateApprovalRecipientImpl(
       approval_customer_facing_name,
       approval_coordinator_name,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .single()
@@ -93,11 +102,15 @@ export async function updateApprovalRecipientImpl(
     externalContactId: recipient?.externalContactId,
   }
 
-  if (recipient?.recipientEmail?.trim() && !recipient.contactId && !recipient.externalContactId) {
+  if (
+    recipient?.recipientEmail?.trim() &&
+    !recipient.contactId &&
+    !recipient.externalContactId
+  ) {
     const ensured = await ensureApprovalRecipientFromInputImpl(
       supabase,
       referenceId,
-      recipient.recipientEmail.trim()
+      recipient.recipientEmail.trim(),
     )
     if ('error' in ensured) {
       return { success: false, error: ensured.error }
@@ -115,10 +128,11 @@ export async function updateApprovalRecipientImpl(
       ref,
       ref.company_id,
       recipientOpts,
-      { requireRecipientEmail: true }
+      { requireRecipientEmail: true },
     )
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+    const msg =
+      e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
     return { success: false, error: msg }
   }
 
@@ -146,7 +160,9 @@ export async function updateApprovalRecipientImpl(
         : (ref.companies as { name?: string } | null)
     const companyName = company?.name ?? 'Referenz'
 
-    const orgId = String((profile as { organization_id?: string | null }).organization_id ?? '').trim()
+    const orgId = String(
+      (profile as { organization_id?: string | null }).organization_id ?? '',
+    ).trim()
     let vendorOrgName = companyName
     if (orgId) {
       const { data: orgRow } = await supabase
@@ -158,7 +174,8 @@ export async function updateApprovalRecipientImpl(
     }
 
     const customerFacingName =
-      typeof ref.approval_customer_facing_name === 'string' && ref.approval_customer_facing_name.trim()
+      typeof ref.approval_customer_facing_name === 'string' &&
+      ref.approval_customer_facing_name.trim()
         ? ref.approval_customer_facing_name.trim()
         : typeof (profile as { full_name?: string }).full_name === 'string'
           ? (profile as { full_name: string }).full_name.trim()
@@ -178,7 +195,11 @@ export async function updateApprovalRecipientImpl(
       })
       customerEmailSent = sent.emailSent
     } catch (e) {
-      log.error('customer email failed', { action: 'updateApprovalRecipientImpl.customerEmail' }, e)
+      log.error(
+        'customer email failed',
+        { action: 'updateApprovalRecipientImpl.customerEmail' },
+        e,
+      )
     }
   }
 
@@ -188,7 +209,7 @@ export async function updateApprovalRecipientImpl(
 
 export async function updateApprovalCoordinatorImpl(
   referenceId: string,
-  coordinatorEmail: string
+  coordinatorEmail: string,
 ): Promise<{ success: true; emailSent: boolean } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -220,7 +241,7 @@ export async function updateApprovalCoordinatorImpl(
       approval_requester_name,
       approval_message,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .single()
@@ -244,14 +265,20 @@ export async function updateApprovalCoordinatorImpl(
       internalApprovalStatus: ref.approval_internal_status,
     })
   ) {
-    return { success: false, error: 'Die interne Freigabe kann derzeit nicht umgeleitet werden.' }
+    return {
+      success: false,
+      error: 'Die interne Freigabe kann derzeit nicht umgeleitet werden.',
+    }
   }
 
   const canEdit =
     profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canEdit) {
-    return { success: false, error: 'Keine Berechtigung, den intern Verantwortlichen zu ändern.' }
+    return {
+      success: false,
+      error: 'Keine Berechtigung, den intern Verantwortlichen zu ändern.',
+    }
   }
 
   const internalReviewToken = crypto.randomUUID()

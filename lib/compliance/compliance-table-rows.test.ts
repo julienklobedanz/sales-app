@@ -7,7 +7,8 @@ import {
 } from './compliance-table-rows'
 
 function row(
-  partial: Partial<ComplianceDocumentRow> & Pick<ComplianceDocumentRow, 'id' | 'document_type'>
+  partial: Partial<ComplianceDocumentRow> &
+    Pick<ComplianceDocumentRow, 'id' | 'document_type'>,
 ): ComplianceDocumentRow {
   return {
     organization_id: 'org-1',

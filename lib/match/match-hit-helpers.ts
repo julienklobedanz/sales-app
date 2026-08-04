@@ -12,7 +12,9 @@ import type { MatchReferenceHit, MatchReferencesOptions } from '@/lib/match/matc
 /** Sentinel: Browse/Übersicht ohne semantischen Score (UI zeigt „—“). */
 export const BROWSE_SIMILARITY_SENTINEL = -1
 
-export function sortMatchesBySimilarityDesc(matches: MatchReferenceHit[]): MatchReferenceHit[] {
+export function sortMatchesBySimilarityDesc(
+  matches: MatchReferenceHit[],
+): MatchReferenceHit[] {
   return [...matches].sort((a, b) => {
     // Browse-Sentinel (-1) ans Ende; sonst absteigend nach Score
     if (a.similarity < 0 && b.similarity < 0) return 0
@@ -24,7 +26,7 @@ export function sortMatchesBySimilarityDesc(matches: MatchReferenceHit[]): Match
 
 export function applyClientSideStructuralFilters(
   matches: MatchReferenceHit[],
-  filters: MatchReferencesOptions['filters'] | undefined
+  filters: MatchReferencesOptions['filters'] | undefined,
 ): MatchReferenceHit[] {
   if (!filters) return matches
   let next = matches
@@ -50,7 +52,7 @@ export function applyClientSideStructuralFilters(
 
   if (filters.monthsBackList?.length) {
     next = next.filter((m) =>
-      createdAtMatchesAnyRecency(matchReferenceDateAnchor(m), filters.monthsBackList)
+      createdAtMatchesAnyRecency(matchReferenceDateAnchor(m), filters.monthsBackList),
     )
   } else {
     if (filters.createdBefore) {
@@ -71,20 +73,25 @@ export function applyClientSideStructuralFilters(
 
   if (filters.excludeCreatedYears?.length) {
     next = next.filter((m) =>
-      createdAtMatchesExcludeYears(matchReferenceDateAnchor(m), filters.excludeCreatedYears)
+      createdAtMatchesExcludeYears(
+        matchReferenceDateAnchor(m),
+        filters.excludeCreatedYears,
+      ),
     )
   }
 
   if (filters.excludeIndustries?.length) {
-    next = next.filter((m) => industryMatchesExcludeList(m.industry, filters.excludeIndustries))
+    next = next.filter((m) =>
+      industryMatchesExcludeList(m.industry, filters.excludeIndustries),
+    )
   }
 
   if (filters.excludeTerms?.length) {
     next = next.filter((m) =>
       textMatchesExcludeTerms(
         [m.title, m.summary ?? '', m.snippet, m.companyName ?? ''].join(' '),
-        filters.excludeTerms
-      )
+        filters.excludeTerms,
+      ),
     )
   }
 

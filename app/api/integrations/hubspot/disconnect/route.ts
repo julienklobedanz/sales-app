@@ -14,11 +14,14 @@ export async function POST() {
     const result = await disconnectOrganizationCrm(
       guard.ctx.supabase,
       guard.ctx.organizationId,
-      'hubspot'
+      'hubspot',
     )
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error ?? 'Trennen fehlgeschlagen.' }, { status: 500 })
+      return NextResponse.json(
+        { error: result.error ?? 'Trennen fehlgeschlagen.' },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ success: true })

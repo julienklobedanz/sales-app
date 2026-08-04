@@ -8,7 +8,7 @@ export function isApprovalRecipientEmail(value: string): boolean {
 export function filterApprovalContactSuggestions(
   contacts: ApprovalContactOption[],
   query: string,
-  limit = 8
+  limit = 8,
 ): ApprovalContactOption[] {
   const q = query.trim().toLowerCase()
   if (!q) return contacts.slice(0, limit)

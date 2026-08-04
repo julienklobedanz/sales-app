@@ -9,7 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ONBOARDING_DEFAULT_TEAM_INVITES, ONBOARDING_MAX_TEAM_INVITES } from '../onboarding-steps'
+import {
+  ONBOARDING_DEFAULT_TEAM_INVITES,
+  ONBOARDING_MAX_TEAM_INVITES,
+} from '../onboarding-steps'
 
 export type InviteRole = 'sales' | 'admin'
 
@@ -19,7 +22,7 @@ export type TeamInviteRow = {
 }
 
 export function createDefaultInviteRows(
-  count = ONBOARDING_DEFAULT_TEAM_INVITES
+  count = ONBOARDING_DEFAULT_TEAM_INVITES,
 ): TeamInviteRow[] {
   return Array.from({ length: count }, () => ({ email: '', role: 'sales' }))
 }
@@ -66,7 +69,10 @@ export function TeamStep({
     <div className="flex flex-col gap-4">
       <div className="space-y-3">
         {invites.map((row, idx) => (
-          <div key={idx} className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[1fr_120px]">
+          <div
+            key={idx}
+            className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[1fr_120px]"
+          >
             <input
               id={`invite_email_${idx}`}
               value={row.email}
@@ -103,7 +109,9 @@ export function TeamStep({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           <button
             type="button"
-            disabled={disabled || sending || invites.length >= ONBOARDING_MAX_TEAM_INVITES}
+            disabled={
+              disabled || sending || invites.length >= ONBOARDING_MAX_TEAM_INVITES
+            }
             onClick={() => onChange([...invites, { email: '', role: 'sales' }])}
             className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 disabled:opacity-40"
           >

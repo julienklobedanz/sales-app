@@ -40,6 +40,8 @@ export function buildClientApprovalEmailHtml(args: {
       <p style="margin:0 0 16px;">Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>`,
     meta: { rows: buildReferenceMetaRows(args.refTitle, args.companyName) },
     ctas: [{ label: 'Zur Freigabe-Seite', href: args.approvalUrl }],
-    supplementalHtml: args.portfolio ? buildPortfolioSupplementalHtml(args.portfolio) : undefined,
+    supplementalHtml: args.portfolio
+      ? buildPortfolioSupplementalHtml(args.portfolio)
+      : undefined,
   })
 }

@@ -60,7 +60,10 @@ function slugId(label: string, index: number): string {
   return base ? `${base}-${index}` : `criterion-${index}`
 }
 
-export function parseEligibilityCriterion(raw: unknown, index: number): EligibilityCriterion | null {
+export function parseEligibilityCriterion(
+  raw: unknown,
+  index: number,
+): EligibilityCriterion | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
 
@@ -86,8 +89,7 @@ export function parseEligibilityCriterion(raw: unknown, index: number): Eligibil
     ? (confidenceRaw as EligibilityConfidence)
     : 'medium'
 
-  const id =
-    typeof o.id === 'string' && o.id.trim() ? o.id.trim() : slugId(label, index)
+  const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : slugId(label, index)
 
   return {
     id,

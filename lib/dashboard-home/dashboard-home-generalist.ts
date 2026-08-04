@@ -7,7 +7,7 @@ export async function loadGeneralistDashboardData(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  orgId: string | undefined
+  orgId: string | undefined,
 ): Promise<GeneralistDashboardModel> {
   const salesSlice = await loadSalesRepDashboardData(supabase, userId, fullName, orgId)
   const amSlice = await loadAccountManagerDashboardData(supabase, userId, fullName, orgId)

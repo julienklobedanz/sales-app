@@ -40,10 +40,11 @@ export type LeaderCallMatchResult = {
 
 export function pickDealForCompany(
   deals: DealRow[],
-  companyId: string
+  companyId: string,
 ): LeaderCallDealContext | null {
   const onCompany = deals.filter(
-    (d) => d.company_id === companyId && ['open', 'rfp', 'negotiation'].includes(d.status)
+    (d) =>
+      d.company_id === companyId && ['open', 'rfp', 'negotiation'].includes(d.status),
   )
   if (!onCompany.length) return null
 
@@ -55,7 +56,7 @@ export function pickDealForCompany(
     else if (best < PARTIAL_MATCH_CUTOFF) risk += 25
     const days = d.expiry_date
       ? Math.round(
-          (new Date(`${d.expiry_date}T12:00:00`).getTime() - Date.now()) / MS_PER_DAY
+          (new Date(`${d.expiry_date}T12:00:00`).getTime() - Date.now()) / MS_PER_DAY,
         )
       : 999
     if (days >= 0 && days <= 21) risk += 15
@@ -77,7 +78,7 @@ export function scoreCallCandidate(
   candidate: LeaderCallSignalCandidate,
   deal: LeaderCallDealContext,
   match: LeaderCallMatchResult | null,
-  nowMs: number
+  nowMs: number,
 ): number {
   const ageDays = (nowMs - candidate.detectedAtMs) / MS_PER_DAY
   if (ageDays > MAX_AGE_DAYS) return -1
@@ -87,15 +88,14 @@ export function scoreCallCandidate(
   if (candidate.onAccountWatchlist) score += 18
   if (candidate.signalCategory === 'people') score += 12
   if (deal.linkedCount === 0) score += 22
-  else if (
-    deal.bestMatchScore == null ||
-    deal.bestMatchScore < PARTIAL_MATCH_CUTOFF
-  ) {
+  else if (deal.bestMatchScore == null || deal.bestMatchScore < PARTIAL_MATCH_CUTOFF) {
     score += 14
   }
   if (match && match.similarity >= PARTIAL_MATCH_CUTOFF) score += 20
   if (match?.personMatchHint) score += 12
-  if (/cio|cto|ceo|chief|wechsel|azure|cloud|initiative|stelle/i.test(candidate.signalFact)) {
+  if (
+    /cio|cto|ceo|chief|wechsel|azure|cloud|initiative|stelle/i.test(candidate.signalFact)
+  ) {
     score += 8
   }
   return score
@@ -110,16 +110,16 @@ export function buildCallWhyNowBullets(input: {
   const copy = COPY.dashboard.home.salesLeader
 
   if (input.candidate.onChampionWatchlist && input.candidate.personName) {
-    bullets.push(
-      formatCopyPerson(copy.whyChampion, { name: input.candidate.personName })
-    )
+    bullets.push(formatCopyPerson(copy.whyChampion, { name: input.candidate.personName }))
   } else if (input.candidate.onAccountWatchlist) {
     bullets.push(copy.whyWatchlistAccount)
   }
 
   if (input.candidate.whyNowRaw?.trim()) {
     bullets.push(input.candidate.whyNowRaw.trim())
-  } else if (/wechsel|ernannt|übernimmt|joins|cio|cto/i.test(input.candidate.signalFact)) {
+  } else if (
+    /wechsel|ernannt|übernimmt|joins|cio|cto/i.test(input.candidate.signalFact)
+  ) {
     bullets.push(copy.whyRoleChange)
   } else if (/cloud|azure|aws|initiative|digital/i.test(input.candidate.signalFact)) {
     bullets.push(copy.whyInitiative)
@@ -129,7 +129,7 @@ export function buildCallWhyNowBullets(input: {
 
   if (input.match && input.match.similarity >= PARTIAL_MATCH_CUTOFF) {
     bullets.push(
-      input.match.personMatchHint ? copy.whyPerfectRefPerson : copy.whyPerfectRef
+      input.match.personMatchHint ? copy.whyPerfectRefPerson : copy.whyPerfectRef,
     )
   } else if (input.deal.linkedCount === 0) {
     bullets.push(copy.whyDealNoProof)
@@ -173,7 +173,9 @@ export function buildLeaderCallQueueRow(input: {
     referenceId: match?.referenceId ?? null,
     referenceTitle: match?.referenceTitle ?? null,
     referenceSimilarity: match?.similarity ?? null,
-    referenceHref: match?.referenceId ? ROUTES.references.detail(match.referenceId) : null,
+    referenceHref: match?.referenceId
+      ? ROUTES.references.detail(match.referenceId)
+      : null,
     referencePersonMatch: match?.personMatchHint ?? false,
     accountHref: ROUTES.accountsDetail(candidate.companyId),
     matchHref: ROUTES.matchWithDeal(deal.dealId),

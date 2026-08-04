@@ -13,7 +13,7 @@ export type DealReferenceSuggestion = {
 
 export async function suggestDealReferenceMatches(
   dealId: string,
-  options?: { queryOverride?: string; limit?: number }
+  options?: { queryOverride?: string; limit?: number },
 ): Promise<{ suggestions: DealReferenceSuggestion[] }> {
   const limit = Math.min(3, Math.max(1, options?.limit ?? 3))
   const supabase = await createServerSupabaseClient()
@@ -48,7 +48,9 @@ export async function suggestDealReferenceMatches(
     .eq('deal_id', dealId)
   const linkedIds = new Set((linked ?? []).map((r) => String(r.reference_id)))
 
-  const result = await matchReferencesImpl(query, dealId, { matchCount: limit + linkedIds.size })
+  const result = await matchReferencesImpl(query, dealId, {
+    matchCount: limit + linkedIds.size,
+  })
   if (!result.success || !result.matches?.length) return { suggestions: [] }
 
   const suggestions: DealReferenceSuggestion[] = []

@@ -33,11 +33,15 @@ export function ReferenceLayoutSwitch({ value, onChange }: Props) {
         <span
           className={cn(
             'flex size-9 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-            isInbox ? 'translate-x-6' : 'translate-x-0'
+            isInbox ? 'translate-x-6' : 'translate-x-0',
           )}
         >
           {isInbox ? (
-            <AppIcon icon={LayoutTwoColumnIcon} size={14} className="text-muted-foreground" />
+            <AppIcon
+              icon={LayoutTwoColumnIcon}
+              size={14}
+              className="text-muted-foreground"
+            />
           ) : (
             <Table2 className="size-3.5 text-muted-foreground" aria-hidden />
           )}

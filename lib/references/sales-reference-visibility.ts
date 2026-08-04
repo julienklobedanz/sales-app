@@ -6,14 +6,19 @@ export const SALES_VISIBLE_REFERENCE_STATUSES = [
   'external',
 ] as const
 
-export type SalesVisibleReferenceStatus = (typeof SALES_VISIBLE_REFERENCE_STATUSES)[number]
+export type SalesVisibleReferenceStatus =
+  (typeof SALES_VISIBLE_REFERENCE_STATUSES)[number]
 
 export function isReferenceVisibleToSales(status: string | null | undefined): boolean {
-  const normalized = String(status ?? '').toLowerCase().trim()
+  const normalized = String(status ?? '')
+    .toLowerCase()
+    .trim()
   if (normalized === 'internal') return true
   return (SALES_VISIBLE_REFERENCE_STATUSES as readonly string[]).includes(normalized)
 }
 
-export function filterReferencesForSales<T extends { status: string }>(references: T[]): T[] {
+export function filterReferencesForSales<T extends { status: string }>(
+  references: T[],
+): T[] {
   return references.filter((r) => isReferenceVisibleToSales(r.status))
 }

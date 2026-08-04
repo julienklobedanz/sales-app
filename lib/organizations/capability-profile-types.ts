@@ -20,7 +20,9 @@ function parseCertifiedRoles(raw: unknown): CapabilityProfile['certifiedRoles'] 
     const o = item as Record<string, unknown>
     const role = typeof o.role === 'string' ? o.role.trim() : ''
     const count =
-      typeof o.count === 'number' && Number.isFinite(o.count) ? Math.max(0, Math.trunc(o.count)) : 0
+      typeof o.count === 'number' && Number.isFinite(o.count)
+        ? Math.max(0, Math.trunc(o.count))
+        : 0
     if (role && count > 0) out.push({ role, count })
   }
   return out.length ? out : undefined

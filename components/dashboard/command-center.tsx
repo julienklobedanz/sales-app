@@ -35,7 +35,8 @@ function recentTitle(item: CommandRecentItem) {
 }
 
 function RecentIcon({ kind }: { kind: CommandRecentKind }) {
-  if (kind === 'account') return <Building2 className="size-4 shrink-0 text-slate-500" aria-hidden />
+  if (kind === 'account')
+    return <Building2 className="size-4 shrink-0 text-slate-500" aria-hidden />
   return <FileText className="size-4 shrink-0 text-slate-500" aria-hidden />
 }
 
@@ -65,7 +66,7 @@ export function CommandCenter({ greetingName }: Props) {
   const allSuggestions = useMemo(() => commandCenterSuggestionsForRole(role), [role])
   const visibleSuggestions = useMemo(
     () => filterCommandCenterSuggestions(allSuggestions, draft),
-    [allSuggestions, draft]
+    [allSuggestions, draft],
   )
 
   const hasSubmitted = submittedQuery !== null

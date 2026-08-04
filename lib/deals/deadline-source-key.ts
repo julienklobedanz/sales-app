@@ -21,7 +21,11 @@ export function inferDeadlineKindFromTitle(title: string): DealDeadlineKind {
   const timelineKind = getTimelineItemKind(title)
   if (timelineKind === 'qa') return 'questions'
   if (timelineKind === 'submission') return 'submission'
-  if (/präsentation|praesentation|presentation|shortlist|pitch|vorstellung|demo/i.test(title)) {
+  if (
+    /präsentation|praesentation|presentation|shortlist|pitch|vorstellung|demo/i.test(
+      title,
+    )
+  ) {
     return 'presentation'
   }
   if (timelineKind === 'start') return 'internal_review'
@@ -32,7 +36,7 @@ export function inferDeadlineKindFromTitle(title: string): DealDeadlineKind {
 export function buildRfpDeadlineSourceKey(
   dealId: string,
   kind: DealDeadlineKind,
-  label?: string
+  label?: string,
 ): string {
   const base = `${dealId}:${kind}`
   if (isCanonicalRfpKind(kind)) {

@@ -24,7 +24,9 @@ function docMatchesNeed(docs: OrgComplianceDoc[], need: string): boolean {
   return docs.some((d) => {
     const blob = `${d.document_type} ${d.title}`
     const h = normalizeToken(blob)
-    return h.includes(n) || n.split(' ').some((part) => part.length >= 3 && h.includes(part))
+    return (
+      h.includes(n) || n.split(' ').some((part) => part.length >= 3 && h.includes(part))
+    )
   })
 }
 
@@ -52,7 +54,8 @@ export function buildRequestedEvidenceGaps(input: {
       push({
         id: `cert-${token}`,
         label: token || row.label,
-        detail: row.detail || 'Kein passender Nachweis in Profil oder Compliance-Dokumenten.',
+        detail:
+          row.detail || 'Kein passender Nachweis in Profil oder Compliance-Dokumenten.',
         severity: row.status === 'partial' ? 'partial' : 'missing',
       })
     }
@@ -66,7 +69,8 @@ export function buildRequestedEvidenceGaps(input: {
       push({
         id: `sub-${trimmed.slice(0, 40)}`,
         label: trimmed,
-        detail: 'In der Nachweis-Bibliothek nicht gefunden — ggf. hochladen oder manuell prüfen.',
+        detail:
+          'In der Nachweis-Bibliothek nicht gefunden — ggf. hochladen oder manuell prüfen.',
         severity: 'missing',
       })
     }

@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -102,7 +108,9 @@ export function CreateAccountDialog({
       setIndustry(resolveIndustryId(enriched.industry ?? ''))
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
       setEmployeeCount(
-        enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
+        enriched.employee_count != null
+          ? formatThousandsDots(String(enriched.employee_count))
+          : '',
       )
       setDescription(enriched.description ?? '')
       setLogoUrl(enriched.logo_url ?? '')
@@ -132,7 +140,7 @@ export function CreateAccountDialog({
       setIndustry(resolveIndustryId(res.industry ?? ''))
       setHeadquarters(res.headquarters?.trim() || res.country?.trim() || '')
       setEmployeeCount(
-        res.employee_count != null ? formatThousandsDots(String(res.employee_count)) : ''
+        res.employee_count != null ? formatThousandsDots(String(res.employee_count)) : '',
       )
       setDescription(res.description ?? '')
       setLogoUrl(res.logo_url ?? '')
@@ -289,7 +297,12 @@ export function CreateAccountDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending || enriching}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending || enriching}
+          >
             Abbrechen
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>

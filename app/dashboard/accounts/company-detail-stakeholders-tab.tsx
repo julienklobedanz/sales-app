@@ -1,7 +1,20 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Plus } from '@hugeicons/core-free-icons'
 import type { ExternalContactRow, StakeholderRow } from './actions'
 import {
@@ -47,7 +60,8 @@ export function CompanyDetailStakeholdersTab({
         <div className="space-y-1">
           <CardTitle className="text-base">Stakeholder</CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Buying-Center am Kunden · Ansprechpartner aus Referenzen erscheinen automatisch
+            Buying-Center am Kunden · Ansprechpartner aus Referenzen erscheinen
+            automatisch
           </CardDescription>
         </div>
         {canEdit && (
@@ -83,18 +97,28 @@ export function CompanyDetailStakeholdersTab({
                   organizationName: companyName,
                   email: null,
                 })
-                const last = formatLastInteraction(s.last_interaction_at ?? s.last_contact_at)
+                const last = formatLastInteraction(
+                  s.last_interaction_at ?? s.last_contact_at,
+                )
 
                 return (
                   <TableRow key={`stakeholder-${s.id}`}>
                     <TableCell className="font-medium">{s.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{s.title?.trim() || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {s.title?.trim() || '—'}
+                    </TableCell>
                     <TableCell>
                       <StakeholderRoleBadge role={s.role} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{s.influence_level ?? '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{s.attitude ?? '—'}</TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">{last}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {s.influence_level ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {s.attitude ?? '—'}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {last}
+                    </TableCell>
                     <TableCell className="text-right">
                       <ContactActionButtons
                         name={s.name}
@@ -112,12 +136,14 @@ export function CompanyDetailStakeholdersTab({
                 const liHref = buildInternalContactLinkedInHref({
                   firstName: c.first_name,
                   lastName: c.last_name,
-                  linkedinUrl: (c as unknown as { linkedin_url?: string | null }).linkedin_url,
+                  linkedinUrl: (c as unknown as { linkedin_url?: string | null })
+                    .linkedin_url,
                   organizationName: companyName,
                   email: c.email,
                 })
                 const last = formatLastInteraction(
-                  (c as unknown as { last_interaction_at?: string | null }).last_interaction_at
+                  (c as unknown as { last_interaction_at?: string | null })
+                    .last_interaction_at,
                 )
                 const jobTitle = externalContactJobTitle(c)
 
@@ -126,7 +152,10 @@ export function CompanyDetailStakeholdersTab({
                     <TableCell className="font-medium">
                       <span className="inline-flex flex-wrap items-center gap-2">
                         {name}
-                        <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-normal text-muted-foreground"
+                        >
                           Referenz
                         </Badge>
                       </span>
@@ -141,7 +170,9 @@ export function CompanyDetailStakeholdersTab({
                     </TableCell>
                     <TableCell className="text-muted-foreground">—</TableCell>
                     <TableCell className="text-muted-foreground">—</TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">{last}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {last}
+                    </TableCell>
                     <TableCell className="text-right">
                       <ContactActionButtons
                         name={name}

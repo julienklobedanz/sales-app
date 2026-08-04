@@ -19,7 +19,7 @@ export function isContractLikeDocument(fileName: string): boolean {
 
 export function resolveDocumentByFileName(
   fileName: string | null | undefined,
-  documents: DealDeskDocumentRef[]
+  documents: DealDeskDocumentRef[],
 ): DealDeskDocumentRef | null {
   if (!fileName?.trim()) return null
   const normalized = fileName.trim().toLowerCase()
@@ -34,7 +34,7 @@ export function resolveDocumentByFileName(
 /** Ordnet eine Red Flag dem wahrscheinlichsten Vertrags-/Anhang-Dokument zu. */
 export function guessSourceDocumentForRedFlag(
   flag: Pick<DealDeskRedFlag, 'title' | 'excerpt' | 'pageHint' | 'sourceFileName'>,
-  documents: DealDeskDocumentRef[]
+  documents: DealDeskDocumentRef[],
 ): DealDeskDocumentRef | null {
   const fromName = resolveDocumentByFileName(flag.sourceFileName, documents)
   if (fromName) return fromName
@@ -55,7 +55,10 @@ export function guessSourceDocumentForRedFlag(
     if (lb) return lb
   }
 
-  if (LEGAL_FLAG_PATTERN.test(`${flag.title} ${flag.excerpt}`) && contractDocs.length > 0) {
+  if (
+    LEGAL_FLAG_PATTERN.test(`${flag.title} ${flag.excerpt}`) &&
+    contractDocs.length > 0
+  ) {
     return contractDocs[0] ?? null
   }
 
@@ -64,14 +67,13 @@ export function guessSourceDocumentForRedFlag(
 
 export function enrichRedFlagsWithDocuments(
   flags: DealDeskRedFlag[],
-  documents: DealDeskDocumentRef[]
+  documents: DealDeskDocumentRef[],
 ): DealDeskRedFlag[] {
   return flags.map((flag) => {
     const doc =
       (flag.sourceDocumentId
         ? documents.find((d) => d.id === flag.sourceDocumentId)
-        : null) ??
-      guessSourceDocumentForRedFlag(flag, documents)
+        : null) ?? guessSourceDocumentForRedFlag(flag, documents)
 
     if (!doc) return flag
 
@@ -86,7 +88,7 @@ export function enrichRedFlagsWithDocuments(
 /** Eindeutige Dokumente für alle markierten Legal-Flags (mit Fallback auf Vertragswerke). */
 export function collectLegalAttachmentDocuments(
   markedFlags: DealDeskRedFlag[],
-  allDocuments: DealDeskDocumentRef[]
+  allDocuments: DealDeskDocumentRef[],
 ): DealDeskDocumentRef[] {
   const byId = new Map<string, DealDeskDocumentRef>()
 

@@ -39,8 +39,8 @@ export function CompaniesGridDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Bist du dir absolut sicher?</AlertDialogTitle>
           <AlertDialogDescription>
-            Diese Aktion kann nicht rückgängig gemacht werden. Dies wird den Kunden und alle damit verbundenen Deals,
-            Strategien und Kontakte dauerhaft löschen.
+            Diese Aktion kann nicht rückgängig gemacht werden. Dies wird den Kunden und
+            alle damit verbundenen Deals, Strategien und Kontakte dauerhaft löschen.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -60,7 +60,10 @@ export function CompaniesGridDeleteDialog({
                 setDeleting(true)
                 const result = await deleteCompanyWithData(deleteTarget.id)
                 if (!result.success && result.error) {
-                  log.error('deleteCompanyWithData.failed', { companyId: deleteTarget.id, error: result.error })
+                  log.error('deleteCompanyWithData.failed', {
+                    companyId: deleteTarget.id,
+                    error: result.error,
+                  })
                 }
                 setDeleteTarget(null)
               } finally {
@@ -69,7 +72,9 @@ export function CompaniesGridDeleteDialog({
             }}
             className={buttonVariants({ variant: 'destructive' })}
           >
-            {deleting && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+            {deleting && (
+              <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+            )}
             Löschen
           </AlertDialogAction>
         </AlertDialogFooter>

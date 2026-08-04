@@ -113,13 +113,14 @@ export function CompaniesGrid({
             ? Boolean(company.is_favorite)
             : favoriteOverrides[company.id],
       })),
-    [companies, favoriteOverrides]
+    [companies, favoriteOverrides],
   )
 
   async function handleToggleFavorite(company: CompanyCard) {
-    const current = favoriteOverrides[company.id] === undefined
-      ? Boolean(company.is_favorite)
-      : favoriteOverrides[company.id]
+    const current =
+      favoriteOverrides[company.id] === undefined
+        ? Boolean(company.is_favorite)
+        : favoriteOverrides[company.id]
     const next = !current
     setFavoriteOverrides((prev) => ({ ...prev, [company.id]: next }))
     setFavoriteSaving((prev) => ({ ...prev, [company.id]: true }))
@@ -142,7 +143,7 @@ export function CompaniesGrid({
       }
       const label = entityKind === 'partner' ? 'Partner' : 'Accounts'
       toast.success(
-        `${result.createdCount} ${label} importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`
+        `${result.createdCount} ${label} importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`,
       )
       router.refresh()
       return true
@@ -154,12 +155,16 @@ export function CompaniesGrid({
   const companiesForEntity = useMemo(
     () =>
       companiesWithFavoriteState.filter(
-        (c) => (c.entity_kind ?? 'account') === entityKind
+        (c) => (c.entity_kind ?? 'account') === entityKind,
       ),
-    [companiesWithFavoriteState, entityKind]
+    [companiesWithFavoriteState, entityKind],
   )
 
-  const filtersActive = filtersAreActive(filterIndustry, filterEmployeeBand, filterReferences)
+  const filtersActive = filtersAreActive(
+    filterIndustry,
+    filterEmployeeBand,
+    filterReferences,
+  )
 
   const filtered = useMemo(
     () =>
@@ -179,13 +184,14 @@ export function CompaniesGrid({
       filterIndustry,
       filterEmployeeBand,
       filterReferences,
-    ]
+    ],
   )
 
   const isPartnerView = entityKind === 'partner'
 
   const previewOnboarding =
-    process.env.NODE_ENV === 'development' && searchParams.get('previewOnboarding') === '1'
+    process.env.NODE_ENV === 'development' &&
+    searchParams.get('previewOnboarding') === '1'
 
   const showAccountsOnboarding =
     (previewOnboarding && !isPartnerView) ||

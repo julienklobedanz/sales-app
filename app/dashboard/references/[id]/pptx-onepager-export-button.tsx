@@ -26,7 +26,7 @@ export function PptxOnepagerExportButton({
     try {
       const res = await fetch(
         `/api/reference-onepager-pptx?referenceId=${encodeURIComponent(referenceId)}`,
-        { method: 'GET', credentials: 'same-origin' }
+        { method: 'GET', credentials: 'same-origin' },
       )
       if (!res.ok) {
         let msg = 'Export fehlgeschlagen.'
@@ -41,8 +41,12 @@ export function PptxOnepagerExportButton({
       }
       const blob = await res.blob()
       const fallback = `RefStack_Onepager_${referenceId.slice(0, 8)}.pptx`
-      const fromHeader = parseFilenameFromContentDisposition(res.headers.get('Content-Disposition'))
-      const fileName = fromHeader ? decodeURIComponent(fromHeader.replace(/^"|"$/g, '')) : fallback
+      const fromHeader = parseFilenameFromContentDisposition(
+        res.headers.get('Content-Disposition'),
+      )
+      const fileName = fromHeader
+        ? decodeURIComponent(fromHeader.replace(/^"|"$/g, ''))
+        : fallback
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

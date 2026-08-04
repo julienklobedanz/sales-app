@@ -53,15 +53,17 @@ export function SettingsCapabilityProfile({
   compact = false,
 }: SettingsCapabilityProfileProps) {
   const [employeeCount, setEmployeeCount] = useState(
-    initialProfile.employeeCount != null ? String(initialProfile.employeeCount) : ''
+    initialProfile.employeeCount != null ? String(initialProfile.employeeCount) : '',
   )
   const [annualRevenueMio, setAnnualRevenueMio] = useState(
     initialProfile.annualRevenueEur != null
       ? String(Math.round(initialProfile.annualRevenueEur / 1_000_000))
-      : ''
+      : '',
   )
   const [regions, setRegions] = useState(initialProfile.regions?.join(', ') ?? '')
-  const [certifiedRoles, setCertifiedRoles] = useState(rolesToText(initialProfile.certifiedRoles))
+  const [certifiedRoles, setCertifiedRoles] = useState(
+    rolesToText(initialProfile.certifiedRoles),
+  )
   const [icpIndustry, setIcpIndustry] = useState(initialIcp.industry ?? '')
   const [icpVolume, setIcpVolume] = useState(initialIcp.volumeBand ?? '')
   const [icpRegion, setIcpRegion] = useState(initialIcp.region ?? '')
@@ -114,7 +116,9 @@ export function SettingsCapabilityProfile({
 
   return (
     <div className={compact ? SETTINGS_CARD_CLASS_COMPACT : SETTINGS_CARD_CLASS}>
-      <CardHeader className={compact ? 'space-y-1 px-0 pt-0 pb-0' : 'space-y-2 px-0 pt-0'}>
+      <CardHeader
+        className={compact ? 'space-y-1 px-0 pt-0 pb-0' : 'space-y-2 px-0 pt-0'}
+      >
         <CardTitle className={compact ? 'text-sm font-semibold' : 'text-base'}>
           {COPY.settings.capabilityProfile.title}
         </CardTitle>
@@ -122,7 +126,9 @@ export function SettingsCapabilityProfile({
           {COPY.settings.capabilityProfile.description}
         </CardDescription>
       </CardHeader>
-      <CardContent className={compact ? 'space-y-3 px-0 pb-0 pt-2' : 'space-y-6 px-0 pb-0 pt-1'}>
+      <CardContent
+        className={compact ? 'space-y-3 px-0 pb-0 pt-2' : 'space-y-6 px-0 pb-0 pt-1'}
+      >
         {emptyProfile ? (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             {COPY.settings.capabilityProfile.emptyHint}
@@ -189,7 +195,9 @@ export function SettingsCapabilityProfile({
         </div>
 
         <div className="border-t border-slate-200 pt-3">
-          <p className="mb-2 text-sm font-medium">{COPY.settings.capabilityProfile.icpTitle}</p>
+          <p className="mb-2 text-sm font-medium">
+            {COPY.settings.capabilityProfile.icpTitle}
+          </p>
           <div className="grid gap-2.5 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="icp-industry" className="text-xs">
@@ -256,10 +264,14 @@ export function SettingsCapabilityProfile({
 
         {canEdit ? (
           <Button type="button" size="sm" onClick={save} disabled={pending}>
-            {pending ? COPY.settings.capabilityProfile.saving : COPY.settings.capabilityProfile.save}
+            {pending
+              ? COPY.settings.capabilityProfile.saving
+              : COPY.settings.capabilityProfile.save}
           </Button>
         ) : (
-          <p className="text-xs text-muted-foreground">{COPY.settings.capabilityProfile.readOnly}</p>
+          <p className="text-xs text-muted-foreground">
+            {COPY.settings.capabilityProfile.readOnly}
+          </p>
         )}
       </CardContent>
     </div>

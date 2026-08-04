@@ -81,10 +81,11 @@ function createFileItem(file: File): BulkFileItem {
 
 function createGroupForFile(
   file: File,
-  typeOptions: ComplianceDocumentTypeOption[]
+  typeOptions: ComplianceDocumentTypeOption[],
 ): BulkGroup {
   const inferredType =
-    inferComplianceDocumentTypeFromUpload({ title: '', fileName: file.name }) ?? 'iso_27001'
+    inferComplianceDocumentTypeFromUpload({ title: '', fileName: file.name }) ??
+    'iso_27001'
   return {
     id: crypto.randomUUID(),
     documentType: inferredType,
@@ -110,7 +111,9 @@ function autoGroupByDocumentType(incoming: BulkGroup[]): BulkGroup[] {
       ...existing,
       files: [...existing.files, ...group.files],
       typeAutoFilled: existing.typeAutoFilled || group.typeAutoFilled,
-      title: existing.titleManuallyEdited ? existing.title : existing.title || group.title,
+      title: existing.titleManuallyEdited
+        ? existing.title
+        : existing.title || group.title,
       titleManuallyEdited: existing.titleManuallyEdited,
       typeManuallyEdited: existing.typeManuallyEdited || group.typeManuallyEdited,
     })
@@ -123,7 +126,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
   const router = useRouter()
   const [groups, setGroups] = useState<BulkGroup[]>([])
   const [typeOptions, setTypeOptions] = useState<ComplianceDocumentTypeOption[]>(() =>
-    getSystemComplianceDocumentTypes()
+    getSystemComplianceDocumentTypes(),
   )
   const [typesLoading, setTypesLoading] = useState(false)
   const [typesDialogOpen, setTypesDialogOpen] = useState(false)
@@ -134,11 +137,13 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
 
   const totalFiles = useMemo(
     () => groups.reduce((sum, group) => sum + group.files.length, 0),
-    [groups]
+    [groups],
   )
   const hasFiles = groups.length > 0
   const canMergeSelected = selectedGroupIds.size >= 2
-  const anyExtracting = groups.some((group) => group.files.some((file) => file.extracting))
+  const anyExtracting = groups.some((group) =>
+    group.files.some((file) => file.extracting),
+  )
 
   const loadTypes = useCallback(async () => {
     setTypesLoading(true)
@@ -170,7 +175,11 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     setDraggingFileKey(null)
   }
 
-  async function enrichAfterAdd(fileId: string, file: File, options: ComplianceDocumentTypeOption[]) {
+  async function enrichAfterAdd(
+    fileId: string,
+    file: File,
+    options: ComplianceDocumentTypeOption[],
+  ) {
     const formData = new FormData()
     formData.set('file', file)
     const result = await extractComplianceCertificateMetadataFromPdf(formData)
@@ -234,7 +243,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
           .reduce((s, g) => s + g.files.length, 0)
         if (autoGroupedCount > 0) {
           toast.info(
-            `${autoGroupedCount} Dateien wurden automatisch nach Zertifikatstyp gruppiert.`
+            `${autoGroupedCount} Dateien wurden automatisch nach Zertifikatstyp gruppiert.`,
           )
         }
       }
@@ -258,8 +267,8 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
   function updateGroupTitle(groupId: string, title: string) {
     setGroups((prev) =>
       prev.map((g) =>
-        g.id === groupId ? { ...g, title, titleManuallyEdited: true } : g
-      )
+        g.id === groupId ? { ...g, title, titleManuallyEdited: true } : g,
+      ),
     )
   }
 
@@ -287,9 +296,9 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
         .map((g) =>
           g.id === groupId
             ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
-            : g
+            : g,
         )
-        .filter((g) => g.files.length > 0)
+        .filter((g) => g.files.length > 0),
     )
   }
 
@@ -341,7 +350,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     event: React.DragEvent<HTMLDivElement>,
     groupId: string,
     fileIndex: number,
-    chipKey: string
+    chipKey: string,
   ) {
     if (saving) {
       event.preventDefault()
@@ -349,13 +358,16 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     }
     event.dataTransfer.setData(
       FILE_DRAG_MIME,
-      JSON.stringify({ fromGroupId: groupId, fileIndex })
+      JSON.stringify({ fromGroupId: groupId, fileIndex }),
     )
     event.dataTransfer.effectAllowed = 'move'
     setDraggingFileKey(chipKey)
   }
 
-  function handleDocumentsDrop(event: React.DragEvent<HTMLDivElement>, toGroupId: string) {
+  function handleDocumentsDrop(
+    event: React.DragEvent<HTMLDivElement>,
+    toGroupId: string,
+  ) {
     event.preventDefault()
     event.stopPropagation()
     setDragOverGroupId(null)
@@ -390,7 +402,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
         documentType: group.documentType,
         validUntil: item.validUntil.trim() || null,
         file: item.file,
-      }))
+      })),
     )
 
     const invalid = flat.find((row) => !row.title.trim())
@@ -409,8 +421,8 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
           documentType: row.documentType,
           validUntil: row.validUntil,
           fileIndex: index,
-        }))
-      )
+        })),
+      ),
     )
     flat.forEach((row, index) => {
       formData.set(`file_${index}`, row.file)
@@ -426,10 +438,13 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
 
     if (result.errors.length > 0) {
       toast.error(`${result.uploaded} gespeichert, ${result.errors.length} Fehler.`)
-      log.error('complianceBulkUpload.partialErrors', { uploaded: result.uploaded, errors: result.errors })
+      log.error('complianceBulkUpload.partialErrors', {
+        uploaded: result.uploaded,
+        errors: result.errors,
+      })
     } else {
       toast.success(
-        `${result.uploaded} Zertifikat${result.uploaded !== 1 ? 'e' : ''} gespeichert.`
+        `${result.uploaded} Zertifikat${result.uploaded !== 1 ? 'e' : ''} gespeichert.`,
       )
     }
 
@@ -460,7 +475,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
             <div
               className={cn(
                 'min-h-0 flex-1 pt-3',
-                hasFiles ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+                hasFiles ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
               )}
             >
               {!hasFiles ? (
@@ -514,7 +529,9 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
                             <div className="flex min-w-0 flex-1 items-center gap-1.5">
                               <Input
                                 value={group.title}
-                                onChange={(e) => updateGroupTitle(group.id, e.target.value)}
+                                onChange={(e) =>
+                                  updateGroupTitle(group.id, e.target.value)
+                                }
                                 disabled={saving || previewPending}
                                 className="h-8 min-w-0 flex-1 text-sm"
                                 placeholder="Titel"
@@ -532,7 +549,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
                               className={cn(
                                 'flex min-h-9 min-w-0 flex-wrap gap-1.5 rounded-md transition-colors lg:justify-end',
                                 dragOverGroupId === group.id &&
-                                  'bg-primary/10 ring-1 ring-inset ring-primary/40'
+                                  'bg-primary/10 ring-1 ring-inset ring-primary/40',
                               )}
                               onDragOver={(event) => {
                                 event.preventDefault()
@@ -541,9 +558,13 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
                                 setDragOverGroupId(group.id)
                               }}
                               onDragLeave={(event) => {
-                                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                                if (
+                                  !event.currentTarget.contains(
+                                    event.relatedTarget as Node,
+                                  )
+                                ) {
                                   setDragOverGroupId((prev) =>
-                                    prev === group.id ? null : prev
+                                    prev === group.id ? null : prev,
                                   )
                                 }
                               }}
@@ -560,7 +581,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
                                         event,
                                         group.id,
                                         fileIndex,
-                                        chipKey
+                                        chipKey,
                                       )
                                     }
                                     onDragEnd={() => {
@@ -569,7 +590,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
                                     }}
                                     className={cn(
                                       'flex max-w-full cursor-grab items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm active:cursor-grabbing',
-                                      draggingFileKey === chipKey && 'opacity-50'
+                                      draggingFileKey === chipKey && 'opacity-50',
                                     )}
                                   >
                                     <AppIcon
@@ -664,7 +685,8 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
               </div>
               {totalFiles > 0 ? (
                 <p className="mt-1.5 text-right text-xs text-muted-foreground">
-                  {groups.length} Typ{groups.length !== 1 ? 'en' : ''} · {totalFiles} Datei
+                  {groups.length} Typ{groups.length !== 1 ? 'en' : ''} · {totalFiles}{' '}
+                  Datei
                   {totalFiles !== 1 ? 'en' : ''}
                 </p>
               ) : null}

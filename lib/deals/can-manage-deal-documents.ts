@@ -11,7 +11,7 @@ export function canManageDealDocuments(
   deal: DealDocumentAccessDeal,
   userId: string,
   systemRole: SystemRole,
-  functionRole: FunctionRole
+  functionRole: FunctionRole,
 ): boolean {
   if (profileCanManageOrgData(systemRole, functionRole)) return true
   if (deal.sales_manager_id === userId) return true

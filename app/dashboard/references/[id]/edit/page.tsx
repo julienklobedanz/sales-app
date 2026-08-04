@@ -9,7 +9,10 @@ import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
-import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import {
+  DASHBOARD_PAGE_SUBTITLE_CLASS,
+  DASHBOARD_PAGE_TITLE_CLASS,
+} from '@/lib/dashboard-ui'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { userCanEditReference } from '@/lib/roles/reference-access'
 
@@ -26,7 +29,9 @@ export default async function EditReferencePage({
   const sp = await searchParams
   const fromDeskId = typeof sp.fromDesk === 'string' ? sp.fromDesk.trim() : ''
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect(ROUTES.login)
 
   const { data: me } = await supabase
@@ -36,14 +41,18 @@ export default async function EditReferencePage({
     .single()
   if (!me) redirect(ROUTES.onboarding)
   const roles = parseProfileRoles(me)
-  if (!fromDeskId && !userCanEditReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
+  if (
+    !fromDeskId &&
+    !userCanEditReference(roles.functionRole, roles.systemRole, roles.capabilities)
+  ) {
     redirect(ROUTES.references.detail(id))
   }
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
     .from('references')
-    .select(`
+    .select(
+      `
       id,
       company_id,
       title,
@@ -70,7 +79,8 @@ export default async function EditReferencePage({
       project_end,
       created_by,
       companies ( name )
-    `)
+    `,
+    )
     .eq('id', id)
     .single()
 
@@ -80,7 +90,8 @@ export default async function EditReferencePage({
 
   // Ownership-Gating: AM darf nur eigene Referenzen bearbeiten, Admin alle.
   if (roles.functionRole === 'account_manager') {
-    const createdBy = (row as unknown as { created_by?: string | null }).created_by ?? null
+    const createdBy =
+      (row as unknown as { created_by?: string | null }).created_by ?? null
     if (!createdBy || createdBy !== user.id) {
       redirect(ROUTES.references.detail(id))
     }
@@ -108,7 +119,8 @@ export default async function EditReferencePage({
       : (row.companies as { name?: string } | null)
   const company_name = company?.name ?? ''
 
-  const companyLogoUrl = companies?.find((c: { id: string }) => c.id === row.company_id)?.logo_url ?? null
+  const companyLogoUrl =
+    companies?.find((c: { id: string }) => c.id === row.company_id)?.logo_url ?? null
   const initialData: ReferenceFormInitialData = {
     id: row.id,
     company_id: row.company_id,
@@ -150,11 +162,12 @@ export default async function EditReferencePage({
       const deskAnalysis = deskRow.analysis_snapshot as DealDeskMockAnalysis
       const deskPrefill = buildReferencePrefillFromAnalysis(
         deskAnalysis,
-        (deskRow.project_name as string) || 'Deal Desk'
+        (deskRow.project_name as string) || 'Deal Desk',
       )
       initialData.customer_challenge =
         initialData.customer_challenge?.trim() || deskPrefill.customer_challenge
-      initialData.our_solution = initialData.our_solution?.trim() || deskPrefill.our_solution
+      initialData.our_solution =
+        initialData.our_solution?.trim() || deskPrefill.our_solution
       initialData.summary = initialData.summary?.trim() || deskPrefill.summary
       initialData.industry = initialData.industry?.trim() || deskPrefill.industry
       if (!initialData.title?.trim() || initialData.title.includes('Deal Desk')) {
@@ -184,8 +197,9 @@ export default async function EditReferencePage({
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
             <p className="font-medium">Nächster Schritt: Freigabe</p>
             <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
-              Nach dem Speichern startest du den Freigabeprozess ausschließlich in der Referenz-Detailansicht
-              unter <strong>Freigabestatus</strong> („Freigabe anfordern“).
+              Nach dem Speichern startest du den Freigabeprozess ausschließlich in der
+              Referenz-Detailansicht unter <strong>Freigabestatus</strong> („Freigabe
+              anfordern“).
             </p>
             <Button asChild variant="outline" size="sm" className="mt-3 bg-background">
               <Link href={ROUTES.references.detail(id)}>Zur Detailansicht</Link>

@@ -8,12 +8,12 @@ describe('resolveNdaDisplayStatus', () => {
     expect(
       resolveNdaDisplayStatus([
         { status: 'active', valid_until: null, file_storage_path: null },
-      ])
+      ]),
     ).toBe('none')
     expect(
       resolveNdaDisplayStatus([
         { status: 'active', valid_until: '2030-01-01', file_storage_path: '  ' },
-      ])
+      ]),
     ).toBe('none')
   })
 
@@ -25,7 +25,7 @@ describe('resolveNdaDisplayStatus', () => {
           valid_until: '2030-06-01',
           file_storage_path: 'org/co/nda/file.pdf',
         },
-      ])
+      ]),
     ).toBe('active')
   })
 
@@ -37,7 +37,7 @@ describe('resolveNdaDisplayStatus', () => {
           valid_until: null,
           file_storage_path: 'org/co/nda/file.pdf',
         },
-      ])
+      ]),
     ).toBe('expiring')
   })
 
@@ -50,7 +50,7 @@ describe('resolveNdaDisplayStatus', () => {
           valid_until: '2030-06-01',
           file_storage_path: 'org/co/nda/file.pdf',
         },
-      ])
+      ]),
     ).toBe('active')
   })
 })

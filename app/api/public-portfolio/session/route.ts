@@ -71,7 +71,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const delta = Math.max(0, Math.min(120, Math.trunc(Number(body.activeSecondsDelta) || 0)))
+  const delta = Math.max(
+    0,
+    Math.min(120, Math.trunc(Number(body.activeSecondsDelta) || 0)),
+  )
   const sessionId = body.sessionId?.trim()
 
   if (sessionId) {
@@ -125,7 +128,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'insert_failed' }, { status: 500 })
   }
 
-  await logShareInsight(admin, sp, slug, recipientId, countryCode, visitorName, visitorEmail)
+  await logShareInsight(
+    admin,
+    sp,
+    slug,
+    recipientId,
+    countryCode,
+    visitorName,
+    visitorEmail,
+  )
 
   return NextResponse.json({ sessionId: created.id, activeSeconds: delta })
 }
@@ -137,7 +148,7 @@ async function logShareInsight(
   recipientId: string | null,
   countryCode: string | null,
   visitorName: string | null,
-  visitorEmail: string | null
+  visitorEmail: string | null,
 ) {
   const refIds = Array.isArray(sp.reference_ids) ? sp.reference_ids : []
   const refId = refIds[0]

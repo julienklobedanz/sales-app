@@ -30,7 +30,7 @@ function fromAddress(): string {
 async function shouldSend(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   orgId: string,
-  alertKey: string
+  alertKey: string,
 ): Promise<boolean> {
   const { data } = await supabase
     .from('security_alert_dispatches')
@@ -47,7 +47,7 @@ async function shouldSend(
 async function markSent(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   orgId: string,
-  alertKey: string
+  alertKey: string,
 ) {
   await supabase.from('security_alert_dispatches').upsert(
     {
@@ -55,7 +55,7 @@ async function markSent(
       alert_key: alertKey,
       last_sent_at: new Date().toISOString(),
     },
-    { onConflict: 'org_id,alert_key' }
+    { onConflict: 'org_id,alert_key' },
   )
 }
 
@@ -66,31 +66,27 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
     if (!resend) return
 
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-    const [
-      failedCountRes,
-      rateLimitedCountRes,
-      orgRes,
-      adminProfilesRes,
-    ] = await Promise.all([
-      supabase
-        .from('audit_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('org_id', ctx.orgId)
-        .eq('action', 'unlock_failed')
-        .gte('timestamp', fifteenMinutesAgo),
-      supabase
-        .from('audit_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('org_id', ctx.orgId)
-        .eq('action', 'unlock_rate_limited')
-        .gte('timestamp', fifteenMinutesAgo),
-      supabase.from('organizations').select('name').eq('id', ctx.orgId).single(),
-      supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('organization_id', ctx.orgId)
-        .in('system_role', ['owner', 'admin']),
-    ])
+    const [failedCountRes, rateLimitedCountRes, orgRes, adminProfilesRes] =
+      await Promise.all([
+        supabase
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', ctx.orgId)
+          .eq('action', 'unlock_failed')
+          .gte('timestamp', fifteenMinutesAgo),
+        supabase
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', ctx.orgId)
+          .eq('action', 'unlock_rate_limited')
+          .gte('timestamp', fifteenMinutesAgo),
+        supabase.from('organizations').select('name').eq('id', ctx.orgId).single(),
+        supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('organization_id', ctx.orgId)
+          .in('system_role', ['owner', 'admin']),
+      ])
 
     const failedCount = failedCountRes.count ?? 0
     const rateLimitedCount = rateLimitedCountRes.count ?? 0
@@ -139,6 +135,10 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
 
     await markSent(supabase, ctx.orgId, alertKey)
   } catch (error) {
-    log.error('maybeSendSecurityAlertMail.failed', { orgId: ctx.orgId, action: ctx.action }, error)
+    log.error(
+      'maybeSendSecurityAlertMail.failed',
+      { orgId: ctx.orgId, action: ctx.action },
+      error,
+    )
   }
 }

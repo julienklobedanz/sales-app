@@ -59,14 +59,23 @@ describe('rfp-relevance-coverage', () => {
   const row: RfpCoverageRow = {
     requirementId: 'req-1',
     requirementText: 'Post-Quantum Crypto',
-    matches: [{ id: 'r1', title: 'Apple', summary: null, industry: null, similarity: 0.44, companyName: 'A' }],
+    matches: [
+      {
+        id: 'r1',
+        title: 'Apple',
+        summary: null,
+        industry: null,
+        similarity: 0.44,
+        companyName: 'A',
+      },
+    ],
   }
 
   it('treats LLM none verdict as not covered despite high similarity', () => {
     expect(
       isRequirementCovered(row, {
         'req-1': { verdict: 'none', chosenId: null, reason: 'thematisch falsch' },
-      })
+      }),
     ).toBe(false)
   })
 
@@ -74,21 +83,19 @@ describe('rfp-relevance-coverage', () => {
     expect(
       isRequirementCovered(row, {
         'req-1': { verdict: 'covers', chosenId: 'r1', reason: 'passt' },
-      })
+      }),
     ).toBe(true)
     expect(
       isRequirementCovered(row, {
         'req-1': { verdict: 'partial', chosenId: 'r1', reason: 'teilweise' },
-      })
+      }),
     ).toBe(true)
   })
 
   it('computeCoveragePercentWithVerdicts ignores false-positive similarity', () => {
-    const pct = computeCoveragePercentWithVerdicts(
-      [{ id: 'req-1', text: 'x' }],
-      [row],
-      { 'req-1': { verdict: 'none', chosenId: null, reason: 'none' } }
-    )
+    const pct = computeCoveragePercentWithVerdicts([{ id: 'req-1', text: 'x' }], [row], {
+      'req-1': { verdict: 'none', chosenId: null, reason: 'none' },
+    })
     expect(pct).toBe(0)
   })
 })

@@ -8,7 +8,9 @@ import {
 
 describe('team-invite-email', () => {
   it('formats invite role labels', () => {
-    expect(formatTeamInviteRoleLabel('admin', 'sales_leader')).toBe('Administrator · Sales Lead')
+    expect(formatTeamInviteRoleLabel('admin', 'sales_leader')).toBe(
+      'Administrator · Sales Lead',
+    )
     expect(formatTeamInviteRoleLabel('member', 'sales_rep')).toBe('Mitglied · Vertrieb')
   })
 
@@ -33,7 +35,11 @@ describe('team-invite-email', () => {
   })
 
   it('humanizes missing resend configuration', () => {
-    expect(humanizeTeamInviteEmailError('RESEND_API_KEY fehlt')).toMatch(/nicht konfiguriert/i)
-    expect(humanizeTeamInviteEmailError('Invalid API key')).toMatch(/nicht korrekt konfiguriert/i)
+    expect(humanizeTeamInviteEmailError('RESEND_API_KEY fehlt')).toMatch(
+      /nicht konfiguriert/i,
+    )
+    expect(humanizeTeamInviteEmailError('Invalid API key')).toMatch(
+      /nicht korrekt konfiguriert/i,
+    )
   })
 })

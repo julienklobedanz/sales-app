@@ -155,7 +155,7 @@ function internalRoleLabel(role: string | null | undefined): string {
 
 export function formatReferenceListLabel(
   title: string,
-  accountName: string | null | undefined
+  accountName: string | null | undefined,
 ): string {
   const acc = accountName?.trim()
   if (acc) return `${title} — ${acc}`
@@ -196,9 +196,9 @@ export function hasAnyCommandSearchHit(groups: CommandSearchGroups): boolean {
 }
 
 /** Accounts/Partner-Gruppe: keine Doppelten (gleiche ID oder gleicher Name). */
-export function dedupeCompanySearchResults<
-  T extends { id: string; title: string },
->(items: T[]): T[] {
+export function dedupeCompanySearchResults<T extends { id: string; title: string }>(
+  items: T[],
+): T[] {
   const byId = new Map<string, T>()
   for (const item of items) {
     if (!byId.has(item.id)) byId.set(item.id, item)
@@ -217,7 +217,7 @@ export function dedupeCompanySearchResults<
 
 /** @deprecated Prefer dedupeCompanySearchResults */
 export function dedupeAccountSearchResults(
-  items: Extract<CommandSearchResult, { kind: 'account' }>[]
+  items: Extract<CommandSearchResult, { kind: 'account' }>[],
 ): Extract<CommandSearchResult, { kind: 'account' }>[] {
   return dedupeCompanySearchResults(items)
 }
@@ -230,7 +230,7 @@ export type SearchCommandCenterOptions = {
 export async function searchCommandCenter(
   supabase: SupabaseClient,
   rawQuery: string,
-  options?: SearchCommandCenterOptions
+  options?: SearchCommandCenterOptions,
 ): Promise<CommandSearchGroups> {
   const q = rawQuery.trim()
   if (!q) return emptyCommandSearchGroups()
@@ -239,7 +239,9 @@ export async function searchCommandCenter(
   if (!sanitizeIlikeUserInput(q)) return emptyCommandSearchGroups()
 
   const useSemanticReferences = options?.referenceHits !== undefined
-  const refOr = useSemanticReferences ? null : buildIlikeOrFilter(['title', 'summary', 'industry'], q)
+  const refOr = useSemanticReferences
+    ? null
+    : buildIlikeOrFilter(['title', 'summary', 'industry'], q)
   const deskOr = buildIlikeOrFilter(['project_name', 'customer_name'], q)
   const ndaOr = buildIlikeOrFilter(['title', 'notes'], q)
   const contactOr = buildIlikeOrFilter(['first_name', 'last_name', 'role'], q)
@@ -247,62 +249,67 @@ export async function searchCommandCenter(
 
   const accountsRes = await fetchAccountSearchRows(supabase, likePat)
 
-  const [
-    refsRes,
-    deskRes,
-    ndaRes,
-    execRes,
-    newsRes,
-    contactsRes,
-    profilesRes,
-    certsRes,
-  ] = await Promise.all([
-    refOr
-      ? supabase
-          .from('references')
-          .select('id,title,industry,companies(name)')
-          .or(refOr)
-          .limit(6)
-      : supabase.from('references').select('id,title,industry,companies(name)').limit(0),
-    deskOr
-      ? supabase
-          .from('deal_desk_projects')
-          .select('id,project_name,customer_name,analysis_status')
-          .or(deskOr)
-          .limit(6)
-      : supabase.from('deal_desk_projects').select('id,project_name,customer_name,analysis_status').limit(0),
-    fetchNdaSearchRows(supabase, ndaOr, likePat),
-    supabase
-      .from('market_signal_executive_events')
-      .select('id,person_name,change_summary,company_id,companies(name)')
-      .or(`person_name.ilike.${likePat},change_summary.ilike.${likePat}`)
-      .limit(5),
-    supabase
-      .from('market_signal_account_news')
-      .select('id,body,company_id,companies(name)')
-      .ilike('body', likePat)
-      .limit(5),
-    contactOr
-      ? supabase
-          .from('contact_persons')
-          .select('id,first_name,last_name,role,company_id,companies(name)')
-          .or(contactOr)
-          .limit(8)
-      : supabase.from('contact_persons').select('id,first_name,last_name,role,company_id,companies(name)').limit(0),
-    supabase.from('profiles').select('id,full_name,system_role,function_role').ilike('full_name', likePat).limit(5),
-    certOr
-      ? supabase
-          .from('organization_compliance_documents')
-          .select('id,title,document_type,valid_until,file_storage_path')
-          .eq('is_current', true)
-          .or(certOr)
-          .limit(6)
-      : supabase
-          .from('organization_compliance_documents')
-          .select('id,title,document_type,valid_until,file_storage_path')
-          .eq('is_current', true)
-          .limit(0),
-  ])
+  const [refsRes, deskRes, ndaRes, execRes, newsRes, contactsRes, profilesRes, certsRes] =
+    await Promise.all([
+      refOr
+        ? supabase
+            .from('references')
+            .select('id,title,industry,companies(name)')
+            .or(refOr)
+            .limit(6)
+        : supabase
+            .from('references')
+            .select('id,title,industry,companies(name)')
+            .limit(0),
+      deskOr
+        ? supabase
+            .from('deal_desk_projects')
+            .select('id,project_name,customer_name,analysis_status')
+            .or(deskOr)
+            .limit(6)
+        : supabase
+            .from('deal_desk_projects')
+            .select('id,project_name,customer_name,analysis_status')
+            .limit(0),
+      fetchNdaSearchRows(supabase, ndaOr, likePat),
+      supabase
+        .from('market_signal_executive_events')
+        .select('id,person_name,change_summary,company_id,companies(name)')
+        .or(`person_name.ilike.${likePat},change_summary.ilike.${likePat}`)
+        .limit(5),
+      supabase
+        .from('market_signal_account_news')
+        .select('id,body,company_id,companies(name)')
+        .ilike('body', likePat)
+        .limit(5),
+      contactOr
+        ? supabase
+            .from('contact_persons')
+            .select('id,first_name,last_name,role,company_id,companies(name)')
+            .or(contactOr)
+            .limit(8)
+        : supabase
+            .from('contact_persons')
+            .select('id,first_name,last_name,role,company_id,companies(name)')
+            .limit(0),
+      supabase
+        .from('profiles')
+        .select('id,full_name,system_role,function_role')
+        .ilike('full_name', likePat)
+        .limit(5),
+      certOr
+        ? supabase
+            .from('organization_compliance_documents')
+            .select('id,title,document_type,valid_until,file_storage_path')
+            .eq('is_current', true)
+            .or(certOr)
+            .limit(6)
+        : supabase
+            .from('organization_compliance_documents')
+            .select('id,title,document_type,valid_until,file_storage_path')
+            .eq('is_current', true)
+            .limit(0),
+    ])
 
   const groups = emptyCommandSearchGroups()
 
@@ -372,7 +379,9 @@ export async function searchCommandCenter(
       kind: 'market_signal',
       id: String(row.id),
       signalKind: 'exec',
-      title: person ? `${person}${summary ? ` — ${summary.slice(0, 80)}` : ''}` : summary.slice(0, 120),
+      title: person
+        ? `${person}${summary ? ` — ${summary.slice(0, 80)}` : ''}`
+        : summary.slice(0, 120),
       companyId: String(row.company_id),
       companyName: co?.name ?? 'Account',
     })
@@ -393,7 +402,8 @@ export async function searchCommandCenter(
 
   for (const row of contactsRes.data ?? []) {
     const co = companyFromJoin(row.companies)
-    const name = [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Kontakt'
+    const name =
+      [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Kontakt'
     groups.contacts.push({
       kind: 'contact_external',
       id: String(row.id),
@@ -428,7 +438,9 @@ export async function searchCommandCenter(
         id: String(row.id),
         title,
         documentType: docType,
-        validUntilLine: formatComplianceValidUntilLine((row.valid_until as string | null) ?? null),
+        validUntilLine: formatComplianceValidUntilLine(
+          (row.valid_until as string | null) ?? null,
+        ),
         hasFile: Boolean(row.file_storage_path),
       })
     }
@@ -456,7 +468,11 @@ async function fetchAccountSearchRows(supabase: SupabaseClient, likePat: string)
     return withKind
   }
 
-  return supabase.from('companies').select('id,name,logo_url').ilike('name', likePat).limit(10)
+  return supabase
+    .from('companies')
+    .select('id,name,logo_url')
+    .ilike('name', likePat)
+    .limit(10)
 }
 
 type NdaSearchRow = {
@@ -472,7 +488,7 @@ type NdaSearchRow = {
 export async function fetchNdaSearchRows(
   supabase: SupabaseClient,
   ndaOr: string | null,
-  likePat: string
+  likePat: string,
 ): Promise<NdaSearchRow[]> {
   const baseSelect =
     'id,company_id,status,valid_until,file_storage_path,companies(name,logo_url)'
@@ -532,7 +548,7 @@ export async function fetchNdaSearchRows(
 /** Legacy flache Liste für Command Palette (cmdk). */
 export async function searchGlobalEntities(
   supabase: SupabaseClient,
-  rawQuery: string
+  rawQuery: string,
 ): Promise<GlobalSearchResult[]> {
   const groups = await searchCommandCenter(supabase, rawQuery)
   const dealsRes = await supabase

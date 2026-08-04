@@ -29,7 +29,9 @@ export default async function RegisterPage({ searchParams }: Props) {
     >
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Konto erstellen</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Konto erstellen
+          </h1>
           <p className="text-sm text-gray-500">
             {inviteToken
               ? 'Du wurdest eingeladen. Erstelle dein Konto, um dem Team beizutreten.'

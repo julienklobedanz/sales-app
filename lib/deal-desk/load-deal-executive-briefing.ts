@@ -26,7 +26,7 @@ function parseAnalysisSnapshot(raw: unknown): DealDeskMockAnalysis | null {
 export async function loadDealExecutiveBriefingContext(
   supabase: SupabaseClient,
   organizationId: string,
-  dealId: string
+  dealId: string,
 ): Promise<DealExecutiveBriefingContext | null> {
   const { data: project, error } = await supabase
     .from('deal_desk_projects')
@@ -46,13 +46,13 @@ export async function loadDealExecutiveBriefingContext(
   const overlay = await loadNormalizedWorkspaceOverlay(
     supabase,
     String(project.id),
-    organizationId
+    organizationId,
   )
   const baseWorkspace = defaultWorkspaceState(analysis.redFlags ?? [])
   const workspace = mergeWorkspaceWithNormalizedOverlay(
     baseWorkspace,
     overlay,
-    baseWorkspace.smeCustomExperts
+    baseWorkspace.smeCustomExperts,
   )
   const redFlags: DealDeskRedFlag[] =
     workspace.redFlags.length > 0 ? workspace.redFlags : (analysis.redFlags ?? [])

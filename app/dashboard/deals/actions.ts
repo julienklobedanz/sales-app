@@ -40,27 +40,36 @@ export async function getExpiringDeals(): Promise<DealRow[]> {
   return getExpiringDealsImpl()
 }
 
-export async function getDealWithReferences(id: string): Promise<DealWithReferences | null> {
+export async function getDealWithReferences(
+  id: string,
+): Promise<DealWithReferences | null> {
   return getDealWithReferencesImpl(id)
 }
 
-export async function createDeal(formData: FormData): Promise<{ success: boolean; error?: string; id?: string }> {
+export async function createDeal(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string; id?: string }> {
   return createDealImpl(formData)
 }
 
 /** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
 export async function getMatchingReferencesForDeals(
-  dealIds: string[]
+  dealIds: string[],
 ): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
   return getMatchingReferencesForDealsImpl(dealIds)
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
-export async function getReferencesForOrg(): Promise<{ id: string; title: string; company_name: string }[]> {
+export async function getReferencesForOrg(): Promise<
+  { id: string; title: string; company_name: string }[]
+> {
   return getReferencesForOrgImpl()
 }
 
-export async function addReferenceToDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {
+export async function addReferenceToDeal(
+  dealId: string,
+  referenceId: string,
+): Promise<{ error?: string }> {
   return addReferenceToDealImpl(dealId, referenceId)
 }
 
@@ -96,14 +105,14 @@ export async function updateDeal(args: {
 /** Manuell RFP-Modus setzen (Promote/Demote). Nur explizite Nutzeraktion — nicht für stateless Coverage. */
 export async function setDealRfpMode(
   dealId: string,
-  isRfpMode: boolean
+  isRfpMode: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   return setDealRfpModeImpl(dealId, isRfpMode)
 }
 
 /** Deal inkl. Storage (deal-documents + legacy rfp-documents) und Desk-Projekte löschen. */
 export async function deleteDeal(
-  dealId: string
+  dealId: string,
 ): Promise<{ success: boolean; error?: string }> {
   return deleteDealImpl(dealId)
 }
@@ -118,7 +127,10 @@ export async function recordDealOutcome(args: {
   return recordDealOutcomeImpl(args)
 }
 
-export async function removeReferenceFromDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {
+export async function removeReferenceFromDeal(
+  dealId: string,
+  referenceId: string,
+): Promise<{ error?: string }> {
   return removeReferenceFromDealImpl(dealId, referenceId)
 }
 
@@ -132,14 +144,16 @@ export async function recordReferenceHelped(args: {
 }
 
 /** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
-export async function importDealsFromXlsx(formData: FormData): Promise<{ success: boolean; created?: number; error?: string }> {
+export async function importDealsFromXlsx(
+  formData: FormData,
+): Promise<{ success: boolean; created?: number; error?: string }> {
   return importDealsFromXlsxImpl(formData)
 }
 
 /** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
 export async function submitReferenceRequest(
   dealId: string,
-  message: string
+  message: string,
 ): Promise<{ success: boolean; error?: string }> {
   return submitReferenceRequestImpl(dealId, message)
 }

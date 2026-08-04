@@ -3,7 +3,13 @@ import type { ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 
@@ -38,12 +44,17 @@ export function DashboardSectionCard({
         <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
           {count != null ? (
-            <Badge variant="secondary" className="h-5 min-w-5 rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums">
+            <Badge
+              variant="secondary"
+              className="h-5 min-w-5 rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums"
+            >
               {count}
             </Badge>
           ) : null}
         </CardTitle>
-        {description ? <CardDescription className="text-xs">{description}</CardDescription> : null}
+        {description ? (
+          <CardDescription className="text-xs">{description}</CardDescription>
+        ) : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -65,21 +76,28 @@ export function WorkQueueRow({
 }) {
   return (
     <div className="flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0">
-      <span className={cn('size-2 shrink-0 rounded-full', QUEUE_DOT_CLASS[tone])} aria-hidden />
+      <span
+        className={cn('size-2 shrink-0 rounded-full', QUEUE_DOT_CLASS[tone])}
+        aria-hidden
+      />
       <div className="min-w-0 flex-1 text-sm">
         <span>{title}</span>
         {meta ? <span className="text-muted-foreground"> · {meta}</span> : null}
       </div>
       <Button asChild variant="outline" size="sm" className="h-7 shrink-0 text-xs">
-        <Link href={href}>
-          {ctaLabel} →
-        </Link>
+        <Link href={href}>{ctaLabel} →</Link>
       </Button>
     </div>
   )
 }
 
-export function HonestEmpty({ title, description }: { title: string; description?: string }) {
+export function HonestEmpty({
+  title,
+  description,
+}: {
+  title: string
+  description?: string
+}) {
   return (
     <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-5 text-center text-sm text-muted-foreground">
       <p className="font-medium text-foreground">{title}</p>
@@ -104,7 +122,14 @@ export function CoverageDonut({
 
   return (
     <svg width={118} height={118} viewBox="0 0 120 120" className="shrink-0" aria-hidden>
-      <circle cx={60} cy={60} r={r} fill="none" className="stroke-muted" strokeWidth={14} />
+      <circle
+        cx={60}
+        cy={60}
+        r={r}
+        fill="none"
+        className="stroke-muted"
+        strokeWidth={14}
+      />
       <circle
         cx={60}
         cy={60}
@@ -117,10 +142,20 @@ export function CoverageDonut({
         strokeLinecap="round"
         transform="rotate(-90 60 60)"
       />
-      <text x={60} y={58} textAnchor="middle" className="fill-foreground text-[24px] font-bold">
+      <text
+        x={60}
+        y={58}
+        textAnchor="middle"
+        className="fill-foreground text-[24px] font-bold"
+      >
         {label}
       </text>
-      <text x={60} y={76} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+      <text
+        x={60}
+        y={76}
+        textAnchor="middle"
+        className="fill-muted-foreground text-[10px]"
+      >
         {sublabel}
       </text>
     </svg>
@@ -170,7 +205,11 @@ export function DashboardFooterStrip({
   )
 }
 
-export function FunnelBarList({ steps }: { steps: Array<{ label: string; value: number }> }) {
+export function FunnelBarList({
+  steps,
+}: {
+  steps: Array<{ label: string; value: number }>
+}) {
   const max = Math.max(...steps.map((s) => s.value), 1)
   return (
     <div className="space-y-2">
@@ -180,9 +219,14 @@ export function FunnelBarList({ steps }: { steps: Array<{ label: string; value: 
           <div key={step.label} className="flex items-center gap-2.5 text-xs">
             <span className="w-[150px] shrink-0 text-muted-foreground">{step.label}</span>
             <span className="h-[18px] min-w-0 flex-1 overflow-hidden rounded-md bg-muted">
-              <span className="block h-full rounded-md bg-primary" style={{ width: `${width}%` }} />
+              <span
+                className="block h-full rounded-md bg-primary"
+                style={{ width: `${width}%` }}
+              />
             </span>
-            <span className="w-8 shrink-0 text-right font-semibold tabular-nums">{step.value}</span>
+            <span className="w-8 shrink-0 text-right font-semibold tabular-nums">
+              {step.value}
+            </span>
           </div>
         )
       })}
@@ -192,15 +236,17 @@ export function FunnelBarList({ steps }: { steps: Array<{ label: string; value: 
 
 export function StatusTonePill({ tone }: { tone: 'ok' | 'warn' | 'gap' }) {
   const h = COPY.dashboard.home
-  const label = tone === 'ok' ? h.statusCurrent : tone === 'warn' ? h.statusExpiring : h.statusStale
+  const label =
+    tone === 'ok' ? h.statusCurrent : tone === 'warn' ? h.statusExpiring : h.statusStale
   return (
     <Badge
       variant="outline"
       className={cn(
         'text-[11px]',
         tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
-        tone === 'warn' && 'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
-        tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive'
+        tone === 'warn' &&
+          'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
+        tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive',
       )}
     >
       {label}
@@ -229,11 +275,16 @@ export function WinRateCompareBars({
           <span className="w-[104px] shrink-0 text-muted-foreground">{row.label}</span>
           <span className="h-4 min-w-0 flex-1 overflow-hidden rounded-md bg-muted">
             <span
-              className={cn('block h-full rounded-md', row.label === withLabel ? 'bg-primary' : 'bg-muted-foreground/40')}
+              className={cn(
+                'block h-full rounded-md',
+                row.label === withLabel ? 'bg-primary' : 'bg-muted-foreground/40',
+              )}
               style={{ width: `${Math.max(4, row.value)}%` }}
             />
           </span>
-          <span className="w-10 shrink-0 text-right font-semibold tabular-nums">{row.value}%</span>
+          <span className="w-10 shrink-0 text-right font-semibold tabular-nums">
+            {row.value}%
+          </span>
         </div>
       ))}
     </div>
@@ -243,15 +294,20 @@ export function WinRateCompareBars({
 export function SignalStatusPill({ tone }: { tone: 'ok' | 'warn' | 'gap' }) {
   const h = COPY.dashboard.home
   const label =
-    tone === 'ok' ? h.signalPillChance : tone === 'warn' ? h.signalPillRisk : h.signalPillCritical
+    tone === 'ok'
+      ? h.signalPillChance
+      : tone === 'warn'
+        ? h.signalPillRisk
+        : h.signalPillCritical
   return (
     <Badge
       variant="outline"
       className={cn(
         'min-w-[66px] justify-center text-[11px]',
         tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
-        tone === 'warn' && 'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
-        tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive'
+        tone === 'warn' &&
+          'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
+        tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive',
       )}
     >
       {label}

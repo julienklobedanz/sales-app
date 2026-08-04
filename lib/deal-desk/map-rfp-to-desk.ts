@@ -30,7 +30,7 @@ const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'se
 function buildSmeTasks(
   coverage: RfpCoverageRow[],
   requirements: ExtractedRfpRequirement[],
-  verdicts?: Record<string, RfpVerdict>
+  verdicts?: Record<string, RfpVerdict>,
 ): DealDeskSmeTask[] {
   const tasks: DealDeskSmeTask[] = []
   let n = 0
@@ -46,7 +46,9 @@ function buildSmeTasks(
         category: row.category ?? 'Allgemein',
         dueInDays: 3 + (n % 5),
         contextExcerpt: row.requirementText.slice(0, 320),
-        contextPageHint: row.category ? `Anforderung · ${row.category}` : 'RFP-Anforderung',
+        contextPageHint: row.category
+          ? `Anforderung · ${row.category}`
+          : 'RFP-Anforderung',
       })
       n++
     }
@@ -60,7 +62,9 @@ function buildSmeTasks(
         category: req.category ?? 'Allgemein',
         dueInDays: 5,
         contextExcerpt: req.text.slice(0, 320),
-        contextPageHint: req.category ? `Anforderung · ${req.category}` : 'RFP-Anforderung',
+        contextPageHint: req.category
+          ? `Anforderung · ${req.category}`
+          : 'RFP-Anforderung',
       })
     }
   }
@@ -69,7 +73,7 @@ function buildSmeTasks(
 
 async function enrichLogoUrls(
   supabase: SupabaseClient,
-  coverage: RfpCoverageRow[]
+  coverage: RfpCoverageRow[],
 ): Promise<Map<string, string | null>> {
   const ids = new Set<string>()
   for (const row of coverage) {
@@ -85,7 +89,10 @@ async function enrichLogoUrls(
 
   const map = new Map<string, string | null>()
   for (const row of data ?? []) {
-    const companies = row.companies as { logo_url?: string | null } | { logo_url?: string | null }[] | null
+    const companies = row.companies as
+      | { logo_url?: string | null }
+      | { logo_url?: string | null }[]
+      | null
     const logo =
       companies && !Array.isArray(companies)
         ? companies.logo_url
@@ -127,9 +134,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   } = params
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
-    fileNames.length === 1
-      ? primary
-      : `${primary} + ${fileNames.length - 1} weitere`
+    fileNames.length === 1 ? primary : `${primary} + ${fileNames.length - 1} weitere`
 
   const logoByRef = await enrichLogoUrls(supabase, coverage)
   const complianceDocs = await loadOrgComplianceDocsForDelivery(supabase, organizationId)
@@ -179,7 +184,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
           matchPercent: Math.round(best.similarity * 100),
         },
       }
-    })
+    }),
   )
 
   const smeTasks = buildSmeTasks(coverage, requirements, rfpVerdicts)

@@ -27,7 +27,10 @@ describeIntegration('reference visibility RLS', () => {
   }, 120_000)
 
   it('sales_rep sieht keine fremden Entwürfe und keine NDA-Referenzen', async () => {
-    const client = await signInIntegrationUser(fixtures.salesRep.email, fixtures.salesRep.password)
+    const client = await signInIntegrationUser(
+      fixtures.salesRep.email,
+      fixtures.salesRep.password,
+    )
     const { data, error } = await client
       .from('references')
       .select('id, status, is_nda_deal')
@@ -43,7 +46,7 @@ describeIntegration('reference visibility RLS', () => {
   it('account_manager sieht Entwürfe und NDA in der eigenen Org', async () => {
     const client = await signInIntegrationUser(
       fixtures.accountManager.email,
-      fixtures.accountManager.password
+      fixtures.accountManager.password,
     )
     const { data, error } = await client
       .from('references')
@@ -73,8 +76,15 @@ describeIntegration('reference visibility RLS', () => {
 
     expect(ownDraftId).toBeTruthy()
 
-    const client = await signInIntegrationUser(fixtures.salesRep.email, fixtures.salesRep.password)
-    const { data } = await client.from('references').select('id').eq('id', ownDraftId!).maybeSingle()
+    const client = await signInIntegrationUser(
+      fixtures.salesRep.email,
+      fixtures.salesRep.password,
+    )
+    const { data } = await client
+      .from('references')
+      .select('id')
+      .eq('id', ownDraftId!)
+      .maybeSingle()
     expect(data?.id).toBe(ownDraftId)
 
     await admin.from('references').delete().eq('id', ownDraftId!)

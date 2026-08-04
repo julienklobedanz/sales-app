@@ -12,7 +12,7 @@ export function normalizeWrappedParagraphs(input: string): string {
         .filter(Boolean)
         .join(' ')
         .replace(/\s{2,}/g, ' ')
-        .trim()
+        .trim(),
     )
     .filter(Boolean)
 
@@ -45,9 +45,15 @@ export function looksLikeProxyOrNetworkFailure(message: string): boolean {
   )
 }
 
-export function normalizeContactIdentity(parts: Array<string | null | undefined>): string {
+export function normalizeContactIdentity(
+  parts: Array<string | null | undefined>,
+): string {
   return parts
-    .map((part) => String(part ?? '').trim().toLowerCase())
+    .map((part) =>
+      String(part ?? '')
+        .trim()
+        .toLowerCase(),
+    )
     .join('|')
 }
 
@@ -84,9 +90,14 @@ export function formatZodError(error: import('zod').ZodError): string {
   )
 }
 
-export function dedupeContacts<T extends { id: string; first_name: string | null; last_name: string | null; email: string | null }>(
-  contacts: T[]
-): T[] {
+export function dedupeContacts<
+  T extends {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+  },
+>(contacts: T[]): T[] {
   const seenContactIds = new Set<string>()
   const seenContactIdentities = new Set<string>()
   return contacts.filter((c) => {
@@ -107,4 +118,3 @@ export function dedupeCustomerContacts<T extends { id: string }>(contacts: T[]):
     return true
   })
 }
-

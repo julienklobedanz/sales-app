@@ -84,7 +84,7 @@ export function ApprovalContactSuggestField({
                 aria-selected={selected?.id === s.id && selected?.kind === s.kind}
                 className={cn(
                   'flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground',
-                  selected?.id === s.id && selected?.kind === s.kind && 'bg-accent/60'
+                  selected?.id === s.id && selected?.kind === s.kind && 'bg-accent/60',
                 )}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
@@ -107,7 +107,8 @@ export function ApprovalContactSuggestField({
       ) : null}
       {!loading && trimmed.length > 0 && suggestions.length === 0 ? (
         <p className="mt-1.5 text-xs text-muted-foreground">
-          Kein Treffer — E-Mail direkt eintragen; der Kontakt wird beim Start der Freigabe angelegt.
+          Kein Treffer — E-Mail direkt eintragen; der Kontakt wird beim Start der Freigabe
+          angelegt.
         </p>
       ) : null}
     </div>

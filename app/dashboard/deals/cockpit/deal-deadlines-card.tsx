@@ -2,12 +2,22 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { ArrowRight01Icon, CirclePlus, FileDownloadIcon, PencilEdit01Icon, Trash2 } from '@hugeicons/core-free-icons'
+import {
+  ArrowRight01Icon,
+  CirclePlus,
+  FileDownloadIcon,
+  PencilEdit01Icon,
+  Trash2,
+} from '@hugeicons/core-free-icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -39,7 +49,10 @@ import {
   dealDeadlinesExportableForIcs,
   downloadDealDeadlinesIcs,
 } from '@/lib/deals/deal-deadline-ics'
-import { DEAL_DEADLINE_KIND_LABELS, type DealDeadlineKind } from '@/lib/deals/deadline-types'
+import {
+  DEAL_DEADLINE_KIND_LABELS,
+  type DealDeadlineKind,
+} from '@/lib/deals/deadline-types'
 import { cn } from '@/lib/utils'
 
 import {
@@ -48,7 +61,10 @@ import {
   updateDealDeadlineAction,
 } from '../deadline-actions'
 
-const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [DealDeadlineKind, string][]
+const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [
+  DealDeadlineKind,
+  string,
+][]
 
 function DeadlineTimelineMarker({
   isFirst,
@@ -67,7 +83,7 @@ function DeadlineTimelineMarker({
           'z-[1] size-2.5 shrink-0 rounded-full border-2 bg-background ring-2 ring-card',
           tone === 'past' && 'border-destructive/70 bg-destructive/15',
           tone === 'today' && 'border-amber-500 bg-amber-400/30',
-          tone === 'future' && 'border-primary/60 bg-primary/10'
+          tone === 'future' && 'border-primary/60 bg-primary/10',
         )}
       />
       <div className={cn('w-px flex-1 bg-border', isLast && 'opacity-0')} />
@@ -150,7 +166,7 @@ export function DealDeadlinesCard({
                     <CardTitle
                       className={cn(
                         'text-base',
-                        activeCount === 0 && 'font-normal text-muted-foreground'
+                        activeCount === 0 && 'font-normal text-muted-foreground',
                       )}
                     >
                       {collapsedAllTitle}
@@ -168,7 +184,9 @@ export function DealDeadlinesCard({
                       </div>
                     </>
                   ) : (
-                    <div className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmpty}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {COPY.deals.cockpit.deadlinesEmpty}
+                    </div>
                   )}
                 </div>
               </button>
@@ -189,33 +207,35 @@ export function DealDeadlinesCard({
                 {COPY.deals.cockpit.downloadDeadlinesIcs}
               </Button>
               <Popover open={addOpen} onOpenChange={setAddOpen}>
-              <PopoverTrigger asChild>
-                <Button type="button" size="sm" variant="outline" className="shrink-0">
-                  <AppIcon icon={CirclePlus} size={16} className="mr-1" />
-                  {COPY.deals.cockpit.addDeadline}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80">
-                <DeadlineForm
-                  title={COPY.deals.cockpit.addDeadline}
-                  onSubmit={async (values) => {
-                    const res = await createDealDeadlineManual({ dealId, ...values })
-                    if (!res.success) {
-                      toast.error(res.error ?? 'Speichern fehlgeschlagen.')
-                      return
-                    }
-                    toast.success('Termin angelegt.')
-                    setAddOpen(false)
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="sm" variant="outline" className="shrink-0">
+                    <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                    {COPY.deals.cockpit.addDeadline}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80">
+                  <DeadlineForm
+                    title={COPY.deals.cockpit.addDeadline}
+                    onSubmit={async (values) => {
+                      const res = await createDealDeadlineManual({ dealId, ...values })
+                      if (!res.success) {
+                        toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                        return
+                      }
+                      toast.success('Termin angelegt.')
+                      setAddOpen(false)
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
           <CollapsibleContent className="mt-4 border-t pt-3">
             {sorted.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmptyHint}</p>
+              <p className="text-sm text-muted-foreground">
+                {COPY.deals.cockpit.deadlinesEmptyHint}
+              </p>
             ) : (
               <ul className="space-y-0">
                 {sorted.map((d, index) => {
@@ -268,7 +288,8 @@ export function DealDeadlinesCard({
                                 dealId,
                                 deadlineId: d.id,
                               })
-                              if (!res.success) toast.error(res.error ?? 'Löschen fehlgeschlagen.')
+                              if (!res.success)
+                                toast.error(res.error ?? 'Löschen fehlgeschlagen.')
                               else toast.success('Termin entfernt.')
                             }}
                           >
@@ -387,7 +408,12 @@ function DeadlineForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="dl-date">Datum (optional)</Label>
-        <Input id="dl-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <Input
+          id="dl-date"
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="dl-text">Fuzzy-Text (optional)</Label>
@@ -399,7 +425,11 @@ function DeadlineForm({
         />
       </div>
       <DialogFooter className="gap-2 sm:justify-end px-0">
-        <Button type="button" onClick={() => void handleSubmit()} disabled={saving || !label.trim()}>
+        <Button
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={saving || !label.trim()}
+        >
           {saving ? 'Speichern …' : submitLabel}
         </Button>
       </DialogFooter>

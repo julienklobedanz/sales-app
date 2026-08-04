@@ -84,13 +84,20 @@ export function ReferenceDetailMain({
               <Card className="border-border/70">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                    <AppIcon icon={TrendingUp} size={14} className="text-muted-foreground" />
+                    <AppIcon
+                      icon={TrendingUp}
+                      size={14}
+                      className="text-muted-foreground"
+                    />
                     Herausforderung
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    <ReferenceContextHighlighted text={challengeText} phrases={highlightPhrases} />
+                    <ReferenceContextHighlighted
+                      text={challengeText}
+                      phrases={highlightPhrases}
+                    />
                   </p>
                 </CardContent>
               </Card>
@@ -99,13 +106,20 @@ export function ReferenceDetailMain({
               <Card className="border-border/70">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                    <AppIcon icon={LinkIcon} size={14} className="text-muted-foreground" />
+                    <AppIcon
+                      icon={LinkIcon}
+                      size={14}
+                      className="text-muted-foreground"
+                    />
                     Lösung
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    <ReferenceContextHighlighted text={solutionText} phrases={highlightPhrases} />
+                    <ReferenceContextHighlighted
+                      text={solutionText}
+                      phrases={highlightPhrases}
+                    />
                   </p>
                 </CardContent>
               </Card>

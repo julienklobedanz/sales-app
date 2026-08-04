@@ -13,7 +13,7 @@ describe('truncateToCompleteSentences', () => {
 
   it('keeps short text and ensures sentence end', () => {
     expect(truncateToCompleteSentences('Siemens investiert in KI')).toBe(
-      'Siemens investiert in KI.'
+      'Siemens investiert in KI.',
     )
   })
 
@@ -22,7 +22,7 @@ describe('truncateToCompleteSentences', () => {
       'Apple plant die Übernahme eines KI-Hardware-Start-ups. Das soll die Produktpalette erweitern. Danach folgt noch ein dritter Satz mit viel Text.'
     const out = truncateToCompleteSentences(input, 120)
     expect(out).toBe(
-      'Apple plant die Übernahme eines KI-Hardware-Start-ups. Das soll die Produktpalette erweitern.'
+      'Apple plant die Übernahme eines KI-Hardware-Start-ups. Das soll die Produktpalette erweitern.',
     )
     expect(out).not.toContain('…')
     expect(out?.endsWith('.')).toBe(true)
@@ -33,7 +33,7 @@ describe('truncateToCompleteSentences', () => {
       'Mit der Übernahme wird Apple seine KI-Strategie vorantreiben und neue Technologien integrieren bevor die Budgetplanung für das nächste Jahr abgeschlossen ist und weitere Partner eingebunden werden.'
     const out = truncateToCompleteSentences(longFirst, 80)
     expect(out).toBe(
-      'Mit der Übernahme wird Apple seine KI-Strategie vorantreiben und neue Technologien integrieren bevor die Budgetplanung für das nächste Jahr abgeschlossen ist und weitere Partner eingebunden werden.'
+      'Mit der Übernahme wird Apple seine KI-Strategie vorantreiben und neue Technologien integrieren bevor die Budgetplanung für das nächste Jahr abgeschlossen ist und weitere Partner eingebunden werden.',
     )
     expect(out).not.toContain('…')
   })
@@ -51,8 +51,8 @@ describe('sanitizeCompellingEventForDisplay', () => {
   it('hides generic Führungsrolle template', () => {
     expect(
       sanitizeCompellingEventForDisplay(
-        'Tim Cook wechselt auf den neue Führungsrolle-Posten bei Apple.'
-      )
+        'Tim Cook wechselt auf den neue Führungsrolle-Posten bei Apple.',
+      ),
     ).toBeNull()
   })
 })

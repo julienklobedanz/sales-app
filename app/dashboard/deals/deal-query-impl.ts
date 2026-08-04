@@ -18,7 +18,8 @@ export async function getDealsImpl(): Promise<DealRow[]> {
 
   const { data: rows, error } = await supabase
     .from('deals')
-    .select(`
+    .select(
+      `
       id,
       title,
       company_id,
@@ -35,14 +36,18 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       created_at,
       updated_at,
       companies ( name, logo_url )
-    `)
+    `,
+    )
     .eq('organization_id', orgId)
     .order('expiry_date', { ascending: true, nullsFirst: false })
 
   if (error) return []
 
   const dealIds = (rows ?? []).map((r) => r.id)
-  const linkedRefsMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }[]> = {}
+  const linkedRefsMap: Record<
+    string,
+    { id: string; title: string; company_name: string; logo_url?: string | null }[]
+  > = {}
   dealIds.forEach((id) => {
     linkedRefsMap[id] = []
   })
@@ -64,13 +69,18 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       }
     }
 
-    const refIds = [...new Set((drRows ?? []).map((r) => r.reference_id).filter(Boolean))] as string[]
+    const refIds = [
+      ...new Set((drRows ?? []).map((r) => r.reference_id).filter(Boolean)),
+    ] as string[]
     if (refIds.length > 0) {
       const { data: refs } = await supabase
         .from('references')
         .select('id, title, companies(name, logo_url)')
         .in('id', refIds)
-      const refMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }> = {}
+      const refMap: Record<
+        string,
+        { id: string; title: string; company_name: string; logo_url?: string | null }
+      > = {}
       for (const r of refs ?? []) {
         const company = companyFromJoin(r.companies)
         refMap[r.id] = {
@@ -116,13 +126,17 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       company_logo_url: company?.logoUrl ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
-      requirements_text: (r as { requirements_text?: string | null }).requirements_text ?? null,
-      incumbent_provider: (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
+      requirements_text:
+        (r as { requirements_text?: string | null }).requirements_text ?? null,
+      incumbent_provider:
+        (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
       is_public: r.is_public ?? true,
       account_manager_id: r.account_manager_id ?? null,
-      account_manager_name: r.account_manager_id ? names[r.account_manager_id] ?? null : null,
+      account_manager_name: r.account_manager_id
+        ? (names[r.account_manager_id] ?? null)
+        : null,
       sales_manager_id: r.sales_manager_id ?? null,
-      sales_manager_name: r.sales_manager_id ? names[r.sales_manager_id] ?? null : null,
+      sales_manager_name: r.sales_manager_id ? (names[r.sales_manager_id] ?? null) : null,
       status: normalizeDealStatus(r.status),
       is_rfp_mode: Boolean((r as { is_rfp_mode?: boolean }).is_rfp_mode),
       expiry_date: r.expiry_date ?? null,
@@ -147,7 +161,9 @@ export async function getExpiringDealsImpl(): Promise<DealRow[]> {
   })
 }
 
-export async function getDealWithReferencesImpl(id: string): Promise<DealWithReferences | null> {
+export async function getDealWithReferencesImpl(
+  id: string,
+): Promise<DealWithReferences | null> {
   const supabase = await createServerSupabaseClient()
   const orgId = await getSessionOrgId()
   if (!orgId) return null
@@ -220,10 +236,22 @@ export async function getDealWithReferencesImpl(id: string): Promise<DealWithRef
   }
 
   const accountManagerName = deal.account_manager_id
-    ? (await supabase.from('profiles').select('full_name').eq('id', deal.account_manager_id).single()).data?.full_name ?? null
+    ? ((
+        await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', deal.account_manager_id)
+          .single()
+      ).data?.full_name ?? null)
     : null
   const salesManagerName = deal.sales_manager_id
-    ? (await supabase.from('profiles').select('full_name').eq('id', deal.sales_manager_id).single()).data?.full_name ?? null
+    ? ((
+        await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', deal.sales_manager_id)
+          .single()
+      ).data?.full_name ?? null)
     : null
 
   const company = companyFromJoin(deal.companies)
@@ -249,8 +277,10 @@ export async function getDealWithReferencesImpl(id: string): Promise<DealWithRef
     company_name: company?.name ?? null,
     industry: deal.industry ?? null,
     volume: deal.volume ?? null,
-    requirements_text: (deal as { requirements_text?: string | null }).requirements_text ?? null,
-    incumbent_provider: (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
+    requirements_text:
+      (deal as { requirements_text?: string | null }).requirements_text ?? null,
+    incumbent_provider:
+      (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
     is_public: deal.is_public ?? true,
     account_manager_id: deal.account_manager_id ?? null,
     account_manager_name: accountManagerName,
@@ -260,8 +290,10 @@ export async function getDealWithReferencesImpl(id: string): Promise<DealWithRef
     is_rfp_mode: Boolean((deal as { is_rfp_mode?: boolean }).is_rfp_mode),
     expiry_date: deal.expiry_date ?? null,
     salesforce_opportunity_id:
-      (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ?? null,
-    crm_opportunity_id: (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
+      (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ??
+      null,
+    crm_opportunity_id:
+      (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
     crm_source: (deal as { crm_source?: string | null }).crm_source ?? null,
     crm_stage: deal.crm_stage ?? null,
     created_at: deal.created_at ?? '',
@@ -274,10 +306,12 @@ export async function getDealWithReferencesImpl(id: string): Promise<DealWithRef
 
 /** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
 export async function getMatchingReferencesForDealsImpl(
-  dealIds: string[]
+  dealIds: string[],
 ): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
   const result: Record<string, { count: number; suggestions: MatchSuggestion[] }> = {}
-  dealIds.forEach((id) => { result[id] = { count: 0, suggestions: [] } })
+  dealIds.forEach((id) => {
+    result[id] = { count: 0, suggestions: [] }
+  })
   if (dealIds.length === 0) return result
 
   const supabase = await createServerSupabaseClient()
@@ -290,14 +324,18 @@ export async function getMatchingReferencesForDealsImpl(
     .in('id', dealIds)
     .eq('organization_id', orgId)
   const dealIndustries: Record<string, string | null> = {}
-  ;(deals ?? []).forEach((d) => { dealIndustries[d.id] = d.industry ?? null })
+  ;(deals ?? []).forEach((d) => {
+    dealIndustries[d.id] = d.industry ?? null
+  })
 
   const { data: drRows } = await supabase
     .from('deal_references')
     .select('deal_id, reference_id')
     .in('deal_id', dealIds)
   const linkedByDeal: Record<string, Set<string>> = {}
-  dealIds.forEach((id) => { linkedByDeal[id] = new Set() })
+  dealIds.forEach((id) => {
+    linkedByDeal[id] = new Set()
+  })
   ;(drRows ?? []).forEach((r) => linkedByDeal[r.deal_id]?.add(r.reference_id))
 
   const { data: refs } = await supabase
@@ -324,7 +362,7 @@ export async function getMatchingReferencesForDealsImpl(
     const dealIndustryId = resolveIndustryId(industry)
     const matching = dealIndustryId
       ? refList.filter(
-          (r) => resolveIndustryId(r.industry) === dealIndustryId && !linked.has(r.id)
+          (r) => resolveIndustryId(r.industry) === dealIndustryId && !linked.has(r.id),
         )
       : []
     result[dealId] = { count: matching.length, suggestions: matching.slice(0, 3) }
@@ -333,7 +371,9 @@ export async function getMatchingReferencesForDealsImpl(
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
-export async function getReferencesForOrgImpl(): Promise<{ id: string; title: string; company_name: string }[]> {
+export async function getReferencesForOrgImpl(): Promise<
+  { id: string; title: string; company_name: string }[]
+> {
   const supabase = await createServerSupabaseClient()
   const orgId = await getSessionOrgId()
   if (!orgId) return []

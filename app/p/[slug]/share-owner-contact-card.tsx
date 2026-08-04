@@ -51,7 +51,11 @@ export function ShareOwnerContactCard({
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={10} className="relative w-[260px] px-3 py-2.5">
+      <PopoverContent
+        align="end"
+        sideOffset={10}
+        className="relative w-[260px] px-3 py-2.5"
+      >
         <span
           aria-hidden
           className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t bg-popover"

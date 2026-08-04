@@ -15,7 +15,7 @@ export type CustomerAccessRevokeParams = {
  */
 export async function resetReferencesAfterCustomerAccessRevoke(
   admin: SupabaseClient,
-  params: CustomerAccessRevokeParams
+  params: CustomerAccessRevokeParams,
 ): Promise<{ referenceIds: string[] }> {
   const { data: portfolio } = await admin
     .from('shared_portfolios')
@@ -60,7 +60,14 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     .in('id', referenceIds)
 
   if (updateError) {
-    log.error('update failed', { action: 'resetReferencesAfterCustomerAccessRevoke.update', message: updateError.message }, updateError)
+    log.error(
+      'update failed',
+      {
+        action: 'resetReferencesAfterCustomerAccessRevoke.update',
+        message: updateError.message,
+      },
+      updateError,
+    )
     return { referenceIds: [] }
   }
 
@@ -78,7 +85,14 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     }))
     const { error: eventError } = await admin.from('evidence_events').insert(events)
     if (eventError) {
-      log.error('event log failed', { action: 'resetReferencesAfterCustomerAccessRevoke.eventLog', message: eventError.message }, eventError)
+      log.error(
+        'event log failed',
+        {
+          action: 'resetReferencesAfterCustomerAccessRevoke.eventLog',
+          message: eventError.message,
+        },
+        eventError,
+      )
     }
   }
 

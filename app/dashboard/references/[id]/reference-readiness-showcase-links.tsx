@@ -58,7 +58,10 @@ export function ReferenceReadinessShowcaseLinks({
           toast.error(res.error)
           return
         }
-        const revokeUrl = buildManageUrl(absolutePublicUrl(publicPreviewPath), res.manageToken)
+        const revokeUrl = buildManageUrl(
+          absolutePublicUrl(publicPreviewPath),
+          res.manageToken,
+        )
         window.open(revokeUrl, '_blank', 'noopener,noreferrer')
         if (notifyCustomer) {
           if (res.customerEmailSent) {
@@ -129,9 +132,9 @@ export function ReferenceReadinessShowcaseLinks({
           <AlertDialogHeader>
             <AlertDialogTitle>Neuen Sperrlink erzeugen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Es wird ein neuer Sperrlink generiert und automatisch per Mail an deinen Kunden{' '}
-              <span className="font-medium text-foreground">{customerEmail}</span> geschickt. Möchtest
-              du fortfahren?
+              Es wird ein neuer Sperrlink generiert und automatisch per Mail an deinen
+              Kunden <span className="font-medium text-foreground">{customerEmail}</span>{' '}
+              geschickt. Möchtest du fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

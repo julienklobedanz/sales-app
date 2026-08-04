@@ -34,7 +34,10 @@ export type DealDeskProject = {
 }
 
 export function stripFileExtension(fileName: string): string {
-  const base = fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim()
+  const base = fileName
+    .replace(/\.[^.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .trim()
   return base || 'Neues Projekt'
 }
 
@@ -47,7 +50,11 @@ export function defaultProjectNameFromFiles(fileNames: string[]): string {
 export function createDealDeskProject(
   fileNames: string[],
   analysis: DealDeskMockAnalysis,
-  opts?: { id?: string; analysisStatus?: DealDeskAnalysisStatus; analysisSource?: string | null }
+  opts?: {
+    id?: string
+    analysisStatus?: DealDeskAnalysisStatus
+    analysisSource?: string | null
+  },
 ): DealDeskProject {
   return {
     id: opts?.id ?? crypto.randomUUID(),
@@ -59,7 +66,9 @@ export function createDealDeskProject(
     smeRoutes:
       opts?.analysisSource === 'mock' ? { 's-1': DEMO_SME_PREVIEW_ASSIGNMENT.route } : {},
     smeAssignments:
-      opts?.analysisSource === 'mock' ? { 's-1': { ...DEMO_SME_PREVIEW_ASSIGNMENT } } : {},
+      opts?.analysisSource === 'mock'
+        ? { 's-1': { ...DEMO_SME_PREVIEW_ASSIGNMENT } }
+        : {},
     smeCustomExperts: [],
     decision: null,
     bidTeam:

@@ -15,13 +15,15 @@ function toneStyles(tone: DealRfpCockpitData['recommendation']['tone']) {
   switch (tone) {
     case 'go':
       return {
-        shell: 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40',
+        shell:
+          'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40',
         badge: 'bg-emerald-600 text-white',
         accent: 'bg-emerald-600',
       }
     case 'caution':
       return {
-        shell: 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40',
+        shell:
+          'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40',
         badge: 'bg-amber-500 text-white',
         accent: 'bg-amber-500',
       }
@@ -66,7 +68,12 @@ function CompactMetric({
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className={cn('truncate text-sm font-semibold tabular-nums', metricValueClass(tone))}>
+      <p
+        className={cn(
+          'truncate text-sm font-semibold tabular-nums',
+          metricValueClass(tone),
+        )}
+      >
         {value}
       </p>
     </div>
@@ -96,7 +103,7 @@ export function DealRfpRecommendationBanner({
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
-          })
+          }),
         )
       : null
 
@@ -121,7 +128,11 @@ export function DealRfpRecommendationBanner({
         ? data.icpFitLabel
         : '—'
   const icpTone: 'go' | 'caution' | 'muted' =
-    icpRubrik && icpRubrik.score >= 4 ? 'go' : icpRubrik && icpRubrik.score >= 2 ? 'caution' : 'muted'
+    icpRubrik && icpRubrik.score >= 4
+      ? 'go'
+      : icpRubrik && icpRubrik.score >= 2
+        ? 'caution'
+        : 'muted'
 
   const reifeHint =
     showMetrics && data.winProbabilityBreakdown
@@ -130,7 +141,12 @@ export function DealRfpRecommendationBanner({
 
   return (
     <div id="urteil" className="scroll-mt-24">
-      <div className={cn('relative overflow-hidden rounded-xl border shadow-sm', styles.shell)}>
+      <div
+        className={cn(
+          'relative overflow-hidden rounded-xl border shadow-sm',
+          styles.shell,
+        )}
+      >
         <div className={cn('absolute inset-y-0 left-0 w-1', styles.accent)} aria-hidden />
         <div className="flex flex-col gap-3 px-4 py-3.5 pl-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -138,13 +154,15 @@ export function DealRfpRecommendationBanner({
               <span
                 className={cn(
                   'mt-0.5 shrink-0 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide',
-                  styles.badge
+                  styles.badge,
                 )}
               >
                 {shortLabel(recommendation.label)}
               </span>
               <div className="min-w-0 space-y-1">
-                <p className="text-sm leading-relaxed text-foreground">{recommendation.detail}</p>
+                <p className="text-sm leading-relaxed text-foreground">
+                  {recommendation.detail}
+                </p>
                 {analyzedLabel ? (
                   <p className="text-xs text-muted-foreground">{analyzedLabel}</p>
                 ) : null}

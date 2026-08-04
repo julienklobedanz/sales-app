@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const { referenceId, matchScore, outputFormat, tone, additionalContext, dealContext } = parsed.data
+  const { referenceId, matchScore, outputFormat, tone, additionalContext, dealContext } =
+    parsed.data
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
       industry,
       deleted_at,
       companies ( name, organization_id )
-    `
+    `,
     )
     .eq('id', referenceId)
     .maybeSingle()
@@ -98,10 +99,13 @@ export async function POST(req: NextRequest) {
   const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw
   const companyOrgId = company?.organization_id
   if (!orgId || !companyOrgId || companyOrgId !== orgId) {
-    return new Response(JSON.stringify({ error: 'Keine Berechtigung für diese Referenz.' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: 'Keine Berechtigung für diese Referenz.' }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
   }
 
   const userPrompt = buildKiEntwurfUserPrompt({

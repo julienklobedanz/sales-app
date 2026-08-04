@@ -2,7 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import webpush from 'web-push'
 import { ROUTES } from '@/lib/routes'
-import { buildRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
+import {
+  buildRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import {
   marketSignalsDigestRoleFromProfile,
@@ -41,17 +44,23 @@ function companyNameFromRow(row: unknown): string {
 }
 
 function orgIdFromRow(row: unknown): string {
-  const r = row as { companies?: { organization_id?: string } | { organization_id?: string }[] | null }
+  const r = row as {
+    companies?: { organization_id?: string } | { organization_id?: string }[] | null
+  }
   const c = r.companies
   const one = Array.isArray(c) ? c[0] : c
   return String(one?.organization_id ?? '')
 }
 
-async function companyIdsForOrganization(admin: SupabaseClient, organizationId: string): Promise<string[]> {
-  const { data } = await admin.from('companies').select('id').eq('organization_id', organizationId)
-  return (data ?? [])
-    .map((c) => String((c as { id?: string }).id ?? ''))
-    .filter(Boolean)
+async function companyIdsForOrganization(
+  admin: SupabaseClient,
+  organizationId: string,
+): Promise<string[]> {
+  const { data } = await admin
+    .from('companies')
+    .select('id')
+    .eq('organization_id', organizationId)
+  return (data ?? []).map((c) => String((c as { id?: string }).id ?? '')).filter(Boolean)
 }
 
 type OrgBucket = {
@@ -83,7 +92,7 @@ function buildInstantEmailHtml(input: {
       : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Company Update</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${news
           .map(
             (n) =>
-              `<li style="margin-bottom:8px;"><strong>${escapeHtml(n.companyName)}</strong><br/>${escapeHtml(n.body)}</li>`
+              `<li style="margin-bottom:8px;"><strong>${escapeHtml(n.companyName)}</strong><br/>${escapeHtml(n.body)}</li>`,
           )
           .join('')}</ul>`
 
@@ -93,7 +102,7 @@ function buildInstantEmailHtml(input: {
       : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Executive</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${executives
           .map(
             (e) =>
-              `<li style="margin-bottom:8px;"><strong>${escapeHtml(e.personName)}</strong> · ${escapeHtml(e.companyName)}<br/>${escapeHtml(e.summary)}</li>`
+              `<li style="margin-bottom:8px;"><strong>${escapeHtml(e.personName)}</strong> · ${escapeHtml(e.companyName)}<br/>${escapeHtml(e.summary)}</li>`,
           )
           .join('')}</ul>`
 
@@ -115,7 +124,7 @@ function buildInstantEmailHtml(input: {
  */
 export async function notifyInstantMarketSignalsAfterIngest(
   admin: SupabaseClient,
-  opts: { sinceIso: string; organizationId?: string | null }
+  opts: { sinceIso: string; organizationId?: string | null },
 ): Promise<{ emailed: number; pushed: number; skipped: boolean; errors: string[] }> {
   const { sinceIso, organizationId } = opts
   const errors: string[] = []
@@ -124,12 +133,16 @@ export async function notifyInstantMarketSignalsAfterIngest(
 
   let newsQuery = admin
     .from('market_signal_account_news')
-    .select('id, body, company_id, published_on, source_label, companies ( name, organization_id )')
+    .select(
+      'id, body, company_id, published_on, source_label, companies ( name, organization_id )',
+    )
     .gte('created_at', sinceIso)
 
   let execQuery = admin
     .from('market_signal_executive_events')
-    .select('id, person_name, change_summary, company_id, detected_at, companies ( name, organization_id )')
+    .select(
+      'id, person_name, change_summary, company_id, detected_at, companies ( name, organization_id )',
+    )
     .gte('created_at', sinceIso)
 
   if (organizationId) {
@@ -141,10 +154,8 @@ export async function notifyInstantMarketSignalsAfterIngest(
     execQuery = execQuery.in('company_id', cids)
   }
 
-  const [{ data: newsRows, error: newsErr }, { data: execRows, error: execErr }] = await Promise.all([
-    newsQuery.limit(500),
-    execQuery.limit(500),
-  ])
+  const [{ data: newsRows, error: newsErr }, { data: execRows, error: execErr }] =
+    await Promise.all([newsQuery.limit(500), execQuery.limit(500)])
 
   if (newsErr) errors.push(`news: ${newsErr.message}`)
   if (execErr) errors.push(`exec: ${execErr.message}`)
@@ -165,7 +176,9 @@ export async function notifyInstantMarketSignalsAfterIngest(
       companyId: String((row as { company_id?: string }).company_id ?? ''),
       companyName: companyNameFromRow(row),
       publishedOn: String((row as { published_on?: string }).published_on ?? ''),
-      sourceLabel: ((row as { source_label?: string | null }).source_label ?? null) as string | null,
+      sourceLabel: ((row as { source_label?: string | null }).source_label ?? null) as
+        | string
+        | null,
     })
   }
 
@@ -199,7 +212,9 @@ export async function notifyInstantMarketSignalsAfterIngest(
       .select('id, system_role, function_role, notification_settings, full_name')
       .eq('organization_id', orgIdKey)
 
-    const userIds = (profiles ?? []).map((p) => String((p as { id?: string }).id ?? '')).filter(Boolean)
+    const userIds = (profiles ?? [])
+      .map((p) => String((p as { id?: string }).id ?? ''))
+      .filter(Boolean)
     if (!userIds.length) continue
 
     const { data: subs } = await admin
@@ -207,7 +222,10 @@ export async function notifyInstantMarketSignalsAfterIngest(
       .select('user_id, endpoint, p256dh, auth')
       .in('user_id', userIds)
 
-    const subsByUser = new Map<string, { endpoint: string; p256dh: string; auth: string }[]>()
+    const subsByUser = new Map<
+      string,
+      { endpoint: string; p256dh: string; auth: string }[]
+    >()
     for (const s of subs ?? []) {
       const uid = String((s as { user_id?: string }).user_id ?? '')
       if (!uid) continue
@@ -231,14 +249,20 @@ export async function notifyInstantMarketSignalsAfterIngest(
       if (!wantEmail && !(wantPushPref && hasSubs && pushOk)) continue
 
       const role = marketSignalsDigestRoleFromProfile(prof)
-      const allowed = await resolveAllowedCompanyIdsForMarketSignals(admin, orgIdKey, role)
+      const allowed = await resolveAllowedCompanyIdsForMarketSignals(
+        admin,
+        orgIdKey,
+        role,
+      )
 
       const newsF = content.news.filter((n) => allowed.has(n.companyId))
       const execF = content.executives.filter((e) => allowed.has(e.companyId))
       if (!newsF.length && !execF.length) continue
 
       const total = newsF.length + execF.length
-      const recipientName = String((prof as { full_name?: string | null }).full_name ?? '').trim()
+      const recipientName = String(
+        (prof as { full_name?: string | null }).full_name ?? '',
+      ).trim()
 
       if (wantEmail && resend) {
         const { data: userData } = await admin.auth.admin.getUserById(userId)
@@ -271,14 +295,18 @@ export async function notifyInstantMarketSignalsAfterIngest(
             await webpush.sendNotification(
               { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
               payload,
-              { TTL: 86_400 }
+              { TTL: 86_400 },
             )
             pushed += 1
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
             const status = (e as { statusCode?: number }).statusCode
             if (status === 404 || status === 410) {
-              await admin.from('push_subscriptions').delete().eq('user_id', userId).eq('endpoint', sub.endpoint)
+              await admin
+                .from('push_subscriptions')
+                .delete()
+                .eq('user_id', userId)
+                .eq('endpoint', sub.endpoint)
             }
             errors.push(`push: ${msg}`)
           }

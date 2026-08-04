@@ -13,7 +13,7 @@ export type DelegateInternalApprovalActionResult =
   | { success: false; error: string }
 
 export async function confirmInternalApprovalAction(
-  token: string
+  token: string,
 ): Promise<ConfirmInternalApprovalActionResult> {
   // Service-Role weil: interner Freigabe-Link ohne Dashboard-Session.
   // Grenze: confirmInternalApprovalFromToken validiert approval_internal_review_token.
@@ -40,7 +40,7 @@ export async function confirmInternalApprovalAction(
 
 export async function delegateInternalApprovalAction(
   token: string,
-  delegateEmail: string
+  delegateEmail: string,
 ): Promise<DelegateInternalApprovalActionResult> {
   // Service-Role weil: Delegation per Token-Link ohne Session.
   // Grenze: delegateInternalApprovalFromToken validiert Token + pending_internal.
@@ -53,7 +53,10 @@ export async function delegateInternalApprovalAction(
       return { success: false, error: 'Bitte eine gültige E-Mail-Adresse eingeben.' }
     }
     if (result.reason === 'not_pending') {
-      return { success: false, error: 'Diese interne Freigabe ist nicht mehr ausstehend.' }
+      return {
+        success: false,
+        error: 'Diese interne Freigabe ist nicht mehr ausstehend.',
+      }
     }
     return { success: false, error: 'Link ungültig oder abgelaufen.' }
   }

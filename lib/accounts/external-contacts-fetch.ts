@@ -36,7 +36,7 @@ function isLikelyMissingColumnError(text: string): boolean {
 
 function mapRows(
   rows: Record<string, unknown>[] | null,
-  flags: FetchFlags
+  flags: FetchFlags,
 ): ExternalContactRow[] {
   return (rows ?? []).map((r) => ({
     id: String(r.id),
@@ -61,14 +61,29 @@ function mapRows(
 export async function fetchExternalContactsForCompany(
   supabase: SupabaseClient,
   companyId: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<ExternalContactRow[]> {
   const attempts: Array<{ select: string; flags: FetchFlags }> = [
-    { select: SELECT_FULL, flags: { phone: true, lastInteraction: true, buyingCenterRole: true } },
-    { select: SELECT_WITH_BCR, flags: { phone: true, lastInteraction: false, buyingCenterRole: true } },
-    { select: SELECT_WITH_LAST, flags: { phone: true, lastInteraction: true, buyingCenterRole: false } },
-    { select: SELECT_WITH_PHONE, flags: { phone: true, lastInteraction: false, buyingCenterRole: false } },
-    { select: SELECT_BASE, flags: { phone: false, lastInteraction: false, buyingCenterRole: false } },
+    {
+      select: SELECT_FULL,
+      flags: { phone: true, lastInteraction: true, buyingCenterRole: true },
+    },
+    {
+      select: SELECT_WITH_BCR,
+      flags: { phone: true, lastInteraction: false, buyingCenterRole: true },
+    },
+    {
+      select: SELECT_WITH_LAST,
+      flags: { phone: true, lastInteraction: true, buyingCenterRole: false },
+    },
+    {
+      select: SELECT_WITH_PHONE,
+      flags: { phone: true, lastInteraction: false, buyingCenterRole: false },
+    },
+    {
+      select: SELECT_BASE,
+      flags: { phone: false, lastInteraction: false, buyingCenterRole: false },
+    },
   ]
 
   let lastErrorText = ''
@@ -87,13 +102,21 @@ export async function fetchExternalContactsForCompany(
 
     lastErrorText = formatSupabaseError(error)
     if (!isLikelyMissingColumnError(lastErrorText)) {
-      log.error('fetchExternalContactsForCompany.failed', { companyId, organizationId, lastErrorText })
+      log.error('fetchExternalContactsForCompany.failed', {
+        companyId,
+        organizationId,
+        lastErrorText,
+      })
       return []
     }
   }
 
   if (lastErrorText) {
-    log.error('fetchExternalContactsForCompany.allFallbacksFailed', { companyId, organizationId, lastErrorText })
+    log.error('fetchExternalContactsForCompany.allFallbacksFailed', {
+      companyId,
+      organizationId,
+      lastErrorText,
+    })
   }
   return []
 }

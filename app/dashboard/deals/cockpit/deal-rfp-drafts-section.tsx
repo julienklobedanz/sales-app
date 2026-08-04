@@ -5,8 +5,18 @@ import { ArrowRight01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
 import { KiEntwurfSheet } from '@/app/dashboard/deals/components/ki-entwurf-sheet'
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
@@ -47,7 +57,10 @@ function referenceHoverLabel(row: DealDeskDraftRow): string | null {
     : row.reference.title
 }
 
-function statusDotTitle(row: DealDeskDraftRow, status: 'ready' | 'draft' | 'gap'): string | undefined {
+function statusDotTitle(
+  row: DealDeskDraftRow,
+  status: 'ready' | 'draft' | 'gap',
+): string | undefined {
   if (status === 'gap') return COPY.deals.cockpit.draftsNoReference
   return referenceHoverLabel(row) ?? undefined
 }
@@ -77,7 +90,7 @@ export function DealRfpDraftsSection({
   const sortedRows = useMemo(() => sortDraftRowsByCriticality(rows), [rows])
   const visibleRows = useMemo(
     () => (showAllDrafts ? sortedRows : sortedRows.slice(0, VISIBLE_DRAFTS_DEFAULT)),
-    [showAllDrafts, sortedRows]
+    [showAllDrafts, sortedRows],
   )
 
   if (!showSection) return null
@@ -122,7 +135,7 @@ export function DealRfpDraftsSection({
       }
       const nextAnswer = draftText.trim() || null
       setRows((prev) =>
-        prev.map((r) => (r.id === row.id ? { ...r, answer: nextAnswer } : r))
+        prev.map((r) => (r.id === row.id ? { ...r, answer: nextAnswer } : r)),
       )
       setEditingId(null)
       toast.success(COPY.deals.cockpit.draftsSaveSuccess)
@@ -186,7 +199,7 @@ export function DealRfpDraftsSection({
                   size={16}
                   className={cn(
                     'mt-0.5 shrink-0 text-muted-foreground transition-transform',
-                    sectionExpanded && 'rotate-90'
+                    sectionExpanded && 'rotate-90',
                   )}
                 />
                 <div className="min-w-0">
@@ -229,7 +242,7 @@ export function DealRfpDraftsSection({
                             'size-2.5 shrink-0 rounded-full',
                             status === 'ready' && 'bg-emerald-500',
                             status === 'draft' && 'bg-amber-500',
-                            status === 'gap' && 'bg-red-500'
+                            status === 'gap' && 'bg-red-500',
                           )}
                           title={dotTitle}
                           aria-label={dotTitle}
@@ -255,7 +268,7 @@ export function DealRfpDraftsSection({
                           size={16}
                           className={cn(
                             'shrink-0 text-muted-foreground transition-transform',
-                            expanded && 'rotate-90'
+                            expanded && 'rotate-90',
                           )}
                         />
                       </button>
@@ -360,7 +373,7 @@ export function DealRfpDraftsSection({
                       ? COPY.deals.cockpit.draftsShowFewer
                       : COPY.deals.cockpit.draftsShowAll.replace(
                           '{count}',
-                          String(sortedRows.length)
+                          String(sortedRows.length),
                         )}
                   </Button>
                 </div>

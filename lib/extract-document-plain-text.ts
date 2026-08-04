@@ -35,7 +35,7 @@ export type ExtractPlainTextResult =
  */
 export async function extractPlainTextFromFile(
   file: File,
-  options?: { maxChars?: number }
+  options?: { maxChars?: number },
 ): Promise<ExtractPlainTextResult> {
   const maxChars = options?.maxChars ?? 120_000
   if (!file?.size) {

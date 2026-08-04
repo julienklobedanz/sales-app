@@ -62,7 +62,7 @@ export function ApprovalDecisionForm({
   const initialChoice: QuickApprovalChoiceValue = initialScope
     ? scopeToQuickChoice(
         initialScope,
-        isApprovedMode ? undefined : { hasChangeRequest: Boolean(initialComment.trim()) }
+        isApprovedMode ? undefined : { hasChangeRequest: Boolean(initialComment.trim()) },
       )
     : initialComment.trim()
       ? 'changes_needed'
@@ -71,20 +71,22 @@ export function ApprovalDecisionForm({
   const [choice, setChoice] = useState<QuickApprovalChoiceValue>(initialChoice)
   const choiceManuallyChangedRef = useRef(false)
   const [referenceCallsEnabled, setReferenceCallsEnabled] = useState(
-    () => initialScope?.referenceCallsEnabled ?? false
+    () => initialScope?.referenceCallsEnabled ?? false,
   )
   const [comment, setComment] = useState(initialComment)
   const [approvedQuote, setApprovedQuote] = useState(
-    () => initialApprovedQuote.trim() || suggestedQuote
+    () => initialApprovedQuote.trim() || suggestedQuote,
   )
   const [referenceGiverName, setReferenceGiverName] = useState(initialReferenceGiverName)
-  const [referenceGiverTitle, setReferenceGiverTitle] = useState(initialReferenceGiverTitle)
+  const [referenceGiverTitle, setReferenceGiverTitle] = useState(
+    initialReferenceGiverTitle,
+  )
   const [consentForwarding, setConsentForwarding] = useState(isApprovedMode)
   const [consentRelease, setConsentRelease] = useState(isApprovedMode)
   const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState<'approved' | 'rejected' | 'updated' | 'changes_needed' | null>(
-    null
-  )
+  const [done, setDone] = useState<
+    'approved' | 'rejected' | 'updated' | 'changes_needed' | null
+  >(null)
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false)
 
   const grantsApproval = quickChoiceGrantsApproval(choice)
@@ -92,7 +94,7 @@ export function ApprovalDecisionForm({
   const showQuote = choice === 'named'
   const scope = useMemo(
     () => quickChoiceToScope(choice, referenceCallsEnabled),
-    [choice, referenceCallsEnabled]
+    [choice, referenceCallsEnabled],
   )
   const canApprove = grantsApproval && consentRelease && consentForwarding
   const canReject = Boolean(comment.trim())
@@ -118,7 +120,7 @@ export function ApprovalDecisionForm({
         toast.error(
           decision === 'rejected'
             ? 'Bitte geben Sie einen Grund für die Ablehnung in „Änderungswünsche“ an.'
-            : 'Bitte beschreiben Sie Ihre Änderungswünsche.'
+            : 'Bitte beschreiben Sie Ihre Änderungswünsche.',
         )
         return
       }
@@ -140,7 +142,7 @@ export function ApprovalDecisionForm({
         approvedQuote: showQuote ? approvedQuote.trim() || undefined : undefined,
         referenceGiverName: referenceGiverName.trim() || undefined,
         referenceGiverTitle: referenceGiverTitle.trim() || undefined,
-        scope: decision === 'approved' ? scope ?? undefined : undefined,
+        scope: decision === 'approved' ? (scope ?? undefined) : undefined,
       })
       if (!result.success) {
         if (result.error === 'already_decided') {
@@ -148,7 +150,9 @@ export function ApprovalDecisionForm({
         } else if (result.error === 'invalid_token') {
           toast.error('Dieser Link ist nicht mehr gültig.')
         } else if (result.error === 'server_config') {
-          toast.error('Der Server ist nicht korrekt konfiguriert. Bitte wenden Sie sich an Ihren Ansprechpartner.')
+          toast.error(
+            'Der Server ist nicht korrekt konfiguriert. Bitte wenden Sie sich an Ihren Ansprechpartner.',
+          )
         } else if (result.error === 'org_missing') {
           toast.error('Die Organisation zur Referenz konnte nicht ermittelt werden.')
         } else if (result.error === 'comment_required') {
@@ -226,10 +230,16 @@ export function ApprovalDecisionForm({
         </div>
       </div>
 
-      <ApprovalQuickChoice value={choice} disabled={loading} onChange={handleChoiceChange} />
+      <ApprovalQuickChoice
+        value={choice}
+        disabled={loading}
+        onChange={handleChoiceChange}
+      />
 
       <div className="space-y-2">
-        <ApprovalOptionalLabel htmlFor="approval-comment">Änderungswünsche</ApprovalOptionalLabel>
+        <ApprovalOptionalLabel htmlFor="approval-comment">
+          Änderungswünsche
+        </ApprovalOptionalLabel>
         <Textarea
           id="approval-comment"
           value={comment}
@@ -243,7 +253,9 @@ export function ApprovalDecisionForm({
 
       {showQuote ? (
         <div className="space-y-2">
-          <ApprovalOptionalLabel htmlFor="approved-quote">Ihr Zitat</ApprovalOptionalLabel>
+          <ApprovalOptionalLabel htmlFor="approved-quote">
+            Ihr Zitat
+          </ApprovalOptionalLabel>
           <p className="text-xs leading-relaxed text-muted-foreground">
             KI-Vorschlag in 1–2 Sätzen — bitte bei Bedarf anpassen.
           </p>
@@ -268,8 +280,12 @@ export function ApprovalDecisionForm({
               disabled={loading}
               className="mt-0.5"
             />
-            <Label htmlFor="reference-calls" className="cursor-pointer text-sm leading-relaxed text-foreground">
-              Gerne stehe ich für Referenzanrufe anderer Kunden von {workspaceLabel} zur Verfügung.
+            <Label
+              htmlFor="reference-calls"
+              className="cursor-pointer text-sm leading-relaxed text-foreground"
+            >
+              Gerne stehe ich für Referenzanrufe anderer Kunden von {workspaceLabel} zur
+              Verfügung.
             </Label>
           </div>
 
@@ -286,7 +302,8 @@ export function ApprovalDecisionForm({
                 htmlFor="consent-release"
                 className="cursor-pointer text-xs leading-relaxed text-muted-foreground"
               >
-                Hiermit stimme ich der Freigabe der Referenz gemäß meiner obigen Auswahl zu.
+                Hiermit stimme ich der Freigabe der Referenz gemäß meiner obigen Auswahl
+                zu.
                 <ApprovalRequiredMark />
               </Label>
             </div>
@@ -302,8 +319,8 @@ export function ApprovalDecisionForm({
                 htmlFor="consent-forwarding"
                 className="cursor-pointer text-xs leading-relaxed text-muted-foreground"
               >
-                Ich habe verstanden, dass meine freigegebene Referenz an mögliche Kunden von {workspaceLabel}{' '}
-                weitergeleitet werden kann.
+                Ich habe verstanden, dass meine freigegebene Referenz an mögliche Kunden
+                von {workspaceLabel} weitergeleitet werden kann.
                 <ApprovalRequiredMark />
               </Label>
             </div>
@@ -360,7 +377,8 @@ export function ApprovalDecisionForm({
 
         {!isApprovedMode && hasChoice ? (
           <p className="text-center text-[10px] leading-relaxed text-muted-foreground">
-            Mit dem Klick bestätigen Sie die Nutzung gemäß des oben gewählten Freigabe-Typs.{' '}
+            Mit dem Klick bestätigen Sie die Nutzung gemäß des oben gewählten
+            Freigabe-Typs.{' '}
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -374,9 +392,10 @@ export function ApprovalDecisionForm({
                 <PopoverHeader>
                   <PopoverTitle>Datenschutz & Nutzung</PopoverTitle>
                   <PopoverDescription className="text-xs leading-relaxed">
-                    Diese Freigabe betrifft ausschließlich die von Ihnen gewählte Nutzungsart. Inhalte
-                    und Ansprechpartner stammen von {workspaceLabel}. Vertragliche oder datenschutzrechtliche
-                    Details erhalten Sie auf Anfrage direkt bei Ihrem Ansprechpartner.
+                    Diese Freigabe betrifft ausschließlich die von Ihnen gewählte
+                    Nutzungsart. Inhalte und Ansprechpartner stammen von {workspaceLabel}.
+                    Vertragliche oder datenschutzrechtliche Details erhalten Sie auf
+                    Anfrage direkt bei Ihrem Ansprechpartner.
                   </PopoverDescription>
                 </PopoverHeader>
               </PopoverContent>

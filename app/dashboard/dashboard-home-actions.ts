@@ -14,7 +14,10 @@ export async function leaderCallQueueSnoozeAction(signalKey: string) {
   if (!key) return { success: false as const, error: 'Ungültiges Signal.' }
   const until = new Date()
   until.setDate(until.getDate() + 7)
-  const result = await snoozeMarketSignal({ signalKey: key, untilIso: until.toISOString() })
+  const result = await snoozeMarketSignal({
+    signalKey: key,
+    untilIso: until.toISOString(),
+  })
   if (!result.success) return result
   revalidatePath(ROUTES.home)
   return { success: true as const }

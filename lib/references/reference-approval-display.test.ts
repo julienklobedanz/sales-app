@@ -20,7 +20,7 @@ describe('reference-approval-display', () => {
         internalApprovalStatus: 'pending_internal',
         customerApprovalStatus: null,
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      }).label
+      }).label,
     ).toBe('Intern')
   })
 
@@ -31,7 +31,7 @@ describe('reference-approval-display', () => {
         internalApprovalStatus: 'approved_internal',
         customerApprovalStatus: 'pending',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      }).label
+      }).label,
     ).toBe('Intern')
   })
 
@@ -43,7 +43,7 @@ describe('reference-approval-display', () => {
         customerApprovalStatus: 'approved',
         approvalScopeNamedMention: true,
         approvalScopeAnonymousMention: false,
-      }).label
+      }).label,
     ).toBe('Extern freigegeben')
   })
 
@@ -54,7 +54,7 @@ describe('reference-approval-display', () => {
         customerApprovalStatus: 'approved',
         approvalScopeNamedMention: false,
         approvalScopeAnonymousMention: true,
-      }).label
+      }).label,
     ).toBe('Anonymisiert')
   })
 
@@ -63,13 +63,13 @@ describe('reference-approval-display', () => {
       resolvePostCustomerApprovalTitleBadge({
         approvalScopeNamedMention: true,
         approvalScopeAnonymousMention: false,
-      }).label
+      }).label,
     ).toBe('Extern freigegeben')
     expect(
       resolvePostCustomerApprovalTitleBadge({
         approvalScopeNamedMention: false,
         approvalScopeAnonymousMention: true,
-      }).label
+      }).label,
     ).toBe('Anonymisiert')
   })
 
@@ -84,7 +84,7 @@ describe('reference-approval-display', () => {
         internalApprovalStatus: 'pending_internal',
         customerApprovalStatus: 'revoked_by_customer',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      }).label
+      }).label,
     ).toBe('Gesperrt')
   })
 
@@ -106,7 +106,7 @@ describe('reference-approval-display', () => {
         internalApprovalStatus: 'withdrawn_internal',
         customerApprovalStatus: null,
         approvalRequestedAt: null,
-      }).label
+      }).label,
     ).toBe('Entwurf')
   })
 
@@ -128,12 +128,14 @@ describe('reference-approval-display', () => {
         customerApprovalStatus: 'approved',
         referenceStatus: 'external',
         approvalScopeReferenceCall: true,
-      })?.label
+      })?.label,
     ).toBe('Freigabe mit Ref. Calls')
   })
 
   it('internal rejected badge', () => {
-    expect(resolveInternalWorkflowBadge('rejected_internal').label).toBe('Intern abgelehnt')
+    expect(resolveInternalWorkflowBadge('rejected_internal').label).toBe(
+      'Intern abgelehnt',
+    )
   })
 
   it('explanation for internal_only during workflow points to Freigabestatus card', () => {
@@ -142,7 +144,7 @@ describe('reference-approval-display', () => {
         referenceStatus: 'internal_only',
         internalApprovalStatus: 'pending_internal',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      })
+      }),
     ).toContain('Freigabestatus-Card')
   })
 

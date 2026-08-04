@@ -16,11 +16,11 @@ function revalidateDashboardRole() {
   revalidatePath(ROUTES.home, 'layout')
 }
 
-export type SetDevPreviewRoleResult =
-  | { ok: true }
-  | { ok: false; error: string }
+export type SetDevPreviewRoleResult = { ok: true } | { ok: false; error: string }
 
-async function assertDevRolePreviewAllowed(): Promise<SetDevPreviewRoleResult | { ok: true }> {
+async function assertDevRolePreviewAllowed(): Promise<
+  SetDevPreviewRoleResult | { ok: true }
+> {
   const profile = await getRequestProfile()
   if (!profile) {
     return { ok: false, error: 'Profil nicht gefunden.' }
@@ -35,7 +35,9 @@ async function assertDevRolePreviewAllowed(): Promise<SetDevPreviewRoleResult | 
   return { ok: true }
 }
 
-export async function setDevPreviewRole(preview: DevRolePreview): Promise<SetDevPreviewRoleResult> {
+export async function setDevPreviewRole(
+  preview: DevRolePreview,
+): Promise<SetDevPreviewRoleResult> {
   const allowed = await assertDevRolePreviewAllowed()
   if (!allowed.ok) return allowed
 

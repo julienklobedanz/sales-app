@@ -2,7 +2,10 @@ import type { PdfReference } from './types'
 
 function summarizeVolume(raw: string | null): string | null {
   if (!raw) return null
-  const cleaned = raw.replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = raw
+    .replace(/[^\d.,]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const n = Number.parseFloat(cleaned)
   if (!Number.isFinite(n) || n <= 0) return '>100k EUR'
   if (n >= 1_000_000) return '>1M EUR'
@@ -15,7 +18,7 @@ function genericizeTechnologies(text: string | null): string | null {
   if (!text) return null
   return text.replace(
     /\b(SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake|PowerBI|Tableau)\b/gi,
-    'führende Enterprise-Technologie'
+    'führende Enterprise-Technologie',
   )
 }
 

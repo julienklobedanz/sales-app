@@ -13,7 +13,7 @@ export type MatchHitCompanyFields = {
 /** Lädt Account-Logo und -Name für Match-/Such-Treffer nach. */
 export async function fetchCompanyFieldsForReferenceIds(
   supabase: SupabaseClient,
-  referenceIds: string[]
+  referenceIds: string[],
 ): Promise<Map<string, MatchHitCompanyFields>> {
   const map = new Map<string, MatchHitCompanyFields>()
   if (!referenceIds.length) return map

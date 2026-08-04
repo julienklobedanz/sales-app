@@ -31,10 +31,9 @@ async function DealsPageContent() {
   const supabase = await createServerSupabaseClient()
   const isAdmin = isSystemAdmin(effective.systemRole)
   const hubspotConfigured = isHubSpotConfigured()
-  const hubspotStatus =
-    isAdmin
-      ? await getOrganizationCrmConnectionPublicStatus(supabase, orgId, 'hubspot')
-      : { connected: false, externalAccountId: null, lastSyncAt: null }
+  const hubspotStatus = isAdmin
+    ? await getOrganizationCrmConnectionPublicStatus(supabase, orgId, 'hubspot')
+    : { connected: false, externalAccountId: null, lastSyncAt: null }
 
   const [deals, companiesRes, orgProfilesRes] = await Promise.all([
     getDeals(),
@@ -55,7 +54,9 @@ async function DealsPageContent() {
       <DealsClientContent
         deals={deals}
         companies={(companiesRes.data ?? []) as { id: string; name: string }[]}
-        orgProfiles={(orgProfilesRes.data ?? []) as { id: string; full_name: string | null }[]}
+        orgProfiles={
+          (orgProfilesRes.data ?? []) as { id: string; full_name: string | null }[]
+        }
         hubspotConfigured={hubspotConfigured}
         hubspotConnected={hubspotStatus.connected}
         canConnectCrm={isAdmin && hubspotConfigured}

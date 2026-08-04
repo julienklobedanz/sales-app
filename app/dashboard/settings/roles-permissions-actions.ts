@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache'
 
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { ROUTES } from '@/lib/routes'
-import { FUNCTION_ROLE_CAPS, type Capability, type FunctionRole } from '@/lib/roles/capabilities'
+import {
+  FUNCTION_ROLE_CAPS,
+  type Capability,
+  type FunctionRole,
+} from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import {
@@ -40,11 +44,15 @@ async function requireAdminContext() {
     .single()
 
   const organizationId = profile?.organization_id ?? null
-  if (!organizationId) return { supabase, error: 'Keine Organisation zugeordnet.' as const }
+  if (!organizationId)
+    return { supabase, error: 'Keine Organisation zugeordnet.' as const }
 
   const roles = parseProfileRoles(profile ?? {})
   if (!isSystemAdmin(roles.systemRole)) {
-    return { supabase, error: 'Nur Owner/Admin können Rollen & Rechte verwalten.' as const }
+    return {
+      supabase,
+      error: 'Nur Owner/Admin können Rollen & Rechte verwalten.' as const,
+    }
   }
 
   return { supabase, user, organizationId, error: null as null }
@@ -80,7 +88,7 @@ export type UpdateRolesPermissionsInput = {
 }
 
 export async function updateRolesPermissionsSettings(
-  input: UpdateRolesPermissionsInput
+  input: UpdateRolesPermissionsInput,
 ): Promise<ActionResult> {
   const ctx = await requireAdminContext()
   if (ctx.error) return { success: false, error: ctx.error }
@@ -105,7 +113,9 @@ export async function updateRolesPermissionsSettings(
     const selected = input.functionRoleCapabilities[role]
     if (!selected?.length) continue
     const allowed = new Set(FUNCTION_ROLE_CAPS[role])
-    const caps = selected.filter((c) => allowed.has(c) && VISIBILITY_CAPABILITIES.includes(c))
+    const caps = selected.filter(
+      (c) => allowed.has(c) && VISIBILITY_CAPABILITIES.includes(c),
+    )
     if (caps.length) sanitizedCaps[role] = caps
   }
 

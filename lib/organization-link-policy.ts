@@ -7,7 +7,7 @@ export type OrgPublicLinkPolicy = {
 
 export function parseOrgPublicLinkPolicy(
   workflowSettings: unknown,
-  linkExpiryDaysFallback: number
+  linkExpiryDaysFallback: number,
 ): OrgPublicLinkPolicy {
   const obj =
     workflowSettings && typeof workflowSettings === 'object'

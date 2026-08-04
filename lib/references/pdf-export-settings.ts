@@ -26,7 +26,7 @@ export function parsePdfExportSettings(raw: unknown): PdfExportSettings {
 
 export function resolvePdfTemplate(
   templateParam: string | null,
-  exportSettings: PdfExportSettings
+  exportSettings: PdfExportSettings,
 ): PdfTemplate {
   const fromParam = parsePdfTemplateParam(templateParam)
   if (fromParam) return fromParam

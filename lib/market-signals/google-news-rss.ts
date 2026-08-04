@@ -62,7 +62,10 @@ export function parseGoogleNewsRssXml(xml: string): GoogleNewsRssItem[] {
   return items
 }
 
-export function buildCompanyNewsRssQuery(companyName: string, websiteHost: string | null): string {
+export function buildCompanyNewsRssQuery(
+  companyName: string,
+  websiteHost: string | null,
+): string {
   const name = companyName.trim()
   if (!name) return ''
   const host = (websiteHost ?? '')
@@ -78,7 +81,7 @@ export function buildCompanyNewsRssQuery(companyName: string, websiteHost: strin
 
 export async function fetchGoogleNewsRssItems(
   query: string,
-  opts?: { signal?: AbortSignal; maxItems?: number }
+  opts?: { signal?: AbortSignal; maxItems?: number },
 ): Promise<GoogleNewsRssItem[]> {
   const q = query.trim()
   if (!q) return []

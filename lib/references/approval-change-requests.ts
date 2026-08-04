@@ -13,7 +13,7 @@ export type CustomerApprovalFollowUpUiState = {
 
 async function findLatestChangesNeededEvent(
   supabase: SupabaseClient,
-  referenceId: string
+  referenceId: string,
 ): Promise<{ created_at: string } | null> {
   const { data: changeEvents } = await supabase
     .from('evidence_events')
@@ -35,7 +35,7 @@ async function findLatestChangesNeededEvent(
 async function hasAfterChangesFollowUp(
   supabase: SupabaseClient,
   referenceId: string,
-  since: string
+  since: string,
 ): Promise<boolean> {
   const { data: followUps } = await supabase
     .from('evidence_events')
@@ -55,7 +55,7 @@ export async function resolveCustomerApprovalFollowUpUi(
   referenceId: string,
   customerApprovalStatus: string | null | undefined,
   approvalComment: string | null | undefined,
-  options?: { showMagicLink?: boolean }
+  options?: { showMagicLink?: boolean },
 ): Promise<CustomerApprovalFollowUpUiState> {
   const pending = String(customerApprovalStatus ?? '').toLowerCase() === 'pending'
   const comment = String(approvalComment ?? '').trim()
@@ -78,7 +78,7 @@ export async function resolveCustomerApprovalFollowUpUi(
   const acknowledged = await hasAfterChangesFollowUp(
     supabase,
     referenceId,
-    latestChanges.created_at
+    latestChanges.created_at,
   )
   return {
     hasOpenChangeRequests: !acknowledged,
@@ -91,13 +91,13 @@ export async function referenceHasOpenCustomerChangeRequests(
   supabase: SupabaseClient,
   referenceId: string,
   customerApprovalStatus: string | null | undefined,
-  approvalComment?: string | null | undefined
+  approvalComment?: string | null | undefined,
 ): Promise<boolean> {
   const state = await resolveCustomerApprovalFollowUpUi(
     supabase,
     referenceId,
     customerApprovalStatus,
-    approvalComment
+    approvalComment,
   )
   return state.hasOpenChangeRequests
 }

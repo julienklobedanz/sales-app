@@ -36,7 +36,7 @@ export default async function ReferencesHubPage() {
   const auth = { orgId, userId: user.id }
   const canViewCompliance = canViewComplianceReferenceSegment(
     effectiveSystemRole,
-    effectiveFunctionRole
+    effectiveFunctionRole,
   )
 
   const supabase = await createServerSupabaseClient()
@@ -73,7 +73,7 @@ export default async function ReferencesHubPage() {
   const orgRolesPermissions =
     orgRow?.api_settings && typeof orgRow.api_settings === 'object'
       ? parseRolesPermissionsSettings(
-          (orgRow.api_settings as Record<string, unknown>).roles_permissions
+          (orgRow.api_settings as Record<string, unknown>).roles_permissions,
         )
       : null
 
@@ -89,7 +89,7 @@ export default async function ReferencesHubPage() {
     : dashboard.references
 
   const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(
-    (orgRow as { date_display_format?: string | null } | null)?.date_display_format
+    (orgRow as { date_display_format?: string | null } | null)?.date_display_format,
   )
 
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []

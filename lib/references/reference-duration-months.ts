@@ -17,7 +17,8 @@ export function computeReferenceDurationMonths(params: {
     if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
       return Math.max(
         0,
-        (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth())
+        (e.getUTCFullYear() - s.getUTCFullYear()) * 12 +
+          (e.getUTCMonth() - s.getUTCMonth()),
       )
     }
   } else if (status === 'active' && start) {
@@ -26,7 +27,8 @@ export function computeReferenceDurationMonths(params: {
     if (!Number.isNaN(s.getTime()) && !Number.isNaN(now.getTime())) {
       return Math.max(
         0,
-        (now.getUTCFullYear() - s.getUTCFullYear()) * 12 + (now.getUTCMonth() - s.getUTCMonth())
+        (now.getUTCFullYear() - s.getUTCFullYear()) * 12 +
+          (now.getUTCMonth() - s.getUTCMonth()),
       )
     }
   }
@@ -40,8 +42,7 @@ export function formatProjectEndWithDurationDe(params: {
   project_status: string | null
   formatEndDate: (endIso: string) => string
 }): string {
-  const end =
-    params.project_end != null ? String(params.project_end).trim() : ''
+  const end = params.project_end != null ? String(params.project_end).trim() : ''
   if (!end) return ''
   const formatted = params.formatEndDate(end)
   const months = computeReferenceDurationMonths({

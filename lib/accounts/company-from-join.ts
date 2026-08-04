@@ -10,7 +10,7 @@ export type ParsedCompanyJoin = {
 
 export function companyFromJoin(
   raw: unknown,
-  opts?: { fallbackName?: string }
+  opts?: { fallbackName?: string },
 ): ParsedCompanyJoin | null {
   const c = Array.isArray(raw) ? raw[0] : raw
   if (!c || typeof c !== 'object') {

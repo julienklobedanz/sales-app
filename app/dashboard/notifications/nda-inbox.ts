@@ -74,7 +74,7 @@ async function queryNdaInboxRows(
   supabase: SupabaseClient,
   orgId: string,
   select: string,
-  filterUploadedPdf: boolean
+  filterUploadedPdf: boolean,
 ) {
   const base = supabase
     .from('nda_agreements')
@@ -103,7 +103,7 @@ function mapInboxRows(raw: unknown, forceTitleNull = false): InboxRow[] {
 
 export async function fetchNdaExpiryInboxCandidates(
   supabase: SupabaseClient,
-  orgId: string
+  orgId: string,
 ): Promise<NdaInboxCandidate[]> {
   let rows: InboxRow[] = []
   let queryError: { message: string } | null = null
@@ -130,7 +130,7 @@ export async function fetchNdaExpiryInboxCandidates(
       supabase,
       orgId,
       INBOX_SELECT_LEGACY_WITH_TITLE,
-      false
+      false,
     )
     const legacyRes =
       legacyWithTitle.error && isMissingNdaTitleColumn(legacyWithTitle.error.message)
@@ -169,10 +169,11 @@ export async function fetchNdaExpiryInboxCandidates(
     candidates.push({
       id: `nda_expiry:${String(row.id)}`,
       title: notify.urgency === 'expired' ? 'NDA abgelaufen' : 'NDA läuft ab',
-      text: buildNdaExpiryNotificationText(companyName, validUntil, notify.daysUntil).replace(
-        /^NDA mit/,
-        `${docLabel} mit`
-      ),
+      text: buildNdaExpiryNotificationText(
+        companyName,
+        validUntil,
+        notify.daysUntil,
+      ).replace(/^NDA mit/, `${docLabel} mit`),
       href: ROUTES.accountsDetail(companyId),
       createdAt: `${validUntil}T12:00:00`,
       priority: ndaExpiryInboxPriority(notify.urgency),

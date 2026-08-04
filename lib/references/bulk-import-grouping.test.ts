@@ -37,7 +37,7 @@ describe('bulk-import-grouping', () => {
         projectName: f.name,
         companyName: undefined as string | undefined,
         files: [f],
-      }))
+      })),
     )
 
     expect(grouped).toHaveLength(2)
@@ -46,13 +46,15 @@ describe('bulk-import-grouping', () => {
   })
 
   it('extrahiert Kundenname und Projekttitel aus Referenz-Dateinamen', () => {
-    expect(extractCompanyNameFromFileName('Referenz_Deutsche_Lufthansa_AG_KI_Platform.pdf')).toBe(
-      'Deutsche Lufthansa AG'
+    expect(
+      extractCompanyNameFromFileName('Referenz_Deutsche_Lufthansa_AG_KI_Platform.pdf'),
+    ).toBe('Deutsche Lufthansa AG')
+    expect(extractCompanyNameFromFileName('Referenz_SAP_SE_Cloud_Migration.pdf')).toBe(
+      'SAP SE',
     )
-    expect(extractCompanyNameFromFileName('Referenz_SAP_SE_Cloud_Migration.pdf')).toBe('SAP SE')
-    expect(extractProjectTitleHintFromFileName('Referenz_SAP_SE_Cloud_Migration.pdf')).toBe(
-      'Cloud Migration'
-    )
+    expect(
+      extractProjectTitleHintFromFileName('Referenz_SAP_SE_Cloud_Migration.pdf'),
+    ).toBe('Cloud Migration')
   })
 
   it('behält bisheriges Verhalten für nicht-generische Präfixe', () => {

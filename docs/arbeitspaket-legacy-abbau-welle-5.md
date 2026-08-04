@@ -29,13 +29,14 @@
 
 **Soll:** Alle 63 Legacy-Vergleiche auf das neue Modell umstellen: `system_role`/`function_role` bzw. `can(capability)` (aus `lib/roles/*`). **Sicherheitsrelevante** Stellen zuerst (Zugriff/Sichtbarkeit), dann kosmetische (UI).
 **Vorgehen:** clusterweise als getrennte PRs, z. B.:
+
 - Settings (`settings-form.tsx`, `compliance-*`),
 - Accounts (`accounts/*`, `nda-actions.ts`),
 - Deals/Deal-Desk (`deals/page.tsx`, `deal-desk/actions.ts`),
 - References/Approvals (`pending-approvals.ts`, `approvals.ts`),
 - Output-Routen (`api/pdf/*`, `reference-onepager-pptx`),
 - Onboarding/Notifications/Dashboard (`wizard-actions.ts`, `notifications/inbox.ts`, `dashboard-shell.tsx`, `dashboard-overview.tsx`, `overview/reference-detail-sheet.tsx`).
-**Akzeptanz:** `grep -rnE "role === '(sales|admin|account_manager)'|profile\.role" app lib` → **0**; Verhalten je Rolle unverändert; Tests grün.
+  **Akzeptanz:** `grep -rnE "role === '(sales|admin|account_manager)'|profile\.role" app lib` → **0**; Verhalten je Rolle unverändert; Tests grün.
 
 ---
 
@@ -43,10 +44,11 @@
 
 **Erst wenn T1 = 0 Legacy-Lesestellen.**
 **Soll:**
+
 - Migration: `profiles.role`-Spalte droppen, Sync-Trigger (`sync_legacy_profile_role`) + Trigger-Funktion entfernen, Invite-Legacy-`role`-Spalte ebenso (falls vorhanden).
 - `lib/roles/legacy-mapping.ts` und der Legacy-Pfad in `user-role.ts` entfernen/vereinfachen (nur noch System-/Funktions-Rolle).
 - Supabase-Typen regenerieren.
-**Akzeptanz:** Keine `role`-Spalte mehr; kein Sync-Trigger; App nutzt ausschließlich `system_role`/`function_role`/Capabilities; Build & Tests grün.
+  **Akzeptanz:** Keine `role`-Spalte mehr; kein Sync-Trigger; App nutzt ausschließlich `system_role`/`function_role`/Capabilities; Build & Tests grün.
 
 ---
 
@@ -63,9 +65,10 @@
 
 **Erst wenn alle Lesepfade auf die normalisierten Tabellen (4a) umgestellt sind.**
 **Soll:**
+
 - Verbliebene JSON-Reads migrieren (mind. `executive-briefing-pptx/route.ts` → aus `deal_desk_sme_routes`/`_bid_team`/`_red_flags`/`bid_decision` lesen).
 - Dual-Write + JSON-Fallback (`workspace-merge.ts`/`workspace-persistence.ts`) entfernen; `workspace_state`-Spalte droppen.
-**Akzeptanz:** `grep -rnE "workspace_state" app lib` → keine produktiven Lese-/Schreibpfade mehr; Deal-Desk verhält sich unverändert; Tests grün.
+  **Akzeptanz:** `grep -rnE "workspace_state" app lib` → keine produktiven Lese-/Schreibpfade mehr; Deal-Desk verhält sich unverändert; Tests grün.
 
 ---
 
@@ -75,6 +78,7 @@
 2. **T2** (role-Spalte droppen) — erst nach T1=0.
 3. **T3** (references→evidence) — unabhängig, eigener Refactor-PR.
 4. **T4** (workspace_state) — erst nach Migration der JSON-Reads.
+
 - Jeder Drop/Rename: vorher `grep`=0, Branch, Tests grün. T2 und T4 sind irreversible DB-Schritte → besonders sorgfältig.
 
 ---
@@ -86,6 +90,7 @@ npm run test
 npm run build
 # nach jeder Migration: Supabase-Typen regenerieren
 ```
+
 - T1: `grep` der Legacy-Muster = 0.
 - T2: kein `profiles.role` in Schema/Code; RLS weiter funktionsfähig (nutzt function_role).
 - T3: kein `@/app/dashboard/references/`-Import.

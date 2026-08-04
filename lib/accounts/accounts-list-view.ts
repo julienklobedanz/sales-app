@@ -6,7 +6,11 @@ export const ACCOUNTS_VIEW_PARAM = 'view'
 export type AccountsListView = 'account' | 'partner'
 
 export function parseAccountsListView(
-  searchParams: URLSearchParams | { get: (key: string) => string | null } | null | undefined
+  searchParams:
+    | URLSearchParams
+    | { get: (key: string) => string | null }
+    | null
+    | undefined,
 ): AccountsListView {
   const raw = searchParams?.get(ACCOUNTS_VIEW_PARAM)
   return raw === 'partner' ? 'partner' : 'account'
@@ -24,14 +28,14 @@ export function accountsListTitle(view: AccountsListView): string {
 }
 
 export function entityKindToListView(
-  entityKind: string | null | undefined
+  entityKind: string | null | undefined,
 ): AccountsListView {
   return entityKind === 'partner' ? 'partner' : 'account'
 }
 
 export function accountsDetailHref(
   id: string,
-  listView: AccountsListView = 'account'
+  listView: AccountsListView = 'account',
 ): string {
   const base = ROUTES.accountsDetail(id)
   if (listView === 'partner') {

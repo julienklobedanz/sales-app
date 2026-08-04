@@ -25,6 +25,7 @@ Das flache `profiles.role` (`admin`/`sales`/`account_manager`) wird durch **zwei
 ## 1. In Scope / Out of Scope
 
 **In Scope (A1–A4):**
+
 - DB-Migration: ENUMs `system_role`, `function_role`; Spalten auf `profiles`; Backfill; Sync-Trigger für Legacy-`role`.
 - `hooks/useRole.tsx`-Refactor (neue Helfer, alte API stabil halten).
 - Invite-Flow: System- + Funktions-Rolle wählbar; `account_manager` einladbar.
@@ -32,6 +33,7 @@ Das flache `profiles.role` (`admin`/`sales`/`account_manager`) wird durch **zwei
 - Supabase-TS-Typen regenerieren.
 
 **Out of Scope (→ Welle 2, NICHT anfassen):**
+
 - RLS-Policies auf Sichtbarkeit umstellen.
 - Settings-Tab „Rollen & Rechte" / firmenindividuelle Konfiguration.
 - Dashboards nach Funktions-Rolle (separate Welle 3).
@@ -42,15 +44,15 @@ Das flache `profiles.role` (`admin`/`sales`/`account_manager`) wird durch **zwei
 ## 2. Datenmodell
 
 ENUM `system_role`: `owner`, `admin`, `member`, `viewer`
-ENUM `function_role`: `sales_rep`, `account_manager`, `sales_leader`  *(weitere später: marketing, bid_manager, legal, sales_ops — jetzt NICHT anlegen)*
+ENUM `function_role`: `sales_rep`, `account_manager`, `sales_leader` _(weitere später: marketing, bid_manager, legal, sales_ops — jetzt NICHT anlegen)_
 
 Neue Spalten auf `public.profiles`:
 
-| Spalte | Typ | NOT NULL | Default |
-|--------|-----|----------|---------|
-| `system_role` | `system_role` | ja | `'member'` |
-| `function_role` | `function_role` | ja | `'sales_rep'` |
-| `capabilities` | `jsonb` | ja | `'{}'::jsonb` |
+| Spalte          | Typ             | NOT NULL | Default       |
+| --------------- | --------------- | -------- | ------------- |
+| `system_role`   | `system_role`   | ja       | `'member'`    |
+| `function_role` | `function_role` | ja       | `'sales_rep'` |
+| `capabilities`  | `jsonb`         | ja       | `'{}'::jsonb` |
 
 `capabilities` enthält nur **Overrides** (`{ "manage_reference_program": true }`); fehlt ein Key, gilt der Default aus der Funktions-/System-Rolle (Abschnitt 5).
 
@@ -129,26 +131,49 @@ Neue Datei z. B. `lib/roles/capabilities.ts`:
 
 ```ts
 export const CAPABILITIES = [
-  'create_reference', 'edit_any_reference', 'approve_internal',
-  'start_customer_approval', 'anonymize_reference', 'manage_reference_program',
-  'see_draft_references', 'see_confidential_references',
-  'view_analytics_all', 'view_analytics_own',
-  'export_marketing_library', 'manage_team', 'manage_settings', 'manage_integrations',
+  'create_reference',
+  'edit_any_reference',
+  'approve_internal',
+  'start_customer_approval',
+  'anonymize_reference',
+  'manage_reference_program',
+  'see_draft_references',
+  'see_confidential_references',
+  'view_analytics_all',
+  'view_analytics_own',
+  'export_marketing_library',
+  'manage_team',
+  'manage_settings',
+  'manage_integrations',
 ] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
 // Defaults je Funktions-Rolle (System-Rolle owner/admin erhält Admin-Caps zusätzlich)
 export const FUNCTION_ROLE_CAPS: Record<FunctionRole, Capability[]> = {
-  sales_rep:        ['view_analytics_own'],
-  account_manager:  ['create_reference','approve_internal','start_customer_approval',
-                     'anonymize_reference','see_draft_references','see_confidential_references',
-                     'view_analytics_own'],
-  sales_leader:     ['view_analytics_all'],
+  sales_rep: ['view_analytics_own'],
+  account_manager: [
+    'create_reference',
+    'approve_internal',
+    'start_customer_approval',
+    'anonymize_reference',
+    'see_draft_references',
+    'see_confidential_references',
+    'view_analytics_own',
+  ],
+  sales_leader: ['view_analytics_all'],
 }
 export const ADMIN_CAPS: Capability[] = [
-  'create_reference','edit_any_reference','approve_internal','start_customer_approval',
-  'anonymize_reference','see_draft_references','see_confidential_references',
-  'view_analytics_all','manage_team','manage_settings','manage_integrations',
+  'create_reference',
+  'edit_any_reference',
+  'approve_internal',
+  'start_customer_approval',
+  'anonymize_reference',
+  'see_draft_references',
+  'see_confidential_references',
+  'view_analytics_all',
+  'manage_team',
+  'manage_settings',
+  'manage_integrations',
 ]
 // Effektiv = (FUNCTION_ROLE_CAPS[fr] ∪ (system owner/admin ? ADMIN_CAPS : [])) ⊕ profiles.capabilities-Overrides
 ```
@@ -167,10 +192,10 @@ export function useRole(): {
   systemRole: SystemRole
   functionRole: FunctionRole
   isOwner: boolean
-  isAdmin: boolean         // = systemRole owner|admin
+  isAdmin: boolean // = systemRole owner|admin
   can: (cap: Capability) => boolean
   // Übergangs-Aliase (deprecated, später entfernen):
-  isSales: boolean         // functionRole === 'sales_rep'
+  isSales: boolean // functionRole === 'sales_rep'
   isAccountManager: boolean // functionRole === 'account_manager'
 }
 ```
@@ -216,6 +241,7 @@ npm run test          # bestehende Tests grün
 npm run build         # Build grün
 # Supabase-Typen nach Migration neu generieren (Projekt-Konvention)
 ```
+
 - Manuell: Migration auf Branch/lokal anwenden, Backfill-Zählungen prüfen (`select system_role, function_role, count(*) from profiles group by 1,2`), genau ein `owner` pro Org.
 
 ---

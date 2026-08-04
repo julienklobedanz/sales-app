@@ -7,7 +7,12 @@ export function normalizeTextForPdfFlow(value: string | null | undefined): strin
   return String(value)
     .replace(/\r\n/g, '\n')
     .split(/\n\s*\n/)
-    .map((block) => block.replace(/\s*\n\s*/g, ' ').replace(/[ \t]+/g, ' ').trim())
+    .map((block) =>
+      block
+        .replace(/\s*\n\s*/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .trim(),
+    )
     .filter(Boolean)
     .join('\n\n')
 }

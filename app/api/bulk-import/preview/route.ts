@@ -18,7 +18,10 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
+    return NextResponse.json(
+      { success: false, error: 'Nicht angemeldet.' },
+      { status: 401 },
+    )
   }
 
   try {
@@ -38,7 +41,10 @@ export async function POST(request: Request) {
     const fileNameCompany = extractCompanyNameFromFileName(file.name)
     const fileNameTitle = extractProjectTitleHintFromFileName(file.name)
     const projectName =
-      parsed.title?.trim() || fileNameTitle || file.name.replace(/\.[^.]+$/, '').trim() || file.name
+      parsed.title?.trim() ||
+      fileNameTitle ||
+      file.name.replace(/\.[^.]+$/, '').trim() ||
+      file.name
     const companyName = parsed.company_name?.trim() || fileNameCompany || null
 
     return NextResponse.json({
@@ -50,7 +56,7 @@ export async function POST(request: Request) {
     log.error('preview failed', { action: 'bulk-import.preview' }, e)
     return NextResponse.json(
       { success: false, error: 'Vorschau konnte nicht erstellt werden.' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

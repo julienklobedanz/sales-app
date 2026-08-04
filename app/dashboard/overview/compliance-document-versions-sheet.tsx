@@ -121,7 +121,7 @@ export function ComplianceDocumentVersionsSheet({
   }
 
   async function resolveAccessUrls(
-    doc: ComplianceDocumentRow
+    doc: ComplianceDocumentRow,
   ): Promise<ComplianceDocumentAccessUrls | null> {
     const cached = urlCacheRef.current.get(doc.id)
     if (cached) return cached
@@ -166,7 +166,7 @@ export function ComplianceDocumentVersionsSheet({
         return
       }
       toast.success(
-        deleteTarget.is_current ? 'Zertifikat gelöscht.' : 'Archiv-Version gelöscht.'
+        deleteTarget.is_current ? 'Zertifikat gelöscht.' : 'Archiv-Version gelöscht.',
       )
       setDeleteTarget(null)
       if (deleteTarget.is_current && versionCount <= 1) {
@@ -204,7 +204,9 @@ export function ComplianceDocumentVersionsSheet({
     }
   }
 
-  const typeLabel = documentType ? complianceDocumentTypeLabel(documentType) : 'Zertifikat'
+  const typeLabel = documentType
+    ? complianceDocumentTypeLabel(documentType)
+    : 'Zertifikat'
 
   const versionCardActions = {
     resolvingId,
@@ -239,8 +241,7 @@ export function ComplianceDocumentVersionsSheet({
               <div className="min-w-0 space-y-1">
                 <p className="text-sm font-semibold text-foreground">{typeLabel}</p>
                 <p className="text-xs text-muted-foreground">
-                  {versionCount}{' '}
-                  {versionCount === 1 ? 'Version' : 'Versionen'}
+                  {versionCount} {versionCount === 1 ? 'Version' : 'Versionen'}
                   {archivedVersions.length > 0
                     ? ` — ${archivedVersions.length} ältere ${archivedVersions.length === 1 ? 'Version' : 'Versionen'} archiviert`
                     : ''}
@@ -271,7 +272,11 @@ export function ComplianceDocumentVersionsSheet({
                 {archivedVersions.length > 0 ? (
                   <>
                     {currentVersion ? (
-                      <div className="my-5 flex items-center gap-3" role="separator" aria-hidden>
+                      <div
+                        className="my-5 flex items-center gap-3"
+                        role="separator"
+                        aria-hidden
+                      >
                         <Separator className="flex-1" />
                       </div>
                     ) : null}
@@ -341,7 +346,11 @@ export function ComplianceDocumentVersionsSheet({
             >
               Abbrechen
             </Button>
-            <Button type="button" onClick={() => void handleSaveEdit()} disabled={savingEdit}>
+            <Button
+              type="button"
+              onClick={() => void handleSaveEdit()}
+              disabled={savingEdit}
+            >
               {savingEdit ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
@@ -364,10 +373,13 @@ export function ComplianceDocumentVersionsSheet({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {deleteTarget?.is_current ? 'Zertifikat löschen?' : 'Archiv-Version löschen?'}
+              {deleteTarget?.is_current
+                ? 'Zertifikat löschen?'
+                : 'Archiv-Version löschen?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              „{deleteTarget?.title}“ wird dauerhaft entfernt — inklusive der zugehörigen PDF-Datei.
+              „{deleteTarget?.title}“ wird dauerhaft entfernt — inklusive der zugehörigen
+              PDF-Datei.
               {deleteTarget?.is_current
                 ? ' Wenn du nur eine neue Version hochladen willst, nutze stattdessen „Zertifikat hochladen“.'
                 : ' Die aktuelle Version bleibt unverändert.'}
@@ -421,7 +433,7 @@ function VersionCard({
         isCurrent
           ? 'border-primary/35 bg-primary/[0.06] shadow-sm shadow-primary/5'
           : 'border-border/70 bg-muted/20',
-        focused && 'ring-2 ring-primary/25'
+        focused && 'ring-2 ring-primary/25',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -438,7 +450,10 @@ function VersionCard({
                 Aktuelle Version
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-medium text-muted-foreground"
+              >
                 Archiv
               </Badge>
             )}
