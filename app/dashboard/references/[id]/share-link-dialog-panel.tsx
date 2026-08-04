@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   CopyIcon,
   ExternalLink,
@@ -82,6 +83,8 @@ export function ShareLinkPopoverPanel({
   onCopyManage: (link: string) => void
   onRequestManageToken: () => void
 }) {
+  const [nowMs] = useState(() => Date.now())
+
   return (
     <PopoverContent align="start" className="w-[520px] max-w-[calc(100vw-2rem)] space-y-3">
       <div className="text-sm font-medium">Kundenlink</div>
@@ -117,7 +120,7 @@ export function ShareLinkPopoverPanel({
                   const mins = Math.max(1, Math.round(s.activeSeconds / 60))
                   const who = s.recipientLabel || s.visitorName || 'Anonym'
                   const when = new Date(s.startedAt)
-                  const agoMin = Math.max(0, Math.round((Date.now() - when.getTime()) / 60_000))
+                  const agoMin = Math.max(0, Math.round((nowMs - when.getTime()) / 60_000))
                   const agoLabel =
                     agoMin < 60 ? `vor ${agoMin} Min` : `vor ${Math.round(agoMin / 60)} Std`
                   return (

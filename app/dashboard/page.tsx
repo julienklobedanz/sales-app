@@ -43,6 +43,9 @@ async function DashboardHomeContent() {
   )
 
   const orgId = profile.organization_id as string
+  // Server Component: wall-clock cutoff for the 7d evidence query (not client render purity).
+  // eslint-disable-next-line react-hooks/purity -- server-only timestamp for query filter
+  const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const [
     accountsRes,
@@ -88,7 +91,7 @@ async function DashboardHomeContent() {
       .from('evidence_events')
       .select('id', { count: 'planned', head: true })
       .eq('organization_id', orgId)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+      .gte('created_at', weekAgoIso),
   ])
 
   const accountCount = accountsRes.count ?? 0

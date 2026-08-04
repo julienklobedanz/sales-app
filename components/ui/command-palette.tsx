@@ -109,7 +109,10 @@ export function CommandPalette() {
 
   const supabase = React.useMemo(() => createClient(), [])
   const supabaseRef = React.useRef(supabase)
-  supabaseRef.current = supabase
+
+  React.useEffect(() => {
+    supabaseRef.current = supabase
+  }, [supabase])
 
   React.useEffect(() => {
     setMounted(true)

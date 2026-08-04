@@ -60,7 +60,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P0-1 | `app/dashboard/accounts/actions.ts` → `deleteCompanyWithData` | Kein Auth-/Org-Check; löscht References/Deals/Strategy/… per `companyId` | Session + Org-Guard (+ Sales-Restricted) wie bei anderen Account-Actions; Test | S | neu |
 | P0-2 | `app/api/deal-desk/analyze/route.ts` (~488 Z.) | `@deprecated`, **kein UI-Caller**; kanonisch `/api/rfp/analyze` | Route entfernen (oder 410); Docs anpassen | S | 4c / neu |
 | P0-3 | `app/api/rfp-match/route.ts` | Name suggeriert Match; macht nur Document-Extract; **keine Caller** | Löschen oder mit `reference-extract` mergen | S | neu |
-| P0-4 | Baseline typecheck/lint/test | CI-lokal rot (siehe Phase 0) | Fehler beheben bevor große Refactors | M | neu — **teilweise erledigt 2026-08-04:** typecheck + unit tests grün; lint/format weiter offen |
+| P0-4 | Baseline typecheck/lint/test | CI-lokal rot (siehe Phase 0) | Fehler beheben bevor große Refactors | M | neu — **✅ typecheck/tests/lint-errors 2026-08-04** (52 warnings offen; format weiter offen) |
 | P0-5 | Accounts/Deals destruktive Actions | `bulkCreateCompaniesFromSheet`, `importDealsFromXlsx`, `deleteDeal` — unzureichende Tests | Mind. Happy-Path + Auth-Negativtests | M | E3 — ✅ 2026-08-04 Impl-Unit-Tests |
 
 ---

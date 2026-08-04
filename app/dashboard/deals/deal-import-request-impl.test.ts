@@ -19,7 +19,13 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { importDealsFromXlsxImpl } from './deal-import-request-impl'
 
-function profileChain(profile: { organization_id: string | null } | null) {
+function profileChain(
+  profile: {
+    organization_id: string | null
+    system_role?: string
+    function_role?: string
+  } | null
+) {
   return {
     select: () => ({
       eq: () => ({
@@ -75,11 +81,40 @@ describe('importDealsFromXlsxImpl', () => {
     })
   })
 
+  it('rejects sales_rep (sales-restricted)', async () => {
+    createServerSupabaseClient.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return profileChain({
+            organization_id: 'org-1',
+            system_role: 'member',
+            function_role: 'sales_rep',
+          })
+        }
+        throw new Error(`unexpected ${table}`)
+      }),
+    })
+    const fd = new FormData()
+    fd.set('file', buildXlsxFile([{ Titel: 'A' }]))
+
+    await expect(importDealsFromXlsxImpl(fd)).resolves.toEqual({
+      success: false,
+      error: 'Keine Berechtigung.',
+    })
+  })
+
   it('rejects missing file', async () => {
     createServerSupabaseClient.mockResolvedValue({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
       from: vi.fn((table: string) => {
-        if (table === 'profiles') return profileChain({ organization_id: 'org-1' })
+        if (table === 'profiles') {
+          return profileChain({
+            organization_id: 'org-1',
+            system_role: 'admin',
+            function_role: 'sales_leader',
+          })
+        }
         throw new Error(`unexpected ${table}`)
       }),
     })
@@ -95,7 +130,13 @@ describe('importDealsFromXlsxImpl', () => {
     createServerSupabaseClient.mockResolvedValue({
       auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
       from: vi.fn((table: string) => {
-        if (table === 'profiles') return profileChain({ organization_id: 'org-1' })
+        if (table === 'profiles') {
+          return profileChain({
+            organization_id: 'org-1',
+            system_role: 'admin',
+            function_role: 'sales_leader',
+          })
+        }
         if (table === 'deals') return { insert }
         throw new Error(`unexpected ${table}`)
       }),

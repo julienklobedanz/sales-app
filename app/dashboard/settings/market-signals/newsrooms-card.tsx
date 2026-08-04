@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Add01Icon, Cancel01Icon, RefreshCw } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
@@ -44,12 +44,13 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
   const router = useRouter()
   const [refreshPending, startRefresh] = useTransition()
   const [entries, setEntries] = useState(summary.entries)
+  const [prevEntries, setPrevEntries] = useState(summary.entries)
+  if (summary.entries !== prevEntries) {
+    setPrevEntries(summary.entries)
+    setEntries(summary.entries)
+  }
   const [draftById, setDraftById] = useState<Record<string, string>>({})
   const [pendingCompanyId, setPendingCompanyId] = useState<string | null>(null)
-
-  useEffect(() => {
-    setEntries(summary.entries)
-  }, [summary.entries])
 
   const stats = useMemo(() => {
     const withUrls = entries.filter((e) => e.urls.length > 0).length

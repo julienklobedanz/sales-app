@@ -12,6 +12,8 @@ import {
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
 import { log } from '@/lib/observability/logger'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 import { getDealWithReferencesImpl } from './deal-query-impl'
 
 function getResend(): Resend | null {
@@ -26,9 +28,18 @@ export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ suc
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, system_role, function_role')
+    .eq('id', user.id)
+    .single()
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
 
   const file = formData.get('file') as File | null
   if (!file || !(file instanceof File)) return { success: false, error: 'Keine Datei übergeben.' }

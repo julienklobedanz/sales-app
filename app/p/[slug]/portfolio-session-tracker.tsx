@@ -12,8 +12,12 @@ export function PortfolioSessionTracker({
   recipientToken?: string | null
 }) {
   const sessionIdRef = useRef<string | null>(null)
-  const lastTickRef = useRef<number>(Date.now())
+  const lastTickRef = useRef(0)
   const visibleRef = useRef(true)
+
+  useEffect(() => {
+    lastTickRef.current = Date.now()
+  }, [])
 
   useEffect(() => {
     function onVis() {
