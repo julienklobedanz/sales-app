@@ -108,6 +108,7 @@ describeIntegration('approval flow', () => {
 
     expect(ref?.customer_approval_status).toBe('approved')
     expect(ref?.status).toBe('external')
-    expect(ref?.approval_token).toBeNull()
+    // Magic Link bleibt nach Freigabe aktiv (Anmerkungen ändern); nur Ablehnung invalidiert.
+    expect(ref?.approval_token).toBe(customerToken)
   })
 })
