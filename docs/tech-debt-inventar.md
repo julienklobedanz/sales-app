@@ -115,12 +115,12 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | Datei | Zeilen |
 |-------|-------:|
 | `app/dashboard/dashboard-overview.tsx` | ~933 |
-| `app/dashboard/accounts/companies-grid.tsx` | 960 |
-| `app/dashboard/references/new/actions.ts` | 994 |
-| `lib/references/reference-form/reference-form-content.tsx` | ~126 (war 1093) |
-| `app/dashboard/overview/reference-table-column-renders.tsx` | ~10 barrel (war 1112) |
-| `app/dashboard/market-signals/actions.ts` | ~196 (war 1299) |
-| `app/dashboard/deals/actions.ts` | ~152 (war 945) |
+| `app/dashboard/references/[id]/page.tsx` | ~457 (war 937) |
+| `app/dashboard/accounts/companies-grid.tsx` | ~315 (war 960) |
+| `app/dashboard/references/new/actions.ts` | ~96 (war 994) |
+| `app/dashboard/overview/reference-table-column-header.tsx` | ~53 (war 841) |
+| `app/dashboard/market-signals/actions.ts` | ~196 |
+| `app/dashboard/deals/actions.ts` | ~152 |
 | `app/dashboard/accounts/actions.ts` | ~327 |
 | `app/dashboard/smart-match/smart-match-shell.tsx` | ~258 |
 
@@ -131,7 +131,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 1. **Quick Wins (diese Session):** P0-1 Auth-Guard ✅, P0-2/P0-3 tote APIs ✅, P2-1 leere Dirs ✅, P2-2 triagierte Orphans ✅, P2-3 Aliase ✅, P1-1 Result-Shape + Guide ✅, Knip-Script ✅.
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
 3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facades noch offen.
-4. **God-File-Slices:** Accounts ✅; Overview ✅; Smart-Match ✅; Market-Signals-Actions ✅; Column-Renders ✅; Reference-Form-Content ✅; Deals-Actions ✅ (2026-08-04).
+4. **God-File-Slices:** Accounts/Overview/Smart-Match/MS/Deals/Form/Columns ✅; plus References-new-actions, Companies-Grid, Reference-Detail-Page, Column-Header (2026-08-04).
 5. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
@@ -153,6 +153,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-3 Overview | Spalten/Filter/Table/Bulk-Helpers nach `overview/*`; `dashboard-overview` ~933 Z. |
 | P1-3 Smart-Match | Filters/Search/Results/Helpers; `smart-match-shell` ~258 Z. |
 | P1-3 MS/Deals/UI | MS-actions ~196; Deals-actions ~152; column-renders barrel; form-content ~126 + Sections |
+| P1-3 Welle 2 | Ref-new-actions ~96; companies-grid ~315; ref-detail-page ~457; column-header ~53 |
 
 ---
 

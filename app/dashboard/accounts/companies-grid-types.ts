@@ -1,0 +1,35 @@
+import type { AccountCardPrimaryAction } from '@/lib/accounts/account-card-primary-action'
+import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
+import type { CompanyEntityKind, NdaDisplayStatus } from '@/lib/accounts/company-entity'
+
+export type CompanyCard = {
+  id: string
+  name: string
+  logo_url: string | null
+  website_url: string | null
+  headquarters: string | null
+  industry: string | null
+  employee_count?: number | null
+  is_favorite?: boolean | null
+  entity_kind?: CompanyEntityKind
+  partner_category?: string | null
+  linked_account_id?: string | null
+  linked_account_name?: string | null
+  nda_status?: NdaDisplayStatus
+  account_status?: CompanyAccountStatusValue | null
+  open_deals_count?: number | null
+  contacts_count?: number | null
+  reference_count?: number | null
+  stakeholder_count?: number | null
+  strategy_filled?: boolean | null
+  signal_count?: number | null
+  primary_action?: AccountCardPrimaryAction | null
+  secondary_meta?: string | null
+  sort_urgency_at?: string | null
+}
+
+export type EmployeeBand = 'any' | 'unknown' | 's_50' | 'm_200' | 'l_1000' | 'xl'
+
+export type ReferencesFilter = 'any' | 'with' | 'without'
+
+export type SortMode = 'activity' | 'az'
