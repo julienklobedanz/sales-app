@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS public.references (
   full_text text,
   industry text,
   country text,
+  website text,
+  employee_count integer,
+  volume_eur text,
+  contract_type text,
   status public.reference_status NOT NULL DEFAULT 'draft',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()

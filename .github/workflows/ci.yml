@@ -8,20 +8,7 @@ on:
 jobs:
   db-migrations:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: supabase/postgres:17.4.1.064
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -31,10 +18,13 @@ jobs:
         with:
           version: latest
 
-      - name: Apply all migrations from scratch
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable
-        run: supabase migration up --db-url "$DATABASE_URL"
+      # Full local stack (auth/storage) — bare Postgres service lacks matching storage.buckets.
+      - name: Apply all migrations via supabase start
+        run: supabase start -x imgproxy,studio,edge-runtime,logflare,vector,mailpit
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
 
   integration-tests:
     runs-on: ubuntu-latest
