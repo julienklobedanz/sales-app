@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asJson } from '@/lib/supabase/db-types'
+import { log } from '@/lib/observability/logger'
 
 export type LogEventParams = {
   organizationId: string
@@ -33,9 +34,9 @@ export async function logEvent(params: LogEventParams): Promise<void> {
       deal_id: params.dealId ?? null,
       created_by: createdBy,
     })
-    if (error) console.error('[logEvent]', params.eventType, error.message)
+    if (error) log.error('logEvent.insertFailed', { eventType: params.eventType }, error)
   } catch (e) {
-    console.error('[logEvent]', params.eventType, e)
+    log.error('logEvent.failed', { eventType: params.eventType }, e)
   }
 }
 
@@ -67,6 +68,6 @@ export async function logEventForCurrentOrg(params: LogEventForOrgParams): Promi
       createdBy: params.createdBy ?? user.id,
     })
   } catch (e) {
-    console.error('[logEventForCurrentOrg]', params.eventType, e)
+    log.error('logEventForCurrentOrg.failed', { eventType: params.eventType }, e)
   }
 }

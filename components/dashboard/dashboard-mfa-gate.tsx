@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { log } from '@/lib/observability/logger'
 
 type GateStatus = 'loading' | 'ok' | 'need_mfa'
 
@@ -43,7 +44,7 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
 
     const { data: aal, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
     if (error) {
-      console.error('[MFA gate] AAL:', error)
+      log.error('mfaGate.aalCheckFailed', {}, error)
       setStatus('ok')
       return
     }

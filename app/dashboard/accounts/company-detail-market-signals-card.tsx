@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatReferenceDate } from '@/lib/format'
+import { COPY } from '@/lib/copy'
 import type { CompanyDetailClientProps } from './company-detail-types'
 
 type Props = {
@@ -93,9 +94,9 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
           </div>
 
           <div className="rounded-xl border border-border/80 bg-muted/5 p-4">
-            <h4 className="text-sm font-semibold">Company Update</h4>
+            <h4 className="text-sm font-semibold">{COPY.marketSignals.newsSection}</h4>
             {marketSignals.accountNews.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">Keine Company Updates vorhanden.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{COPY.accounts.companyUpdateEmpty}</p>
             ) : (
               <>
                 <ul className="mt-3 space-y-2">

@@ -3,6 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { OrgComplianceDoc } from '@/lib/deal-desk/compute-delivery-win-probability'
+import { log } from '@/lib/observability/logger'
 
 /** Aktuelle Compliance-/Nachweis-Dokumente der Organisation (Evidence Library). */
 export async function loadOrgComplianceDocsForDelivery(
@@ -16,7 +17,7 @@ export async function loadOrgComplianceDocsForDelivery(
     .eq('is_current', true)
 
   if (error) {
-    console.error('loadOrgComplianceDocsForDelivery:', error.message)
+    log.error('loadOrgComplianceDocsForDelivery.failed', { organizationId }, error)
     return []
   }
 

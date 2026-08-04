@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
+import { log } from '@/lib/observability/logger'
 
 export type PendingClientApprovalRow = {
   approvalId: string
@@ -48,7 +49,7 @@ export async function getPendingClientApprovalsImpl(): Promise<PendingClientAppr
     .order('created_at', { ascending: false })
 
   if (error || !data?.length) {
-    if (error) console.error('[getPendingClientApprovals]', error.message)
+    if (error) log.error('getPendingClientApprovals.failed', {}, error)
     return []
   }
 

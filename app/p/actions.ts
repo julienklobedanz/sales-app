@@ -8,6 +8,7 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { resetReferencesAfterCustomerAccessRevoke } from '@/lib/references/reset-after-customer-access-revoke'
 import { ROUTES } from '@/lib/routes'
 import { publicPortfolioUnlockCookieName } from '@/lib/public-portfolio-cookie'
+import { log } from '@/lib/observability/logger'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { createHash } from 'crypto'
 
@@ -153,7 +154,7 @@ export async function incrementPortfolioViews(slug: string): Promise<void> {
     })
   } catch (e) {
     // Views-Zähler/Telemetrie soll die öffentliche Seite niemals komplett blockieren.
-    console.error('[incrementPortfolioViews] increment_portfolio_views failed:', e)
+    log.error('incrementPortfolioViews.countFailed', { slug }, e)
   }
   try {
     await supabase.rpc('log_share_link_viewed', {
@@ -161,7 +162,7 @@ export async function incrementPortfolioViews(slug: string): Promise<void> {
       p_unlock_token: nullToUndefined(token),
     })
   } catch (e) {
-    console.error('[incrementPortfolioViews] log_share_link_viewed failed:', e)
+    log.error('incrementPortfolioViews.telemetryFailed', { slug }, e)
   }
 }
 

@@ -9,6 +9,7 @@ import {
   discoverAndSaveCompanyNewsrooms,
   scheduleCompanyNewsroomDiscovery,
 } from '@/lib/market-signals/discover-company-newsroom'
+import { log } from '@/lib/observability/logger'
 import type {
   CompanySearchResult,
   CompanySearchSuggestion,
@@ -126,7 +127,7 @@ async function brandfetchSuggestionsForQuery(
         if (out.length >= 8) break
       }
     } catch (e) {
-      console.error('brandfetchSuggestionsForQuery search API:', e)
+      log.error('brandfetchSuggestionsForQuery.failed', { query }, e)
     }
   }
 
@@ -199,7 +200,7 @@ export async function searchCompanySuggestionsImpl(input: string): Promise<Compa
       .order('name')
       .limit(10)
     if (error) {
-      console.error('searchCompanySuggestions companies error:', error)
+      log.error('searchCompanySuggestions.failed', { organizationId, pattern }, error)
       return { success: false, error: error.message }
     }
     companies = data ?? []

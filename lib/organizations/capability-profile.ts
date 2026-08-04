@@ -6,6 +6,7 @@ import {
   parseOrgCapabilitySettings,
   type OrgCapabilitySettings,
 } from '@/lib/organizations/capability-profile-types'
+import { log } from '@/lib/observability/logger'
 
 export type { CapabilityProfile, OrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 export {
@@ -24,7 +25,7 @@ export async function loadOrgCapabilitySettings(
     .maybeSingle()
 
   if (error) {
-    console.error('loadOrgCapabilitySettings:', error.message)
+    log.error('loadOrgCapabilitySettings.failed', { organizationId }, error)
     return { capabilityProfile: {}, icpDefinition: {} }
   }
 
@@ -41,7 +42,7 @@ export async function loadOrgReferenceCount(
     .eq('organization_id', organizationId)
 
   if (error) {
-    console.error('loadOrgReferenceCount:', error.message)
+    log.error('loadOrgReferenceCount.failed', { organizationId }, error)
     return 0
   }
   return count ?? 0

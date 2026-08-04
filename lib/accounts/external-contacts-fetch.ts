@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ExternalContactRow } from '@/app/dashboard/accounts/actions'
 import { parseStakeholderRole } from '@/lib/accounts/stakeholder-role'
+import { log } from '@/lib/observability/logger'
 
 const SELECT_BASE =
   'id, company_id, first_name, last_name, email, role, created_at, updated_at'
@@ -86,13 +87,13 @@ export async function fetchExternalContactsForCompany(
 
     lastErrorText = formatSupabaseError(error)
     if (!isLikelyMissingColumnError(lastErrorText)) {
-      console.error('[fetchExternalContactsForCompany]', lastErrorText)
+      log.error('fetchExternalContactsForCompany.failed', { companyId, organizationId, lastErrorText })
       return []
     }
   }
 
   if (lastErrorText) {
-    console.error('[fetchExternalContactsForCompany] all fallbacks failed:', lastErrorText)
+    log.error('fetchExternalContactsForCompany.allFallbacksFailed', { companyId, organizationId, lastErrorText })
   }
   return []
 }

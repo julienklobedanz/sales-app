@@ -14,6 +14,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { log } from '@/lib/observability/logger'
 
 export type CommandSearchResult =
   | { kind: 'account'; id: string; title: string; logoUrl: string | null }
@@ -436,7 +437,7 @@ export async function searchCommandCenter(
     const missingTable =
       msg.includes('organization_compliance_documents') || msg.includes('does not exist')
     if (!missingTable) {
-      console.warn('[searchCommandCenter] compliance documents:', msg)
+      log.warn('searchCommandCenter.complianceDocumentsFailed', { message: msg })
     }
   }
 

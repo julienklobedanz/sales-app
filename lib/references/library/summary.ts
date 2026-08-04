@@ -2,6 +2,7 @@
 
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { clampNarrativeText, REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
+import { log } from '@/lib/observability/logger'
 
 export type GenerateSummaryResult =
   | { success: true; summary: string }
@@ -52,7 +53,7 @@ Zusammenfassung:`
       const status = response.status
       const raw = await response.text()
       if (status === 429) {
-        console.error('generateSummaryFromStory: OpenAI 429', raw)
+        log.error('generateSummaryFromStory.rateLimited', { referenceId, status: 429, raw })
         return {
           success: false,
           error:

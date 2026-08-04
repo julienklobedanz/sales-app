@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { log } from '@/lib/observability/logger'
 
 type MfaFactor = { id: string; factor_type: string; status: string; friendly_name?: string }
 
@@ -56,7 +57,7 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
     const supabase = createClient()
     const { data, error } = await supabase.auth.mfa.listFactors()
     if (error) {
-      console.error(error)
+      log.error('settingsTotpMfa.listFactorsFailed', {}, error)
       setFactors([])
       return
     }

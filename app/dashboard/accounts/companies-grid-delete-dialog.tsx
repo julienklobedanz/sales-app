@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
+import { log } from '@/lib/observability/logger'
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { deleteCompanyWithData } from './actions'
@@ -59,7 +60,7 @@ export function CompaniesGridDeleteDialog({
                 setDeleting(true)
                 const result = await deleteCompanyWithData(deleteTarget.id)
                 if (!result.success && result.error) {
-                  console.error(result.error)
+                  log.error('deleteCompanyWithData.failed', { companyId: deleteTarget.id, error: result.error })
                 }
                 setDeleteTarget(null)
               } finally {

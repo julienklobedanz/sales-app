@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asJson } from '@/lib/supabase/db-types'
 import { maybeSendSecurityAlertMail } from '@/lib/audit/security-alerts'
+import { log } from '@/lib/observability/logger'
 
 type AuditLogInput = {
   orgId: string | null
@@ -28,7 +29,7 @@ export async function writeAuditLog(input: AuditLogInput): Promise<void> {
       action_details: asJson(input.actionDetails ?? {}),
     })
     if (error) {
-      console.error('[writeAuditLog]', input.action, error.message)
+      log.error('writeAuditLog.insertFailed', { action: input.action }, error)
       return
     }
       if (input.orgId) {
@@ -63,6 +64,6 @@ export async function writeAuditLog(input: AuditLogInput): Promise<void> {
       })
     }
   } catch (error) {
-    console.error('[writeAuditLog]', input.action, error)
+    log.error('writeAuditLog.failed', { action: input.action }, error)
   }
 }

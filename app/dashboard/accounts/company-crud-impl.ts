@@ -14,6 +14,7 @@ import {
   discoverAndSaveCompanyNewsrooms,
   scheduleCompanyNewsroomDiscovery,
 } from '@/lib/market-signals/discover-company-newsroom'
+import { log } from '@/lib/observability/logger'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
@@ -380,7 +381,7 @@ export async function updateCompanyImpl(payload: {
       websiteUrl: nextWebsite,
       force: true,
     }).catch((err) => {
-      console.error('[newsroom-discover]', payload.id, err instanceof Error ? err.message : err)
+      log.error('newsroomDiscover.companyUpdateFailed', { companyId: payload.id }, err)
     })
   }
 

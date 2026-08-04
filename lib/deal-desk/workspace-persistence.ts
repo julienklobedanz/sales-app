@@ -10,6 +10,7 @@ import {
   bidDecisionToDb,
   type NormalizedWorkspaceOverlay,
 } from '@/lib/deal-desk/workspace-merge'
+import { log } from '@/lib/observability/logger'
 
 function isProfileUuid(value: string | null | undefined): value is string {
   if (!value?.trim()) return false
@@ -140,7 +141,7 @@ export async function persistNormalizedWorkspace(
     .eq('organization_id', organizationId)
 
   if (projectError && !isMissingNormalizedTableError(projectError.message)) {
-    console.error('[persistNormalizedWorkspace/bid_decision]', projectError.message)
+    log.error('persistNormalizedWorkspace.bidDecisionFailed', { projectId, organizationId }, projectError)
     return
   }
 
@@ -152,7 +153,7 @@ export async function persistNormalizedWorkspace(
       .eq('project_id', projectId)
       .eq('organization_id', organizationId)
     if (error && !isMissingNormalizedTableError(error.message)) {
-      console.error(`[persistNormalizedWorkspace/delete ${table}]`, error.message)
+      log.error('persistNormalizedWorkspace.deleteFailed', { table, projectId, organizationId }, error)
       return
     }
   }
@@ -170,7 +171,7 @@ export async function persistNormalizedWorkspace(
       }))
     )
     if (error && !isMissingNormalizedTableError(error.message)) {
-      console.error('[persistNormalizedWorkspace/red_flags]', error.message)
+      log.error('persistNormalizedWorkspace.redFlagsFailed', { projectId, organizationId }, error)
     }
   }
 
@@ -191,7 +192,7 @@ export async function persistNormalizedWorkspace(
     })
     const { error } = await supabase.from('deal_desk_sme_routes').insert(rows)
     if (error && !isMissingNormalizedTableError(error.message)) {
-      console.error('[persistNormalizedWorkspace/sme_routes]', error.message)
+      log.error('persistNormalizedWorkspace.smeRoutesFailed', { projectId, organizationId }, error)
     }
   }
 
@@ -208,7 +209,7 @@ export async function persistNormalizedWorkspace(
         }))
     )
     if (error && !isMissingNormalizedTableError(error.message)) {
-      console.error('[persistNormalizedWorkspace/bid_team]', error.message)
+      log.error('persistNormalizedWorkspace.bidTeamFailed', { projectId, organizationId }, error)
     }
   }
 }

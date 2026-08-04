@@ -10,6 +10,7 @@ import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import { log } from '@/lib/observability/logger'
 import {
   buildCustomerManageUrl,
   getPublicPreviewUrlForReference,
@@ -94,7 +95,7 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
       p_slug: slug,
     })
     if (deactivateError) {
-      console.error('[createSharedPortfolio] deactivate existing slug failed:', slug, deactivateError)
+      log.error('createSharedPortfolio.deactivateSlugFailed', { slug }, deactivateError)
     }
   }
 }
@@ -173,7 +174,7 @@ export async function createSharedPortfolioImpl(
           p_clear_expires: false,
         })
         if (secErr) {
-          console.error('[createSharedPortfolio] set_shared_portfolio_security:', secErr)
+          log.error('createSharedPortfolio.setSecurityFailed', { slug }, secErr)
         }
         void logEvent({
           organizationId: orgId,
@@ -217,7 +218,7 @@ export async function createSharedPortfolioImpl(
           if (!recErr) {
             publicUrl = `${url}?r=${encodeURIComponent(token)}`
           } else {
-            console.error('[createSharedPortfolio] recipient insert:', recErr)
+            log.error('createSharedPortfolio.recipientInsertFailed', { slug, sharedPortfolioId: spId }, recErr)
           }
         }
       }
@@ -232,21 +233,14 @@ export async function createSharedPortfolioImpl(
     const code = (error as { code?: string }).code
     if (code === '23505') continue // unique violation, retry
     if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
-      console.error(
-        '[createSharedPortfolio] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:',
-        error
-      )
+      log.error('createSharedPortfolio.tableMissing', { referenceIds }, error)
       return {
         success: false,
         error:
           'Kundenlink konnte nicht erstellt werden, da die Tabelle "shared_portfolios" in der Datenbank fehlt oder das Schema noch nicht aktualisiert wurde. Bitte Migration in Supabase ausführen.',
       }
     }
-    console.error(
-      '[createSharedPortfolio] shared_portfolios insert failed (Schema/Berechtigung?):',
-      error.message,
-      error
-    )
+    log.error('createSharedPortfolio.insertFailed', { referenceIds }, error)
     return { success: false, error: error.message }
   }
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
@@ -342,15 +336,15 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
       p_reference_id: id,
     })
     if (error) {
-      console.error('[getPortfolioManageAndPreviewUrlsForApprovalEmail] reset token:', error)
+      log.error('getPortfolioManageAndPreviewUrls.resetTokenFailed', { referenceId: id }, error)
       return null
     }
     const payload = rpc as { success?: boolean; token?: string; error?: string } | null
     if (!payload?.success || !payload.token) {
-      console.error(
-        '[getPortfolioManageAndPreviewUrlsForApprovalEmail] rpc:',
-        payload?.error ?? 'no token'
-      )
+      log.error('getPortfolioManageAndPreviewUrls.rpcFailed', {
+        referenceId: id,
+        rpcError: payload?.error ?? 'no token',
+      })
       return null
     }
     const publicPreviewUrl = `${origin}/p/${encodeURIComponent(slug)}`
@@ -386,14 +380,11 @@ export async function getExistingShareForReferenceImpl(
   if (error) {
     const code = (error as { code?: string }).code
     if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
-      console.error(
-        '[getExistingShareForReference] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:',
-        error
-      )
+      log.error('getExistingShareForReference.tableMissing', { referenceId }, error)
       // Kein harter Fehler im UI – einfach so tun, als gäbe es keinen bestehenden Link
       return null
     }
-    console.error('[getExistingShareForReference] Fehler beim Laden von shared_portfolios:', error)
+    log.error('getExistingShareForReference.loadFailed', { referenceId }, error)
     return null
   }
   const row = rows?.[0] as

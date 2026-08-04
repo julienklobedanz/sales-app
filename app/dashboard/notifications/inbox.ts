@@ -18,6 +18,7 @@ import {
 } from '@/lib/market-signals/signal-badge'
 import { formatSignalSourceLabel } from '@/lib/market-signals/leadership-move'
 import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { log } from '@/lib/observability/logger'
 
 export type NotificationInboxGroup = 'signals' | 'approvals' | 'other'
 
@@ -287,7 +288,7 @@ export async function getInboxNotificationsImpl(
     .limit(80)
 
   if (error) {
-    console.error('[getInboxNotifications]', error.message)
+    log.error('getInboxNotifications.failed', { orgId }, error)
     return []
   }
   const approvalCandidates: InboxCandidate[] = (events ?? [])
@@ -302,7 +303,7 @@ export async function getInboxNotificationsImpl(
     .eq('created_by', userId)
     .order('created_at', { ascending: false })
     .limit(20)
-  if (requestError) console.error('[getInboxNotifications/requests]', requestError.message)
+  if (requestError) log.error('getInboxNotifications.requestsFailed', { orgId, userId }, requestError)
 
   const requestCandidates: InboxCandidate[] = (requestRows ?? []).map((row) => {
     const deal = Array.isArray(row.deals) ? row.deals[0] : row.deals
@@ -347,7 +348,7 @@ export async function getInboxNotificationsImpl(
     )
     .order('detected_at', { ascending: false })
     .limit(80)
-  if (execError) console.error('[getInboxNotifications/executive]', execError.message)
+  if (execError) log.error('getInboxNotifications.executiveFailed', { orgId }, execError)
 
   const { data: newsRows, error: newsError } = await supabase
     .from('market_signal_account_news')
@@ -365,7 +366,7 @@ export async function getInboxNotificationsImpl(
     )
     .order('published_on', { ascending: false })
     .limit(80)
-  if (newsError) console.error('[getInboxNotifications/news]', newsError.message)
+  if (newsError) log.error('getInboxNotifications.newsFailed', { orgId }, newsError)
 
   const { data: championRows } = await supabase
     .from('market_signal_champion_watchlist')

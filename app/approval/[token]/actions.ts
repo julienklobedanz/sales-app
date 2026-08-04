@@ -6,6 +6,7 @@ import { completeClientApprovalWithAdmin } from '@/lib/references/complete-clien
 import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
 import { formatApprovalGiverLine } from '@/lib/references/approval-workflow-display'
 import { sendClientApprovalDelegationEmail } from '@/lib/references/client-approval-delegation-email'
+import { log } from '@/lib/observability/logger'
 
 export type CompleteClientApprovalResult =
   | { success: true; confirmationEmailSent?: boolean }
@@ -121,7 +122,7 @@ export async function delegateClientApproval(params: {
         },
         created_by: null,
       })
-      if (eventError) console.error('[delegateClientApproval] event log failed:', eventError.message)
+      if (eventError) log.error('delegateClientApproval.eventLogFailed', { referenceId: refRow.id }, eventError)
     }
   }
 

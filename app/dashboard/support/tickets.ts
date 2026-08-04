@@ -5,6 +5,7 @@ import {
   escapeRefstackEmailHtml,
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
+import { log } from '@/lib/observability/logger'
 
 export type SubmitTicketResult = { success: true } | { success: false; error: string }
 
@@ -33,7 +34,7 @@ async function notifySupportInboxEmail(params: {
   const resend = getResend()
   if (!resend) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[submitTicket] RESEND_API_KEY fehlt – keine Benachrichtigung an Support-Inbox.')
+      log.warn('submitTicket.resendApiKeyMissing', { nodeEnv: process.env.NODE_ENV })
     }
     return
   }
@@ -65,10 +66,10 @@ async function notifySupportInboxEmail(params: {
       html,
     })
     if (error) {
-      console.error('[submitTicket] Resend:', error)
+      log.error('submitTicket.resendFailed', { type: params.type, userId: params.userId }, error)
     }
   } catch (e) {
-    console.error('[submitTicket] E-Mail-Versand:', e)
+    log.error('submitTicket.emailFailed', { type: params.type, userId: params.userId }, e)
   }
 }
 

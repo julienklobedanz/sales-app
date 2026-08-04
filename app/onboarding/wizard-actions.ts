@@ -8,6 +8,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractDataFromDocument } from '@/lib/document-text'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
 import type { ExtractedReferenceData } from '@/lib/references/extract-types'
+import { log } from '@/lib/observability/logger'
 import {
   attachOriginalDocumentToReference,
   createReference,
@@ -88,7 +89,7 @@ export async function finalizeWorkspaceAndProfile(params: {
         org_name: name,
       })
       if (orgError || !newOrgId) {
-        console.error(orgError)
+        log.error('onboarding.createOrganizationFailed', {}, orgError)
         return { success: false, error: 'Fehler beim Anlegen des Arbeitsbereichs.' }
       }
       organizationId = newOrgId as string
@@ -175,7 +176,7 @@ export async function extractReferencePreview(file: File): Promise<ExtractPrevie
     }
     return { success: true, preview: extracted.data }
   } catch (e) {
-    console.error(e)
+    log.error('onboarding.extractDocumentFailed', {}, e)
     return { success: false, error: 'Extraktion fehlgeschlagen.' }
   }
 }

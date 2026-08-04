@@ -7,6 +7,7 @@ import {
   snapMinVolumeEur,
   type ParsedSmartMatchConstraints,
 } from '@/lib/match/parse-smart-match-query'
+import { log } from '@/lib/observability/logger'
 
 const MODEL = 'gpt-4o-mini'
 
@@ -156,7 +157,7 @@ export async function resolveSmartMatchConstraints(
 
     if (!res.ok) {
       const t = await res.text()
-      console.warn('[smart-match-parse]', formatOpenAiHttpError(res.status, t, 'Smart-Match-Filter'))
+      log.warn('smartMatchParse.openAiFailed', { status: res.status, detail: formatOpenAiHttpError(res.status, t, 'Smart-Match-Filter') })
       return heuristic
     }
 
@@ -175,7 +176,7 @@ export async function resolveSmartMatchConstraints(
     if (!llm) return heuristic
     return mergeParsed(llm, heuristic)
   } catch (e) {
-    console.warn('[smart-match-parse]', e instanceof Error ? e.message : e)
+    log.warn('smartMatchParse.failed', {}, e instanceof Error ? e : new Error(String(e)))
     return heuristic
   }
 }

@@ -8,6 +8,7 @@ import { AppIcon } from '@/lib/icons'
 import type { ExternalContactRow, StakeholderRole, StakeholderRow } from './actions'
 import type { CompanyDetailClientProps } from './company-detail-types'
 import { formatReferenceDate } from '@/lib/format'
+import { COPY } from '@/lib/copy'
 import { externalContactJobTitle } from './company-contact-action-buttons'
 import {
   Select,
@@ -200,7 +201,7 @@ export function CompanyDetailStrategyTab({
       <div className="space-y-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Buying Center</CardTitle>
+            <CardTitle className="text-base">{COPY.accounts.buyingCenterTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5 pt-4">
             {([

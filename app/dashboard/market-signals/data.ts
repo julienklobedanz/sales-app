@@ -3,6 +3,7 @@ import 'server-only'
 import { isMissingEnrichmentColumnsError } from '@/lib/market-signals/enrichment-db'
 import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { log } from '@/lib/observability/logger'
 
 export type MarketSignalCategory = 'people' | 'finance' | 'strategy'
 
@@ -271,12 +272,12 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       .order('detected_at', { ascending: false })
       .limit(100)
     if (execBase.error) {
-      console.error('[market-signals] executive_events', execBase.error.message)
+      log.error('marketSignals.executiveEventsFailed', {}, execBase.error)
     } else {
       execRows = (execBase.data ?? []) as Record<string, unknown>[]
     }
   } else {
-    console.error('[market-signals] executive_events', execWithEnrichment.error.message)
+    log.error('marketSignals.executiveEventsFailed', {}, execWithEnrichment.error)
   }
 
   let newsRows: Record<string, unknown>[] | null = null
@@ -295,12 +296,12 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       .order('published_on', { ascending: false })
       .limit(100)
     if (newsBase.error) {
-      console.error('[market-signals] account_news', newsBase.error.message)
+      log.error('marketSignals.accountNewsFailed', {}, newsBase.error)
     } else {
       newsRows = (newsBase.data ?? []) as Record<string, unknown>[]
     }
   } else {
-    console.error('[market-signals] account_news', newsWithEnrichment.error.message)
+    log.error('marketSignals.accountNewsFailed', {}, newsWithEnrichment.error)
   }
 
   if (followingCompanyIds.length === 0) {
@@ -385,7 +386,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       .limit(250)
 
     if (refErr) {
-      console.error('[market-signals] references', refErr.message)
+      log.error('marketSignals.referencesFailed', { companyCount: relevantCompanyIds.length }, refErr)
     }
 
     for (const raw of refRows ?? []) {
