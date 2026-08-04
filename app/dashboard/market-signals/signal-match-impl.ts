@@ -8,6 +8,7 @@ import {
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { log } from '@/lib/observability/logger'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
@@ -326,7 +327,7 @@ export async function requestReferenceApprovalForSignalImpl(args: {
       html,
     })
   } catch (e) {
-    console.error('[requestReferenceApprovalForSignal]', e)
+    log.error('requestReferenceApprovalForSignal.failed', {}, e)
   }
 
   return { success: true }

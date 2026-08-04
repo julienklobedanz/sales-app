@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { log } from '@/lib/observability/logger'
 
 const PROBE_TIMEOUT_MS = 2_500
 const MAX_NEWSROOM_URLS = 6
@@ -230,7 +231,7 @@ export function scheduleCompanyNewsroomDiscovery(
   websiteUrl?: string | null
 ): void {
   void discoverAndSaveCompanyNewsrooms(supabase, companyId, { websiteUrl }).catch((err) => {
-    console.error('[newsroom-discover]', companyId, err instanceof Error ? err.message : err)
+    log.error('newsroomDiscover.scheduledFailed', { companyId }, err)
   })
 }
 

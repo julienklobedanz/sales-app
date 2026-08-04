@@ -8,6 +8,7 @@ import {
 } from '@/lib/email/refstack-email-layout'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { formatRoleDimensionsLabel } from '@/lib/roles/invite-roles'
+import { log } from '@/lib/observability/logger'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY?.trim()
@@ -108,12 +109,12 @@ export async function sendTeamInviteEmail(
       html,
     })
     if (sendError) {
-      console.error('[sendTeamInviteEmail] Resend API:', sendError)
+      log.error('sendTeamInviteEmail.resendFailed', { to }, sendError)
       return { sent: false, error: sendError.message }
     }
     return { sent: true }
   } catch (e) {
-    console.error('[sendTeamInviteEmail]', e)
+    log.error('sendTeamInviteEmail.failed', { to }, e)
     const msg = e instanceof Error ? e.message : String(e)
     return { sent: false, error: msg }
   }

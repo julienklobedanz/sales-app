@@ -10,7 +10,7 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { DashboardShell } from './dashboard-shell'
-import { DashboardMfaGate } from '@/components/dashboard/DashboardMfaGate'
+import { DashboardMfaGate } from '@/components/dashboard/dashboard-mfa-gate'
 import { getInboxNotificationsForLayout } from './actions'
 
 function sanitizeHexColor(raw: unknown) {

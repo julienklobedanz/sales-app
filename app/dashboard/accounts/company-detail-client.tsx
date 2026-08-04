@@ -6,6 +6,7 @@ import { Award, Compass, Kanban, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRole } from '@/hooks/useRole'
+import { COPY } from '@/lib/copy'
 import type {
   ContactPersonRow,
   StakeholderRole,
@@ -381,7 +382,7 @@ export function CompanyDetailClient({
           </TabsTrigger>
           <TabsTrigger value="buying_center" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
             <Users className="size-4" />
-            Buying Center
+            {COPY.accounts.tabBuyingCenter}
           </TabsTrigger>
           <TabsTrigger value="pipeline" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
             <Kanban className="size-4" />

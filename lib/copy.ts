@@ -370,6 +370,9 @@ export const COPY = {
     alsoLinkedAccountHint: 'Auch als Account verknüpft',
     ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
     ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
+    tabBuyingCenter: 'Buying Center',
+    buyingCenterTitle: 'Buying Center',
+    companyUpdateEmpty: 'Keine Company Updates vorhanden.',
     createDialogNameHint:
       'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
     createDialogSuggestLocal: 'Bereits angelegt',

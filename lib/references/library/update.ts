@@ -10,6 +10,7 @@ import type { ReferenceRow } from '@/app/dashboard/actions'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'
+import { log } from '@/lib/observability/logger'
 
 export async function updateReferenceImpl(id: string, formData: FormData) {
   const supabase = await createServerSupabaseClient()
@@ -106,10 +107,10 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
       if (!uploadError && uploadData?.path) {
         filePath = uploadData.path
       } else if (uploadError) {
-        console.error('[updateReference] Upload fehlgeschlagen:', uploadError.message)
+        log.error('updateReference.uploadFailed', { referenceId: id }, uploadError)
       }
     } catch (e) {
-      console.error('[updateReference] Unerwarteter Fehler beim Upload:', e)
+      log.error('updateReference.uploadUnexpected', { referenceId: id }, e)
     }
   }
 

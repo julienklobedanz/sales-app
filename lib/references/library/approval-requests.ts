@@ -8,6 +8,7 @@ import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
+import { log } from '@/lib/observability/logger'
 export type RequestItem = {
   id: string
   reference_id: string
@@ -57,7 +58,7 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
   const { data, error } = await query
 
   if (error) {
-    console.error('[getRequests] Error:', error)
+    log.error('getRequests.failed', {}, error)
     return []
   }
 

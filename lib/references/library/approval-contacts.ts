@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
+import { log } from '@/lib/observability/logger'
 
 export type ApprovalContactOption = {
   id: string
@@ -38,7 +39,7 @@ export async function getContactOptionsForReferenceImpl(
     .order('last_name', { ascending: true })
 
   if (error) {
-    console.error('[getContactOptionsForReference]', error.message)
+    log.error('getContactOptionsForReference.failed', { referenceId }, error)
     return { contacts: [], error: 'Kontakte konnten nicht geladen werden' }
   }
 
@@ -49,7 +50,7 @@ export async function getContactOptionsForReferenceImpl(
     .order('last_name', { ascending: true })
 
   if (extErr) {
-    console.error('[getContactOptionsForReference] external', extErr.message)
+    log.warn('getContactOptionsForReference.externalFailed', { referenceId }, extErr)
   }
 
   const contacts: ApprovalContactOption[] = (rows ?? []).map((r) => {

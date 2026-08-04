@@ -5,6 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react'
 import { Cancel01Icon, FileText, Loader } from '@hugeicons/core-free-icons'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { log } from '@/lib/observability/logger'
 
 import {
   extractComplianceCertificateMetadataFromPdf,
@@ -425,7 +426,7 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
 
     if (result.errors.length > 0) {
       toast.error(`${result.uploaded} gespeichert, ${result.errors.length} Fehler.`)
-      console.error(result.errors)
+      log.error('complianceBulkUpload.partialErrors', { uploaded: result.uploaded, errors: result.errors })
     } else {
       toast.success(
         `${result.uploaded} Zertifikat${result.uploaded !== 1 ? 'e' : ''} gespeichert.`

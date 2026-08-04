@@ -14,6 +14,7 @@ import type {
   ReferenceFormCompany,
   SearchReferenceFormCompanies,
 } from '@/lib/references/reference-form/reference-form-types'
+import { log } from '@/lib/observability/logger'
 
 export type { ReferenceFormCompany }
 
@@ -438,7 +439,10 @@ export function CompanyCombobox({
               onAutoRemotePreview(latestQ)
             }
           } else {
-            console.error('Unternehmenssuche fehlgeschlagen:', result.error)
+            log.error('referenceForm.companySearchFailed', {
+              query: valueRef.current.trim(),
+              error: result.error,
+            })
             setRemoteSuggestions([])
           }
         })

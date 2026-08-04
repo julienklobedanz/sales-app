@@ -4,6 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/routes'
+import { log } from '@/lib/observability/logger'
 
 export default function DashboardError({
   error,
@@ -13,7 +14,7 @@ export default function DashboardError({
   reset: () => void
 }) {
   React.useEffect(() => {
-    console.error('[dashboard] error boundary:', error)
+    log.error('dashboard.errorBoundary', { digest: error.digest }, error)
   }, [error])
 
   return (

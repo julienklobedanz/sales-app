@@ -10,6 +10,7 @@ import {
   isMissingNdaTitleColumn,
 } from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
+import { log } from '@/lib/observability/logger'
 
 export type NdaInboxCandidate = {
   id: string
@@ -145,7 +146,7 @@ export async function fetchNdaExpiryInboxCandidates(
   }
 
   if (queryError) {
-    console.error('[fetchNdaExpiryInboxCandidates]', queryError.message)
+    log.error('fetchNdaExpiryInboxCandidates.failed', {}, queryError)
     return []
   }
 

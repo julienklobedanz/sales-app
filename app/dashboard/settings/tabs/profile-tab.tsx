@@ -37,7 +37,7 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { InformationCircleIcon, Trash2 } from '@hugeicons/core-free-icons'
 import { SettingsProfileCard } from '../settings-profile-card'
-import { SettingsTotpMfaCard } from '@/components/dashboard/SettingsTotpMfaCard'
+import { SettingsTotpMfaCard } from '@/components/dashboard/settings-totp-mfa-card'
 import { DIGEST_TIMEZONE_OPTIONS } from '@/lib/market-signals/digest-schedule'
 import {
   changeOwnPassword,

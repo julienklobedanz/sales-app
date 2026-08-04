@@ -70,7 +70,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | ID | Ort | Befund | Soll | Aufwand | Paket |
 |----|-----|--------|------|---------|-------|
 | P1-1 | Guide + `lib/observability/result.ts` | `{ ok }` vs `{ success }` | Helpers auf `{ success }`; Guide angleichen | S | E6 |
-| P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **heiße Pfade ✅ 2026-08-04**; Rest offen |
+| P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **App/Lib/Components ✅ 2026-08-04** (nur Logger-Sink + Scripts behalten `console`) |
 | P1-3 | God-Files | große Actions/UI-Dateien | Sliceweise splitten | L | E5 — **✅ Welle 2026-08-04** (Overview ~719, Share-Link ~420, Feed ~429, Match ~270) |
 | P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu — ✅ `lib/accounts/company-from-join.ts` |
 | P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu — ✅ `lib/deals/normalize-deal-status.ts` |
@@ -113,11 +113,11 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 
 | ID | Ort | Befund | Soll | Aufwand |
 |----|-----|--------|------|---------|
-| P3-1 | `components/dashboard/*` | 4× PascalCase (`DashboardMfaGate`, …) | kebab-case | S |
+| P3-1 | `components/dashboard/*` | 4× PascalCase (`DashboardMfaGate`, …) | kebab-case | S — ✅ `dashboard-mfa-gate`, `settings-totp-mfa-card`, `support-ticket-modal`, `support-channels-dialog` |
 | P3-2 | Quote-Mix | `components/ui/` oft `"`, Rest `'` | Prettier/`format` | S (805 Dateien!) |
 | P3-3 | DE/EN Dateinamen | `ki-entwurf`, `sperrlink` vs engl. Domains | Bei Touch angleichen | — |
 | P3-4 | Hardcoded Farben | Accounts/Deals Status (`red-*`, `emerald-*`) | Design-Tokens | M |
-| P3-5 | EN-Copy Reste | Strategy-Tab Buying-Center, „Company Update“ | `COPY` / DE | S |
+| P3-5 | EN-Copy Reste | Strategy-Tab Buying-Center, „Company Update“ | `COPY` / DE | S — ✅ Account-UI auf `COPY` verdrahtet |
 
 ---
 

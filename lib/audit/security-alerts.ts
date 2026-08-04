@@ -8,6 +8,7 @@ import {
   escapeRefstackEmailHtml,
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
+import { log } from '@/lib/observability/logger'
 
 type AlertContext = {
   orgId: string
@@ -138,6 +139,6 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
 
     await markSent(supabase, ctx.orgId, alertKey)
   } catch (error) {
-    console.error('[maybeSendSecurityAlertMail]', error)
+    log.error('maybeSendSecurityAlertMail.failed', { orgId: ctx.orgId, action: ctx.action }, error)
   }
 }

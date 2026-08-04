@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { log } from '@/lib/observability/logger'
 
 export type ReferenceActivityItem = {
   id: string
@@ -229,7 +230,7 @@ export async function getReferenceDetailActivities(referenceId: string): Promise
     .limit(5)
 
   if (error) {
-    console.error('[getReferenceDetailActivities]', error.message)
+    log.error('getReferenceDetailActivities.failed', { referenceId }, error)
     return []
   }
 

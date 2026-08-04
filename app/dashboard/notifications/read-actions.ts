@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { log } from '@/lib/observability/logger'
 
 export async function markNotificationReadImpl(notificationKey: string) {
   const supabase = await createServerSupabaseClient()
@@ -21,7 +22,7 @@ export async function markNotificationReadImpl(notificationKey: string) {
   )
 
   if (error) {
-    console.error('[markNotificationRead]', error.message)
+    log.error('markNotificationRead.failed', { notificationKey }, error)
     return { success: false as const, error: error.message }
   }
   revalidatePath(ROUTES.home, 'layout')
@@ -48,7 +49,7 @@ export async function markAllNotificationsReadImpl(notificationKeys: string[]) {
   })
 
   if (error) {
-    console.error('[markAllNotificationsRead]', error.message)
+    log.error('markAllNotificationsRead.failed', { count: notificationKeys.length }, error)
     return { success: false as const, error: error.message }
   }
   revalidatePath(ROUTES.home, 'layout')

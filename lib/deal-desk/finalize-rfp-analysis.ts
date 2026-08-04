@@ -11,6 +11,7 @@ import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistenc
 import { workspaceFromRfpSnapshot } from '@/lib/deal-desk/workspace-from-snapshot'
 import { RFP_COCKPIT_ENGINE_VERSION_CURRENT } from '@/lib/deals/rfp-cockpit-metrics'
 import type { RfpVerdict } from '@/lib/rfp-relevance'
+import { log } from '@/lib/observability/logger'
 
 export type FinalizeRfpAnalysisInput = {
   projectId: string
@@ -49,7 +50,7 @@ export async function finalizeRfpAnalysis(
       .eq('id', dealId)
       .eq('organization_id', organizationId)
     if (error) {
-      console.error('[finalizeRfpAnalysis/is_rfp_mode]', error.message)
+      log.error('finalizeRfpAnalysis.isRfpModeFailed', { dealId, organizationId }, error)
     }
   }
 
