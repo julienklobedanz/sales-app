@@ -1,27 +1,35 @@
 import { log } from '@/lib/observability/logger'
 
-export type Result<T> = { ok: true; data: T } | { ok: false; error: string }
+/**
+ * Kanonische Result-Shape für Server Actions / UI-facing Returns.
+ * Siehe docs/ai-coding-agent-guide.md und docs/tech-debt-inventar.md.
+ */
+export type Result<T> =
+  | ({ success: true } & (T extends void ? { data?: never } : { data: T }))
+  | { success: false; error: string }
 
-export function ok<T>(data: T): Result<T> {
-  return { ok: true, data }
+export function ok(): { success: true }
+export function ok<T>(data: T): { success: true; data: T }
+export function ok<T>(data?: T): { success: true; data?: T } {
+  return data === undefined ? { success: true } : { success: true, data }
 }
 
-export function err<T = never>(error: string): Result<T> {
-  return { ok: false, error }
+export function err(error: string): { success: false; error: string } {
+  return { success: false, error }
 }
 
-export function fail<T = never>(
+export function fail(
   message: string,
   context?: Record<string, unknown>,
   cause?: unknown
-): Result<T> {
+): { success: false; error: string } {
   log.error(message, context, cause)
-  return { ok: false, error: message }
+  return { success: false, error: message }
 }
 
 export function fromThrown(
   message: string,
   context?: Record<string, unknown>
-): (cause: unknown) => Result<never> {
+): (cause: unknown) => { success: false; error: string } {
   return (cause) => fail(message, context, cause)
 }

@@ -2,36 +2,40 @@
 
 **Quelle:** Engineering-Audit E6. Observability vor dem Pilot.
 **Zweck:** Ad-hoc-Logging/Fehlerbehandlung durch ein zentrales, strukturiertes Muster ersetzen.
+**Inventar:** `docs/tech-debt-inventar.md` (Result-Konvention entschieden 2026-08-04).
 
 ---
 
 ## Vorab lesen
 
 - `docs/ai-coding-agent-guide.md`.
-- Ist-Stand `[verifiziert]`: **108** `console.error/warn/log`, **163** catch-Blöcke, **kein** zentrales Logger-/Error-Modul.
+- Ist-Stand `[verifiziert 2026-08-04]`: ~119 `console.*` in App-Code, Logger existiert (~11 Importe), `result.ts` Helpers auf `{ success }` umgestellt.
 
 ---
 
 ## T1 — Zentrales Logging-Util
 
 **Soll:** `lib/observability/logger.ts` — strukturiertes Logging mit Level (`debug|info|warn|error`), Kontext-Feldern (z. B. `organizationId`, `userId`, `action`), und einer Stelle, an der später ein Sink (z. B. Vercel/Logflare/Sentry) angebunden werden kann. Sensible Felder redacten.
-**Akzeptanz:** Logger existiert; ein Sink-Anschluss ist vorbereitet (eine Funktion, nicht 108 verstreute `console.*`).
+**Akzeptanz:** Logger existiert; ein Sink-Anschluss ist vorbereitet (eine Funktion, nicht verstreute `console.*`).
+**Status:** ✅ erledigt.
 
 ---
 
 ## T2 — Einheitliche Server-Action-Fehler (`Result`-Konvention)
 
-**Soll:** Eine typisierte `Result<T>`-Konvention (`{ ok: true, data } | { ok: false, error }`) für Server-Actions etablieren (viele geben heute uneinheitlich `{ error }`/werfen/loggen). Fehler **einmal** zentral loggen (T1) statt verstreut.
-**Akzeptanz:** Konvention dokumentiert (`ai-coding-agent-guide.md`); als Helfer verfügbar; neue/berührte Actions nutzen sie.
+**Soll:** Typisierte Result-Konvention **`{ success: true; data? } | { success: false; error }`** (de-facto-Standard der Actions, nicht `{ ok }`). Helfer in `lib/observability/result.ts`: `ok()`, `err()`, `fail()` (loggt einmal zentral).
+**Akzeptanz:** Konvention dokumentiert (`ai-coding-agent-guide.md` + Inventar); Helpers verfügbar; neue/berührte Actions nutzen sie.
+**Status:** ✅ Shape + Docs angeglichen (2026-08-04). Adoption in Actions = Boy-Scout / T3.
 
 ---
 
 ## T3 — Migration der heißen Pfade (schrittweise)
 
-**Soll:** Die 108 `console.*` / 163 catch-Blöcke **nicht** in einem Rutsch, sondern:
-- neue/berührte Dateien sofort auf Logger + `Result` umstellen (Boy-Scout),
+**Soll:** Die ~119 `console.*` **nicht** in einem Rutsch, sondern:
+- neue/berührte Dateien sofort auf Logger + `Result` (`success`) umstellen (Boy-Scout),
 - die sicherheits-/fehlerträchtigen Pfade zuerst (Auth, Approval, Import, CRM-Sync, Cron).
 **Akzeptanz:** heiße Pfade migriert; `console.*` in App-Code rückläufig; Konvention greift für Neues.
+**Status:** ⏳ offen.
 
 ---
 

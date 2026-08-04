@@ -297,21 +297,3 @@ export function deadlineCountdownBadgeClass(days: number): string {
   }
   return 'inline-flex rounded-full bg-muted/80 px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground'
 }
-
-/** @deprecated Nur noch für Tests — nutze deadlineCountdownBadgeClass in der UI. */
-export function deadlineCountdownClass(days: number, title: string): string {
-  const kind = getTimelineItemKind(title)
-  if (days < 0) return 'text-muted-foreground'
-  if (kind === 'submission' && days < 20) return 'font-semibold text-red-600'
-  if (days >= 0 && days <= 30) return 'font-semibold text-amber-600'
-  return 'font-semibold text-foreground'
-}
-
-/** @deprecated Nutze deadlineRowTitleClass. */
-export function deadlineTitleClass(days: number, title: string): string {
-  const kind = getTimelineItemKind(title)
-  if (kind === 'submission' && days >= 0 && days < 20) {
-    return 'font-medium text-red-600'
-  }
-  return 'font-medium text-slate-900'
-}

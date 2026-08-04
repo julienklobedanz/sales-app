@@ -157,59 +157,6 @@ export async function upgradeAllOrganizationBrandfetchLogosToDark(): Promise<{
   return { updated, checked: rows.length }
 }
 
-/**
- * @deprecated Nutze upgradeAllOrganizationBrandfetchLogosToDark — behalten für gezielte ID-Listen.
- */
-export async function upgradeReferencedCompanyLogosForLightUi(
-  companyIds: string[]
-): Promise<{ updated: number; failed: number; checked: number }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { updated: 0, failed: 0, checked: 0 }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const organizationId = profile?.organization_id ?? null
-  if (!organizationId) return { updated: 0, failed: 0, checked: 0 }
-
-  const unique = [...new Set(companyIds.filter(Boolean))].slice(0, 100)
-  let updated = 0
-  let failed = 0
-  let checked = 0
-
-  for (const companyId of unique) {
-    const { data: row } = await supabase
-      .from('companies')
-      .select('logo_url')
-      .eq('id', companyId)
-      .eq('organization_id', organizationId)
-      .maybeSingle()
-
-    const before = String(row?.logo_url ?? '').trim()
-    if (!before) continue
-    checked += 1
-
-    if (!brandfetchLogoUrlLooksLightTheme(before)) continue
-
-    const next = rewriteBrandfetchLogoUrlForLightBackground(before)
-    if (!next || next === before) continue
-    const { error } = await supabase
-      .from('companies')
-      .update({ logo_url: next })
-      .eq('id', companyId)
-      .eq('organization_id', organizationId)
-    if (error) failed += 1
-    else updated += 1
-  }
-
-  return { updated, failed, checked }
-}
-
 /** Nach Firmennamen (z. B. aus PDF) — findet „Aurubis“ statt neu „Aurubis AG“. */
 export async function syncCompanyBrandfetchByName(
   companyName: string

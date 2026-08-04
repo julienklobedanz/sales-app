@@ -148,7 +148,7 @@ export async function loadLeaderCallQueue(
       )
       .order('detected_at', { ascending: false })
       .limit(120)
-    execRows = fallback.data
+    execRows = fallback.data as typeof execRows
   }
 
   let newsRows = newsWithEnrichment.data
@@ -158,7 +158,7 @@ export async function loadLeaderCallQueue(
       .select(`id, body, published_on, company_id, companies ( name, logo_url, organization_id )`)
       .order('published_on', { ascending: false })
       .limit(120)
-    newsRows = fallback.data
+    newsRows = fallback.data as typeof newsRows
   }
 
   const followingCompanyIds = new Set(

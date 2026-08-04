@@ -39,11 +39,14 @@ describe('volumeBandFromMinVolume', () => {
 describe('createdAtMatchesAnyRecency', () => {
   const now = new Date('2026-07-21T12:00:00.000Z')
 
-  it('ORs recent and older windows', () => {
+  it('ANDs multiple windows (contradictory → no match)', () => {
     const recent = '2026-01-01T00:00:00.000Z'
     const old = '2020-01-01T00:00:00.000Z'
-    expect(createdAtMatchesAnyRecency(recent, [12, -36], now)).toBe(true)
-    expect(createdAtMatchesAnyRecency(old, [12, -36], now)).toBe(true)
+    // „letzte 12“ und „älter als 36“ schließen sich aus
+    expect(createdAtMatchesAnyRecency(recent, [12, -36], now)).toBe(false)
+    expect(createdAtMatchesAnyRecency(old, [12, -36], now)).toBe(false)
+    expect(createdAtMatchesAnyRecency(recent, [12], now)).toBe(true)
+    expect(createdAtMatchesAnyRecency(old, [-36], now)).toBe(true)
     expect(createdAtMatchesAnyRecency('2023-01-01T00:00:00.000Z', [12], now)).toBe(false)
   })
 })

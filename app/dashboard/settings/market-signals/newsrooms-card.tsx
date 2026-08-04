@@ -219,6 +219,3 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
     </aside>
   )
 }
-
-/** @deprecated Prefer NewsroomsSidebar */
-export const NewsroomsCard = NewsroomsSidebar

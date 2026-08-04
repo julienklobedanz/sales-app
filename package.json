@@ -19,7 +19,8 @@
     "format:check": "prettier . --check",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:all": "npm run test && npm run test:integration"
+    "test:all": "npm run test && npm run test:integration",
+    "knip": "knip --no-progress"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -64,6 +65,7 @@
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "knip": "^6.31.0",
     "prettier": "^3.6.2",
     "shadcn": "^4.1.1",
     "tailwindcss": "^4",

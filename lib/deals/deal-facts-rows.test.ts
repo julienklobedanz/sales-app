@@ -26,7 +26,9 @@ describe('buildDealFactRows', () => {
 
   it('formats close date with org preset', () => {
     const rows = buildDealFactRows(base, { dateDisplayFormat: 'de-DE' })
-    expect(rows.find((r) => r.label === 'Close')?.value).toBe('18.04.2026')
+    const close = rows.find((r) => r.label === 'Close')
+    expect(close?.kind).toBe('text')
+    if (close?.kind === 'text') expect(close.value).toBe('18.04.2026')
   })
 
   it('omits CRM rows without CRM sync', () => {
@@ -46,7 +48,8 @@ describe('buildDealFactRows', () => {
       },
       { hubspotPortalId: '999' }
     )
-    expect(rows.find((r) => r.kind === 'text' && r.label === 'CRM-Stage')?.value).toBe('Qualifiziert')
+    const stage = rows.find((r) => r.kind === 'text' && r.label === 'CRM-Stage')
+    expect(stage?.kind === 'text' ? stage.value : undefined).toBe('Qualifiziert')
     const link = rows.find((r) => r.kind === 'link')
     expect(link?.href).toContain('12345')
   })

@@ -1206,6 +1206,31 @@ export async function deleteCompanyWithData(
   companyId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, system_role, function_role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
+
+  const { data: company, error: companyErr } = await supabase
+    .from('companies')
+    .select('id, organization_id')
+    .eq('id', companyId)
+    .single()
+  if (companyErr || !company) return { success: false, error: 'Account nicht gefunden.' }
+  if ((company as { organization_id: string }).organization_id !== profile.organization_id) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
 
   // Optional: weitere abhängige Daten explizit löschen, falls kein ON DELETE CASCADE konfiguriert ist.
   // Referenzen
@@ -1219,7 +1244,11 @@ export async function deleteCompanyWithData(
   // Stakeholder
   await supabase.from('stakeholders').delete().eq('company_id', companyId)
 
-  const { error } = await supabase.from('companies').delete().eq('id', companyId)
+  const { error } = await supabase
+    .from('companies')
+    .delete()
+    .eq('id', companyId)
+    .eq('organization_id', profile.organization_id)
   if (error) return { success: false, error: error.message }
 
   revalidatePath(ROUTES.accounts)
