@@ -1,0 +1,61 @@
+-- Baseline core tables that historically lived outside timestamped migrations
+-- (manual schema.sql / Dashboard bootstrap). Required so CI can apply
+-- migrations from an empty database (supabase start / migration up).
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- App profile row linked to Supabase Auth (auth schema exists on supabase/postgres).
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  full_name text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.companies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  industry text,
+  logo_url text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+DO $$
+BEGIN
+  CREATE TYPE public.reference_status AS ENUM ('draft', 'pending', 'approved');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.references (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL REFERENCES public.companies (id) ON DELETE CASCADE,
+  title text NOT NULL,
+  summary text,
+  full_text text,
+  industry text,
+  country text,
+  status public.reference_status NOT NULL DEFAULT 'draft',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_references_company_id ON public.references (company_id);
+CREATE INDEX IF NOT EXISTS idx_references_status ON public.references (status);
+
+DO $$
+BEGIN
+  CREATE TYPE public.approval_status AS ENUM ('pending', 'approved');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.approvals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reference_id uuid NOT NULL REFERENCES public.references (id) ON DELETE CASCADE,
+  status public.approval_status NOT NULL DEFAULT 'pending',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_approvals_reference_id ON public.approvals (reference_id);
