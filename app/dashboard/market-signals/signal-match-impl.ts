@@ -9,7 +9,7 @@ import {
 } from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { log } from '@/lib/observability/logger'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
 import type {

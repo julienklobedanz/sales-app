@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { ReferenceRow, ReferenceAssetRow } from './actions'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
-import { isSystemAdmin, legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import {
   createSharedPortfolio,
   deleteReference,

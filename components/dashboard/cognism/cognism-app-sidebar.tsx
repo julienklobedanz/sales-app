@@ -259,7 +259,8 @@ export function CognismAppSidebar({
             <CognismCommandSearch collapsed />
             <SidebarNotificationsSection
               userId={userId}
-              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
+              systemRole={profile.systemRole}
+              functionRole={profile.functionRole}
               initialNotifications={initialNotifications}
               layout="rail"
             />
@@ -271,7 +272,8 @@ export function CognismAppSidebar({
             </div>
             <SidebarNotificationsSection
               userId={userId}
-              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
+              systemRole={profile.systemRole}
+              functionRole={profile.functionRole}
               initialNotifications={initialNotifications}
               layout="inline"
             />

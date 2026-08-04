@@ -51,7 +51,7 @@ type SearchState = {
 
 export function CommandCenter({ greetingName }: Props) {
   const router = useRouter()
-  const { role } = useRole()
+  const { systemRole, functionRole } = useRole()
   const inputRef = useRef<HTMLInputElement>(null)
   const lastSearchAtRef = useRef(0)
 
@@ -63,7 +63,10 @@ export function CommandCenter({ greetingName }: Props) {
   const [nowMs] = useState(() => Date.now())
 
   const firstName = firstNameFromFullName(greetingName)
-  const allSuggestions = useMemo(() => commandCenterSuggestionsForRole(role), [role])
+  const allSuggestions = useMemo(
+    () => commandCenterSuggestionsForRole(systemRole, functionRole),
+    [systemRole, functionRole],
+  )
   const visibleSuggestions = useMemo(
     () => filterCommandCenterSuggestions(allSuggestions, draft),
     [allSuggestions, draft],

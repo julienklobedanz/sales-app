@@ -5,7 +5,7 @@ import {
   type Capability,
   type FunctionRole,
 } from '@/lib/roles/capabilities'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 export type ApprovalRoutingMode = 'am_direct' | 'via_rpm' | 'legal_gate_on_nda'
 

@@ -1,6 +1,6 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import {
-  isSystemAdmin,
   legacyAppRoleFrom,
   legacyRoleToDimensions,
 } from '@/lib/roles/legacy-mapping'

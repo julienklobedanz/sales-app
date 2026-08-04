@@ -15,7 +15,7 @@ import type { NotificationInboxGroup } from '@/app/dashboard/notifications/inbox
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { type AppRole } from '@/hooks/useRole'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
@@ -349,12 +349,14 @@ function NotificationsPopover({
 
 export function SidebarNotificationsSection({
   userId,
-  userRole,
+  systemRole,
+  functionRole,
   initialNotifications = [],
   layout = 'footer',
 }: {
   userId: string
-  userRole: AppRole
+  systemRole: SystemRole
+  functionRole: FunctionRole
   initialNotifications?: DashboardNotificationItem[]
   layout?: 'footer' | 'inline' | 'rail'
 }) {
@@ -371,7 +373,7 @@ export function SidebarNotificationsSection({
     async function refreshInbox() {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
       try {
-        const next = await getInboxNotificationsForLayout(userId, userRole)
+        const next = await getInboxNotificationsForLayout(userId, systemRole, functionRole)
         setNotifications(next)
       } catch {
         // offline / transient — keep current list
@@ -388,7 +390,7 @@ export function SidebarNotificationsSection({
       window.clearInterval(id)
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [userId, userRole])
+  }, [userId, systemRole, functionRole])
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,

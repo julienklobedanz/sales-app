@@ -9,7 +9,7 @@ import {
   type Capability,
   type FunctionRole,
 } from '@/lib/roles/capabilities'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import {
   defaultRolesPermissionsSettings,

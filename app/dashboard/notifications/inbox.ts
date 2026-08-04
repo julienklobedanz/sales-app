@@ -4,12 +4,12 @@ import { fetchNdaExpiryInboxCandidates } from '@/app/dashboard/notifications/nda
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { formatRelativeTimeDe } from '@/lib/relative-time-de'
-import type { AppRole } from '@/hooks/useRole'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import {
-  appRoleCanManageOrg,
-  appRoleIsAdmin,
-  appRoleIsSales,
-} from '@/lib/roles/legacy-mapping'
+  profileCanManageOrgData,
+  profileIsSalesRestricted,
+} from '@/lib/roles/profile-guards'
 import {
   newsPersonNameFromBody,
   resolveExecSignalBadge,
@@ -250,14 +250,20 @@ function buildExecutiveSentence(input: {
   return `Update bei ${input.companyName}.`
 }
 
-function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: string) {
-  if (appRoleCanManageOrg(role)) return true
+function roleCanSeeApprovalEvent(
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
+  row: EventRowForCopy,
+  userId: string,
+) {
+  if (profileCanManageOrgData(systemRole, functionRole)) return true
   return row.created_by === userId
 }
 
 export async function getInboxNotificationsImpl(
   userId: string,
-  role: AppRole,
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
 ): Promise<DashboardNotificationItem[]> {
   const supabase = await createServerSupabaseClient()
 
@@ -296,7 +302,7 @@ export async function getInboxNotificationsImpl(
   }
   const approvalCandidates: InboxCandidate[] = (events ?? [])
     .map((row) => row as unknown as EventRowForCopy)
-    .filter((row) => roleCanSeeApprovalEvent(role, row, userId))
+    .filter((row) => roleCanSeeApprovalEvent(systemRole, functionRole, row, userId))
     .map((row) => mapEventToCopy(row.event_type, row))
 
   const { data: requestRows, error: requestError } = await supabase
@@ -435,9 +441,9 @@ export async function getInboxNotificationsImpl(
     const isMove = badge === 'Move'
 
     // Sales: Favoriten-Accounts + beobachtete Champions; Moves von Champions immer.
-    if (appRoleIsSales(role) && !isRelevant) return []
+    if (profileIsSalesRestricted(systemRole, functionRole) && !isRelevant) return []
     // Allgemeine Executive-Mentions ohne Move nur bei Favoriten-/Watchlist-Bezug — Moves priorisieren.
-    if (appRoleIsSales(role) && !isMove && !co.isFavorite && !isWatchedPerson) return []
+    if (profileIsSalesRestricted(systemRole, functionRole) && !isMove && !co.isFavorite && !isWatchedPerson) return []
 
     const type = badgeToType(badge)
     const signalSummary =
@@ -492,7 +498,7 @@ export async function getInboxNotificationsImpl(
     const personKey = normalizeText(personName)
     const isWatchedPerson = Boolean(personKey && championPersonKeys.has(personKey))
     const isMove = badge === 'Move'
-    if (appRoleIsSales(role) && !co.isFavorite && !(isMove && isWatchedPerson)) return []
+    if (profileIsSalesRestricted(systemRole, functionRole) && !co.isFavorite && !(isMove && isWatchedPerson)) return []
     const dayKey = String(row.published_on ?? '').slice(0, 10)
     const dedupeKey = [normalizeText(co.name), normalizeText(body), dayKey].join('|')
     if (newsSeen.has(dedupeKey)) return []
@@ -546,7 +552,7 @@ export async function getInboxNotificationsImpl(
     ]
   })
 
-  const ndaRaw = appRoleIsAdmin(role)
+  const ndaRaw = isSystemAdmin(systemRole)
     ? await fetchNdaExpiryInboxCandidates(supabase, orgId)
     : []
   const ndaCandidates: InboxCandidate[] = ndaRaw.map((entry) => ({

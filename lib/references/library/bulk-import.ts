@@ -11,7 +11,7 @@ import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-ref
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 type BulkImportReferencesResult =
   | { success: true; created: number; referenceIds: string[]; organizationId: string }

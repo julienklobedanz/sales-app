@@ -14,12 +14,12 @@ import {
 } from '@/lib/references/library/approvals'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
 import {
   markNotificationReadImpl,
   markAllNotificationsReadImpl,
 } from '@/app/dashboard/notifications/read-actions'
-import type { AppRole } from '@/hooks/useRole'
 import { getContactOptionsForReferenceImpl } from '@/lib/references/library/approval-contacts'
 import {
   getCompetitorSuggestionsImpl,
@@ -348,8 +348,12 @@ export async function getContactOptionsForReference(referenceId: string) {
 export type { DashboardNotificationItem } from '@/app/dashboard/notifications/inbox'
 export type { PendingClientApprovalRow } from '@/lib/references/library/pending-approvals'
 
-export async function getInboxNotificationsForLayout(userId: string, role: AppRole) {
-  return getInboxNotificationsImpl(userId, role)
+export async function getInboxNotificationsForLayout(
+  userId: string,
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
+) {
+  return getInboxNotificationsImpl(userId, systemRole, functionRole)
 }
 
 export async function markNotificationRead(eventId: string) {

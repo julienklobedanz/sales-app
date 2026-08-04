@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { log } from '@/lib/observability/logger'
 
 export const runtime = 'nodejs'

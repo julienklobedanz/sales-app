@@ -7,7 +7,7 @@ import { DealsClientContent } from './deals-client'
 import { DealsPageSkeleton } from '@/components/dashboard/deals-page-skeleton'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 
 export const dynamic = 'force-dynamic'

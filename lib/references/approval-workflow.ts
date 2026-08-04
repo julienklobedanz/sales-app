@@ -1,5 +1,5 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { isSalesAppView } from '@/lib/roles/reference-access'
 
 /** Ob der Freigabe-Workflow neu gestartet werden darf (nur von der Referenz-Detailseite). */
