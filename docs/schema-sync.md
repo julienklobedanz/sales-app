@@ -21,7 +21,7 @@ npx supabase db query --linked \
 |--------|--------|
 | **22 Migrationen** `20260614120000` … `20260630160000` | auf Remote angewendet (Stand nach E7-`db push`) |
 | **`tags` / `archived_at`** | in `schema_migrations` als angewendet markiert, Spalten physisch fehlend → Repair `20260630160000_repair_missing_tags_and_archived_at.sql` |
-| **3 Legacy-SQL-Dateien** ohne Timestamp | von CLI ignoriert (`add-contact-person.sql` etc.) — nicht in `migration list` |
+| **3 Legacy-SQL-Dateien** ohne Timestamp | ✅ als `2025021213*`–`2025021215*` Baseline-Migrationen aufgenommen |
 | **Prod-Drift (Rollen)** | Remote hatte `profiles.role` bereits entfernt, während CRM-/Invite-Migrationen noch `role` referenzierten → Migrationen idempotent nachgezogen |
 
 ## Reihenfolge (Prod)

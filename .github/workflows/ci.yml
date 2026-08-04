@@ -33,7 +33,7 @@ jobs:
 
       - name: Apply all migrations from scratch
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable
         run: supabase migration up --db-url "$DATABASE_URL"
 
   integration-tests:
