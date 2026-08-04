@@ -9,6 +9,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
   full_name text,
+  -- Legacy App-Rolle (später durch system_role/function_role ersetzt und gedroppt)
+  role text DEFAULT 'sales',
   created_at timestamptz DEFAULT now()
 );
 
