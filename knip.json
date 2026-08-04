@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/*.{ts,tsx}",
+    "middleware.ts",
+    "scripts/*.{ts,mjs}",
+    "supabase/functions/**/*.ts",
+    "vitest.config.ts",
+    "vitest.integration.config.ts",
+    "tests/integration/vitest.setup.ts"
+  ],
+  "project": ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"],
+  "ignore": [
+    "lib/database.types.ts",
+    "public/sw.js",
+    "scripts/**",
+    "supabase/functions/**"
+  ],
+  "ignoreDependencies": ["server-only"],
+  "ignoreBinaries": ["supabase"]
+}

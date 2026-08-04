@@ -1,6 +1,25 @@
-import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
+export type ReferenceFormCompany = {
+  id: string
+  name: string
+  logo_url?: string | null
+}
 
-export type { ReferenceFormCompany }
+/** Ergebnis der Unternehmens-Autocomplete-Suche (lokal + remote). */
+export type ReferenceFormCompanySearchResult =
+  | { success: true; suggestions: ReferenceFormCompany[]; hint?: string }
+  | { success: false; error: string }
+
+export type SearchReferenceFormCompanies = (
+  query: string
+) => Promise<ReferenceFormCompanySearchResult>
+
+/** Kontakt nach Anlegen/Bearbeiten im CreateContactDialog. */
+export type CreatedContact = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+}
 
 export type ContactPerson = {
   id: string

@@ -12,7 +12,7 @@ describe('deal activity events', () => {
       {
         id: '1',
         event_type: 'reference_matched',
-        payload: { source: 'deal_context' },
+        payload: { comment: 'deal_context' },
         created_at: '2024-07-08T10:00:00Z',
       },
       {

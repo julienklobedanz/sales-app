@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
-import { extractDataFromBuffer } from '@/lib/document-extraction'
+import { extractDataFromBuffer } from '@/lib/document-text'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import type {
   BulkImportExtractionResult,

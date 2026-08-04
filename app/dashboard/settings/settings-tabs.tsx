@@ -145,6 +145,8 @@ export function SettingsTabs({
     void registryVersion
     const result: Partial<Record<SettingsTabId, SettingsTabHandlers>> = {}
 
+    // registryVersion bumps on every register/unregister, so ref reads stay fresh.
+    // eslint-disable-next-line react-hooks/refs -- registryVersion gates freshness
     for (const [tabId, parts] of Object.entries(handlerPartsRef.current) as Array<
       [SettingsTabId, Map<string, SettingsTabHandlers>]
     >) {

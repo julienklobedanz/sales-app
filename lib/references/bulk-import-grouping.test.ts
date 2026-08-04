@@ -35,6 +35,7 @@ describe('bulk-import-grouping', () => {
       files.map((f, index) => ({
         id: `g-${index}`,
         projectName: f.name,
+        companyName: undefined as string | undefined,
         files: [f],
       }))
     )

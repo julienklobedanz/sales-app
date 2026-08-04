@@ -15,6 +15,7 @@ import {
   escapeRefstackEmailHtml,
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
+import { log } from '@/lib/observability/logger'
 
 export type SignUpResult = {
   error?: string
@@ -51,7 +52,7 @@ async function sendSignupConfirmationViaResend(params: {
 
   const actionLink = data?.properties?.action_link
   if (error || !actionLink) {
-    console.error('[signUp] generateLink für Bestätigungsmail:', error)
+    log.error('generateLink for confirmation email failed', { action: 'signUp.generateLink' }, error)
     return false
   }
 
@@ -77,7 +78,7 @@ async function sendSignupConfirmationViaResend(params: {
     })
     return true
   } catch (e) {
-    console.error('[signUp] Resend Bestätigungsmail:', e)
+    log.error('Resend confirmation email failed', { action: 'signUp.resendConfirmation' }, e)
     return false
   }
 }

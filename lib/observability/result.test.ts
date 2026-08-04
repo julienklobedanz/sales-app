@@ -13,13 +13,14 @@ describe('redactObject', () => {
 })
 
 describe('Result helpers', () => {
-  it('ok/err shapes', () => {
-    expect(ok(1)).toEqual({ ok: true, data: 1 })
-    expect(err('nope')).toEqual({ ok: false, error: 'nope' })
+  it('ok/err shapes use success discriminant', () => {
+    expect(ok()).toEqual({ success: true })
+    expect(ok(1)).toEqual({ success: true, data: 1 })
+    expect(err('nope')).toEqual({ success: false, error: 'nope' })
   })
 
   it('fail logs once and returns error result', () => {
     const result = fail('load failed', { action: 'test' }, new Error('boom'))
-    expect(result).toEqual({ ok: false, error: 'load failed' })
+    expect(result).toEqual({ success: false, error: 'load failed' })
   })
 })

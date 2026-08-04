@@ -12,6 +12,7 @@ import {
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { ROUTES } from '@/lib/routes'
 import { resolveApprovalWorkflowNotifyEmails } from '@/lib/references/approval-workflow-notify-recipients'
+import { log } from '@/lib/observability/logger'
 
 function referenceDetailUrl(referenceId: string): string {
   return `${getAppOrigin()}${ROUTES.references.detail(referenceId)}`
@@ -40,7 +41,7 @@ async function sendToRecipients(args: {
       })
       sent = true
     } catch (e) {
-      console.error('[approval-workflow-internal-notifications] send failed:', e)
+      log.error('send failed', { action: 'approvalWorkflowInternalNotifications.send' }, e)
     }
   }
 

@@ -13,6 +13,7 @@ import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approva
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
 import { isResendSandboxRecipientError, resolveResendRecipient, shouldMockResendSend } from '@/lib/email/resend-dev-override'
 import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
+import { log } from '@/lib/observability/logger'
 import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/references/library/approvals-email-templates'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
 import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
@@ -129,9 +130,9 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   let emailMocked = false
 
   if (shouldMockResendSend()) {
-    console.warn(
-      '[requestCustomerApprovalAgainAfterChanges] RESEND_MOCK_SUCCESS — E-Mail nicht gesendet (Dev-Test).'
-    )
+    log.warn('RESEND_MOCK_SUCCESS — email not sent (dev test)', {
+      action: 'requestCustomerApprovalAgainAfterChanges.mock',
+    })
     emailMocked = true
   } else {
     const resend = getApprovalResendClient()
@@ -156,13 +157,13 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
           process.env.NODE_ENV === 'development' &&
           isResendSandboxRecipientError(sendError.message)
         ) {
-          console.warn(
-            '[requestCustomerApprovalAgainAfterChanges] Resend-Sandbox blockiert — in Dev als erfolgreich behandelt.',
-            sendError.message
-          )
+          log.warn('Resend sandbox blocked — treated as success in dev', {
+            action: 'requestCustomerApprovalAgainAfterChanges.sandbox',
+            message: sendError.message,
+          })
           emailMocked = true
         } else {
-          console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', sendError)
+          log.error('send failed', { action: 'requestCustomerApprovalAgainAfterChanges.send' }, sendError)
           const hint =
             process.env.NODE_ENV === 'development'
               ? ' Für Tests: RESEND_MOCK_SUCCESS=true oder RESEND_DEV_OVERRIDE_TO=julien.klobedanz@gmail.com in .env.local.'
@@ -174,7 +175,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
         }
       }
     } catch (e) {
-      console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', e)
+      log.error('send failed', { action: 'requestCustomerApprovalAgainAfterChanges.send' }, e)
       return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
     }
   }
@@ -184,7 +185,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
     .update({ approval_comment: null })
     .eq('id', referenceId)
   if (clearCommentError) {
-    console.error('[requestCustomerApprovalAgainAfterChanges] clear comment:', clearCommentError.message)
+    log.error('clear comment failed', { action: 'requestCustomerApprovalAgainAfterChanges.clearComment', message: clearCommentError.message }, clearCommentError)
     return {
       success: false,
       error: 'E-Mail wurde gesendet, aber die Änderungswünsche konnten nicht zurückgesetzt werden.',

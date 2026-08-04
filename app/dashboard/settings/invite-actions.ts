@@ -15,6 +15,7 @@ import {
   type InviteRoleDimensions,
 } from '@/lib/roles/invite-roles'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { log } from '@/lib/observability/logger'
 
 const INVITE_VALID_DAYS = 7
 
@@ -373,7 +374,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   })
 
   if (invitesRpc.error) {
-    console.error('[getTeamMembers] list_organization_pending_invites:', invitesRpc.error)
+    log.error('list pending invites failed', { action: 'getTeamMembers.listPendingInvites' }, invitesRpc.error)
   }
 
   const rawPending = invitesRpc.data as unknown

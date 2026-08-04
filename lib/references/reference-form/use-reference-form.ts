@@ -5,10 +5,7 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from '@/app/dashboard/references/new/actions'
-import type { ExtractDataFromDocumentResult } from '@/app/dashboard/references/new/types'
-import type { ExternalContact } from '@/app/dashboard/references/new/actions'
-import { CreateContactDialog, type CreatedContact } from '@/app/dashboard/references/new/create-contact-dialog'
-import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
+import type { ExtractDataFromDocumentResult } from '@/lib/references/extract-types'
 import { updateReference } from '@/app/dashboard/actions'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { syncCompanyBrandfetchForEdit } from '@/lib/references/library/sync-company-brandfetch'
@@ -36,7 +33,9 @@ import {
 import { editRequiredSchema, formatZodError, requiredSchema } from '@/lib/references/reference-form/reference-form-schema'
 import type {
   ContactPerson,
+  CreatedContact,
   ExternalContactDisplay,
+  ReferenceFormCompany,
   ReferenceFormInitialData,
 } from '@/lib/references/reference-form/reference-form-types'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
@@ -46,7 +45,7 @@ type Company = ReferenceFormCompany
 export type UseReferenceFormArgs = {
   companies?: Company[]
   contacts?: ContactPerson[]
-  externalContacts?: ExternalContact[]
+  externalContacts?: ExternalContactDisplay[]
   initialData?: ReferenceFormInitialData
   onSuccess?: () => void
   router: AppRouterInstance
@@ -238,7 +237,7 @@ export function useReferenceForm({
     setContactId(contact.id)
   }
 
-  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact) => {
+  const handleCustomerContactCreated = (contact: ExternalContactDisplay | CreatedContact) => {
     const display: ExternalContactDisplay = {
       id: contact.id,
       first_name: contact.first_name,

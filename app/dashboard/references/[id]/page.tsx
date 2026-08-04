@@ -1,35 +1,8 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getExistingShareForReference, toggleFavorite } from '@/app/dashboard/actions'
-import {
-  Building2,
-  Calendar,
-  Globe,
-  LinkIcon,
-  MapPinIcon,
-  Pencil,
-  StarIcon,
-  TrendingUp,
-  UploadIcon,
-  Users,
-} from '@hugeicons/core-free-icons'
-import { AppIcon } from '@/lib/icons'
+import { getExistingShareForReference } from '@/app/dashboard/actions'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { formatEmployeeCountDeDisplay, formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
-import { formatContractTypeDisplay } from '@/lib/references/contract-type'
-import { deleteReferenceFromDetailPage } from './actions'
-import { ReferenceStatusWithHint } from '@/components/reference-status-with-hint'
-import { ROUTES } from '@/lib/routes'
-import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import { PdfExportDialog } from './pdf-export-dialog'
-import { PptxOnepagerExportButton } from './pptx-onepager-export-button'
-import { ShareLinkButton } from './share-link-button'
-import { ReferenceReadinessActions } from './reference-readiness-actions'
-import { ReferenceReadinessValue } from './reference-readiness-value'
+import { formatEmployeeCountDeDisplay, normalizeOrgDateDisplayFormat } from '@/lib/format'
 import {
   formatApprovalDelegatedRecipientLine,
   formatApprovalGiverLine,
@@ -40,9 +13,7 @@ import {
   canEditInternalApprovalCoordinator,
   canEditPreCustomerApprovalRecipient,
 } from '@/lib/references/pre-customer-approval-edit'
-import {
-  canStartApprovalWorkflow,
-} from '@/lib/references/approval-workflow'
+import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
 import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
 import {
   canApproveInternalReference,
@@ -57,36 +28,26 @@ import {
   resolveReferenceReadinessState,
   resolveFreigabestatusCardBadges,
 } from '@/lib/references/reference-readiness-state'
-import { ReferenceViewedTracker } from './reference-viewed-tracker'
-import { getReferenceDetailActivities } from './reference-detail-activities'
-import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
-import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
 import {
   buildReferenceHighlightPhrases,
   extractWorkflowHighlightGlossary,
 } from '@/lib/references/reference-context-highlights'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/lib/references/library/assets'
-import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
-import { cn } from '@/lib/utils'
+import { ROUTES } from '@/lib/routes'
+import { ReferenceViewedTracker } from './reference-viewed-tracker'
+import { getReferenceDetailActivities } from './reference-detail-activities'
+import {
+  anonymizeText,
+  buildDetailFileRows,
+  splitTags,
+  type ReferenceDetailRow,
+} from './reference-detail-helpers'
+import { ReferenceDetailHeader } from './reference-detail-header'
+import { ReferenceDetailMain } from './reference-detail-main'
+import { ReferenceDetailSidebar } from './reference-detail-sidebar'
 
 export const dynamic = 'force-dynamic'
-
-function splitTags(tags: string | null) {
-  return (tags ?? '')
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
-}
-
-function anonymizeText(value: string | null | undefined, companyName: string | null | undefined) {
-  const text = String(value ?? '')
-  const normalizedCompany = String(companyName ?? '').trim()
-  if (!text) return text
-  if (!normalizedCompany) return text
-  const escaped = normalizedCompany.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
-}
 
 export default async function ReferenceDetailPage({
   params,
@@ -115,10 +76,6 @@ export default async function ReferenceDetailPage({
   const { systemRole, functionRole, capabilities } = parsedRoles
   const isSalesView = isSalesAppView(systemRole, functionRole)
   const organizationId = (profile as { organization_id?: string | null }).organization_id ?? null
-  const requesterDisplayName =
-    typeof (profile as { full_name?: string | null }).full_name === 'string'
-      ? (profile as { full_name: string }).full_name.trim()
-      : ''
 
   let orgDateFmt = normalizeOrgDateDisplayFormat('de-DE')
   let orgRolesPermissions = null
@@ -200,69 +157,6 @@ export default async function ReferenceDetailPage({
     .single()
 
   if (error || !row) notFound()
-
-  type CompanyRow = {
-    id: string
-    name: string
-    headquarters?: string | null
-    website_url?: string | null
-    employee_count?: number | null
-  }
-  type ReferenceDetailRow = {
-    id: string
-    title: string
-    industry: string | null
-    country: string | null
-    status: string
-    contact_id: string | null
-    customer_contact_id: string | null
-    customer_approval_status: string | null
-    approval_owner_name: string | null
-    approval_requester_name: string | null
-    approval_coordinator_email: string | null
-    approval_coordinator_name: string | null
-    approval_customer_facing_name: string | null
-    approval_requested_at: string | null
-    approval_expires_at: string | null
-    approval_scope_named_mention: boolean | null
-    approval_scope_anonymous_mention: boolean | null
-    approval_scope_reference_call: boolean | null
-    approval_scope_logo_use: boolean | null
-    approval_scope_confidential_sales: boolean | null
-    approval_reference_call_frequency: string | null
-    approval_grace_until: string | null
-    approval_internal_status: string | null
-    approval_contact_id: string | null
-    approval_external_contact_id: string | null
-    approval_reference_giver_name: string | null
-    approval_reference_giver_title: string | null
-    approval_delegated_to_name: string | null
-    approval_delegated_to_email: string | null
-    approval_competitor_blacklist: string[] | null
-    approval_quote_proposed: string | null
-    approval_quote_approved: string | null
-    approval_comment: string | null
-    approval_consent_file_url: string | null
-    anonymized_from_id: string | null
-    created_at: string | null
-    updated_at: string | null
-    tags: string | null
-    customer_challenge: string | null
-    our_solution: string | null
-    customer_contact: string | null
-    volume_eur: string | null
-    contract_type: string | null
-    project_start: string | null
-    project_end: string | null
-    project_status: string | null
-    employee_count: number | null
-    is_nda_deal: boolean | null
-    file_path: string | null
-    incumbent_provider: string | null
-    competitors: string | null
-    website: string | null
-    companies: CompanyRow | CompanyRow[] | null
-  }
 
   const ref = row as unknown as ReferenceDetailRow
 
@@ -346,8 +240,6 @@ export default async function ReferenceDetailPage({
   const solutionText = normalizeNarrativeText(solutionTextRaw)
   const hasChallenge = Boolean(challengeText?.trim())
   const hasSolution = Boolean(solutionText?.trim())
-  /** Herausforderung und Lösung untereinander (ruhiger Lesefluss). */
-  const challengeSolutionGridClass = 'grid gap-4 grid-cols-1'
   const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
   const isWithdrawnInternal = internalApproval === 'withdrawn_internal'
   const customerAccessRevoked =
@@ -358,14 +250,6 @@ export default async function ReferenceDetailPage({
     (String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
       normalizedStatus === 'approved' ||
       normalizedStatus === 'external')
-  const nowMs = new Date().getTime()
-  const expiresMs = ref.approval_expires_at ? new Date(ref.approval_expires_at).getTime() : null
-  const graceMs = ref.approval_grace_until ? new Date(ref.approval_grace_until).getTime() : null
-  const baseApprovalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
-  const approvalStatus =
-    baseApprovalStatus === 'approved' && expiresMs && expiresMs < nowMs && graceMs && graceMs >= nowMs
-      ? 'expired'
-      : baseApprovalStatus
   const staleInternalPending = isStaleInternalPending({
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
@@ -485,453 +369,89 @@ export default async function ReferenceDetailPage({
   ])
 
   const publicBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? ''
-  const toReferencesPublicUrl = (path: string) =>
-    `${publicBase}/storage/v1/object/public/references/${path}`
-
-  type DetailFileRow = { key: string; name: string; href: string; category: string | null }
-  const detailFileRows: DetailFileRow[] = assetRows.map((a) => ({
-    key: a.id,
-    name: a.file_name || a.file_path.split('/').pop() || 'Dokument',
-    href: toReferencesPublicUrl(a.file_path),
-    category: a.category,
-  }))
-  const legacyFilePath = (ref.file_path ?? '').trim()
-  if (legacyFilePath && !assetRows.some((x) => x.file_path === legacyFilePath)) {
-    detailFileRows.unshift({
-      key: `legacy-${legacyFilePath}`,
-      name: legacyFilePath.split('/').pop() || 'Dokument',
-      href: toReferencesPublicUrl(legacyFilePath),
-      category: null,
-    })
-  }
-
-  const filesCard =
-    detailFileRows.length > 0 ? (
-      <Card className="border-border/70">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base inline-flex items-center gap-2">
-            <AppIcon icon={UploadIcon} size={16} className="text-muted-foreground" />
-            Dateien
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <ul className="space-y-2">
-            {detailFileRows.map((f) => (
-              <li key={f.key} className="flex min-w-0 items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-muted-foreground">{f.name}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  {f.category ? (
-                    <Badge variant="outline" className="text-[10px] font-normal capitalize">
-                      {f.category === 'sales'
-                        ? 'Sales'
-                        : f.category === 'contract'
-                          ? 'Vertrag'
-                          : 'Sonstiges'}
-                    </Badge>
-                  ) : null}
-                  <a
-                    className="text-xs font-medium text-primary hover:underline"
-                    href={f.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Öffnen
-                  </a>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    ) : null
+  const detailFileRows = buildDetailFileRows(assetRows, ref.file_path, publicBase)
 
   return (
     <div>
       <ReferenceViewedTracker referenceId={id} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-2 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <ReferenceStatusWithHint
-                  status={ref.status}
-                  customerApprovalStatus={ref.customer_approval_status}
-                  approvalInternalStatus={ref.approval_internal_status}
-                  approvalRequestedAt={ref.approval_requested_at}
-                  approvalScopeNamedMention={ref.approval_scope_named_mention}
-                  approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
-                />
-              </div>
-              <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
-                {ref.title}
-              </h1>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                {headerCompany ? (
-                  isAnonymizedView || !company?.id ? (
-                    <span className="inline-flex max-w-[min(100%,240px)] shrink-0 items-center font-medium text-foreground/90">
-                      {headerCompany}
-                    </span>
-                  ) : (
-                    <span className="inline-flex max-w-[min(100%,240px)] shrink-0 items-center font-medium text-foreground/90">
-                      <Link
-                        href={ROUTES.accountsDetail(company.id)}
-                        className="truncate transition-colors hover:text-foreground hover:underline"
-                      >
-                        {headerCompany}
-                      </Link>
-                    </span>
-                  )
-                ) : null}
-                {industryLabel ? (
-                  <span className="inline-flex max-w-[min(100%,280px)] items-center gap-1">
-                    <AppIcon icon={Building2} size={14} className="shrink-0" />
-                    <span className="truncate">{industryLabel}</span>
-                  </span>
-                ) : null}
-                {employeeMetaLabel ? (
-                  <span className="inline-flex shrink-0 items-center gap-1">
-                    <AppIcon icon={Users} size={14} />
-                    {employeeMetaLabel} Mitarbeiter
-                  </span>
-                ) : null}
-                {locationMetaLabel ? (
-                  <span className="inline-flex max-w-[min(100%,260px)] items-center gap-1">
-                    <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />
-                    <span className="truncate">{locationMetaLabel}</span>
-                  </span>
-                ) : null}
-                {websiteMetaHref ? (
-                  <a
-                    className="inline-flex shrink-0 items-center gap-1 hover:underline"
-                    href={websiteMetaHref}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <AppIcon icon={Globe} size={14} />
-                    Website
-                  </a>
-                ) : null}
-              </div>
-              {tags.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {tags.map((t) => (
-                    <Badge key={t} variant="secondary">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          {hasChallenge || hasSolution ? (
-            <div className="w-full min-w-0 space-y-6">
-              <div className={challengeSolutionGridClass}>
-                {hasChallenge ? (
-                  <Card className="border-border/70">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                        <AppIcon icon={TrendingUp} size={14} className="text-muted-foreground" />
-                        Herausforderung
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        <ReferenceContextHighlighted text={challengeText} phrases={highlightPhrases} />
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : null}
-                {hasSolution ? (
-                  <Card className="border-border/70">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                        <AppIcon icon={LinkIcon} size={14} className="text-muted-foreground" />
-                        Lösung
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        <ReferenceContextHighlighted text={solutionText} phrases={highlightPhrases} />
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : null}
-              </div>
-              {isSalesView ? filesCard : null}
-            </div>
-          ) : isSalesView && filesCard ? (
-            <div className="w-full min-w-0">{filesCard}</div>
-          ) : null}
-
-          {isSalesView ? (
-            <Card className="border-border/70">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                  <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
-                  Letzte Ereignisse
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ReferenceActivitiesTimeline items={referenceActivities} />
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {filesCard}
-              <Card className="border-border/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                    <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
-                    Letzte Ereignisse
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ReferenceActivitiesTimeline items={referenceActivities} />
-                </CardContent>
-              </Card>
-            </>
-          )}
+          <ReferenceDetailHeader
+            title={ref.title}
+            status={ref.status}
+            customerApprovalStatus={ref.customer_approval_status}
+            approvalInternalStatus={ref.approval_internal_status}
+            approvalRequestedAt={ref.approval_requested_at}
+            approvalScopeNamedMention={ref.approval_scope_named_mention}
+            approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
+            headerCompany={headerCompany}
+            companyId={company?.id}
+            isAnonymizedView={isAnonymizedView}
+            industryLabel={industryLabel}
+            employeeMetaLabel={employeeMetaLabel}
+            locationMetaLabel={locationMetaLabel}
+            websiteMetaHref={websiteMetaHref}
+            tags={tags}
+          />
+          <ReferenceDetailMain
+            isSalesView={isSalesView}
+            hasChallenge={hasChallenge}
+            hasSolution={hasSolution}
+            challengeText={challengeText}
+            solutionText={solutionText}
+            highlightPhrases={highlightPhrases}
+            detailFileRows={detailFileRows}
+            referenceActivities={referenceActivities}
+          />
         </div>
 
-        <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-          <Card className={isSalesView ? 'order-1' : 'order-1'}>
-            <CardHeader>
-              <CardTitle className="text-base">Projektdetails</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium tabular-nums">
-                  {formatReferenceVolume(ref.volume_eur)}
-                </span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{formatContractTypeDisplay(ref.contract_type)}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{ref.project_start ? formatReferenceDate(ref.project_start, orgDateFmt) : ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium text-right">
-                  {ref.project_end
-                    ? formatProjectEndWithDurationDe({
-                        project_start: ref.project_start,
-                        project_end: ref.project_end,
-                        project_status: ref.project_status,
-                        formatEndDate: (iso) => formatReferenceDate(iso, orgDateFmt),
-                      })
-                    : ''}
-                </span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Akt. Dienstleister</span>
-                <span className="font-medium">{ref.incumbent_provider ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Wettbewerber</span>
-                <span className="font-medium">{ref.competitors ?? ''}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cn('w-full min-w-0', isSalesView ? 'order-2' : undefined)}>
-            <CardHeader>
-              <CardTitle className="text-base">Freigabestatus</CardTitle>
-            </CardHeader>
-            <CardContent className="min-w-0 space-y-3 text-sm transition-all duration-200">
-              <div className="min-w-0 space-y-2">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Unter NDA?</span>
-                  <span
-                    className={`min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200 ${ndaDealBadgeClass}`}
-                  >
-                    {isNdaDeal ? 'Ja' : 'Nein'}
-                  </span>
-                </div>
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Intern</span>
-                  <span
-                    className={cn(
-                      'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
-                      workflowStatusBadges.internal.className
-                    )}
-                  >
-                    {workflowStatusBadges.internal.label}
-                  </span>
-                </div>
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <span className="shrink-0 pt-0.5 text-muted-foreground">Kunde</span>
-                  <span
-                    className={cn(
-                      'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
-                      workflowStatusBadges.customer.className
-                    )}
-                  >
-                    {workflowStatusBadges.customer.label}
-                  </span>
-                </div>
-                {!isSalesView ? (
-                  <>
-                    {requestedByDisplay ? (
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <span className="shrink-0 pt-0.5 text-muted-foreground">Angefragt von</span>
-                        <ReferenceReadinessValue value={requestedByDisplay} />
-                      </div>
-                    ) : null}
-                    {coordinatorDisplay ? (
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <span className="shrink-0 pt-0.5 text-muted-foreground">Accountverantw.</span>
-                        <ReferenceReadinessValue value={coordinatorDisplay} />
-                      </div>
-                    ) : null}
-                    {approvingCustomerDisplay ? (
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <span className="shrink-0 pt-0.5 text-muted-foreground">Kunde</span>
-                        <ReferenceReadinessValue value={approvingCustomerDisplay} />
-                      </div>
-                    ) : null}
-                    {delegatedRecipientDisplay ? (
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <span className="shrink-0 pt-0.5 text-muted-foreground">Aktueller Empfänger</span>
-                        <ReferenceReadinessValue value={delegatedRecipientDisplay} />
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
-              {isSalesView ? null : (
-                <>
-                  {competitorBlacklist.length ? (
-                    <div className="space-y-1.5">
-                      <p className="text-muted-foreground">Nicht verwenden für</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {competitorBlacklist.map((item) => (
-                          <Badge key={item} variant="outline">
-                            {item}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                  {!customerAccessRevoked &&
-                  (ref.approval_quote_approved || ref.approval_quote_proposed) ? (
-                    <div className="space-y-1.5">
-                      <p className="text-muted-foreground">Zitat</p>
-                      <p className="rounded-md border bg-muted/20 p-2 text-xs">
-                        {ref.approval_quote_approved ?? ref.approval_quote_proposed}
-                      </p>
-                    </div>
-                  ) : null}
-                  {ref.approval_consent_file_url ? (
-                    <a className="text-xs text-blue-600 underline" href={ref.approval_consent_file_url} target="_blank" rel="noreferrer">
-                      Consent-Dokument ansehen
-                    </a>
-                  ) : null}
-                </>
-              )}
-              <ReferenceReadinessActions
-                referenceId={id}
-                readiness={readinessState}
-                existingSharePath={existingShare?.url ?? null}
-                canStartApproval={canStartApproval}
-                canInternalApprove={
-                  canApproveInternalReference(functionRole, systemRole, capabilities) &&
-                  internalStatus === 'approved_internal' &&
-                  !staleInternalPending
-                }
-                defaultAccountManagerEmail={defaultAccountManagerEmail}
-                autoOpenApprovalDialog={autoOpenApprovalDialog}
-                approvalContactId={ref.approval_contact_id ?? null}
-                approvalExternalContactId={ref.approval_external_contact_id ?? null}
-                referenceContactId={ref.contact_id ?? null}
-                referenceCustomerContactId={ref.customer_contact_id ?? null}
-                hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
-                canEditCustomerEmail={
-                  customerApprovalFollowUp.canEditCustomerEmail || canEditPendingCustomerEmail
-                }
-                canEditCoordinatorEmail={canEditCoordinatorEmail}
-                customerChangeRequestComment={ref.approval_comment}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="order-3">
-            <CardHeader>
-              <CardTitle className="text-base">Aktionen</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <PptxOnepagerExportButton referenceId={id} className="w-full gap-2" />
-                <PdfExportDialog referenceId={id} triggerClassName="w-full" />
-              </div>
-              {isSalesView ? null : (
-                <>
-                  <ShareLinkButton referenceId={id} triggerClassName="w-full" />
-                  <form action={toggleFavorite.bind(null, id)}>
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      <AppIcon
-                        icon={StarIcon}
-                        size={16}
-                        className={
-                          isFavorited
-                            ? 'text-amber-500 dark:text-amber-400'
-                            : 'text-muted-foreground opacity-80'
-                        }
-                      />
-                      {isFavorited ? 'Favorit' : 'Favorisieren'}
-                    </Button>
-                  </form>
-                  <Button asChild variant="outline" className="w-full gap-2">
-                    <Link href={ROUTES.references.edit(id)}>
-                      <AppIcon icon={Pencil} size={16} />
-                      Bearbeiten
-                    </Link>
-                  </Button>
-                  {canManageReferencesAsAdmin(systemRole) ? (
-                    <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">
-                      <Button type="submit" variant="destructive" className="w-full">
-                        Löschen
-                      </Button>
-                    </form>
-                  ) : null}
-                </>
-              )}
-              {isSalesView ? (
-                <>
-                  <ShareLinkButton referenceId={id} triggerClassName="w-full" />
-                  <form action={toggleFavorite.bind(null, id)}>
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      <AppIcon
-                        icon={StarIcon}
-                        size={16}
-                        className={
-                          isFavorited
-                            ? 'text-amber-500 dark:text-amber-400'
-                            : 'text-muted-foreground opacity-80'
-                        }
-                      />
-                      {isFavorited ? 'Favorit' : 'Favorisieren'}
-                    </Button>
-                  </form>
-                </>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
+        <ReferenceDetailSidebar
+          referenceId={id}
+          isSalesView={isSalesView}
+          volumeEur={ref.volume_eur}
+          contractType={ref.contract_type}
+          projectStart={ref.project_start}
+          projectEnd={ref.project_end}
+          projectStatus={ref.project_status}
+          orgDateFmt={orgDateFmt}
+          incumbentProvider={ref.incumbent_provider}
+          competitors={ref.competitors}
+          isNdaDeal={isNdaDeal}
+          ndaDealBadgeClass={ndaDealBadgeClass}
+          workflowStatusBadges={workflowStatusBadges}
+          requestedByDisplay={requestedByDisplay}
+          coordinatorDisplay={coordinatorDisplay}
+          approvingCustomerDisplay={approvingCustomerDisplay}
+          delegatedRecipientDisplay={delegatedRecipientDisplay}
+          competitorBlacklist={competitorBlacklist}
+          customerAccessRevoked={customerAccessRevoked}
+          approvalQuoteApproved={ref.approval_quote_approved}
+          approvalQuoteProposed={ref.approval_quote_proposed}
+          approvalConsentFileUrl={ref.approval_consent_file_url}
+          readinessState={readinessState}
+          existingSharePath={existingShare?.url ?? null}
+          canStartApproval={canStartApproval}
+          canInternalApprove={
+            canApproveInternalReference(functionRole, systemRole, capabilities) &&
+            internalStatus === 'approved_internal' &&
+            !staleInternalPending
+          }
+          defaultAccountManagerEmail={defaultAccountManagerEmail}
+          autoOpenApprovalDialog={autoOpenApprovalDialog}
+          approvalContactId={ref.approval_contact_id ?? null}
+          approvalExternalContactId={ref.approval_external_contact_id ?? null}
+          referenceContactId={ref.contact_id ?? null}
+          referenceCustomerContactId={ref.customer_contact_id ?? null}
+          hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
+          canEditCustomerEmail={
+            customerApprovalFollowUp.canEditCustomerEmail || canEditPendingCustomerEmail
+          }
+          canEditCoordinatorEmail={canEditCoordinatorEmail}
+          customerChangeRequestComment={ref.approval_comment}
+          isFavorited={isFavorited}
+          canManageAsAdmin={canManageReferencesAsAdmin(systemRole)}
+        />
       </div>
     </div>
   )
 }
-

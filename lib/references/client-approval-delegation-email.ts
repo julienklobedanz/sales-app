@@ -10,6 +10,7 @@ import {
 } from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { resolveCustomerApprovalIntro } from '@/lib/references/approval-workflow-display'
+import { log } from '@/lib/observability/logger'
 
 function buildRequestLinePlain(args: {
   customerFacingName?: string | null
@@ -79,7 +80,7 @@ export async function sendClientApprovalDelegationEmail(args: {
     })
     return true
   } catch (e) {
-    console.error('[sendClientApprovalDelegationEmail]', e)
+    log.error('send failed', { action: 'sendClientApprovalDelegationEmail' }, e)
     return false
   }
 }

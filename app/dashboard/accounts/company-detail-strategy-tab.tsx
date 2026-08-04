@@ -7,7 +7,7 @@ import { LinkIcon, Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { ExternalContactRow, StakeholderRole, StakeholderRow } from './actions'
 import type { CompanyDetailClientProps } from './company-detail-types'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 import { externalContactJobTitle } from './company-contact-action-buttons'
 import {
   Select,
@@ -137,7 +137,7 @@ export function CompanyDetailStrategyTab({
           <CardContent className="pt-0">
             <div className="space-y-2">
               {marketSignals.accountNews.slice(0, 3).map((n) => {
-                const label = `${n.sourceLabel ?? 'News'} · ${formatDateUtcDe(`${n.publishedOn}T00:00:00.000Z`)}`
+                const label = `${n.sourceLabel ?? 'News'} · ${formatReferenceDate(`${n.publishedOn}T00:00:00.000Z`, 'de-DE')}`
                 const href = signalHref(n.sourceUrl, `${n.sourceLabel ?? ''} ${n.body}`.trim())
                 return (
                   <div key={n.id} className="flex items-start justify-between gap-3">

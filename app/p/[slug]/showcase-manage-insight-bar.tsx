@@ -1,6 +1,6 @@
 import { Eye } from 'lucide-react'
 
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 
 export type ManageInsightSummary = {
   viewCount: number
@@ -53,7 +53,7 @@ export function formatManageLinkExpiresLabel(expiresAtIso: string | null | undef
   if (!expiresAtIso?.trim()) return null
   const d = new Date(expiresAtIso)
   if (Number.isNaN(d.getTime())) return null
-  return `Gültig bis ${formatDateUtcDe(d.toISOString())}`
+  return `Gültig bis ${formatReferenceDate(d.toISOString(), 'de-DE')}`
 }
 
 export function formatManageApprovedSinceLabel(
@@ -62,7 +62,7 @@ export function formatManageApprovedSinceLabel(
   if (!respondedAtIso?.trim()) return null
   const d = new Date(respondedAtIso)
   if (Number.isNaN(d.getTime())) return null
-  return `Freigegeben seit ${formatDateUtcDe(d.toISOString())}`
+  return `Freigegeben seit ${formatReferenceDate(d.toISOString(), 'de-DE')}`
 }
 
 export function ShowcaseManageInsightBar({ insights }: { insights: ManageInsightSummary }) {

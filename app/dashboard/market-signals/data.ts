@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { isMissingEnrichmentColumnsError } from '@/lib/market-signals/enrichment-db'
+import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type MarketSignalCategory = 'people' | 'finance' | 'strategy'
@@ -138,20 +139,6 @@ const ACCOUNT_NEWS_SELECT_BASE = `
   company_id,
   companies ( name, logo_url )
 `
-
-function normalizeDealStatus(raw: unknown) {
-  const s = String(raw ?? '').trim()
-  if (!s) return 'open'
-  if (s === 'in_negotiation') return 'negotiation'
-  if (s === 'rfp_phase') return 'rfp'
-  if (s === 'on_hold' || s === 'reference_sought' || s === 'in_approval' || s === 'reference_found') return 'open'
-  return s
-}
-
-function isActiveDealStatus(raw: unknown) {
-  const normalized = normalizeDealStatus(raw)
-  return normalized === 'open' || normalized === 'rfp' || normalized === 'negotiation'
-}
 
 export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageModel> {
   const supabase = await createServerSupabaseClient()

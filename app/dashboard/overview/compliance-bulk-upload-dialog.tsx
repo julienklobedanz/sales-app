@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { Cancel01Icon, FileText, Loader } from '@hugeicons/core-free-icons'
 import { useRouter } from 'next/navigation'
@@ -150,21 +150,16 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     setTypeOptions(result.types)
   }, [])
 
-  useEffect(() => {
-    if (!open) {
-      setSelectedGroupIds(new Set())
-      setDragOverGroupId(null)
-      setDraggingFileKey(null)
+  const groupIdsKey = groups.map((g) => g.id).join(',')
+  const [prevGroupIdsKey, setPrevGroupIdsKey] = useState(groupIdsKey)
+  if (groupIdsKey !== prevGroupIdsKey) {
+    setPrevGroupIdsKey(groupIdsKey)
+    const valid = new Set(groups.map((g) => g.id))
+    const next = new Set([...selectedGroupIds].filter((id) => valid.has(id)))
+    if (next.size !== selectedGroupIds.size) {
+      setSelectedGroupIds(next)
     }
-  }, [open])
-
-  useEffect(() => {
-    setSelectedGroupIds((prev) => {
-      const valid = new Set(groups.map((g) => g.id))
-      const next = new Set([...prev].filter((id) => valid.has(id)))
-      return next.size === prev.size ? prev : next
-    })
-  }, [groups])
+  }
 
   function reset() {
     setGroups([])

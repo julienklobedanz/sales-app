@@ -6,7 +6,7 @@ import type { GeneralistDashboardModel } from '@/app/dashboard/dashboard-home-da
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/routes'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 
 export function GeneralistDashboard({ data }: { data: GeneralistDashboardModel }) {
   return (
@@ -92,7 +92,7 @@ export function GeneralistDashboard({ data }: { data: GeneralistDashboardModel }
               <div key={`${row.created_at}-${idx}`} className="flex items-center justify-between gap-2 text-sm">
                 <span className="truncate">{row.reference_title ?? 'Referenz'}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">
-                  {formatDateUtcDe(row.created_at)}
+                  {formatReferenceDate(row.created_at, 'de-DE')}
                 </span>
               </div>
             ))}

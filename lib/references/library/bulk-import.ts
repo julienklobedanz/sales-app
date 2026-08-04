@@ -6,7 +6,7 @@ import { ROUTES } from '@/lib/routes'
 import { revalidateOrgReferences } from '@/lib/cache/revalidate-org'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
-import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
+import { extractPlainTextFromBuffer } from '@/lib/document-text'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
@@ -144,7 +144,7 @@ export async function bulkCreateReferencesFromFilesImpl(
             : null,
         project_start: (() => {
           let start = parsed?.project_start?.trim() || null
-          let end = parsed?.project_end?.trim() || null
+          const end = parsed?.project_end?.trim() || null
           const months = parsed?.duration_months
           if (months && end && !start) {
             const dte = new Date(`${end}T12:00:00Z`)
@@ -154,7 +154,7 @@ export async function bulkCreateReferencesFromFilesImpl(
           return start
         })(),
         project_end: (() => {
-          let start = parsed?.project_start?.trim() || null
+          const start = parsed?.project_start?.trim() || null
           let end = parsed?.project_end?.trim() || null
           const months = parsed?.duration_months
           if (months && start && !end) {

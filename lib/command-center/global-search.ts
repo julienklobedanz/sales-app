@@ -5,6 +5,7 @@ import {
   isMissingNdaTitleColumn,
 } from '@/lib/accounts/nda-schema'
 import { formatNdaExpiryDateDe, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
+import { companyFromJoin } from '@/lib/accounts/company-from-join'
 import {
   complianceSearchTitle,
   formatComplianceValidUntilLine,
@@ -124,15 +125,6 @@ export function buildIlikeOrFilter(columns: string[], raw: string): string | nul
   if (!safe) return null
   const pat = `%${safe}%`
   return columns.map((col) => `${col}.ilike.${pat}`).join(',')
-}
-
-export function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null } | null {
-  const c = Array.isArray(raw) ? raw[0] : raw
-  if (!c || typeof c !== 'object') return null
-  const name = String((c as { name?: string }).name ?? '').trim()
-  if (!name) return null
-  const logoUrl = (c as { logo_url?: string | null }).logo_url
-  return { name, logoUrl: typeof logoUrl === 'string' ? logoUrl : null }
 }
 
 function rfpStatusLabel(status: string): string {

@@ -2,42 +2,15 @@
 
 import React from 'react'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type {
   ReferenceRow,
   ReferenceAssetRow,
-  DeletedReferenceRow,
 } from './actions'
-import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
 import { isSystemAdmin, legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
 import {
   createSharedPortfolio,
   deleteReference,
@@ -46,25 +19,8 @@ import {
   toggleFavorite,
 } from './actions'
 import type { Profile } from './dashboard-types'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  CopyIcon,
-  FileText,
-  LinkIcon,
-  MoreHorizontal,
-  Pencil,
-  StarIcon,
-  Trash2,
-} from '@hugeicons/core-free-icons'
-import { AppIcon } from '@/lib/icons'
-import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
-import { ComplianceBulkUploadDialog } from './overview/compliance-bulk-upload-dialog'
-import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
 import {
   REFERENCE_LIBRARY_MODE_STORAGE_KEY,
   type ReferenceLibraryMode,
@@ -75,38 +31,45 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
-import { NewReferenceDialog } from './overview/new-reference-dialog'
-import { ShareLinkDialog } from './overview/share-link-dialog'
-import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
-import { TrashDialog } from './overview/trash-dialog'
 import {
-  DEFAULT_REFERENCE_COLUMN_WIDTHS,
-  renderReferenceColumnCell,
-  renderReferenceColumnHeader,
   type ReferenceColumnKey,
 } from './overview/reference-table-column-renders'
+import {
+  COLUMN_KEYS,
+  COLUMN_LABELS,
+  COLUMN_ORDER_STORAGE_KEY,
+  COLUMN_SIZING_STORAGE_KEY,
+  COLUMN_VISIBLE_STORAGE_KEY,
+  DEFAULT_VISIBLE,
+  REFERENCE_SHOW_EXPIRED_CERTS_KEY,
+  STATUS_LABELS,
+  loadColumnOrderFromStorage,
+  loadReferenceColumnWidthsFromStorage,
+  loadVisibleColumnsFromStorage,
+} from './overview/reference-overview-columns'
+import {
+  buildReferenceFilterOptions,
+  filterAndSortReferences,
+  normalizeTagLabel,
+} from './overview/filter-sort-references'
+import { ReferencesDataTable } from './overview/references-data-table'
+import {
+  buildCompanyIdsNeedingBrandfetch,
+  buildCompanyIndustryById,
+  buildCompanyLogoById,
+} from './overview/reference-company-maps'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
+import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
-import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
-import { TABLE_COLUMN_HEAD_SELECT_CLASS, TABLE_SELECT_COLUMN_CELL_CLASS } from '@/components/table/table-column-head-styles'
-import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
-import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
-import { autoGroupBulkImportByFileName } from '@/lib/references/bulk-import-grouping'
 import {
   clampColumnWidth,
-  loadColumnWidthsFromStorage,
   saveColumnWidthsToStorage,
 } from '@/lib/table-column-sizing'
-import { copyTableRowsSelected } from '@/lib/copy'
-import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
+import type { OrgDateDisplayFormat } from '@/lib/format'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
-import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
-import {
-  matchesReferenceVolumeFilter,
-  type ReferenceVolumeFilter,
-} from '@/lib/references/reference-volume-filter'
+import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
 const InboxReferencesConceptClient = dynamic(
   () =>
@@ -132,138 +95,6 @@ const ReferenceDetailSheet = dynamic(
     })),
   { ssr: false, loading: () => null }
 )
-
-// --- Konstanten & Hilfsfunktionen ---
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Entwurf',
-  internal_only: 'Intern',
-  approved: 'Freigegeben',
-  anonymized: 'Anonymisiert',
-  /** Kundenfreigabe ausstehend (Epic 10) bzw. Legacy-Status pending – entspricht Badge „Freigabe ausstehend“. */
-  approval_pending: 'Freigabe ausstehend',
-}
-
-/** Alle Referenzstatus-Optionen im Filter (fest, unabhängig von aktuell geladenen Zeilen). */
-const REFERENCE_TABLE_STATUS_FILTERS: readonly string[] = [
-  'draft',
-  'internal_only',
-  'approval_pending',
-  'approved',
-  'anonymized',
-]
-
-function referenceRowShowsApprovalPending(ref: ReferenceRow): boolean {
-  if (String(ref.customer_approval_status ?? '').toLowerCase() === 'pending') return true
-  return String(ref.status ?? '').toLowerCase() === 'pending'
-}
-
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  active: 'Aktiv',
-  completed: 'Abgeschlossen',
-}
-
-/** Spalten-Keys und Standard-Sichtbarkeit (Reihenfolge = Tabellenreihenfolge) */
-const COLUMN_KEYS = [
-  'company',
-  'title',
-  'industry',
-  'volume_eur',
-  'status',
-  'project_status',
-  'updated_at',
-  'tags',
-  'country',
-  'project_start',
-  'project_end',
-  'duration_months',
-  'created_at',
-] as const
-const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
-  company: true,
-  title: true,
-  industry: true,
-  volume_eur: false,
-  status: true,
-  project_status: false,
-  updated_at: false,
-  tags: false,
-  country: false,
-  project_start: false,
-  project_end: false,
-  duration_months: false,
-  created_at: false,
-}
-const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
-  status: 'Referenzstatus',
-  company: 'Account',
-  title: 'Titel',
-  tags: 'Tags',
-  industry: 'Industrie',
-  volume_eur: 'Volumen',
-  country: 'HQ',
-  project_status: 'Projektstatus',
-  project_start: 'Projektstart',
-  project_end: 'Projektende',
-  duration_months: 'Dauer (Monate)',
-  created_at: 'Hinzugefügt am',
-  updated_at: 'Letzte Änderung',
-}
-
-const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
-const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
-const COLUMN_SIZING_STORAGE_KEY = 'dashboard-overview-column-sizing-v1'
-const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
-
-function loadVisibleColumnsFromStorage(): Record<(typeof COLUMN_KEYS)[number], boolean> {
-  if (typeof window === 'undefined') return { ...DEFAULT_VISIBLE }
-  try {
-    const raw = localStorage.getItem(COLUMN_VISIBLE_STORAGE_KEY)
-    if (!raw) return { ...DEFAULT_VISIBLE }
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_VISIBLE }
-    const result = { ...DEFAULT_VISIBLE }
-    for (const key of COLUMN_KEYS) {
-      const value = (parsed as Record<string, unknown>)[key]
-      if (typeof value === 'boolean') {
-        result[key] = value
-      }
-    }
-    return result
-  } catch {
-    return { ...DEFAULT_VISIBLE }
-  }
-}
-
-function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
-  if (typeof window === 'undefined') return [...COLUMN_KEYS] as ReferenceColumnKey[]
-  try {
-    const raw = localStorage.getItem(COLUMN_ORDER_STORAGE_KEY)
-    if (!raw) return [...COLUMN_KEYS] as ReferenceColumnKey[]
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return [...COLUMN_KEYS] as ReferenceColumnKey[]
-    const allowed = new Set<string>(COLUMN_KEYS)
-    const seen = new Set<string>()
-    const result: ReferenceColumnKey[] = []
-    for (const item of parsed) {
-      if (typeof item === 'string' && allowed.has(item) && !seen.has(item)) {
-        seen.add(item)
-        result.push(item as ReferenceColumnKey)
-      }
-    }
-    for (const k of COLUMN_KEYS) {
-      if (!seen.has(k)) result.push(k as ReferenceColumnKey)
-    }
-    return result
-  } catch {
-    return [...COLUMN_KEYS] as ReferenceColumnKey[]
-  }
-}
-
-function loadReferenceColumnWidthsFromStorage(): Record<ReferenceColumnKey, number> {
-  const stored = loadColumnWidthsFromStorage(COLUMN_SIZING_STORAGE_KEY, COLUMN_KEYS)
-  return { ...DEFAULT_REFERENCE_COLUMN_WIDTHS, ...stored }
-}
 
 // --- Hauptkomponente ---
 
@@ -320,8 +151,6 @@ export function DashboardOverview({
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
   const libraryMode = useReferenceLibraryMode()
-  const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
-  const [complianceBulkUploadOpen, setComplianceBulkUploadOpen] = useState(false)
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
@@ -334,26 +163,21 @@ export function DashboardOverview({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
-  const [bulkImportOpen, setBulkImportOpen] = useState(false)
-  const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
-  const [bulkImportLoading, setBulkImportLoading] = useState(false)
-  const [bulkImportPreviewPendingFiles, setBulkImportPreviewPendingFiles] = useState<Set<File>>(
-    () => new Set()
-  )
-  const bulkImportDropRef = useRef<HTMLInputElement>(null)
-  const [trashOpen, setTrashOpen] = useState(false)
-  const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
-  /** Papierkorb-Laden: aktuell kein Öffnen-Pfad; Dialog bleibt ohne Spinner bis Anbindung. */
-  const trashLoading = false
-  const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
-  const [emptyingTrash, setEmptyingTrash] = useState(false)
-  const [newRefModalOpen, setNewRefModalOpen] = useState(false)
-  const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const {
+    setComplianceUploadOpen,
+    setComplianceBulkUploadOpen,
+    setBulkImportOpen,
+    setBulkImportGroups,
+    addBulkImportFiles,
+    setNewRefModalOpen,
+    setShareLinkPopoverRef,
+    setBulkDeleteConfirmOpen,
+    selectedRefIds,
+    setSelectedRefIds,
+    renderDialogs,
+  } = useReferencesOverviewDialogsState()
   const [pageSize, setPageSize] = useState(30)
   const [pageIndex, setPageIndex] = useState(0)
-  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
-  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
-  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(loadVisibleColumnsFromStorage)
@@ -430,144 +254,6 @@ export function DashboardOverview({
     }
   }, [selectedRef?.id, sheetOpen])
 
-  async function previewBulkImportFile(file: File) {
-    const formData = new FormData()
-    formData.append('file', file)
-    try {
-      const res = await fetch('/api/bulk-import/preview', { method: 'POST', body: formData })
-      const json = (await res.json()) as {
-        success?: boolean
-        projectName?: string
-        companyName?: string | null
-      }
-      if (json.success && json.projectName?.trim()) {
-        return {
-          projectName: json.projectName.trim(),
-          companyName: json.companyName?.trim() || undefined,
-        }
-      }
-    } catch {
-      // Vorschau optional — Dateiname als Fallback
-    }
-    return {
-      projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
-      companyName: undefined as string | undefined,
-    }
-  }
-
-  function addBulkImportFiles(newFiles: File[]) {
-    setBulkImportGroups((prev) => {
-      const currentTotal = prev.reduce((s, g) => s + g.files.length, 0)
-      const capped = newFiles.slice(0, Math.max(0, BULK_IMPORT_MAX_FILES - currentTotal))
-      if (capped.length === 0) return prev
-      const newGroups: BulkImportGroupItem[] = capped.map((file) => ({
-        id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
-        files: [file],
-      }))
-      const next = autoGroupBulkImportByFileName([...prev, ...newGroups])
-      const autoGroupedCount = next
-        .filter((g) => g.files.length > 1)
-        .reduce((s, g) => s + g.files.length, 0)
-      if (autoGroupedCount > 0) {
-        toast.info(
-          `${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zum gleichen Kunden gehören.`
-        )
-      }
-
-      for (const file of capped) {
-        setBulkImportPreviewPendingFiles((prev) => new Set(prev).add(file))
-        void previewBulkImportFile(file).then((meta) => {
-          setBulkImportPreviewPendingFiles((prev) => {
-            const next = new Set(prev)
-            next.delete(file)
-            return next
-          })
-          setBulkImportGroups((current) =>
-            current.map((g) => {
-              if (!g.files.includes(file)) return g
-              return {
-                ...g,
-                projectName: meta.projectName || g.projectName,
-                companyName: meta.companyName ?? g.companyName,
-              }
-            })
-          )
-        })
-      }
-
-      return next
-    })
-  }
-
-  function removeBulkImportFile(groupId: string, fileIndex: number) {
-    setBulkImportGroups((prev) =>
-      prev
-        .map((g) =>
-          g.id === groupId
-            ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
-            : g
-        )
-        .filter((g) => g.files.length > 0)
-    )
-  }
-
-  function moveBulkImportFile(fromGroupId: string, fileIndex: number, toGroupId: string) {
-    if (fromGroupId === toGroupId) return
-    setBulkImportGroups((prev) => {
-      const sourceGroup = prev.find((g) => g.id === fromGroupId)
-      const file = sourceGroup?.files[fileIndex]
-      if (!sourceGroup || !file) return prev
-      if (!prev.some((g) => g.id === toGroupId)) return prev
-
-      return prev
-        .map((g) => {
-          if (g.id === fromGroupId) {
-            return { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
-          }
-          if (g.id === toGroupId) {
-            return { ...g, files: [...g.files, file] }
-          }
-          return g
-        })
-        .filter((g) => g.files.length > 0)
-    })
-  }
-
-  function setBulkImportGroupName(groupId: string, projectName: string) {
-    setBulkImportGroups((prev) =>
-      prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
-    )
-  }
-
-  function setBulkImportCompanyName(groupId: string, companyName: string) {
-    setBulkImportGroups((prev) =>
-      prev.map((g) => (g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g))
-    )
-  }
-
-  function mergeBulkImportGroups(selectedIds: string[]) {
-    if (selectedIds.length < 2) return
-    setBulkImportGroups((prev) => {
-      const idSet = new Set(selectedIds)
-      const selected = prev.filter((g) => idSet.has(g.id))
-      if (selected.length < 2) return prev
-      const rest = prev.filter((g) => !idSet.has(g.id))
-      const primary = selected[0]!
-      const mergedCompany =
-        primary.companyName?.trim() ||
-        selected.find((g) => g.companyName?.trim())?.companyName?.trim()
-      return [
-        ...rest,
-        {
-          ...primary,
-          companyName: mergedCompany || undefined,
-          files: selected.flatMap((g) => g.files),
-        },
-      ]
-    })
-  }
-
   useEffect(() => {
     try {
       localStorage.setItem(COLUMN_ORDER_STORAGE_KEY, JSON.stringify(columnOrder))
@@ -641,14 +327,6 @@ export function DashboardOverview({
     )
   }
 
-  // Eindeutige Werte für Filter-Dropdowns (aus aktuellen Referenzen)
-  const normalizeTagLabel = (raw: string): string => {
-    const trimmed = raw.trim()
-    if (!trimmed) return ''
-    const lower = trimmed.toLowerCase()
-    return lower.charAt(0).toUpperCase() + lower.slice(1)
-  }
-
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id))
   )
@@ -662,188 +340,68 @@ export function DashboardOverview({
     [initialReferences, favoriteIds]
   )
 
-  const companyLogoById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const company of companies) {
-      const url = String(company.logo_url ?? '').trim()
-      if (url) map.set(company.id, url)
-    }
-    for (const ref of initialReferences) {
-      if (!ref.company_id) continue
-      const url = String(ref.company_logo_url ?? '').trim()
-      if (url && !map.has(ref.company_id)) map.set(ref.company_id, url)
-    }
-    return map
-  }, [companies, initialReferences])
+  const companyLogoById = useMemo(
+    () => buildCompanyLogoById(companies, initialReferences),
+    [companies, initialReferences]
+  )
 
-  const companyIndustryById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const company of companies) {
-      const industry = String(company.industry ?? '').trim()
-      if (industry) map.set(company.id, industry)
-    }
-    return map
-  }, [companies])
+  const companyIndustryById = useMemo(
+    () => buildCompanyIndustryById(companies),
+    [companies]
+  )
 
-  const companyIdsNeedingBrandfetch = useMemo(() => {
-    const ids = new Set<string>()
-    for (const ref of initialReferences) {
-      if (!ref.company_id) continue
-      const hasLogo =
-        Boolean(String(ref.company_logo_url ?? '').trim()) ||
-        Boolean(String(companies.find((c) => c.id === ref.company_id)?.logo_url ?? '').trim())
-      const hasIndustry =
-        Boolean(String(ref.industry ?? '').trim()) ||
-        companyIndustryById.has(ref.company_id)
-      if (!hasLogo || !hasIndustry) ids.add(ref.company_id)
-    }
-    return [...ids]
-  }, [initialReferences, companies, companyIndustryById])
+  const companyIdsNeedingBrandfetch = useMemo(
+    () => buildCompanyIdsNeedingBrandfetch(initialReferences, companies, companyIndustryById),
+    [initialReferences, companies, companyIndustryById]
+  )
 
-  const filterOptions = useMemo(() => {
-    const countries = new Set<string>()
-    const projectStatuses = new Set<string>()
-    const companies = new Set<string>()
-    const tags = new Set<string>()
-    for (const r of initialReferences) {
-      if (r.country) countries.add(r.country)
-      if (r.project_status) projectStatuses.add(r.project_status)
-      if (r.company_name) companies.add(r.company_name)
-      if (r.tags) {
-        r.tags
-          .split(/[\s,]+/)
-          .map((t) => normalizeTagLabel(t))
-          .filter(Boolean)
-          .forEach((t) => tags.add(t))
-      }
-    }
-    return {
-      statuses: [...REFERENCE_TABLE_STATUS_FILTERS],
-      industries: MASTER_INDUSTRIES.map((item) => item.id),
-      countries: Array.from(countries).sort(),
-      projectStatuses: Array.from(projectStatuses).sort(),
-      companies: Array.from(companies).sort((a, b) => a.localeCompare(b, 'de')),
-      tags: Array.from(tags).sort((a, b) => a.localeCompare(b, 'de')),
-    }
-  }, [initialReferences, companyIndustryById, normalizeTagLabel])
-
-  // Sortier-Hilfe: Vergleichswerte pro Spalte
-  const getSortValue = (ref: ReferenceRow, key: (typeof COLUMN_KEYS)[number]): string | number => {
-    switch (key) {
-      case 'status': return ref.status
-      case 'company': return (ref.company_name ?? '').toLowerCase()
-      case 'title': return (ref.title ?? '').toLowerCase()
-      case 'tags': return (ref.tags ?? '').toLowerCase()
-      case 'industry': {
-        const raw =
-          String(ref.industry ?? '').trim() ||
-          (ref.company_id ? companyIndustryById.get(ref.company_id) : '') ||
-          ''
-        return getIndustryLabelDe(raw).toLowerCase() || raw.toLowerCase()
-      }
-      case 'volume_eur': {
-        const parsed = parseReferenceVolume(ref.volume_eur)
-        return parsed ? Number(parsed.amountDigits) : 0
-      }
-      case 'country': return (ref.country ?? '').toLowerCase()
-      case 'project_status': return ref.project_status ?? ''
-      case 'project_start': return ref.project_start ? new Date(ref.project_start).getTime() : 0
-      case 'project_end': return ref.project_end ? new Date(ref.project_end).getTime() : 0
-      case 'duration_months': return ref.duration_months ?? 0
-      case 'created_at': return new Date(ref.created_at).getTime()
-      case 'updated_at': return ref.updated_at ? new Date(ref.updated_at).getTime() : 0
-      default: return ''
-    }
-  }
+  const filterOptions = useMemo(
+    () =>
+      buildReferenceFilterOptions(
+        initialReferences,
+        companyIndustryById,
+        normalizeTagLabel
+      ),
+    [initialReferences, companyIndustryById]
+  )
 
   const salesAppView = isSalesAppView(profile.systemRole, profile.functionRole)
 
   // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten) + Sortierung
-  const filteredReferences = useMemo(() => {
-    let list = referencesWithLocalFavorites
-    if (salesAppView) {
-      list = list.filter((r) => isReferenceVisibleToSales(r.status))
-    }
-    if (favoritesOnly) {
-      list = list.filter((r) => r.is_favorited)
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      list = list.filter(
-        (r) =>
-          r.company_name.toLowerCase().includes(q) ||
-          r.title.toLowerCase().includes(q)
-      )
-    }
-    if (statusFilter !== 'all') {
-      if (statusFilter === 'approval_pending') {
-        list = list.filter(referenceRowShowsApprovalPending)
-      } else {
-        list = list.filter(
-          (r) => r.status === statusFilter && !referenceRowShowsApprovalPending(r)
-        )
-      }
-    }
-    if (companyFilter !== 'all') {
-      list = list.filter((r) => r.company_name === companyFilter)
-    }
-    if (tagsFilter !== 'all') {
-      list = list.filter((r) => {
-        if (!r.tags) return false
-        const tagList = r.tags
-          .split(/[\s,]+/)
-          .map((t) => t.trim())
-          .filter(Boolean)
-        return tagList.includes(tagsFilter)
-      })
-    }
-    if (industryFilter !== 'all') {
-      list = list.filter((r) => {
-        const raw =
-          String(r.industry ?? '').trim() ||
-          (r.company_id ? companyIndustryById.get(r.company_id) : '') ||
-          ''
-        return resolveIndustryId(raw) === industryFilter
-      })
-    }
-    if (countryFilter !== 'all') {
-      list = list.filter((r) => (r.country ?? '') === countryFilter)
-    }
-    if (projectStatusFilter !== 'all') {
-      list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
-    }
-    if (volumeFilter !== 'all') {
-      list = list.filter((r) => matchesReferenceVolumeFilter(r.volume_eur, volumeFilter))
-    }
-    if (sortKey) {
-      list = [...list].sort((a, b) => {
-        const va = getSortValue(a, sortKey)
-        const vb = getSortValue(b, sortKey)
-        if (typeof va === 'number' && typeof vb === 'number') {
-          return sortDir === 'asc' ? va - vb : vb - va
-        }
-        const sa = String(va)
-        const sb = String(vb)
-        const cmp = sa.localeCompare(sb, 'de')
-        return sortDir === 'asc' ? cmp : -cmp
-      })
-    }
-    return list
-  }, [
-    referencesWithLocalFavorites,
-    salesAppView,
-    search,
-    statusFilter,
-    companyFilter,
-    tagsFilter,
-    industryFilter,
-    countryFilter,
-    projectStatusFilter,
-    volumeFilter,
-    favoritesOnly,
-    sortKey,
-    sortDir,
-  ])
+  const filteredReferences = useMemo(
+    () =>
+      filterAndSortReferences({
+        references: referencesWithLocalFavorites,
+        salesAppView,
+        favoritesOnly,
+        search,
+        statusFilter,
+        companyFilter,
+        tagsFilter,
+        industryFilter,
+        countryFilter,
+        projectStatusFilter,
+        volumeFilter,
+        sortKey,
+        sortDir,
+        companyIndustryById,
+      }),
+    [
+      referencesWithLocalFavorites,
+      salesAppView,
+      search,
+      statusFilter,
+      companyFilter,
+      tagsFilter,
+      industryFilter,
+      countryFilter,
+      projectStatusFilter,
+      volumeFilter,
+      favoritesOnly,
+      sortKey,
+      sortDir,
+    ]
+  )
 
   const pageCount = Math.max(1, Math.ceil(filteredReferences.length / pageSize))
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
@@ -964,39 +522,13 @@ export function DashboardOverview({
           onUploadFiles={isAdmin ? handleEmptyStateUpload : undefined}
           onCreateManual={isAdmin ? () => setNewRefModalOpen(true) : undefined}
         />
-        {isAdmin ? (
-          <>
-            <NewReferenceDialog
-              open={newRefModalOpen}
-              onOpenChange={setNewRefModalOpen}
-              companies={companies}
-              contacts={contacts}
-              externalContacts={externalContacts}
-            />
-            <BulkImportDialog
-              open={bulkImportOpen}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setBulkImportLoading(false)
-                  setBulkImportPreviewPendingFiles(new Set())
-                }
-                setBulkImportOpen(open)
-              }}
-              loading={bulkImportLoading}
-              onLoadingChange={setBulkImportLoading}
-              groups={bulkImportGroups}
-              setGroups={setBulkImportGroups}
-              dropRef={bulkImportDropRef}
-              addFiles={addBulkImportFiles}
-              removeFile={removeBulkImportFile}
-              moveFile={moveBulkImportFile}
-              setGroupName={setBulkImportGroupName}
-              setCompanyName={setBulkImportCompanyName}
-              mergeSelectedGroups={mergeBulkImportGroups}
-              previewPendingFiles={bulkImportPreviewPendingFiles}
-            />
-          </>
-        ) : null}
+        {renderDialogs({
+          profile,
+          companies,
+          contacts,
+          externalContacts,
+          deletedCount,
+        })}
       </>
     )
   }
@@ -1080,20 +612,6 @@ export function DashboardOverview({
           />
         ) : null}
 
-          {isSystemAdmin(profile.systemRole) && (
-            <BulkDeleteReferencesDialog
-              open={bulkDeleteConfirmOpen}
-              onOpenChange={setBulkDeleteConfirmOpen}
-              ids={Array.from(selectedRefIds)}
-              loading={bulkDeleteLoading}
-              onLoadingChange={setBulkDeleteLoading}
-              onSuccess={() => {
-                setSelectedRefIds(new Set())
-                setBulkDeleteConfirmOpen(false)
-              }}
-            />
-          )}
-
         {isCertificatesLibrary ? (
           <ComplianceDocumentsTable
             documents={complianceDocuments}
@@ -1103,300 +621,66 @@ export function DashboardOverview({
             onUploadClick={() => setComplianceUploadOpen(true)}
           />
         ) : referenceLayout === 'table' ? (
-          <>
-        <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
-          <Table className="w-full table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead className={TABLE_COLUMN_HEAD_SELECT_CLASS}>
-                  <TableRowCheckbox
-                    rowHeight={10}
-                    checked={
-                      filteredReferences.length > 0 &&
-                      filteredReferences.every((r) => selectedRefIds.has(r.id))
-                        ? true
-                        : filteredSelectedCount > 0
-                          ? 'indeterminate'
-                          : false
-                    }
-                    onChange={() => {
-                      if (
-                        filteredReferences.every((r) => selectedRefIds.has(r.id))
-                      ) {
-                        setSelectedRefIds(new Set())
-                      } else {
-                        setSelectedRefIds(
-                          new Set(filteredReferences.map((r) => r.id))
-                        )
-                      }
-                    }}
-                    aria-label="Alle auswählen"
-                    disabled={filteredReferences.length === 0}
-                  />
-                </TableHead>
-                {orderedVisibleColumnKeys.map((column) => (
-                  <React.Fragment key={column}>
-                    {renderReferenceColumnHeader(column, {
-                      dragOverColumn,
-                      setDragOverColumn,
-                      moveColumnOrder,
-                      columnWidths,
-                      onColumnWidthChange: handleColumnWidthChange,
-                      COLUMN_LABELS: COLUMN_LABELS as Record<ReferenceColumnKey, string>,
-                      STATUS_LABELS,
-                      filterOptions,
-                      companyFilter,
-                      setCompanyFilter,
-                      companySearch,
-                      setCompanySearch,
-                      tagsFilter,
-                      setTagsFilter,
-                      tagsSearch,
-                      setTagsSearch,
-                      industryFilter,
-                      setIndustryFilter,
-                      industrySearch,
-                      setIndustrySearch,
-                      countryFilter,
-                      setCountryFilter,
-                      countrySearch,
-                      setCountrySearch,
-                      statusFilter,
-                      setStatusFilter,
-                      projectStatusFilter,
-                      setProjectStatusFilter,
-                      projectStatusSearch,
-                      setProjectStatusSearch,
-                      volumeFilter,
-                      setVolumeFilter,
-                      sortKey: sortKey as ReferenceColumnKey | null,
-                      sortDir,
-                      handleSort: handleSort as (c: ReferenceColumnKey) => void,
-                    })}
-                  </React.Fragment>
-                ))}
-                <TableHead className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] transition-colors hover:bg-accent/45">
-                  <span className="sr-only">Aktionen</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredReferences.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={orderedVisibleColumnKeys.length + 2}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center justify-center gap-3 py-2">
-                      <p>Keine Referenzen gefunden.</p>
-                      {!search.trim() &&
-                        isSystemAdmin(profile.systemRole) && (
-                          <Button
-                            className="mt-1"
-                            onClick={() => setNewRefModalOpen(true)}
-                          >
-                            Erstelle eine Referenz
-                          </Button>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedReferences.map((ref) => (
-                  <TableRow
-                    key={ref.id}
-                    className="group cursor-pointer hover:bg-accent/35"
-                    onClick={() => openDetail(ref)}
-                    onContextMenu={(e: React.MouseEvent) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setRowMenuOpenId(ref.id)
-                    }}
-                  >
-                    <TableCell
-                      className={TABLE_SELECT_COLUMN_CELL_CLASS}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <TableRowCheckbox
-                        checked={selectedRefIds.has(ref.id)}
-                        onChange={() => toggleCart(ref.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`${ref.title} in Warenkorb`}
-                      />
-                    </TableCell>
-                    {orderedVisibleColumnKeys.map((column) => (
-                      <React.Fragment key={column}>
-                        {renderReferenceColumnCell(column, ref, {
-                          PROJECT_STATUS_LABELS,
-                          companyLogoById,
-                          companyIndustryById,
-                          orgDateDisplayFormat,
-                          columnWidths,
-                        })}
-                      </React.Fragment>
-                    ))}
-                    <TableCell
-                      className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card align-middle p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] group-hover:bg-accent/35"
-                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    >
-                      <TableRowAlign className="justify-end">
-                        <DropdownMenu
-                          open={rowMenuOpenId === ref.id}
-                          onOpenChange={(open) => setRowMenuOpenId(open ? ref.id : null)}
-                        >
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="h-8 w-8 shrink-0 p-0"
-                              aria-label="Aktionen"
-                            >
-                              <AppIcon icon={MoreHorizontal} size={16} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onSelect={(e) => {
-                                void handleToggleFavorite(
-                                  ref.id,
-                                  e as unknown as React.MouseEvent
-                                )
-                              }}
-                            >
-                              <AppIcon
-                                icon={StarIcon}
-                                size={16}
-                                className={`mr-2 ${ref.is_favorited ? 'text-amber-500' : ''}`}
-                              />
-                              {ref.is_favorited ? 'Favorit entfernen' : 'Als Favorit markieren'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                void copyReferenceShareLink(ref.id)
-                              }}
-                            >
-                              <AppIcon icon={LinkIcon} size={16} className="mr-2" />
-                              Kundenlink kopieren
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => openDetail(ref)}>
-                              <AppIcon icon={FileText} size={16} className="mr-2" />
-                              Details ansehen
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() => router.push(ROUTES.references.edit(ref.id))}
-                            >
-                              <AppIcon icon={Pencil} size={16} className="mr-2" />
-                              Bearbeiten
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={(e: Event) =>
-                                handleCopyId(
-                                  ref.id,
-                                  e as unknown as React.MouseEvent
-                                )
-                              }
-                            >
-                              <AppIcon icon={CopyIcon} size={16} className="mr-2" />
-                              ID kopieren
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onSelect={(e: Event) => {
-                                handleDelete(
-                                  ref.id,
-                                  e as unknown as React.MouseEvent
-                                )
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <AppIcon icon={Trash2} size={16} className="mr-2" />
-                              Löschen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableRowAlign>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex flex-col gap-2.5 rounded-xl border border-border/70 bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {copyTableRowsSelected(filteredSelectedCount, filteredReferences.length)}
-          </div>
-          <div className="flex items-center gap-3 sm:gap-5">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-muted-foreground">{COPY.table.rowsPerPage}</p>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(value) => {
-                  setPageSize(Number(value))
-                  setPageIndex(0)
-                }}
-              >
-                <SelectTrigger size="sm" className="h-8 w-[88px] rounded-lg border-border/70 bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 30, 50, 100].map((size) => (
-                    <SelectItem key={size} value={String(size)}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex min-w-[126px] items-center justify-center text-sm font-medium text-muted-foreground">
-              Seite {pageIndex + 1} von {pageCount}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
-                onClick={() => setPageIndex(0)}
-                disabled={pageIndex <= 0}
-                aria-label="Zur ersten Seite"
-              >
-                <AppIcon icon={ChevronsLeft} size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-lg hover:bg-muted/70"
-                onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
-                disabled={pageIndex <= 0}
-                aria-label="Zur vorherigen Seite"
-              >
-                <AppIcon icon={ChevronLeft} size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-lg hover:bg-muted/70"
-                onClick={() => setPageIndex((prev) => Math.min(pageCount - 1, prev + 1))}
-                disabled={pageIndex >= pageCount - 1}
-                aria-label="Zur nächsten Seite"
-              >
-                <AppIcon icon={ChevronRight} size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
-                onClick={() => setPageIndex(pageCount - 1)}
-                disabled={pageIndex >= pageCount - 1}
-                aria-label="Zur letzten Seite"
-              >
-                <AppIcon icon={ChevronsRight} size={16} />
-              </Button>
-            </div>
-          </div>
-        </div>
-          </>
+          <ReferencesDataTable
+            filteredReferences={filteredReferences}
+            paginatedReferences={paginatedReferences}
+            filteredSelectedCount={filteredSelectedCount}
+            selectedRefIds={selectedRefIds}
+            setSelectedRefIds={setSelectedRefIds}
+            orderedVisibleColumnKeys={orderedVisibleColumnKeys}
+            columnWidths={columnWidths}
+            onColumnWidthChange={handleColumnWidthChange}
+            dragOverColumn={dragOverColumn}
+            setDragOverColumn={setDragOverColumn}
+            moveColumnOrder={moveColumnOrder}
+            filterOptions={filterOptions}
+            companyFilter={companyFilter}
+            setCompanyFilter={setCompanyFilter}
+            companySearch={companySearch}
+            setCompanySearch={setCompanySearch}
+            tagsFilter={tagsFilter}
+            setTagsFilter={setTagsFilter}
+            tagsSearch={tagsSearch}
+            setTagsSearch={setTagsSearch}
+            industryFilter={industryFilter}
+            setIndustryFilter={setIndustryFilter}
+            industrySearch={industrySearch}
+            setIndustrySearch={setIndustrySearch}
+            countryFilter={countryFilter}
+            setCountryFilter={setCountryFilter}
+            countrySearch={countrySearch}
+            setCountrySearch={setCountrySearch}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            projectStatusFilter={projectStatusFilter}
+            setProjectStatusFilter={setProjectStatusFilter}
+            projectStatusSearch={projectStatusSearch}
+            setProjectStatusSearch={setProjectStatusSearch}
+            volumeFilter={volumeFilter}
+            setVolumeFilter={setVolumeFilter}
+            sortKey={sortKey as ReferenceColumnKey | null}
+            sortDir={sortDir}
+            handleSort={handleSort as (c: ReferenceColumnKey) => void}
+            companyLogoById={companyLogoById}
+            companyIndustryById={companyIndustryById}
+            orgDateDisplayFormat={orgDateDisplayFormat}
+            profile={profile}
+            search={search}
+            setNewRefModalOpen={setNewRefModalOpen}
+            rowMenuOpenId={rowMenuOpenId}
+            setRowMenuOpenId={setRowMenuOpenId}
+            openDetail={openDetail}
+            toggleCart={toggleCart}
+            handleToggleFavorite={handleToggleFavorite}
+            copyReferenceShareLink={copyReferenceShareLink}
+            handleCopyId={handleCopyId}
+            handleDelete={handleDelete}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            pageIndex={pageIndex}
+            setPageIndex={setPageIndex}
+            pageCount={pageCount}
+          />
         ) : (
           <InboxReferencesConceptClient
             references={filteredReferences}
@@ -1406,24 +690,6 @@ export function DashboardOverview({
           />
         )}
       </div>
-
-      <TrashDialog
-        open={trashOpen}
-        onOpenChange={(open) => {
-          setTrashOpen(open)
-          if (!open) {
-            setTrashItems([])
-          }
-        }}
-        deletedCount={deletedCount}
-        trashLoading={trashLoading}
-        trashItems={trashItems}
-        setTrashItems={setTrashItems}
-        confirmEmptyOpen={confirmEmptyOpen}
-        setConfirmEmptyOpen={setConfirmEmptyOpen}
-        emptyingTrash={emptyingTrash}
-        setEmptyingTrash={setEmptyingTrash}
-      />
 
       <ReferenceDetailSheet
         open={sheetOpen}
@@ -1441,60 +707,13 @@ export function DashboardOverview({
         orgDateDisplayFormat={orgDateDisplayFormat}
       />
 
-      <ShareLinkDialog
-        reference={shareLinkPopoverRef}
-        onClose={() => setShareLinkPopoverRef(null)}
-      />
-
-      {isSystemAdmin(profile.systemRole) && (
-        <NewReferenceDialog
-          open={newRefModalOpen}
-          onOpenChange={setNewRefModalOpen}
-          companies={companies}
-          contacts={contacts}
-          externalContacts={externalContacts}
-        />
-      )}
-
-      {/* Bulk-Import-Modal (nur Admin) */}
-      {isSystemAdmin(profile.systemRole) && (
-        <ComplianceUploadDialog
-          open={complianceUploadOpen}
-          onOpenChange={setComplianceUploadOpen}
-        />
-      )}
-
-      {isSystemAdmin(profile.systemRole) && (
-        <ComplianceBulkUploadDialog
-          open={complianceBulkUploadOpen}
-          onOpenChange={setComplianceBulkUploadOpen}
-        />
-      )}
-
-      {isSystemAdmin(profile.systemRole) && (
-        <BulkImportDialog
-          open={bulkImportOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setBulkImportLoading(false)
-              setBulkImportPreviewPendingFiles(new Set())
-            }
-            setBulkImportOpen(open)
-          }}
-          loading={bulkImportLoading}
-          onLoadingChange={setBulkImportLoading}
-          groups={bulkImportGroups}
-          setGroups={setBulkImportGroups}
-          dropRef={bulkImportDropRef}
-          addFiles={addBulkImportFiles}
-          removeFile={removeBulkImportFile}
-          moveFile={moveBulkImportFile}
-          setGroupName={setBulkImportGroupName}
-          setCompanyName={setBulkImportCompanyName}
-          mergeSelectedGroups={mergeBulkImportGroups}
-          previewPendingFiles={bulkImportPreviewPendingFiles}
-        />
-      )}
+      {renderDialogs({
+        profile,
+        companies,
+        contacts,
+        externalContacts,
+        deletedCount,
+      })}
     </div>
   )
 }

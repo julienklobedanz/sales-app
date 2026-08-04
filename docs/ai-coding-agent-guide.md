@@ -36,8 +36,7 @@ Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 - **Neue UI-Varianten:** In `components/ui/*` (z. B. `cva`), nicht als lange `className`-Ketten nur in einer Page.
 - **Status:** Zentrale Badge-Komponenten nutzen, keine neuen Ad-hoc-Chips für dieselben Domänen:
   - `components/reference-status-badge.tsx`
-  - `components/deal-status-badge.tsx`
-  - `components/ticket-status-badge.tsx`  
+  - `components/deal-status-badge.tsx`  
   Variant-Semantik: `default` / `secondary` / `outline` / `destructive` nach **Bedeutung**, nicht nach Geschmack (siehe Design-Doc).
 
 ### 2.3 Copy & Sprache (UI)
@@ -68,8 +67,8 @@ Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 
 - **Logging:** `lib/observability/logger.ts` — strukturierte Einträge (`debug|info|warn|error`) mit Kontext-Feldern (`organizationId`, `userId`, `action`, …). Keine neuen `console.*` in berührten Server-Pfaden; späterer Sink über `setLogSink`.
 - **Sensible Felder** werden automatisch redacted (`api_key`, `password`, …).
-- **Result-Konvention:** `lib/observability/result.ts` — `Result<T> = { ok: true, data } | { ok: false, error }`. Helfer: `ok()`, `err()`, `fail(message, context, cause?)` (loggt **einmal** zentral).
-- **Boy-Scout:** Neue oder migrierte Module (z. B. `lib/dashboard-home/*`, `lib/evidence/approvals-*`) nutzen Logger + `Result` statt verstreutem `console.error` und uneinheitlichen `{ error }`-Returns.
+- **Result-Konvention:** `lib/observability/result.ts` — kanonisch wie §3.1: `{ success: true; data? } | { success: false; error }`. Helfer: `ok()`, `err()`, `fail(message, context, cause?)` (loggt **einmal** zentral). Interne Lib-Returns mit `{ ok }` nur Boy-Scout migrieren, kein Big-Bang. Details: `docs/tech-debt-inventar.md`.
+- **Boy-Scout:** Neue oder migrierte Module (z. B. `lib/dashboard-home/*`, Approvals) nutzen Logger + `Result` (`success`) statt verstreutem `console.error` und uneinheitlichen `{ error }`-Returns.
 - **Pure-Funktionen** aus Daten-Modulen in Unit-Tests abdecken (`lib/dashboard-home/dashboard-home-pure.test.ts` als Vorbild).
 
 ### 3.2 „God-Files“ vermeiden

@@ -2,24 +2,12 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { companyFromJoin } from '@/lib/accounts/company-from-join'
+
 export type MatchHitCompanyFields = {
   companyId: string | null
   companyName: string | null
   companyLogoUrl: string | null
-}
-
-function companyFromJoin(raw: unknown): { id: string; name: string; logo_url: string | null } | null {
-  const c = Array.isArray(raw) ? raw[0] : raw
-  if (!c || typeof c !== 'object') return null
-  const id = String((c as { id?: string }).id ?? '').trim()
-  const name = String((c as { name?: string }).name ?? '').trim()
-  if (!id && !name) return null
-  const logo = (c as { logo_url?: string | null }).logo_url
-  return {
-    id,
-    name,
-    logo_url: typeof logo === 'string' && logo.trim() ? logo.trim() : null,
-  }
 }
 
 /** Lädt Account-Logo und -Name für Match-/Such-Treffer nach. */
@@ -41,8 +29,8 @@ export async function fetchCompanyFieldsForReferenceIds(
     const co = companyFromJoin(row.companies)
     map.set(String(row.id), {
       companyId: co?.id ?? (row.company_id ? String(row.company_id) : null),
-      companyName: co?.name ?? null,
-      companyLogoUrl: co?.logo_url ?? null,
+      companyName: co?.name || null,
+      companyLogoUrl: co?.logoUrl ?? null,
     })
   }
 

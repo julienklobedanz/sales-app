@@ -3,9 +3,6 @@ import { COMPLIANCE_DOCUMENT_TYPES } from '@/lib/compliance/document-types'
 /** Offizielles ISO-Logo (blau auf weiß) für alle ISO-Zertifikate. */
 export const ISO_BADGE_SRC = '/compliance/iso-badge.png'
 
-/** @deprecated Verwende `ISO_BADGE_SRC`. */
-export const ISO_27001_BADGE_SRC = ISO_BADGE_SRC
-
 const ISO_SYSTEM_SLUGS = new Set(
   COMPLIANCE_DOCUMENT_TYPES.filter((slug) => slug.startsWith('iso_'))
 )
@@ -43,15 +40,6 @@ export function isIsoComplianceDocument(doc: {
   if (/\biso[\s\-_]?27k\b/.test(hay)) return true
 
   return false
-}
-
-/** @deprecated Verwende `isIsoComplianceDocument`. */
-export function isIso27001ComplianceDocument(doc: {
-  document_type: string
-  title?: string | null
-  file_name?: string | null
-}): boolean {
-  return isIsoComplianceDocument(doc)
 }
 
 export function complianceDocumentUsesIsoBadge(doc: {

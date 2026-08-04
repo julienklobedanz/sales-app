@@ -87,7 +87,9 @@ export function DashboardHome({
 
   useEffect(() => {
     try {
+      // Read dismiss flag after mount to avoid SSR/localStorage hydration mismatch.
       if (window.localStorage.getItem(DISMISS_STORAGE_KEY) === '1') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate for localStorage
         setDismissed(true)
       }
     } catch {

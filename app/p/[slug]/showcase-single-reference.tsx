@@ -3,7 +3,7 @@ import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { ApprovalCaseDataBar } from '@/app/approval/[token]/approval-case-data-bar'
 import { AppIcon } from '@/lib/icons'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { buildPublicProspectPreviewUrl } from '@/lib/public-portfolio/build-prospect-preview-url'
 import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-display'
@@ -78,7 +78,7 @@ export function ShowcaseSingleReference({
   const volRaw = formatReferenceVolume(reference.volume_eur)
   const startRaw =
     reference.project_start && String(reference.project_start).trim() !== ''
-      ? formatDateUtcDe(String(reference.project_start))
+      ? formatReferenceDate(String(reference.project_start), 'de-DE')
       : null
   const endRaw =
     reference.project_end && String(reference.project_end).trim() !== ''
@@ -86,7 +86,7 @@ export function ShowcaseSingleReference({
           project_start: reference.project_start,
           project_end: reference.project_end,
           project_status: reference.project_status,
-          formatEndDate: (iso) => formatDateUtcDe(iso),
+          formatEndDate: (iso) => formatReferenceDate(iso, 'de-DE'),
         })
       : null
 

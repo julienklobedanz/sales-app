@@ -12,7 +12,10 @@ export function useRegisterSettingsTab(
 ) {
   const { dirty, pending, save } = handlers
   const saveRef = useRef(save)
-  saveRef.current = save
+
+  useEffect(() => {
+    saveRef.current = save
+  }, [save])
 
   useEffect(() => {
     register(

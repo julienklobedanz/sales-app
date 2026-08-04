@@ -3,25 +3,9 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { RequestNewClient, type DealRequestPrefill } from './request-new-client'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import type { DealStatus } from '../../types'
+import { parseOptionalDealStatus } from '@/lib/deals/normalize-deal-status'
 
 export const dynamic = 'force-dynamic'
-
-function normalizeDealStatus(raw: unknown): DealStatus | null {
-  const value = String(raw ?? '').toLowerCase()
-  if (
-    value === 'open' ||
-    value === 'rfp' ||
-    value === 'negotiation' ||
-    value === 'won' ||
-    value === 'lost' ||
-    value === 'withdrawn' ||
-    value === 'archived'
-  ) {
-    return value
-  }
-  return null
-}
 
 export default async function DealReferenceRequestNewPage({
   searchParams,
@@ -63,7 +47,7 @@ export default async function DealReferenceRequestNewPage({
         title: String(dealRow.title),
         industry: (dealRow.industry as string | null) ?? null,
         volume: (dealRow.volume as string | null) ?? null,
-        status: normalizeDealStatus(dealRow.status),
+        status: parseOptionalDealStatus(dealRow.status),
       }
     }
   }

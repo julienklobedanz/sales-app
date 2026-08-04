@@ -15,6 +15,7 @@ import { sendClientApprovalEmail } from '@/lib/references/library/approvals-clie
 import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type { ApproveInternalRecipientOptions, ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
+import { log } from '@/lib/observability/logger'
 
 export async function updateApprovalRecipientImpl(
   referenceId: string,
@@ -177,7 +178,7 @@ export async function updateApprovalRecipientImpl(
       })
       customerEmailSent = sent.emailSent
     } catch (e) {
-      console.error('[updateApprovalRecipientImpl] customer email failed:', e)
+      log.error('customer email failed', { action: 'updateApprovalRecipientImpl.customerEmail' }, e)
     }
   }
 

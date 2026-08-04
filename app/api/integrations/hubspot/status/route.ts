@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { requireCrmAdmin } from '@/lib/crm/require-crm-admin'
+import { log } from '@/lib/observability/logger'
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
       ...status,
     })
   } catch (error) {
-    console.error('[hubspot/status]', error)
+    log.error('status failed', { action: 'hubspot.status' }, error)
     return NextResponse.json({ error: 'Status konnte nicht geladen werden.' }, { status: 500 })
   }
 }

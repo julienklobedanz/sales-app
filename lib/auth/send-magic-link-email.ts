@@ -10,6 +10,7 @@ import {
   resolveResendRecipient,
   shouldMockResendSend,
 } from '@/lib/email/resend-dev-override'
+import { log } from '@/lib/observability/logger'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
 export type SendMagicLinkEmailResult =
@@ -43,12 +44,12 @@ export async function sendMagicLinkEmailViaResend(params: {
     if (/user not found/i.test(message) || /not found/i.test(message)) {
       return { ok: false, reason: 'user_not_found', message }
     }
-    console.error('[sendMagicLinkEmailViaResend] generateLink:', error)
+    log.error('generateLink failed', { action: 'sendMagicLinkEmailViaResend.generateLink' }, error)
     return { ok: false, reason: 'generate_failed', message }
   }
 
   if (shouldMockResendSend()) {
-    console.info('[sendMagicLinkEmailViaResend] RESEND_MOCK_SUCCESS – Link:', actionLink)
+    log.info('RESEND_MOCK_SUCCESS', { action: 'sendMagicLinkEmailViaResend.mock' })
     return { ok: true, delivery: 'resend' }
   }
 
@@ -89,13 +90,13 @@ export async function sendMagicLinkEmailViaResend(params: {
             'E-Mail konnte nicht gesendet werden. In Resend sind nur verifizierte Test-Empfänger erlaubt – RESEND_DEV_OVERRIDE_TO setzen oder Domain verifizieren.',
         }
       }
-      console.error('[sendMagicLinkEmailViaResend] Resend:', sendError)
+      log.error('Resend send failed', { action: 'sendMagicLinkEmailViaResend.send' }, sendError)
       return { ok: false, reason: 'send_failed', message: sendError.message }
     }
 
     return { ok: true, delivery: 'resend' }
   } catch (e) {
-    console.error('[sendMagicLinkEmailViaResend] Resend exception:', e)
+    log.error('Resend exception', { action: 'sendMagicLinkEmailViaResend.send' }, e)
     return { ok: false, reason: 'send_failed' }
   }
 }

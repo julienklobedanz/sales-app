@@ -8,7 +8,7 @@ import {
 import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { ApprovalDecisionForm } from './approval-decision-form'
 import { ApprovalCaseDataBar } from './approval-case-data-bar'
@@ -160,7 +160,7 @@ export default async function ApprovalPage({
   const vol = formatReferenceVolume((row.volume_eur as string | null) ?? null) || '—'
   const start =
     row.project_start && String(row.project_start) !== ''
-      ? formatDateUtcDe(String(row.project_start))
+      ? formatReferenceDate(String(row.project_start), 'de-DE')
       : '—'
   const end =
     row.project_end && String(row.project_end) !== ''
@@ -168,7 +168,7 @@ export default async function ApprovalPage({
           project_start: (row.project_start as string | null) ?? null,
           project_end: (row.project_end as string | null) ?? null,
           project_status: (row.project_status as string | null) ?? null,
-          formatEndDate: (iso) => formatDateUtcDe(iso),
+          formatEndDate: (iso) => formatReferenceDate(iso, 'de-DE'),
         })
       : '—'
 

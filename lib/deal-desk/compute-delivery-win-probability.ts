@@ -30,9 +30,6 @@ export type WinProbabilityBreakdown = {
   totalComplianceRequirements: number
 }
 
-/** @deprecated Verwende `MATCH_COVERAGE_THRESHOLD` aus `@/lib/match/match-thresholds`. */
-export const DESK_COVER_THRESHOLD = MATCH_COVERAGE_THRESHOLD
-
 const WEIGHTS = {
   portfolio: 0.4,
   capability: 0.35,

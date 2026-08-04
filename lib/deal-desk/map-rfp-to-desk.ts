@@ -25,8 +25,6 @@ import type { RfpVerdict } from '@/lib/rfp-relevance'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
 
-export { MATCH_COVERAGE_THRESHOLD as DESK_COVER_THRESHOLD } from '@/lib/match/match-thresholds'
-
 const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'security'])
 
 function buildSmeTasks(

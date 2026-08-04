@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
-import type { ExternalContact } from '../references/new/actions'
+import type { ExternalContactDisplay } from '../references/new/reference-form'
 import { ReferenceForm, type ContactPerson } from '../references/new/reference-form'
 
 type CompanyOption = { id: string; name: string; logo_url?: string | null }
@@ -18,7 +18,7 @@ export function NewReferenceDialog({
   onOpenChange: (open: boolean) => void
   companies: CompanyOption[]
   contacts: ContactPerson[]
-  externalContacts: ExternalContact[]
+  externalContacts: ExternalContactDisplay[]
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

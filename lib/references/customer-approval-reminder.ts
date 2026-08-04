@@ -3,6 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { notifyInternalTeamCustomerApprovalPendingReminder } from '@/lib/references/approval-workflow-internal-notifications'
+import { log } from '@/lib/observability/logger'
 
 /** Ausstehende Kundenfreigabe: ein Reminder an AM + Anfragenden nach 14 Tagen. */
 export const CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS = 14
@@ -61,7 +62,7 @@ export async function markCustomerApprovalEmailSent(
     })
     .eq('id', referenceId)
   if (error) {
-    console.error('[markCustomerApprovalEmailSent]', error.message)
+    log.error('mark sent failed', { action: 'markCustomerApprovalEmailSent', message: error.message }, error)
   }
 }
 
@@ -93,7 +94,7 @@ export async function processCustomerApprovalReminders(
     )
 
   if (error) {
-    console.error('[processCustomerApprovalReminders] query failed:', error.message)
+    log.error('query failed', { action: 'processCustomerApprovalReminders.query', message: error.message }, error)
     return { scanned: 0, sent: 0, skipped: 0 }
   }
 
@@ -137,7 +138,7 @@ export async function processCustomerApprovalReminders(
         .update({ approval_customer_reminder_sent_at: new Date().toISOString() })
         .eq('id', row.id)
       if (markError) {
-        console.error('[processCustomerApprovalReminders] mark sent failed:', markError.message)
+        log.error('mark sent failed', { action: 'processCustomerApprovalReminders.markSent', message: markError.message }, markError)
       } else {
         sent += 1
       }

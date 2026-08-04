@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import {
@@ -78,9 +78,10 @@ export function SupportChannelsDialog({
 }) {
   const [ticketSent, setTicketSent] = useState(false)
 
-  useEffect(() => {
-    if (!open) setTicketSent(false)
-  }, [open])
+  function handleOpenChange(next: boolean) {
+    if (!next) setTicketSent(false)
+    onOpenChange(next)
+  }
 
   const rawWa =
     typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164?.trim() ?? '' : ''
@@ -96,7 +97,7 @@ export function SupportChannelsDialog({
   const showAlternatives = !ticketSent
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="space-y-1 border-b border-border/60 px-5 py-4 text-left">
           <DialogTitle className="text-base font-semibold tracking-tight">Support</DialogTitle>

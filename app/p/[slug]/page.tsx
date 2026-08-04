@@ -9,7 +9,7 @@ import {
   resolvePublicPortfolioRecipient,
 } from '../actions'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { kpisForPublicReference, formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
@@ -45,7 +45,7 @@ function formatDateMaybe(value: string | null) {
   if (!v) return ''
   const d = new Date(v.includes('T') ? v : `${v}T00:00:00.000Z`)
   if (Number.isNaN(d.getTime())) return v
-  return formatDateUtcDe(d.toISOString())
+  return formatReferenceDate(d.toISOString(), 'de-DE')
 }
 
 function splitTags(tags: string | null) {
