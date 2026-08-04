@@ -127,7 +127,7 @@ describe('resolveReferenceReadinessState', () => {
       approvalScopeAnonymousMention: true,
     })
     expect(s.badge.label).toBe('Anonym freigegeben')
-    expect(s.badge.className).toContain('amber')
+    expect(s.badge.className).toContain('status-warning')
   })
 
   it('internal_only with can start → request_approval (no stale magic link)', () => {

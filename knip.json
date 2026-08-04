@@ -3,19 +3,42 @@
   "entry": [
     "app/**/*.{ts,tsx}",
     "middleware.ts",
-    "scripts/*.{ts,mjs}",
+    "scripts/**/*.{ts,mjs,js}",
+    "public/sw.js",
     "supabase/functions/**/*.ts",
     "vitest.config.ts",
     "vitest.integration.config.ts",
     "tests/integration/vitest.setup.ts"
   ],
-  "project": ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"],
+  "project": [
+    "app/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "hooks/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs,js}",
+    "public/sw.js",
+    "supabase/functions/**/*.ts"
+  ],
   "ignore": [
     "lib/database.types.ts",
-    "public/sw.js",
-    "scripts/**",
-    "supabase/functions/**"
+    "lib/supabase.ts"
   ],
-  "ignoreDependencies": ["server-only"],
-  "ignoreBinaries": ["supabase"]
+  "ignoreDependencies": [
+    "server-only",
+    "shadcn",
+    "tailwindcss",
+    "tw-animate-css",
+    "@radix-ui/react-checkbox",
+    "@radix-ui/react-collapsible",
+    "pdfjs-dist"
+  ],
+  "ignoreBinaries": ["supabase"],
+  "ignoreIssues": {
+    "lib/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
+    "components/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
+    "hooks/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
+    "app/**/actions.ts": ["exports", "types"],
+    "app/**/*-actions.ts": ["exports", "types"],
+    "app/**/*-impl.ts": ["exports", "types"]
+  }
 }

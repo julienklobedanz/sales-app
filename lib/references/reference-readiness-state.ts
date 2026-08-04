@@ -1,3 +1,4 @@
+import { statusTone } from '@/lib/ui/status-tone'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
 import {
   approvedScopeBadge,
@@ -72,7 +73,7 @@ export function resolveReferenceReadinessState(
         ? approvedScopeBadge(input)
         : {
             label: 'Freigegeben',
-            className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
+            className: statusTone.success,
           }
 
     return {
@@ -105,7 +106,7 @@ export function resolveReferenceReadinessState(
       phase: 'rejected',
       badge: {
         label: 'Abgelehnt',
-        className: 'border-red-200 bg-red-50 text-red-700',
+        className: statusTone.danger,
       },
       showPrimaryStart: input.canStartApproval,
       showMagicLink: false,
@@ -135,7 +136,7 @@ export function resolveReferenceReadinessState(
       phase: 'pending_customer',
       badge: {
         label: 'Wartet auf Kundenfreigabe',
-        className: 'border-amber-200 bg-amber-50 text-amber-900',
+        className: statusTone.warning,
       },
       showPrimaryStart: false,
       showMagicLink: true,

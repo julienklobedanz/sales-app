@@ -103,7 +103,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | P2-4 | `formatDateUtcDe` | @deprecated, **20 Calls / 12 Dateien** | Auf `formatReferenceDate` migrieren | S | neu — ✅ Call-Sites migriert; Wrapper bleibt |
 | P2-5 | `parseExportSettings` 2× | settings page + onepager API | Zentralisieren | S | neu — ✅ beide → `parsePdfExportSettings` |
 | P2-6 | Knip unused deps | `react-hook-form`, `@hookform/resolvers`, `date-fns` — **0 Code-Imports** (nur Docs) | Entfernen oder Forms wieder anbinden; Entscheidung Produkt | S | neu — ✅ entfernt 2026-08-04 |
-| P2-7 | Scripts/Edge/sw.js | Knip meldet „unused“ — oft **False Positives** (CLI/Cron/Service Worker) | Nicht blind löschen; Knip-Ignore | — | — |
+| P2-7 | Scripts/Edge/sw.js | Knip meldet „unused“ — oft **False Positives** (CLI/Cron/Service Worker) | Nicht blind löschen; Knip-Ignore | — | ✅ knip: Scripts/SW als Entry; Export-Noise via `ignoreIssues` |
 
 **Knip-Hinweis:** Viele ungenutzte **Typen/Exports** in Actions sind oft öffentliche API oder Re-Exports — nicht massenhaft entfernen. `server-only` als unlisted Dependency in Knip konfigurieren.
 
@@ -116,7 +116,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | P3-1 | `components/dashboard/*` | 4× PascalCase (`DashboardMfaGate`, …) | kebab-case | S — ✅ `dashboard-mfa-gate`, `settings-totp-mfa-card`, `support-ticket-modal`, `support-channels-dialog` |
 | P3-2 | Quote-Mix | `components/ui/` oft `"`, Rest `'` | Prettier/`format` | S (805 Dateien!) |
 | P3-3 | DE/EN Dateinamen | `ki-entwurf`, `sperrlink` vs engl. Domains | Bei Touch angleichen | — |
-| P3-4 | Hardcoded Farben | Accounts/Deals Status (`red-*`, `emerald-*`) | Design-Tokens | M |
+| P3-4 | Hardcoded Farben | Accounts/Deals Status (`red-*`, `emerald-*`) | Design-Tokens | M — ✅ `--status-*` + `lib/ui/status-tone.ts` (Accounts/Deals/Approval-Badges) |
 | P3-5 | EN-Copy Reste | Strategy-Tab Buying-Center, „Company Update“ | `COPY` / DE | S — ✅ Account-UI auf `COPY` verdrahtet |
 
 ---

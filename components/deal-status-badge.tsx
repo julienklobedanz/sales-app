@@ -1,5 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import type { DealStatus } from '@/app/dashboard/deals/types'
+import { statusTone } from '@/lib/ui/status-tone'
+import { cn } from '@/lib/utils'
 
 type Props = {
   status: DealStatus | string | null | undefined
@@ -16,6 +18,16 @@ function normalize(raw: DealStatus | string | null | undefined): DealStatus {
   if (s === 'withdrawn') return 'withdrawn'
   if (s === 'archived') return 'archived'
   return 'open'
+}
+
+const DEAL_TONE: Record<DealStatus, string> = {
+  open: statusTone.info,
+  rfp: statusTone.warning,
+  negotiation: statusTone.warning,
+  won: statusTone.success,
+  lost: statusTone.danger,
+  withdrawn: statusTone.danger,
+  archived: statusTone.neutral,
 }
 
 export function DealStatusBadge({ status, className }: Props) {
@@ -36,19 +48,9 @@ export function DealStatusBadge({ status, className }: Props) {
                 ? 'Zurückgezogen'
                 : 'Archiviert'
 
-  const variant =
-    s === 'won'
-      ? 'default'
-      : s === 'lost' || s === 'withdrawn'
-        ? 'destructive'
-        : s === 'archived'
-          ? 'outline'
-          : 'outline'
-
   return (
-    <Badge className={className} variant={variant}>
+    <Badge className={cn(DEAL_TONE[s], className)} variant="outline">
       {label}
     </Badge>
   )
 }
-
