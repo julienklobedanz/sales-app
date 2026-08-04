@@ -36,7 +36,7 @@ import { ReferenceVolumeFilterMenu } from "@/components/references/reference-vol
 import type { ReferenceRow } from "../actions"
 import { ROUTES } from "@/lib/routes"
 
-/** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
+/** Muss mit COLUMN_KEYS in reference-overview-columns übereinstimmen */
 export type ReferenceColumnKey =
   | "company"
   | "title"
