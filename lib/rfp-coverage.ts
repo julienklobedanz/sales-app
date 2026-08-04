@@ -3,7 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
-import { rpcMatchReferences } from '@/lib/match-references-rpc'
+import { rpcMatchReferences } from '@/lib/match/match-references-rpc'
 
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { formatIndustryDisplay } from '@/lib/constants/industries'

@@ -6,7 +6,7 @@ import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'
-import { extractDataFromDocument } from '@/lib/document-extraction'
+import { extractDataFromDocument } from '@/lib/document-text'
 import { parseGermanEmployeeCountInput } from '@/lib/format'
 import type { ExtractDataFromDocumentResult } from './types'
 import type { CreateReferenceResult } from './reference-new-action-types'

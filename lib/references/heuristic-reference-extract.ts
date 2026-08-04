@@ -1,4 +1,4 @@
-import type { ExtractedReferenceData } from '@/app/dashboard/references/new/types'
+import type { ExtractedReferenceData } from '@/lib/references/extract-types'
 import {
   extractCompanyNameFromFileName,
   extractProjectTitleHintFromFileName,

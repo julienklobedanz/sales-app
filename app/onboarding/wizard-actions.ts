@@ -5,9 +5,9 @@ import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/routes'
 import { asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { extractDataFromDocument } from '@/lib/document-extraction'
+import { extractDataFromDocument } from '@/lib/document-text'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
-import type { ExtractedReferenceData } from '@/app/dashboard/references/new/types'
+import type { ExtractedReferenceData } from '@/lib/references/extract-types'
 import {
   attachOriginalDocumentToReference,
   createReference,

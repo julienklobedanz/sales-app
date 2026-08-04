@@ -1,10 +1,7 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Building2, ExternalLink, MoreHorizontal } from '@hugeicons/core-free-icons'
 
 import type {
   AccountNewsRow,
@@ -16,36 +13,14 @@ import {
   markMarketSignalsIrrelevant,
   matchReferencesForSignals,
 } from '@/app/dashboard/market-signals/actions'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Textarea } from '@/components/ui/textarea'
 import { COPY } from '@/lib/copy'
-import { AppIcon } from '@/lib/icons'
-import { sanitizeCompellingEventForDisplay } from '@/lib/market-signals/compelling-event'
-import {
-  formatSignalSourceLabel,
-  parseLeadershipMoveFromTitle,
-} from '@/lib/market-signals/leadership-move'
+import { parseLeadershipMoveFromTitle } from '@/lib/market-signals/leadership-move'
 import {
   resolveExecSignalBadge,
   resolveNewsSignalBadge,
   type MarketSignalBadge,
 } from '@/lib/market-signals/signal-badge'
-import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
 import {
   buildSignalMatchQuery,
   composeOutreachWithProofBlocks,
@@ -53,108 +28,23 @@ import {
   type SignalMatchHit,
 } from '@/lib/market-signals/signal-reference-match'
 import { ROUTES } from '@/lib/routes'
-import { cn } from '@/lib/utils'
+import {
+  MarketSignalsFeedItem,
+  MarketSignalsOutreachDialog,
+} from './market-signals-feed-item'
+import {
+  PAGE_SIZE,
+  clampCompellingEvent,
+  execHeadline,
+  newsHeadline,
+  normalizeText,
+  sourceHostLabel,
+  toMs,
+  type FeedItem,
+  type FeedSort,
+} from './market-signals-feed-helpers'
 
-const PAGE_SIZE = 10
-
-export type FeedSort = 'relevance' | 'date'
-
-type FeedItem = {
-  key: string
-  readKey: string
-  kind: 'exec' | 'news'
-  companyId: string
-  companyName: string
-  companyLogoUrl: string | null
-  at: string
-  badge: MarketSignalBadge
-  headline: string
-  compellingEvent: string | null
-  sourceLabel: string
-  sourceUrl: string | null
-  personName: string | null
-  isChampion: boolean
-  dealCount: number
-  dealHref: string | null
-  relevanceScore: number
-}
-
-const COMPELLING_EVENT_MAX = 180
-
-function clampCompellingEvent(raw: string | null | undefined): string | null {
-  return sanitizeCompellingEventForDisplay(raw, COMPELLING_EVENT_MAX)
-}
-
-function relativeTimeLabel(iso: string) {
-  const t = new Date(iso).getTime()
-  if (Number.isNaN(t)) return '—'
-  const diffMs = Date.now() - t
-  const days = Math.floor(diffMs / 86400000)
-  if (days < 1) return 'Heute'
-  if (days === 1) return 'Gestern'
-  return `vor ${days} Tagen`
-}
-
-function normalizeText(value: string | null | undefined) {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-}
-
-function sourceHostLabel(
-  url: string | null | undefined,
-  fallback: string | null | undefined,
-  hintTexts: Array<string | null | undefined> = [],
-  companyName?: string | null
-) {
-  return formatSignalSourceLabel({
-    url,
-    sourceLabel: fallback,
-    title: hintTexts.filter(Boolean).join(' - '),
-    companyName,
-  })
-}
-
-function resolveSourceUrl(url: string | null | undefined, fallbackQuery: string) {
-  const raw = String(url ?? '').trim()
-  if (raw && /^https?:\/\//i.test(raw)) return raw
-  return `https://www.google.com/search?q=${encodeURIComponent(fallbackQuery)}`
-}
-
-/** Move bei Rollenwechsel; Leadership-Titel auch ohne gespeicherte Titles → Move. */
-function execHeadline(row: ExecutiveTrackingRow) {
-  const insight = row.insightSignalFact?.trim()
-  if (insight) return insight
-  return formatRoleChangeFact({
-    personName: row.personName,
-    personTitleBefore: row.personTitleBefore,
-    personTitleAfter: row.personTitleAfter,
-    companyName: row.companyName,
-    changeSummary: row.changeSummary,
-  })
-}
-
-function newsHeadline(row: AccountNewsRow) {
-  const insight = row.insightSignalFact?.trim()
-  if (insight) return insight
-  const compact = row.body.replace(/\s+/g, ' ').trim()
-  if (!compact) return 'Neues Signal'
-  if (compact.length <= 140) return compact
-  return `${compact.slice(0, 137)}…`
-}
-
-function badgeClass(badge: MarketSignalBadge) {
-  if (badge === 'Move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
-  if (badge === 'Executive') return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
-  return 'bg-muted text-foreground border-0'
-}
-
-function toMs(iso: string) {
-  const value = iso.includes('T') ? iso : `${iso}T12:00:00.000Z`
-  const t = new Date(value).getTime()
-  return Number.isFinite(t) ? t : 0
-}
+export type { FeedSort }
 
 export function MarketSignalsFeed({
   executives,
@@ -485,185 +375,18 @@ export function MarketSignalsFeed({
   return (
     <>
       <ul className="space-y-3">
-        {visibleItems.map((item) => {
-          const unread = !readKeys.has(item.readKey)
-          const sourceHref = resolveSourceUrl(
-            item.sourceUrl,
-            [item.sourceLabel, item.companyName, item.headline].filter(Boolean).join(' ')
-          )
-          const dealLabel =
-            item.dealCount > 0
-              ? (item.dealCount === 1
-                  ? COPY.marketSignals.dealCountSingular
-                  : COPY.marketSignals.dealCountPlural
-                ).replace('{count}', String(item.dealCount))
-              : null
-          const linkedInUrl = item.personName
-            ? `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
-                `${item.personName} ${item.companyName}`
-              )}`
-            : null
-
-          return (
-            <li
-              key={item.key}
-              className={cn(
-                'rounded-xl border p-4 shadow-sm transition-opacity',
-                unread
-                  ? 'border-border/70 bg-card'
-                  : 'border-border/40 bg-muted/25 opacity-45'
-              )}
-            >
-              <div className="flex gap-3.5">
-                <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted/40">
-                  {item.companyLogoUrl ? (
-                    <Image
-                      src={item.companyLogoUrl}
-                      alt=""
-                      fill
-                      sizes="44px"
-                      className="object-contain p-1.5"
-                    />
-                  ) : (
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {(item.companyName || '?').slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <Badge className={badgeClass(item.badge)}>
-                        {item.badge === 'Move'
-                          ? COPY.marketSignals.signalTypeMove
-                          : item.badge === 'Executive'
-                            ? COPY.marketSignals.signalTypeExec
-                            : COPY.marketSignals.signalTypeCompany}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{relativeTimeLabel(item.at)}</span>
-                    </div>
-                    {unread ? (
-                      <span
-                        className="mt-1 size-2 shrink-0 rounded-full bg-primary"
-                        title={COPY.marketSignals.newBadge}
-                        aria-label={COPY.marketSignals.newBadge}
-                      />
-                    ) : null}
-                  </div>
-
-                  <p className="text-sm font-semibold leading-snug text-foreground">{item.headline}</p>
-
-                  {item.compellingEvent ? (
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground/80">
-                        {COPY.marketSignals.compellingEventLabel}:
-                      </span>{' '}
-                      {item.compellingEvent}
-                    </p>
-                  ) : null}
-
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    <span>{item.companyName}</span>
-                    {(() => {
-                      const matchCount = matchesByKey[item.key]?.length ?? 0
-                      if (matchCount <= 0) return null
-                      return (
-                        <>
-                          <span aria-hidden>·</span>
-                          <button
-                            type="button"
-                            className="font-medium text-foreground/80 hover:text-foreground hover:underline"
-                            onClick={() => void openOutreach(item)}
-                          >
-                            {matchCount === 1
-                              ? COPY.marketSignals.matchingRefsSingular
-                              : COPY.marketSignals.matchingRefsPlural.replace(
-                                  '{count}',
-                                  String(matchCount)
-                                )}
-                          </button>
-                        </>
-                      )
-                    })()}
-                    {dealLabel && item.dealHref ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <Link
-                          href={item.dealHref}
-                          className="font-medium text-foreground/80 hover:text-foreground hover:underline"
-                        >
-                          {dealLabel}
-                        </Link>
-                      </>
-                    ) : null}
-                    <span aria-hidden>·</span>
-                    <Link
-                      href={sourceHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
-                    >
-                      {item.sourceLabel}
-                      <AppIcon icon={ExternalLink} size={12} />
-                    </Link>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={() => void openOutreach(item)}
-                    >
-                      {COPY.marketSignals.outreachCta}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-8 text-xs" asChild>
-                      <Link href={ROUTES.accountsDetail(item.companyId)}>
-                        <AppIcon icon={Building2} size={14} className="mr-1" />
-                        {COPY.marketSignals.openAccount}
-                      </Link>
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-muted-foreground"
-                          aria-label="Weitere Aktionen"
-                        >
-                          <AppIcon icon={MoreHorizontal} size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => void hideSignal(item.readKey)}>
-                          {COPY.marketSignals.menuHide}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!unread}
-                          onSelect={() => void markRead([item.readKey])}
-                        >
-                          {COPY.marketSignals.menuMarkRead}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => void copyLink(item)}>
-                          {COPY.marketSignals.menuCopyLink}
-                        </DropdownMenuItem>
-                        {linkedInUrl ? (
-                          <DropdownMenuItem asChild>
-                            <a href={linkedInUrl} target="_blank" rel="noreferrer">
-                              {COPY.marketSignals.menuLinkedIn}
-                            </a>
-                          </DropdownMenuItem>
-                        ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </div>
-            </li>
-          )
-        })}
+        {visibleItems.map((item) => (
+          <MarketSignalsFeedItem
+            key={item.key}
+            item={item}
+            unread={!readKeys.has(item.readKey)}
+            matchCount={matchesByKey[item.key]?.length ?? 0}
+            onOpenOutreach={(feedItem) => void openOutreach(feedItem)}
+            onHideSignal={(readKey) => void hideSignal(readKey)}
+            onMarkRead={(readKey) => void markRead([readKey])}
+            onCopyLink={(feedItem) => void copyLink(feedItem)}
+          />
+        ))}
       </ul>
 
       {items.length > visibleCount ? (
@@ -680,82 +403,27 @@ export function MarketSignalsFeed({
         </div>
       ) : null}
 
-      <Dialog open={outreachOpen} onOpenChange={setOutreachOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{COPY.marketSignals.outreachDialogTitle}</DialogTitle>
-          </DialogHeader>
-          <p className="text-xs text-muted-foreground line-clamp-2">{outreachTitle}</p>
-          <div className="grid gap-4 sm:grid-cols-[1fr_240px]">
-            <Textarea
-              value={outreachLoading ? COPY.marketSignals.outreachGenerating : outreachText}
-              onChange={(e) => setOutreachText(e.target.value)}
-              rows={14}
-              disabled={outreachLoading}
-              className="min-h-[280px] font-mono text-sm"
-            />
-            <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
-              <p className="text-xs font-semibold text-foreground">
-                {COPY.marketSignals.outreachMatchingRefsTitle}
-              </p>
-              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                {COPY.marketSignals.outreachMatchingRefsHint}
-              </p>
-              {outreachMatches.length === 0 ? (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {COPY.marketSignals.outreachMatchingRefsEmpty}
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-3">
-                  {outreachMatches.map((hit) => {
-                    const checked = outreachSelectedIds.includes(hit.id)
-                    return (
-                      <li key={hit.id} className="flex items-start gap-2">
-                        <Checkbox
-                          id={`outreach-ref-${hit.id}`}
-                          checked={checked}
-                          disabled={outreachLoading || !outreachBase}
-                          onCheckedChange={(value) => toggleOutreachMatch(hit.id, value === true)}
-                          className="mt-0.5"
-                        />
-                        <label
-                          htmlFor={`outreach-ref-${hit.id}`}
-                          className="min-w-0 cursor-pointer text-xs leading-snug"
-                        >
-                          <span className="font-medium text-foreground">{hit.title}</span>
-                          {hit.companyName ? (
-                            <span className="mt-0.5 block text-muted-foreground">{hit.companyName}</span>
-                          ) : null}
-                        </label>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOutreachOpen(false)}>
-              {COPY.marketSignals.outreachClose}
-            </Button>
-            <Button
-              type="button"
-              disabled={outreachLoading || !outreachText.trim()}
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(outreachText)
-                  toast.success(COPY.marketSignals.outreachCopied)
-                  if (outreachReadKey) void markRead([outreachReadKey])
-                } catch {
-                  toast.error(COPY.marketSignals.outreachFailed)
-                }
-              }}
-            >
-              {COPY.marketSignals.outreachCopy}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MarketSignalsOutreachDialog
+        open={outreachOpen}
+        onOpenChange={setOutreachOpen}
+        title={outreachTitle}
+        loading={outreachLoading}
+        text={outreachText}
+        onTextChange={setOutreachText}
+        matches={outreachMatches}
+        selectedIds={outreachSelectedIds}
+        baseReady={Boolean(outreachBase)}
+        onToggleMatch={toggleOutreachMatch}
+        onCopy={async () => {
+          try {
+            await navigator.clipboard.writeText(outreachText)
+            toast.success(COPY.marketSignals.outreachCopied)
+            if (outreachReadKey) void markRead([outreachReadKey])
+          } catch {
+            toast.error(COPY.marketSignals.outreachFailed)
+          }
+        }}
+      />
     </>
   )
 }

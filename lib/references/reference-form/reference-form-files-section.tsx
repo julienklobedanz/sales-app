@@ -17,7 +17,7 @@ import {
 import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
 import type { ReferenceFormInitialData } from '@/lib/references/reference-form/reference-form-types'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
-import { FileDropZone } from '@/app/dashboard/references/new/reference-form-fields'
+import { FileDropZone } from '@/lib/references/reference-form/reference-form-fields'
 import { getCompetitorSuggestions, getIncumbentSuggestions } from '@/app/dashboard/actions'
 
 export type ReferenceFormFilesSectionProps = Pick<

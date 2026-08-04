@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
+import { extractPlainTextFromBuffer } from '@/lib/document-text'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import {
   extractCompanyNameFromFileName,

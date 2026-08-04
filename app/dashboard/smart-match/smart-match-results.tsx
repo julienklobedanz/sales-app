@@ -2,7 +2,7 @@
 
 import { MatchResultSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-card'
-import type { MatchReferenceHit } from '@/app/dashboard/actions'
+import type { MatchReferenceHit } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { dealContextString } from '@/app/dashboard/smart-match/smart-match-shell-helpers'
 

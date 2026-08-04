@@ -71,14 +71,25 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 |----|-----|--------|------|---------|-------|
 | P1-1 | Guide + `lib/observability/result.ts` | `{ ok }` vs `{ success }` | Helpers auf `{ success }`; Guide angleichen | S | E6 |
 | P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **heiße Pfade ✅ 2026-08-04**; Rest offen |
-| P1-3 | God-Files | große Actions/UI-Dateien | Sliceweise splitten | L | E5 — **Accounts, Overview, Smart-Match, MS-Actions, Column-Renders, Form-Content, Deals-Actions ✅** |
+| P1-3 | God-Files | große Actions/UI-Dateien | Sliceweise splitten | L | E5 — **✅ Welle 2026-08-04** (Overview ~719, Share-Link ~420, Feed ~429, Match ~270) |
 | P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu — ✅ `lib/accounts/company-from-join.ts` |
 | P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu — ✅ `lib/deals/normalize-deal-status.ts` |
-| P1-6 | Accounts Naming | Route `accounts/`, Code `company*` (~18 Dateien) | Schrittweise Rename (DB `companies` ok) | L | Welle 5 |
-| P1-7 | PDF/Extract 5 Module, 2 Einstiege | `document-extraction` vs `extract-rfp-plain-text` → … | Facade(s) dokumentieren/konsolidieren | M | neu |
-| P1-8 | Match Lib-Split | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren | M | E5 |
-| P1-9 | Dual Form-Schicht References | Re-export New → `lib/references/reference-form/*`; Fields noch unter dashboard | Lib von Dashboard entkoppeln | M | E5 |
-| P1-10 | Legacy-Mapping | `lib/roles/legacy-mapping.ts` ~30+ Importe | UI-Labels → system/function; Mapping schrumpfen | M | Welle 5 |
+| P1-6 | Accounts Naming | Route `accounts/`, Code `company*` (~18 Dateien) | Schrittweise Rename (DB `companies` ok) | L | Welle 5 — **bewusst offen** |
+| P1-7 | PDF/Extract 5 Module, 2 Einstiege | `document-extraction` vs `extract-rfp-plain-text` → … | Facade(s) dokumentieren/konsolidieren | M | neu — ✅ siehe Abschnitt unten |
+| P1-8 | Match Lib-Split | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren | M | E5 — ✅ top-level → `lib/match/`; Orchestrator ~270 |
+| P1-9 | Dual Form-Schicht References | Re-export New → `lib/references/reference-form/*`; Fields noch unter dashboard | Lib von Dashboard entkoppeln | M | E5 — ✅ Typen + Fields in lib; CreateContactDialog bleibt in app |
+| P1-10 | Legacy-Mapping | `lib/roles/legacy-mapping.ts` ~30+ Importe | UI-Labels → system/function; Mapping schrumpfen | M | Welle 5 — **bewusst offen** |
+
+### P1-7 erledigt — Extract-Facade
+
+**Pfad:** [`lib/document-text.ts`](../lib/document-text.ts)
+
+Zwei Einstiege bleiben bewusst getrennt (kein Merge der Pipelines):
+
+1. **References / Bulk:** `extractDataFromDocument` / `extractPlainTextFromBuffer` / `extractDataFromBuffer` → `document-extraction.ts`
+2. **RFP / DealDesk:** `extractRfpPlainTextFromFile` → `extractPlainTextFromFile` → pdf-text-extract/OCR
+
+Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyze`, `bulk-import/preview`, `bulk-import-extraction-apply`).
 
 ---
 
@@ -114,14 +125,13 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 
 | Datei | Zeilen |
 |-------|-------:|
-| `app/dashboard/dashboard-overview.tsx` | ~933 |
+| `app/dashboard/dashboard-overview.tsx` | ~719 (Dialog-State-Hook + Dialogs) |
+| `app/dashboard/references/[id]/share-link-button.tsx` | ~420 |
+| `components/market-signals/market-signals-feed.tsx` | ~429 |
+| `lib/references/library/match.ts` | ~270 |
 | `app/dashboard/references/[id]/page.tsx` | ~457 (war 937) |
 | `app/dashboard/accounts/companies-grid.tsx` | ~315 (war 960) |
 | `app/dashboard/references/new/actions.ts` | ~96 (war 994) |
-| `app/dashboard/overview/reference-table-column-header.tsx` | ~53 (war 841) |
-| `app/dashboard/market-signals/actions.ts` | ~196 |
-| `app/dashboard/deals/actions.ts` | ~152 |
-| `app/dashboard/accounts/actions.ts` | ~327 |
 | `app/dashboard/smart-match/smart-match-shell.tsx` | ~258 |
 
 ---
@@ -130,9 +140,10 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 
 1. **Quick Wins (diese Session):** P0-1 Auth-Guard ✅, P0-2/P0-3 tote APIs ✅, P2-1 leere Dirs ✅, P2-2 triagierte Orphans ✅, P2-3 Aliase ✅, P1-1 Result-Shape + Guide ✅, Knip-Script ✅.
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
-3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facades noch offen.
-4. **God-File-Slices:** Accounts/Overview/Smart-Match/MS/Deals/Form/Columns ✅; plus References-new-actions, Companies-Grid, Reference-Detail-Page, Column-Header (2026-08-04).
-5. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
+3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facade ✅ `lib/document-text.ts`.
+4. **God-File-Slices:** Accounts/Overview/Smart-Match/MS/Deals/Form/Columns ✅; plus References-new-actions, Companies-Grid, Reference-Detail-Page, Column-Header; Share-Link/Feed/Match; Form-Fields → lib (P1-9); Overview-Dialogs.
+5. **P1-Architektur:** P1-3/7/8/9 ✅; P1-6 Naming + P1-10 Legacy-Mapping bleiben **Welle 5**.
+6. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
 
@@ -150,10 +161,14 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-2 / E6 T3 | Logger auf Auth, HubSpot-APIs, Approvals/E-Mails, Deal-Import, Bulk-Import, reference-extract, Invite |
 | P1-4 / P1-5 / P2-4 | `companyFromJoin` → `lib/accounts/company-from-join.ts`; `normalizeDealStatus` → `lib/deals/normalize-deal-status.ts`; UI-Dates → `formatReferenceDate(..., 'de-DE')` |
 | P1-3 Accounts | `actions.ts` auf Wrapper + Impl-Module (`strategy-roadmap`, `stakeholders`, `contacts`, `account-match`, `account-deals`, `company-crud`, `onepager`, Typen) |
-| P1-3 Overview | Spalten/Filter/Table/Bulk-Helpers nach `overview/*`; `dashboard-overview` ~933 Z. |
+| P1-3 Overview | Spalten/Filter/Table/Bulk-Helpers + Dialog-Cluster; `dashboard-overview` ~719 Z. |
 | P1-3 Smart-Match | Filters/Search/Results/Helpers; `smart-match-shell` ~258 Z. |
 | P1-3 MS/Deals/UI | MS-actions ~196; Deals-actions ~152; column-renders barrel; form-content ~126 + Sections |
 | P1-3 Welle 2 | Ref-new-actions ~96; companies-grid ~315; ref-detail-page ~457; column-header ~53 |
+| P1-3 Welle 3 | Share-Link ~420 + Panel; Market-Signals-Feed ~429; Match-Orchestrator ~270 |
+| P1-7 | Facade `lib/document-text.ts` — zwei Einstiege dokumentiert; Re-Exports; Call-Sites migriert; Extract-Typen in Lib |
+| P1-8 | Top-level `match-*.ts` → `lib/match/`; Orchestrator gesliced (browse/lexical/enrich) |
+| P1-9 | Form-Typen/Fields in Lib; Dashboard-Adapter injiziert Suche; CreateContactDialog bleibt in app |
 
 ---
 
@@ -163,3 +178,5 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 - Massenmigration aller `console.*` / aller Result-Typen  
 - Schema/RLS ohne Security-Paket  
 - Blindes Löschen aller Knip-Exports (False Positives bei Server Actions)
+- P1-6 Accounts `company*`→`account*` Naming (Welle 5)
+- P1-10 Legacy-Mapping Shrink (Welle 5)

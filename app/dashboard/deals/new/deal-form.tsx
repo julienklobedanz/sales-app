@@ -33,7 +33,8 @@ import { DealQuickAccountDialog } from './deal-quick-account-dialog'
 import {
   CompanyCombobox,
   type ReferenceFormCompany,
-} from '@/app/dashboard/references/new/reference-form-fields'
+} from '@/lib/references/reference-form/reference-form-fields'
+import { searchCompanySuggestions } from '@/app/dashboard/references/new/actions'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -178,6 +179,7 @@ export function DealForm({
               }}
               loading={false}
               disabled={pending}
+              searchCompanies={searchCompanySuggestions}
             />
             <input type="hidden" name="company_id" value={companyId} />
             {fieldErrors.account ? <p className="text-sm text-destructive">{fieldErrors.account}</p> : null}

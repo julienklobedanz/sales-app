@@ -20,7 +20,8 @@ import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use
 import {
   CompanyCombobox,
   MagicImportDropzone,
-} from '@/app/dashboard/references/new/reference-form-fields'
+} from '@/lib/references/reference-form/reference-form-fields'
+import type { SearchReferenceFormCompanies } from '@/lib/references/reference-form/reference-form-types'
 
 export type ReferenceFormCompanySectionProps = Pick<
   ReferenceFormViewModel,
@@ -50,7 +51,9 @@ export type ReferenceFormCompanySectionProps = Pick<
   | 'currentCompanyNameForAvatar'
   | 'applyBrandfetchPreview'
   | 'handleMagicImport'
->
+> & {
+  searchCompanies?: SearchReferenceFormCompanies
+}
 
 export function ReferenceFormCompanySection({
   isEditMode,
@@ -79,6 +82,7 @@ export function ReferenceFormCompanySection({
   currentCompanyNameForAvatar,
   applyBrandfetchPreview,
   handleMagicImport,
+  searchCompanies,
 }: ReferenceFormCompanySectionProps) {
   return (
     <Card>
@@ -148,6 +152,7 @@ export function ReferenceFormCompanySection({
                     loading={enrichLoading}
                     disabled={submitting}
                     companyId={companyId}
+                    searchCompanies={searchCompanies}
                   />
                 </div>
                 <input type="hidden" name="companyId" value={companyId} />

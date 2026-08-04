@@ -6,7 +6,7 @@ import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-p
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
-import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
+import { extractRfpPlainTextFromFile } from '@/lib/document-text'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'

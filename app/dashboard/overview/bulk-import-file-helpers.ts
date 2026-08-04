@@ -77,3 +77,91 @@ export function addBulkImportFiles(
     return next
   })
 }
+
+export function removeBulkImportFile(
+  groupId: string,
+  fileIndex: number,
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+) {
+  setBulkImportGroups((prev) =>
+    prev
+      .map((g) =>
+        g.id === groupId ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) } : g
+      )
+      .filter((g) => g.files.length > 0)
+  )
+}
+
+export function moveBulkImportFile(
+  fromGroupId: string,
+  fileIndex: number,
+  toGroupId: string,
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+) {
+  if (fromGroupId === toGroupId) return
+  setBulkImportGroups((prev) => {
+    const sourceGroup = prev.find((g) => g.id === fromGroupId)
+    const file = sourceGroup?.files[fileIndex]
+    if (!sourceGroup || !file) return prev
+    if (!prev.some((g) => g.id === toGroupId)) return prev
+
+    return prev
+      .map((g) => {
+        if (g.id === fromGroupId) {
+          return { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
+        }
+        if (g.id === toGroupId) {
+          return { ...g, files: [...g.files, file] }
+        }
+        return g
+      })
+      .filter((g) => g.files.length > 0)
+  })
+}
+
+export function setBulkImportGroupName(
+  groupId: string,
+  projectName: string,
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+) {
+  setBulkImportGroups((prev) =>
+    prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
+  )
+}
+
+export function setBulkImportCompanyName(
+  groupId: string,
+  companyName: string,
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+) {
+  setBulkImportGroups((prev) =>
+    prev.map((g) =>
+      g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g
+    )
+  )
+}
+
+export function mergeBulkImportGroups(
+  selectedIds: string[],
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+) {
+  if (selectedIds.length < 2) return
+  setBulkImportGroups((prev) => {
+    const idSet = new Set(selectedIds)
+    const selected = prev.filter((g) => idSet.has(g.id))
+    if (selected.length < 2) return prev
+    const rest = prev.filter((g) => !idSet.has(g.id))
+    const primary = selected[0]!
+    const mergedCompany =
+      primary.companyName?.trim() ||
+      selected.find((g) => g.companyName?.trim())?.companyName?.trim()
+    return [
+      ...rest,
+      {
+        ...primary,
+        companyName: mergedCompany || undefined,
+        files: selected.flatMap((g) => g.files),
+      },
+    ]
+  })
+}

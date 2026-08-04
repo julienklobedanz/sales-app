@@ -1,4 +1,4 @@
-import type { MatchReferenceHit } from '@/app/dashboard/actions'
+import type { MatchReferenceHit } from '@/lib/match/match-types'
 
 export type SignalMatchHit = {
   id: string

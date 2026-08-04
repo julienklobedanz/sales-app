@@ -2,12 +2,11 @@
 
 import React from 'react'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type {
   ReferenceRow,
   ReferenceAssetRow,
-  DeletedReferenceRow,
 } from './actions'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
@@ -20,11 +19,8 @@ import {
   toggleFavorite,
 } from './actions'
 import type { Profile } from './dashboard-types'
-import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
-import { ComplianceBulkUploadDialog } from './overview/compliance-bulk-upload-dialog'
-import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
 import {
   REFERENCE_LIBRARY_MODE_STORAGE_KEY,
   type ReferenceLibraryMode,
@@ -35,10 +31,6 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
-import { NewReferenceDialog } from './overview/new-reference-dialog'
-import { ShareLinkDialog } from './overview/share-link-dialog'
-import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
-import { TrashDialog } from './overview/trash-dialog'
 import {
   type ReferenceColumnKey,
 } from './overview/reference-table-column-renders'
@@ -61,9 +53,14 @@ import {
   normalizeTagLabel,
 } from './overview/filter-sort-references'
 import { ReferencesDataTable } from './overview/references-data-table'
-import { addBulkImportFiles as addBulkImportFilesHelper } from './overview/bulk-import-file-helpers'
+import {
+  buildCompanyIdsNeedingBrandfetch,
+  buildCompanyIndustryById,
+  buildCompanyLogoById,
+} from './overview/reference-company-maps'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
+import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { toast } from 'sonner'
 import {
@@ -154,8 +151,6 @@ export function DashboardOverview({
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
   const libraryMode = useReferenceLibraryMode()
-  const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
-  const [complianceBulkUploadOpen, setComplianceBulkUploadOpen] = useState(false)
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
@@ -168,26 +163,21 @@ export function DashboardOverview({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
-  const [bulkImportOpen, setBulkImportOpen] = useState(false)
-  const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
-  const [bulkImportLoading, setBulkImportLoading] = useState(false)
-  const [bulkImportPreviewPendingFiles, setBulkImportPreviewPendingFiles] = useState<Set<File>>(
-    () => new Set()
-  )
-  const bulkImportDropRef = useRef<HTMLInputElement>(null)
-  const [trashOpen, setTrashOpen] = useState(false)
-  const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
-  /** Papierkorb-Laden: aktuell kein Öffnen-Pfad; Dialog bleibt ohne Spinner bis Anbindung. */
-  const trashLoading = false
-  const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
-  const [emptyingTrash, setEmptyingTrash] = useState(false)
-  const [newRefModalOpen, setNewRefModalOpen] = useState(false)
-  const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const {
+    setComplianceUploadOpen,
+    setComplianceBulkUploadOpen,
+    setBulkImportOpen,
+    setBulkImportGroups,
+    addBulkImportFiles,
+    setNewRefModalOpen,
+    setShareLinkPopoverRef,
+    setBulkDeleteConfirmOpen,
+    selectedRefIds,
+    setSelectedRefIds,
+    renderDialogs,
+  } = useReferencesOverviewDialogsState()
   const [pageSize, setPageSize] = useState(30)
   const [pageIndex, setPageIndex] = useState(0)
-  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
-  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
-  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(loadVisibleColumnsFromStorage)
@@ -263,82 +253,6 @@ export function DashboardOverview({
       cancelled = true
     }
   }, [selectedRef?.id, sheetOpen])
-
-  function addBulkImportFiles(newFiles: File[]) {
-    addBulkImportFilesHelper(
-      newFiles,
-      setBulkImportGroups,
-      setBulkImportPreviewPendingFiles
-    )
-  }
-
-  function removeBulkImportFile(groupId: string, fileIndex: number) {
-    setBulkImportGroups((prev) =>
-      prev
-        .map((g) =>
-          g.id === groupId
-            ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
-            : g
-        )
-        .filter((g) => g.files.length > 0)
-    )
-  }
-
-  function moveBulkImportFile(fromGroupId: string, fileIndex: number, toGroupId: string) {
-    if (fromGroupId === toGroupId) return
-    setBulkImportGroups((prev) => {
-      const sourceGroup = prev.find((g) => g.id === fromGroupId)
-      const file = sourceGroup?.files[fileIndex]
-      if (!sourceGroup || !file) return prev
-      if (!prev.some((g) => g.id === toGroupId)) return prev
-
-      return prev
-        .map((g) => {
-          if (g.id === fromGroupId) {
-            return { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
-          }
-          if (g.id === toGroupId) {
-            return { ...g, files: [...g.files, file] }
-          }
-          return g
-        })
-        .filter((g) => g.files.length > 0)
-    })
-  }
-
-  function setBulkImportGroupName(groupId: string, projectName: string) {
-    setBulkImportGroups((prev) =>
-      prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
-    )
-  }
-
-  function setBulkImportCompanyName(groupId: string, companyName: string) {
-    setBulkImportGroups((prev) =>
-      prev.map((g) => (g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g))
-    )
-  }
-
-  function mergeBulkImportGroups(selectedIds: string[]) {
-    if (selectedIds.length < 2) return
-    setBulkImportGroups((prev) => {
-      const idSet = new Set(selectedIds)
-      const selected = prev.filter((g) => idSet.has(g.id))
-      if (selected.length < 2) return prev
-      const rest = prev.filter((g) => !idSet.has(g.id))
-      const primary = selected[0]!
-      const mergedCompany =
-        primary.companyName?.trim() ||
-        selected.find((g) => g.companyName?.trim())?.companyName?.trim()
-      return [
-        ...rest,
-        {
-          ...primary,
-          companyName: mergedCompany || undefined,
-          files: selected.flatMap((g) => g.files),
-        },
-      ]
-    })
-  }
 
   useEffect(() => {
     try {
@@ -426,43 +340,20 @@ export function DashboardOverview({
     [initialReferences, favoriteIds]
   )
 
-  const companyLogoById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const company of companies) {
-      const url = String(company.logo_url ?? '').trim()
-      if (url) map.set(company.id, url)
-    }
-    for (const ref of initialReferences) {
-      if (!ref.company_id) continue
-      const url = String(ref.company_logo_url ?? '').trim()
-      if (url && !map.has(ref.company_id)) map.set(ref.company_id, url)
-    }
-    return map
-  }, [companies, initialReferences])
+  const companyLogoById = useMemo(
+    () => buildCompanyLogoById(companies, initialReferences),
+    [companies, initialReferences]
+  )
 
-  const companyIndustryById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const company of companies) {
-      const industry = String(company.industry ?? '').trim()
-      if (industry) map.set(company.id, industry)
-    }
-    return map
-  }, [companies])
+  const companyIndustryById = useMemo(
+    () => buildCompanyIndustryById(companies),
+    [companies]
+  )
 
-  const companyIdsNeedingBrandfetch = useMemo(() => {
-    const ids = new Set<string>()
-    for (const ref of initialReferences) {
-      if (!ref.company_id) continue
-      const hasLogo =
-        Boolean(String(ref.company_logo_url ?? '').trim()) ||
-        Boolean(String(companies.find((c) => c.id === ref.company_id)?.logo_url ?? '').trim())
-      const hasIndustry =
-        Boolean(String(ref.industry ?? '').trim()) ||
-        companyIndustryById.has(ref.company_id)
-      if (!hasLogo || !hasIndustry) ids.add(ref.company_id)
-    }
-    return [...ids]
-  }, [initialReferences, companies, companyIndustryById])
+  const companyIdsNeedingBrandfetch = useMemo(
+    () => buildCompanyIdsNeedingBrandfetch(initialReferences, companies, companyIndustryById),
+    [initialReferences, companies, companyIndustryById]
+  )
 
   const filterOptions = useMemo(
     () =>
@@ -631,39 +522,13 @@ export function DashboardOverview({
           onUploadFiles={isAdmin ? handleEmptyStateUpload : undefined}
           onCreateManual={isAdmin ? () => setNewRefModalOpen(true) : undefined}
         />
-        {isAdmin ? (
-          <>
-            <NewReferenceDialog
-              open={newRefModalOpen}
-              onOpenChange={setNewRefModalOpen}
-              companies={companies}
-              contacts={contacts}
-              externalContacts={externalContacts}
-            />
-            <BulkImportDialog
-              open={bulkImportOpen}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setBulkImportLoading(false)
-                  setBulkImportPreviewPendingFiles(new Set())
-                }
-                setBulkImportOpen(open)
-              }}
-              loading={bulkImportLoading}
-              onLoadingChange={setBulkImportLoading}
-              groups={bulkImportGroups}
-              setGroups={setBulkImportGroups}
-              dropRef={bulkImportDropRef}
-              addFiles={addBulkImportFiles}
-              removeFile={removeBulkImportFile}
-              moveFile={moveBulkImportFile}
-              setGroupName={setBulkImportGroupName}
-              setCompanyName={setBulkImportCompanyName}
-              mergeSelectedGroups={mergeBulkImportGroups}
-              previewPendingFiles={bulkImportPreviewPendingFiles}
-            />
-          </>
-        ) : null}
+        {renderDialogs({
+          profile,
+          companies,
+          contacts,
+          externalContacts,
+          deletedCount,
+        })}
       </>
     )
   }
@@ -747,20 +612,6 @@ export function DashboardOverview({
           />
         ) : null}
 
-          {isSystemAdmin(profile.systemRole) && (
-            <BulkDeleteReferencesDialog
-              open={bulkDeleteConfirmOpen}
-              onOpenChange={setBulkDeleteConfirmOpen}
-              ids={Array.from(selectedRefIds)}
-              loading={bulkDeleteLoading}
-              onLoadingChange={setBulkDeleteLoading}
-              onSuccess={() => {
-                setSelectedRefIds(new Set())
-                setBulkDeleteConfirmOpen(false)
-              }}
-            />
-          )}
-
         {isCertificatesLibrary ? (
           <ComplianceDocumentsTable
             documents={complianceDocuments}
@@ -840,24 +691,6 @@ export function DashboardOverview({
         )}
       </div>
 
-      <TrashDialog
-        open={trashOpen}
-        onOpenChange={(open) => {
-          setTrashOpen(open)
-          if (!open) {
-            setTrashItems([])
-          }
-        }}
-        deletedCount={deletedCount}
-        trashLoading={trashLoading}
-        trashItems={trashItems}
-        setTrashItems={setTrashItems}
-        confirmEmptyOpen={confirmEmptyOpen}
-        setConfirmEmptyOpen={setConfirmEmptyOpen}
-        emptyingTrash={emptyingTrash}
-        setEmptyingTrash={setEmptyingTrash}
-      />
-
       <ReferenceDetailSheet
         open={sheetOpen}
         onOpenChange={handleReferenceSheetOpenChange}
@@ -874,60 +707,13 @@ export function DashboardOverview({
         orgDateDisplayFormat={orgDateDisplayFormat}
       />
 
-      <ShareLinkDialog
-        reference={shareLinkPopoverRef}
-        onClose={() => setShareLinkPopoverRef(null)}
-      />
-
-      {isSystemAdmin(profile.systemRole) && (
-        <NewReferenceDialog
-          open={newRefModalOpen}
-          onOpenChange={setNewRefModalOpen}
-          companies={companies}
-          contacts={contacts}
-          externalContacts={externalContacts}
-        />
-      )}
-
-      {/* Bulk-Import-Modal (nur Admin) */}
-      {isSystemAdmin(profile.systemRole) && (
-        <ComplianceUploadDialog
-          open={complianceUploadOpen}
-          onOpenChange={setComplianceUploadOpen}
-        />
-      )}
-
-      {isSystemAdmin(profile.systemRole) && (
-        <ComplianceBulkUploadDialog
-          open={complianceBulkUploadOpen}
-          onOpenChange={setComplianceBulkUploadOpen}
-        />
-      )}
-
-      {isSystemAdmin(profile.systemRole) && (
-        <BulkImportDialog
-          open={bulkImportOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setBulkImportLoading(false)
-              setBulkImportPreviewPendingFiles(new Set())
-            }
-            setBulkImportOpen(open)
-          }}
-          loading={bulkImportLoading}
-          onLoadingChange={setBulkImportLoading}
-          groups={bulkImportGroups}
-          setGroups={setBulkImportGroups}
-          dropRef={bulkImportDropRef}
-          addFiles={addBulkImportFiles}
-          removeFile={removeBulkImportFile}
-          moveFile={moveBulkImportFile}
-          setGroupName={setBulkImportGroupName}
-          setCompanyName={setBulkImportCompanyName}
-          mergeSelectedGroups={mergeBulkImportGroups}
-          previewPendingFiles={bulkImportPreviewPendingFiles}
-        />
-      )}
+      {renderDialogs({
+        profile,
+        companies,
+        contacts,
+        externalContacts,
+        deletedCount,
+      })}
     </div>
   )
 }

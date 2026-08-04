@@ -5,7 +5,7 @@ import { ChevronDown, RotateCcw } from 'lucide-react'
 
 import { CheckIcon } from '@/components/ui/check-icon'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import type { MatchReferenceHit } from '@/app/dashboard/actions'
+import type { MatchReferenceHit } from '@/lib/match/match-types'
 import { VOLUME_BAND_OPTIONS } from '@/lib/match/smart-match-multi-filters'
 import { cn } from '@/lib/utils'
 import {

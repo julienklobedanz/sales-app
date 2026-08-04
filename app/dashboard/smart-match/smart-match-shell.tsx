@@ -15,10 +15,8 @@ import { toast } from 'sonner'
 
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { COPY } from '@/lib/copy'
-import {
-  matchReferences,
-  type MatchReferenceHit,
-} from '@/app/dashboard/actions'
+import { matchReferences } from '@/app/dashboard/actions'
+import type { MatchReferenceHit } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { cn } from '@/lib/utils'
 import { parseSmartMatchQuery } from '@/lib/match/parse-smart-match-query'

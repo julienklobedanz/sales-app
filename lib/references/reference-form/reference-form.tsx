@@ -10,10 +10,10 @@ import { useReferenceForm } from '@/lib/references/reference-form/use-reference-
 import type {
   ContactPerson,
   ExternalContactDisplay,
+  ReferenceFormCompany,
   ReferenceFormInitialData,
+  SearchReferenceFormCompanies,
 } from '@/lib/references/reference-form/reference-form-types'
-import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
-import type { ExternalContact } from '@/app/dashboard/references/new/actions'
 
 type Company = ReferenceFormCompany
 
@@ -27,14 +27,16 @@ export function ReferenceForm({
   onSuccess,
   onClose,
   layout = 'page',
+  searchCompanies,
 }: {
   companies?: Company[]
   contacts?: ContactPerson[]
-  externalContacts?: ExternalContact[]
+  externalContacts?: ExternalContactDisplay[]
   initialData?: ReferenceFormInitialData
   onSuccess?: () => void
   onClose?: () => void
   layout?: 'page' | 'dialog'
+  searchCompanies?: SearchReferenceFormCompanies
 }) {
   const router = useRouter()
   const vm = useReferenceForm({
@@ -76,7 +78,7 @@ export function ReferenceForm({
   )
 
   const formInnerClass = 'w-full min-w-0 space-y-6 pb-2'
-  const contentProps = { ...vm, layout }
+  const contentProps = { ...vm, layout, searchCompanies }
 
   return (
     <div

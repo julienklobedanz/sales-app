@@ -2,13 +2,17 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
+import type { SearchReferenceFormCompanies } from '@/lib/references/reference-form/reference-form-types'
 import { ReferenceFormCompanySection } from '@/lib/references/reference-form/reference-form-company-section'
 import { ReferenceFormStorySection } from '@/lib/references/reference-form/reference-form-story-section'
 import { ReferenceFormContactsSection } from '@/lib/references/reference-form/reference-form-contacts-section'
 import { ReferenceFormProjectSection } from '@/lib/references/reference-form/reference-form-project-section'
 import { ReferenceFormFilesSection } from '@/lib/references/reference-form/reference-form-files-section'
 
-export function ReferenceFormContent(props: ReferenceFormViewModel) {
+export function ReferenceFormContent({
+  searchCompanies,
+  ...props
+}: ReferenceFormViewModel & { searchCompanies?: SearchReferenceFormCompanies }) {
   return (
     <div className="space-y-6">
       <ReferenceFormCompanySection
@@ -38,6 +42,7 @@ export function ReferenceFormContent(props: ReferenceFormViewModel) {
         currentCompanyNameForAvatar={props.currentCompanyNameForAvatar}
         applyBrandfetchPreview={props.applyBrandfetchPreview}
         handleMagicImport={props.handleMagicImport}
+        searchCompanies={searchCompanies}
       />
 
       <ReferenceFormStorySection

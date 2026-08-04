@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { extractDataFromDocument } from '@/lib/document-extraction'
+import { extractDataFromDocument } from '@/lib/document-text'
 import { log } from '@/lib/observability/logger'
 
 export const runtime = 'nodejs'

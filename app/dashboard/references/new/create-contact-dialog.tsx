@@ -17,6 +17,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createContact, createExternalContact, updateContact, updateExternalContact, type ExternalContact } from './actions'
 import { AppIcon } from '@/lib/icons'
+import type { CreatedContact } from '@/lib/references/reference-form/reference-form-types'
+
+export type { CreatedContact }
 
 /** Einfache Formatprüfungen für Kontaktfelder */
 const NAME_REGEX = /^[\p{L}\p{M}\s\-']{2,}$/u
@@ -56,13 +59,6 @@ function validateContact(formData: FormData): FieldErrors {
     errors.phone = 'Telefon: mind. 6 Zeichen, nur Ziffern, Leerzeichen, + - ( ) erlaubt.'
   }
   return errors
-}
-
-export type CreatedContact = {
-  id: string
-  first_name: string | null
-  last_name: string | null
-  email: string | null
 }
 
 export function CreateContactDialog({
