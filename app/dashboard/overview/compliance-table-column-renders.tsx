@@ -13,7 +13,7 @@ import { DraggableColumnHead } from '@/components/table/draggable-column-head'
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
 import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
 import {
   ArrowDown,
@@ -241,7 +241,7 @@ export function renderComplianceColumnCell(
           className="text-right text-sm text-muted-foreground"
           alignClassName="justify-end"
         >
-          <span className="leading-none">{formatDateUtcDe(doc.updated_at)}</span>
+          <span className="leading-none">{formatReferenceDate(doc.updated_at, 'de-DE')}</span>
         </TableDataCell>
       )
     default:

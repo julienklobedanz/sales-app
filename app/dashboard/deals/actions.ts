@@ -23,6 +23,8 @@ import {
 } from '@/lib/deals/deal-delete-storage'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
+import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
+import { companyFromJoin } from '@/lib/accounts/company-from-join'
 import { log } from '@/lib/observability/logger'
 
 async function getSessionOrgId(
@@ -30,33 +32,6 @@ async function getSessionOrgId(
 ): Promise<string | null> {
   const profile = await getRequestProfile()
   return profile?.organization_id ?? null
-}
-
-const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
-  in_negotiation: 'negotiation',
-  rfp_phase: 'rfp',
-  on_hold: 'open',
-  reference_sought: 'open',
-  in_approval: 'open',
-  reference_found: 'open',
-}
-function normalizeDealStatus(raw: unknown): DealStatus {
-  const s = String(raw ?? '').trim()
-  if (!s) return 'open'
-  const mapped = LEGACY_STATUS_MAP[s]
-  if (mapped) return mapped
-  if (
-    s === 'open' ||
-    s === 'rfp' ||
-    s === 'negotiation' ||
-    s === 'won' ||
-    s === 'lost' ||
-    s === 'withdrawn' ||
-    s === 'archived'
-  ) {
-    return s
-  }
-  return 'open'
 }
 
 function getResend(): Resend | null {
@@ -126,12 +101,12 @@ export async function getDeals(): Promise<DealRow[]> {
         .in('id', refIds)
       const refMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }> = {}
       for (const r of refs ?? []) {
-        const company = Array.isArray(r.companies) ? (r.companies as { name?: string; logo_url?: string | null }[])[0] : (r.companies as { name?: string; logo_url?: string | null } | null)
+        const company = companyFromJoin(r.companies)
         refMap[r.id] = {
           id: r.id,
           title: r.title ?? '',
           company_name: company?.name ?? '—',
-          logo_url: company?.logo_url ?? null,
+          logo_url: company?.logoUrl ?? null,
         }
       }
       for (const dr of drRows ?? []) {
@@ -161,15 +136,13 @@ export async function getDeals(): Promise<DealRow[]> {
   }
 
   return (rows ?? []).map((r) => {
-    const company = Array.isArray(r.companies)
-      ? (r.companies[0] as { name?: string; logo_url?: string | null })
-      : (r.companies as { name?: string; logo_url?: string | null } | null)
+    const company = companyFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',
       company_id: r.company_id ?? null,
       company_name: company?.name ?? null,
-      company_logo_url: company?.logo_url ?? null,
+      company_logo_url: company?.logoUrl ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
       requirements_text: (r as { requirements_text?: string | null }).requirements_text ?? null,
@@ -262,14 +235,12 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       .select('id, title, summary, tags, companies(name, logo_url)')
       .in('id', refIds)
     for (const r of refs ?? []) {
-      const company = Array.isArray(r.companies)
-        ? (r.companies as { name?: string; logo_url?: string | null }[])[0]
-        : (r.companies as { name?: string; logo_url?: string | null } | null)
+      const company = companyFromJoin(r.companies)
       references.push({
         id: r.id,
         title: r.title ?? '',
         company_name: company?.name ?? '—',
-        logo_url: company?.logo_url ?? null,
+        logo_url: company?.logoUrl ?? null,
         summary: (r as { summary?: string | null }).summary ?? null,
         tags: (r as { tags?: string | null }).tags ?? null,
         similarity_score: scoreByRefId[r.id] ?? null,
@@ -284,7 +255,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     ? (await supabase.from('profiles').select('full_name').eq('id', deal.sales_manager_id).single()).data?.full_name ?? null
     : null
 
-  const company = Array.isArray(deal.companies) ? deal.companies[0] : deal.companies
+  const company = companyFromJoin(deal.companies)
 
   const best_match_score = references.reduce<number | null>((max, ref) => {
     const s = ref.similarity_score
@@ -304,7 +275,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     id: deal.id,
     title: deal.title ?? '',
     company_id: deal.company_id ?? null,
-    company_name: (company as { name?: string })?.name ?? null,
+    company_name: company?.name ?? null,
     industry: deal.industry ?? null,
     volume: deal.volume ?? null,
     requirements_text: (deal as { requirements_text?: string | null }).requirements_text ?? null,
@@ -432,13 +403,13 @@ export async function getMatchingReferencesForDeals(
   if (!refs?.length) return result
 
   const refList = refs.map((r) => {
-    const company = Array.isArray(r.companies) ? (r.companies as { name?: string; logo_url?: string | null }[])[0] : (r.companies as { name?: string; logo_url?: string | null } | null)
+    const company = companyFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',
       industry: r.industry ?? null,
       company_name: company?.name ?? '—',
-      logo_url: company?.logo_url ?? null,
+      logo_url: company?.logoUrl ?? null,
     }
   })
 
@@ -470,7 +441,7 @@ export async function getReferencesForOrg(): Promise<{ id: string; title: string
   if (!rows) return []
 
   return rows.map((r) => {
-    const company = Array.isArray(r.companies) ? (r.companies[0] as { name?: string }) : (r.companies as { name?: string } | null)
+    const company = companyFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',

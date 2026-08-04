@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatDateUtcDe, formatReferenceVolume } from "@/lib/format"
+import { formatReferenceDate, formatReferenceVolume } from "@/lib/format"
 import { formatContractTypeDisplay } from "@/lib/references/contract-type"
 import { formatProjectEndWithDurationDe } from "@/lib/references/reference-duration-months"
 
@@ -188,7 +188,7 @@ export function ReferenceDetailPane({
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Projektstart</div>
                 <div className="mt-1 font-medium">
-                  {selectedRef.project_start ? formatDateUtcDe(selectedRef.project_start) : "—"}
+                  {selectedRef.project_start ? formatReferenceDate(selectedRef.project_start, 'de-DE') : "—"}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
@@ -199,7 +199,7 @@ export function ReferenceDetailPane({
                         project_start: selectedRef.project_start,
                         project_end: selectedRef.project_end,
                         project_status: selectedRef.project_status,
-                        formatEndDate: formatDateUtcDe,
+                        formatEndDate: (iso) => formatReferenceDate(iso, 'de-DE'),
                       })
                     : "—"}
                 </div>
@@ -328,7 +328,7 @@ export function ReferenceDetailPane({
                                   {asset.file_name || asset.file_path.split("/").pop() || "Dokument"}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground">
-                                  {formatDateUtcDe(asset.created_at)}
+                                  {formatReferenceDate(asset.created_at, 'de-DE')}
                                 </div>
                               </div>
                             </li>
@@ -349,12 +349,12 @@ export function ReferenceDetailPane({
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Erstellt</span>
-                <span className="font-medium">{formatDateUtcDe(selectedRef.created_at)}</span>
+                <span className="font-medium">{formatReferenceDate(selectedRef.created_at, 'de-DE')}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Letzte Änderung</span>
                 <span className="font-medium">
-                  {selectedRef.updated_at ? formatDateUtcDe(selectedRef.updated_at) : "—"}
+                  {selectedRef.updated_at ? formatReferenceDate(selectedRef.updated_at, 'de-DE') : "—"}
                 </span>
               </div>
               {profileRole === "admin" ? (

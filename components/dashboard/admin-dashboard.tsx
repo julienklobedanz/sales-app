@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ROUTES } from '@/lib/routes'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 
 export function AdminDashboard({
   data,
@@ -27,12 +27,12 @@ export function AdminDashboard({
 
   function relative(iso: string) {
     const ts = new Date(iso).getTime()
-    if (!Number.isFinite(ts)) return formatDateUtcDe(iso)
+    if (!Number.isFinite(ts)) return formatReferenceDate(iso, 'de-DE')
     const diffMin = Math.max(1, Math.round((nowMs - ts) / 60000))
     if (diffMin < 60) return `vor ${diffMin}m`
     const diffH = Math.round(diffMin / 60)
     if (diffH < 24) return `vor ${diffH}h`
-    return formatDateUtcDe(iso)
+    return formatReferenceDate(iso, 'de-DE')
   }
 
   if (variant === 'sales_leader') {

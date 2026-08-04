@@ -17,6 +17,7 @@ import {
   type MarketSignalBadge,
 } from '@/lib/market-signals/signal-badge'
 import { formatSignalSourceLabel } from '@/lib/market-signals/leadership-move'
+import { companyFromJoin } from '@/lib/accounts/company-from-join'
 
 export type NotificationInboxGroup = 'signals' | 'approvals' | 'other'
 
@@ -250,21 +251,6 @@ function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: st
   return row.created_by === userId
 }
 
-type CompanyJoin = {
-  name?: string | null
-  logo_url?: string | null
-  is_favorite?: boolean | null
-} | null
-
-function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null; isFavorite: boolean } {
-  const co = (Array.isArray(raw) ? raw[0] : raw) as CompanyJoin
-  return {
-    name: String(co?.name ?? 'Account').trim() || 'Account',
-    logoUrl: (co?.logo_url as string | null | undefined) ?? null,
-    isFavorite: Boolean(co?.is_favorite),
-  }
-}
-
 export async function getInboxNotificationsImpl(
   userId: string,
   role: AppRole
@@ -399,7 +385,7 @@ export async function getInboxNotificationsImpl(
   const favoriteCompanyNames = new Set(
     (executiveRows ?? [])
       .map((row) => {
-        const co = companyFromJoin(row.companies)
+        const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
         if (!co.isFavorite) return null
         return normalizeText(co.name)
       })
@@ -408,7 +394,7 @@ export async function getInboxNotificationsImpl(
 
   const executiveSeen = new Set<string>()
   const executiveCandidates: InboxCandidate[] = (executiveRows ?? []).flatMap((row) => {
-      const co = companyFromJoin(row.companies)
+      const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
       const personName = String(row.person_name ?? '').trim()
       const changeSummary = String(row.change_summary ?? '')
       const summaryNorm = normalizeText(changeSummary)
@@ -489,7 +475,7 @@ export async function getInboxNotificationsImpl(
 
   const newsSeen = new Set<string>()
   const newsCandidates: InboxCandidate[] = (newsRows ?? []).flatMap((row) => {
-      const co = companyFromJoin(row.companies)
+      const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
       const body = String(row.body ?? '').trim()
       const badge = resolveNewsSignalBadge(body, co.name)
       const personName = newsPersonNameFromBody(body, co.name)?.trim() || null

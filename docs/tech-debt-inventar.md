@@ -72,8 +72,8 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-1 | Guide + `lib/observability/result.ts` | `{ ok }` vs `{ success }` | Helpers auf `{ success }`; Guide angleichen | S | E6 |
 | P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **heiße Pfade ✅ 2026-08-04**; Rest offen |
 | P1-3 | God-Files | `dashboard-overview` 1500, `accounts/actions` 1366, `market-signals/actions` 1299, `reference-form-content` 1093, `smart-match-shell` 962, … | Sliceweise splitten; Actions dünn halten | L | E5 / QC |
-| P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu |
-| P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu |
+| P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu — ✅ `lib/accounts/company-from-join.ts` |
+| P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu — ✅ `lib/deals/normalize-deal-status.ts` |
 | P1-6 | Accounts Naming | Route `accounts/`, Code `company*` (~18 Dateien) | Schrittweise Rename (DB `companies` ok) | L | Welle 5 |
 | P1-7 | PDF/Extract 5 Module, 2 Einstiege | `document-extraction` vs `extract-rfp-plain-text` → … | Facade(s) dokumentieren/konsolidieren | M | neu |
 | P1-8 | Match Lib-Split | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren | M | E5 |
@@ -89,7 +89,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P2-1 | Leere Dirs | `app/dashboard/companies`, `concepts/inbox-references`, `api/rfp/coverage`, `dev/ui-preview` | Löschen (Redirects bleiben) | XS | 4c |
 | P2-2 | Knip unused files (triagiert, App-Code) | u. a. `company-detail-links-tab`, `deal-activity-card`, `references/columns`+`data-table`, Settings-Orphans (`invite-card`, `settings-form`, `settings-danger-zone`, tabs), `lib/auth/get-user-role`, `lib/dashboard/can-view-insights`, DealDesk-Orphans (`bid-team`, `demo-seed`, …), `ticket-status-badge`, … | Nach Import-Check löschen | M | neu |
 | P2-3 | Alias-Exports | `NewsroomsCard`, `ISO_27001_BADGE_SRC`, `isIso27001ComplianceDocument`, ungenutzte `DESK_COVER_THRESHOLD`-Reexports, `upgradeReferencedCompanyLogosForLightUi` | Entfernen | S | neu |
-| P2-4 | `formatDateUtcDe` | @deprecated, **20 Calls / 12 Dateien** | Auf `formatReferenceDate` migrieren | S | neu |
+| P2-4 | `formatDateUtcDe` | @deprecated, **20 Calls / 12 Dateien** | Auf `formatReferenceDate` migrieren | S | neu — ✅ Call-Sites migriert; Wrapper bleibt |
 | P2-5 | `parseExportSettings` 2× | settings page + onepager API | Zentralisieren | S | neu |
 | P2-6 | Knip unused deps | `react-hook-form`, `@hookform/resolvers`, `date-fns` — **0 Code-Imports** (nur Docs) | Entfernen oder Forms wieder anbinden; Entscheidung Produkt | S | neu |
 | P2-7 | Scripts/Edge/sw.js | Knip meldet „unused“ — oft **False Positives** (CLI/Cron/Service Worker) | Nicht blind löschen; Knip-Ignore | — | — |
@@ -130,7 +130,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 
 1. **Quick Wins (diese Session):** P0-1 Auth-Guard ✅, P0-2/P0-3 tote APIs ✅, P2-1 leere Dirs ✅, P2-2 triagierte Orphans ✅, P2-3 Aliase ✅, P1-1 Result-Shape + Guide ✅, Knip-Script ✅.
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
-3. **Konsolidierung:** `companyFromJoin`, `normalizeDealStatus`, `formatDateUtcDe`, Extract-Facades.
+3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facades noch offen.
 4. **God-File-Slices:** Overview, Accounts-Actions, Smart-Match-Shell (eigene PRs).
 5. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
 
@@ -148,6 +148,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P2-3 | `NewsroomsCard`, ISO-27001-Aliase, `DESK_COVER_THRESHOLD`-Reexports, `deadlineCountdownClass`/`deadlineTitleClass`, `upgradeReferencedCompanyLogosForLightUi` |
 | Tooling | `knip` + `knip.json`; Script `npm run knip` |
 | P1-2 / E6 T3 | Logger auf Auth, HubSpot-APIs, Approvals/E-Mails, Deal-Import, Bulk-Import, reference-extract, Invite |
+| P1-4 / P1-5 / P2-4 | `companyFromJoin` → `lib/accounts/company-from-join.ts`; `normalizeDealStatus` → `lib/deals/normalize-deal-status.ts`; UI-Dates → `formatReferenceDate(..., 'de-DE')` |
 
 ---
 

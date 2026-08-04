@@ -45,7 +45,7 @@ import {
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
 import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -429,7 +429,7 @@ function VersionCard({
           <p className="text-sm font-medium text-foreground">{doc.title}</p>
           <p className="text-xs text-muted-foreground">{expiryLabel(doc)}</p>
           <p className="text-xs text-muted-foreground">
-            Hochgeladen: {formatDateUtcDe(doc.updated_at)}
+            Hochgeladen: {formatReferenceDate(doc.updated_at, 'de-DE')}
             {doc.file_name ? ` · ${doc.file_name}` : ''}
           </p>
           <div className="flex flex-wrap gap-1.5 pt-0.5">

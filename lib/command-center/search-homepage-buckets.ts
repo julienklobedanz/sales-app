@@ -7,11 +7,11 @@ import {
 } from '@/lib/compliance/format'
 import {
   buildIlikeOrFilter,
-  companyFromJoin,
   fetchNdaSearchRows,
   sanitizeIlikeUserInput,
   type CommandSearchResult,
 } from '@/lib/command-center/global-search'
+import { companyFromJoin } from '@/lib/accounts/company-from-join'
 import {
   emptyHomepageSearchGroups,
   type HomepageSearchGroups,

@@ -25,6 +25,9 @@ import {
   buildStoredNewsroomRssQueries,
   isStoredNewsroomHost,
 } from '@/lib/market-signals/discover-company-newsroom'
+import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
+
+export { isActiveDealStatus }
 
 export type CompanyNewsIngestCompanyRow = {
   id: string
@@ -71,16 +74,6 @@ function normalizePersonKey(raw: string) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
-}
-
-export function isActiveDealStatus(raw: unknown): boolean {
-  const s = String(raw ?? '').trim()
-  if (!s) return false
-  if (s === 'open' || s === 'rfp' || s === 'negotiation') return true
-  if (s === 'in_negotiation') return true
-  if (s === 'rfp_phase') return true
-  if (s === 'on_hold' || s === 'reference_sought' || s === 'in_approval' || s === 'reference_found') return true
-  return false
 }
 
 export type RunCompanyNewsIngestResult = {

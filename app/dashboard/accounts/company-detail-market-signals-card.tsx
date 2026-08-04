@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDateUtcDe } from '@/lib/format'
+import { formatReferenceDate } from '@/lib/format'
 import type { CompanyDetailClientProps } from './company-detail-types'
 
 type Props = {
@@ -69,7 +69,7 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
                               : 'Positionswechsel erkannt')}
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {row.detectedAt ? formatDateUtcDe(row.detectedAt) : '—'}
+                          {row.detectedAt ? formatReferenceDate(row.detectedAt, 'de-DE') : '—'}
                         </p>
                       </Link>
                     </li>
@@ -109,7 +109,7 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
                       >
                         <p className="text-sm leading-snug">{row.body}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {row.publishedOn ? formatDateUtcDe(row.publishedOn) : '—'}
+                          {row.publishedOn ? formatReferenceDate(row.publishedOn, 'de-DE') : '—'}
                           {row.sourceLabel ? ` · ${row.sourceLabel}` : ''}
                         </p>
                       </Link>
