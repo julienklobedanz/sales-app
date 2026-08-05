@@ -143,7 +143,9 @@ export function OnboardingWizard({
       inviteToken,
       organizationName: workspace.organizationName,
       logoDataUrl: null,
-      role: isInvite ? null : 'admin',
+      ...(isInvite
+        ? {}
+        : { systemRole: 'admin' as const, functionRole: 'sales_leader' as const }),
       fullName: joinFullName(workspace.firstName, workspace.lastName),
       phone: '',
     })

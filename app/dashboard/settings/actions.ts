@@ -12,6 +12,8 @@ import {
   salesContactValidationMessage,
 } from '@/lib/profile/sales-contact'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { FUNCTION_ROLES, SYSTEM_ROLES } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { isSalesAppView } from '@/lib/roles/reference-access'
@@ -51,6 +53,29 @@ function parseDataUrlImage(
   return { bytes: new Uint8Array(buf), contentType, ext }
 }
 
+const SYSTEM_ROLE_SET = new Set<SystemRole>(SYSTEM_ROLES)
+const FUNCTION_ROLE_SET = new Set<FunctionRole>(FUNCTION_ROLES)
+
+function parseRoleDimensionsFromForm(formData: FormData): {
+  systemRole: SystemRole
+  functionRole: FunctionRole
+} | null {
+  const systemField = formData.get('systemRole')?.toString()
+  const functionField = formData.get('functionRole')?.toString()
+  if (
+    systemField &&
+    functionField &&
+    SYSTEM_ROLE_SET.has(systemField as SystemRole) &&
+    FUNCTION_ROLE_SET.has(functionField as FunctionRole)
+  ) {
+    return {
+      systemRole: systemField as SystemRole,
+      functionRole: functionField as FunctionRole,
+    }
+  }
+  return null
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -75,14 +100,18 @@ export async function updateProfile(formData: FormData) {
   const fullNameSingle = formData.get('fullName')?.toString()?.trim()
   const fullNameFromParts = [firstName, lastName].filter(Boolean).join(' ') || undefined
   const fullName = fullNameFromParts || (fullNameSingle ? fullNameSingle : undefined)
+  const dimensionRoles = parseRoleDimensionsFromForm(formData)
   const roleField = formData.get('role')?.toString()
-  const role =
-    roleField === 'admin' || roleField === 'sales' || roleField === 'account_manager'
+  const legacyRole =
+    !dimensionRoles &&
+    (roleField === 'admin' || roleField === 'sales' || roleField === 'account_manager')
       ? roleField
       : undefined
-  const effectiveRoles = role
-    ? legacyRoleToDimensions(role)
-    : { systemRole: parsedRoles.systemRole, functionRole: parsedRoles.functionRole }
+  const effectiveRoles = dimensionRoles
+    ? dimensionRoles
+    : legacyRole
+      ? legacyRoleToDimensions(legacyRole)
+      : { systemRole: parsedRoles.systemRole, functionRole: parsedRoles.functionRole }
   const avatarDataUrlRaw = formData.get('avatarDataUrl')?.toString() ?? undefined
   const avatarDataUrl =
     avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
@@ -111,8 +140,11 @@ export async function updateProfile(formData: FormData) {
   const updates: Record<string, unknown> = {}
 
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
-  if (role) {
-    const dims = legacyRoleToDimensions(role)
+  if (dimensionRoles) {
+    updates.system_role = dimensionRoles.systemRole
+    updates.function_role = dimensionRoles.functionRole
+  } else if (legacyRole) {
+    const dims = legacyRoleToDimensions(legacyRole)
     updates.system_role = dims.systemRole
     updates.function_role = dims.functionRole
   }
