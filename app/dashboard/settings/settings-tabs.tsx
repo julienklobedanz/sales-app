@@ -44,7 +44,7 @@ export function SettingsTabs({
     bookingUrl: string | null
     phone: string | null
     jobTitle: string | null
-    profileRole: 'admin' | 'sales' | 'account_manager'
+    salesRequired: boolean
     notificationSettings: {
       emailOnNewMatch: boolean
       emailOnApprovalUpdate: boolean

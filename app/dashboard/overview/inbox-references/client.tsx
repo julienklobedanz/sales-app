@@ -42,8 +42,6 @@ import {
   toggleFavorite,
   type ReferenceAssetRow,
 } from '@/app/dashboard/actions'
-import type { Profile } from '@/app/dashboard/dashboard-shell'
-
 import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
 import { ShareLinkButton } from '@/app/dashboard/references/[id]/share-link-button'
 
@@ -154,12 +152,12 @@ function InboxRow({
 
 export function InboxReferencesConceptClient({
   references,
-  profileRole,
+  isAdmin,
   externalContacts,
   variant = 'standalone',
 }: {
   references: ConceptReferenceRow[]
-  profileRole: Profile['role']
+  isAdmin: boolean
   variant?: 'standalone' | 'embedded'
   externalContacts: {
     id: string
@@ -447,7 +445,7 @@ export function InboxReferencesConceptClient({
             <div className="flex-1 min-h-0">
               <ReferenceDetailPane
                 selectedRef={selected}
-                profileRole={profileRole}
+                isAdmin={isAdmin}
                 externalContacts={externalContacts}
                 assets={assets}
                 assetsLoading={assetsLoading}

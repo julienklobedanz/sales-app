@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { type AppRole, useRole } from '@/hooks/useRole'
+import { useRole } from '@/hooks/useRole'
+import { formatRoleDimensionsLabel } from '@/lib/roles/invite-roles'
 import {
   DEV_ROLE_PRESETS,
   formatDevRolePreviewLabel,
@@ -35,22 +36,10 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-function formatRoleBadgeLabel(role: AppRole): string {
-  switch (role) {
-    case 'admin':
-      return 'ADMIN'
-    case 'sales':
-      return 'SALES'
-    default:
-      return String(role).toUpperCase()
-  }
-}
-
 export function DashboardUserMenu({
   userName,
   userEmail,
   userInitials,
-  userRole,
   devRolePreviewEnabled = false,
   devRolePreviewActive = false,
   compact = false,
@@ -58,7 +47,6 @@ export function DashboardUserMenu({
   userName: string
   userEmail: string
   userInitials: string
-  userRole: AppRole
   devRolePreviewEnabled?: boolean
   devRolePreviewActive?: boolean
   compact?: boolean
@@ -115,8 +103,8 @@ export function DashboardUserMenu({
           <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">{userName}</span>
             <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-            <span className="mt-1 inline-flex w-fit rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground">
-              {formatRoleBadgeLabel(userRole)}
+            <span className="mt-1 inline-flex w-fit rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
+              {formatRoleDimensionsLabel(systemRole, functionRole)}
             </span>
           </div>
         </div>

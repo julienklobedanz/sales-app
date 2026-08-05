@@ -13,21 +13,19 @@ import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 
 import type { ReferenceAssetRow } from '@/app/dashboard/actions'
-import type { Profile } from '@/app/dashboard/dashboard-shell'
-
 import type { ConceptReferenceRow } from './types'
 import { splitTags } from './types'
 
 export function ReferenceDetailPane({
   selectedRef,
-  profileRole,
+  isAdmin,
   externalContacts,
   assets,
   assetsLoading,
   detailLoading,
 }: {
   selectedRef: ConceptReferenceRow | null
-  profileRole: Profile['role']
+  isAdmin: boolean
   externalContacts: {
     id: string
     company_id: string
@@ -378,7 +376,7 @@ export function ReferenceDetailPane({
                     : '—'}
                 </span>
               </div>
-              {profileRole === 'admin' ? (
+              {isAdmin ? (
                 <p className="text-xs text-muted-foreground">
                   (Admin-Ansicht: Aktionen sind oben in der Leiste minimal gehalten.)
                 </p>
