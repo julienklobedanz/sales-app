@@ -2697,27 +2697,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      create_organization_invite:
-        | {
-            Args: {
-              p_email: string
-              p_expires_at: string
-              p_role: string
-              p_token: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_email: string
-              p_expires_at: string
-              p_function_role?: Database['public']['Enums']['function_role']
-              p_role: string
-              p_system_role?: Database['public']['Enums']['system_role']
-              p_token: string
-            }
-            Returns: undefined
-          }
+      create_organization_invite: {
+        Args: {
+          p_email: string
+          p_expires_at: string
+          p_function_role: Database['public']['Enums']['function_role']
+          p_system_role: Database['public']['Enums']['system_role']
+          p_token: string
+        }
+        Returns: undefined
+      }
       current_user_can_manage_org_data: { Args: never; Returns: boolean }
       current_user_effective_capability: {
         Args: { p_cap: string }
@@ -2865,17 +2854,14 @@ export type Database = {
         Returns: Json
       }
       try_uuid_from_text: { Args: { raw: string }; Returns: string }
-      update_organization_invite_role:
-        | { Args: { p_invite_id: string; p_role: string }; Returns: undefined }
-        | {
-            Args: {
-              p_function_role?: Database['public']['Enums']['function_role']
-              p_invite_id: string
-              p_role: string
-              p_system_role?: Database['public']['Enums']['system_role']
-            }
-            Returns: undefined
-          }
+      update_organization_invite_role: {
+        Args: {
+          p_function_role: Database['public']['Enums']['function_role']
+          p_invite_id: string
+          p_system_role: Database['public']['Enums']['system_role']
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       approval_status: 'pending' | 'approved' | 'rejected'

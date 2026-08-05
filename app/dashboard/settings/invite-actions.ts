@@ -10,7 +10,6 @@ import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import {
   DEFAULT_INVITE_ROLES,
-  legacyRoleForRpc,
   parseInviteRoleDimensions,
   type InviteRoleDimensions,
 } from '@/lib/roles/invite-roles'
@@ -152,12 +151,9 @@ export async function inviteByEmail(
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + INVITE_VALID_DAYS)
 
-  const legacyRole = legacyRoleForRpc(roles.systemRole, roles.functionRole)
-
   const { error: rpcError } = await supabase.rpc('create_organization_invite', {
     p_email: normalizedEmail,
     p_token: token,
-    p_role: legacyRole,
     p_expires_at: expiresAt.toISOString(),
     p_system_role: roles.systemRole,
     p_function_role: roles.functionRole,
@@ -212,11 +208,8 @@ export async function updatePendingInviteRole(params: {
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
-  const legacyRole = legacyRoleForRpc(params.systemRole, params.functionRole)
-
   const { error } = await supabase.rpc('update_organization_invite_role', {
     p_invite_id: params.inviteId,
-    p_role: legacyRole,
     p_system_role: params.systemRole,
     p_function_role: params.functionRole,
   })

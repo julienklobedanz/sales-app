@@ -1,7 +1,7 @@
 import { COPY } from '@/lib/copy'
 
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 
 const SYSTEM_ROLES = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
 const FUNCTION_ROLES = new Set<FunctionRole>([
@@ -59,11 +59,4 @@ export function formatRoleDimensionsLabel(
   const system = COPY.roleDimensions.systemRoles[systemRole] ?? systemRole
   const fn = COPY.roleDimensions.functionRoles[functionRole] ?? functionRole
   return `${system} · ${fn}`
-}
-
-export function legacyRoleForRpc(
-  systemRole: SystemRole,
-  functionRole: FunctionRole,
-): 'admin' | 'sales' | 'account_manager' {
-  return legacyAppRoleFrom(systemRole, functionRole)
 }
