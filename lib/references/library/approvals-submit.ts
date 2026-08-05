@@ -8,7 +8,6 @@ import type { SubmitForApprovalOptions } from '@/lib/references/library/approval
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
@@ -261,6 +260,5 @@ export async function submitForApprovalImpl(
   return {
     success: true as const,
     stage: 'internal_review_pending' as const,
-    requesterRole: profile ? legacyAppRoleFrom(systemRole, functionRole) : null,
   }
 }

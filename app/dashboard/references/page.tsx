@@ -26,7 +26,6 @@ export default async function ReferencesHubPage() {
 
   const {
     profile,
-    effectiveRole,
     systemRole: effectiveSystemRole,
     functionRole: effectiveFunctionRole,
     capabilities,
@@ -102,7 +101,6 @@ export default async function ReferencesHubPage() {
         deletedCount={dashboard.deletedCount}
         profile={{
           full_name: profile.full_name,
-          role: effectiveRole,
           systemRole: effectiveSystemRole,
           functionRole: effectiveFunctionRole,
           capabilities,
