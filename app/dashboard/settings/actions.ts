@@ -15,7 +15,6 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { FUNCTION_ROLES, SYSTEM_ROLES } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { isSalesAppView } from '@/lib/roles/reference-access'
 
 function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null {
@@ -101,17 +100,10 @@ export async function updateProfile(formData: FormData) {
   const fullNameFromParts = [firstName, lastName].filter(Boolean).join(' ') || undefined
   const fullName = fullNameFromParts || (fullNameSingle ? fullNameSingle : undefined)
   const dimensionRoles = parseRoleDimensionsFromForm(formData)
-  const roleField = formData.get('role')?.toString()
-  const legacyRole =
-    !dimensionRoles &&
-    (roleField === 'admin' || roleField === 'sales' || roleField === 'account_manager')
-      ? roleField
-      : undefined
-  const effectiveRoles = dimensionRoles
-    ? dimensionRoles
-    : legacyRole
-      ? legacyRoleToDimensions(legacyRole)
-      : { systemRole: parsedRoles.systemRole, functionRole: parsedRoles.functionRole }
+  const effectiveRoles = dimensionRoles ?? {
+    systemRole: parsedRoles.systemRole,
+    functionRole: parsedRoles.functionRole,
+  }
   const avatarDataUrlRaw = formData.get('avatarDataUrl')?.toString() ?? undefined
   const avatarDataUrl =
     avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
@@ -143,10 +135,6 @@ export async function updateProfile(formData: FormData) {
   if (dimensionRoles) {
     updates.system_role = dimensionRoles.systemRole
     updates.function_role = dimensionRoles.functionRole
-  } else if (legacyRole) {
-    const dims = legacyRoleToDimensions(legacyRole)
-    updates.system_role = dims.systemRole
-    updates.function_role = dims.functionRole
   }
   if (formData.has('bookingUrl')) {
     updates.booking_url = bookingUrlNormalized

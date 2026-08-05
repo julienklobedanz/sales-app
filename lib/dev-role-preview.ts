@@ -1,6 +1,5 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { COPY } from '@/lib/copy'
 
 /** Cookie für die in der Oberfläche gewählte Rolle (wirkt zusammen mit Profil im Layout). */
@@ -53,32 +52,24 @@ function parseDimensionToken(value: string, allowed: Set<string>): string | null
   return allowed.has(v) ? v : null
 }
 
-/** Neues Format: `system:function` (z. B. `admin:sales_leader`). Legacy: `admin` | `sales` | `account_manager`. */
+/** Cookie-Format: `system:function` (z. B. `admin:sales_leader`). */
 export function parseDevRolePreviewCookie(
   value: string | undefined,
 ): DevRolePreview | null {
-  if (!value) return null
+  if (!value?.includes(':')) return null
 
-  if (value.includes(':')) {
-    const [systemRaw, functionRaw] = value.split(':')
-    const systemRole = parseDimensionToken(
-      systemRaw ?? '',
-      SYSTEM_ROLE_SET,
-    ) as SystemRole | null
-    const functionRole = parseDimensionToken(
-      functionRaw ?? '',
-      FUNCTION_ROLE_SET,
-    ) as FunctionRole | null
-    if (systemRole && functionRole) {
-      return { systemRole, functionRole }
-    }
-    return null
+  const [systemRaw, functionRaw] = value.split(':')
+  const systemRole = parseDimensionToken(
+    systemRaw ?? '',
+    SYSTEM_ROLE_SET,
+  ) as SystemRole | null
+  const functionRole = parseDimensionToken(
+    functionRaw ?? '',
+    FUNCTION_ROLE_SET,
+  ) as FunctionRole | null
+  if (systemRole && functionRole) {
+    return { systemRole, functionRole }
   }
-
-  if (value === 'admin' || value === 'sales' || value === 'account_manager') {
-    return legacyRoleToDimensions(value)
-  }
-
   return null
 }
 
