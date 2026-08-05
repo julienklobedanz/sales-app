@@ -33,8 +33,6 @@ import {
   cleanupCompanyDomainNamesImpl,
   mergeDuplicateCompaniesImpl,
 } from '@/app/dashboard/accounts/maintenance'
-import { updateUserRoleImpl } from '@/app/dashboard/settings/user-role'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { matchReferencesImpl } from '@/lib/references/library/match'
 import type {
   MatchReferencesOptions,
@@ -400,11 +398,6 @@ export async function reviewRequest(
   decision: 'approve_external' | 'approve_internal' | 'reject',
 ) {
   return reviewRequestImpl(approvalId, decision)
-}
-
-/** @deprecated Transitorisch — mappt Legacy-Label; siehe updateUserRoleImpl. */
-export async function updateUserRole(role: 'admin' | 'sales') {
-  return updateUserRoleImpl(legacyRoleToDimensions(role))
 }
 
 /** KI-Zusammenfassung: Aus Herausforderung + Lösung eine prägnante, vertriebsorientierte Zusammenfassung per OpenAI (gpt-4o-mini). */

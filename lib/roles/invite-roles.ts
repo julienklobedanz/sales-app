@@ -1,7 +1,6 @@
 import { COPY } from '@/lib/copy'
 
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 
 const SYSTEM_ROLES = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
 const FUNCTION_ROLES = new Set<FunctionRole>([
@@ -42,16 +41,11 @@ function asFunctionRole(value: unknown): FunctionRole | null {
 export function parseInviteRoleDimensions(row: {
   system_role?: string | null
   function_role?: string | null
-  /** @deprecated Nur für Alt-Daten / Onboarding-UI-Labels. */
-  role?: string | null
 }): InviteRoleDimensions {
   const systemRole = asSystemRole(row.system_role)
   const functionRole = asFunctionRole(row.function_role)
   if (systemRole && functionRole) {
     return { systemRole, functionRole }
-  }
-  if (row.role) {
-    return legacyRoleToDimensions(row.role)
   }
   return DEFAULT_INVITE_ROLES
 }

@@ -21,19 +21,10 @@ describe('parseDevRolePreviewCookie', () => {
     })
   })
 
-  it('accepts legacy single-role cookies', () => {
-    expect(parseDevRolePreviewCookie('admin')).toEqual({
-      systemRole: 'admin',
-      functionRole: 'sales_leader',
-    })
-    expect(parseDevRolePreviewCookie('account_manager')).toEqual({
-      systemRole: 'member',
-      functionRole: 'account_manager',
-    })
-    expect(parseDevRolePreviewCookie('sales')).toEqual({
-      systemRole: 'member',
-      functionRole: 'sales_rep',
-    })
+  it('rejects legacy single-role cookies', () => {
+    expect(parseDevRolePreviewCookie('admin')).toBeNull()
+    expect(parseDevRolePreviewCookie('sales')).toBeNull()
+    expect(parseDevRolePreviewCookie('account_manager')).toBeNull()
   })
 
   it('rejects unknown values', () => {

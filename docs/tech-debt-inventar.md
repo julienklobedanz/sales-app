@@ -78,7 +78,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-7  | PDF/Extract 5 Module, 2 Einstiege                           | `document-extraction` vs `extract-rfp-plain-text` → …                           | Facade(s) dokumentieren/konsolidieren                                          | M       | neu — ✅ siehe Abschnitt unten                                                           |
 | P1-8  | Match Lib-Split                                             | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren                           | M       | E5 — ✅ top-level → `lib/match/`; Orchestrator ~270                                      |
 | P1-9  | Dual Form-Schicht References                                | Re-export New → `lib/references/reference-form/*`; Fields noch unter dashboard  | Lib von Dashboard entkoppeln                                                   | M       | E5 — ✅ Typen + Fields in lib; CreateContactDialog bleibt in app                         |
-| P1-10 | Legacy-Mapping                                              | `lib/roles/legacy-mapping.ts` ~30+ Importe                                      | UI-Labels → system/function; Mapping schrumpfen                                | M       | Welle 5 — **nahezu ✅**; Rest: Dev-Cookie + Settings-Form-Fallback via `legacyRoleToDimensions` |
+| P1-10 | Legacy-Mapping                                              | `lib/roles/legacy-mapping.ts` ~30+ Importe                                      | UI-Labels → system/function; Mapping schrumpfen                                | M       | Welle 5 — **✅** `legacy-mapping`/`AppRole` entfernt; nur noch Dims |
 
 ### P1-7 erledigt — Extract-Facade
 
@@ -142,7 +142,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
 3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facade ✅ `lib/document-text.ts`.
 4. **God-File-Slices:** Accounts/Overview/Smart-Match/MS/Deals/Form/Columns ✅; plus References-new-actions, Companies-Grid, Reference-Detail-Page, Column-Header; Share-Link/Feed/Match; Form-Fields → lib (P1-9); Overview-Dialogs.
-5. **P1-Architektur:** P1-3/7/8/9 ✅; P1-6 Naming + P1-10 Legacy-Mapping bleiben **Welle 5**.
+5. **P1-Architektur:** P1-3/7/8/9/10 ✅; P1-6 Naming bleibt **Welle 5** (bewusst groß).
 6. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` nach Format-Welle ✅ 2026-08-04.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
@@ -180,4 +180,3 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 - Schema/RLS ohne Security-Paket
 - Blindes Löschen aller Knip-Exports (False Positives bei Server Actions)
 - P1-6 Accounts `company*`→`account*` Naming (Welle 5)
-- P1-10 Legacy-Mapping Shrink (Welle 5)
