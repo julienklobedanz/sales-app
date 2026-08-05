@@ -18,7 +18,6 @@ import {
   salesContactValidationMessage,
 } from '@/lib/profile/sales-contact'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
@@ -30,7 +29,6 @@ export async function finalizeWorkspaceAndProfile(params: {
   inviteToken: string | null
   organizationName: string
   logoDataUrl: string | null
-  role?: 'sales' | 'account_manager' | 'admin' | null
   systemRole?: SystemRole
   functionRole?: FunctionRole
   fullName: string
@@ -116,9 +114,7 @@ export async function finalizeWorkspaceAndProfile(params: {
   const chosenDims =
     params.systemRole && params.functionRole
       ? { systemRole: params.systemRole, functionRole: params.functionRole }
-      : params.role
-        ? legacyRoleToDimensions(params.role)
-        : null
+      : null
 
   let finalSystemRole: SystemRole
   let finalFunctionRole: FunctionRole
@@ -305,14 +301,18 @@ export type SendInvitesResult =
   | { success: false; error: string }
 
 export async function sendTeamInvites(
-  invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>,
+  invites: Array<{
+    email: string
+    systemRole: SystemRole
+    functionRole: FunctionRole
+  }>,
 ): Promise<SendInvitesResult> {
   const unique = invites
-    .map((i) => {
-      const email = i.email.trim().toLowerCase()
-      const dims = legacyRoleToDimensions(i.role)
-      return { email, systemRole: dims.systemRole, functionRole: dims.functionRole }
-    })
+    .map((i) => ({
+      email: i.email.trim().toLowerCase(),
+      systemRole: i.systemRole,
+      functionRole: i.functionRole,
+    }))
     .filter((i) => i.email.length > 0)
     .slice(0, 10)
 
