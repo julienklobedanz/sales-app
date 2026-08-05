@@ -1,14 +1,12 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 
-import type { AppRole } from '@/hooks/useRole'
 import {
   DEV_ROLE_COOKIE,
   canUseDevRolePreview,
   parseDevRolePreviewCookie,
 } from '@/lib/dev-role-preview'
 import { log } from '@/lib/observability/logger'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import type { Tables } from '@/lib/database.types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -59,7 +57,6 @@ export type RequestEffectiveRoles = {
   systemRole: ReturnType<typeof parseProfileRoles>['systemRole']
   functionRole: ReturnType<typeof parseProfileRoles>['functionRole']
   capabilities: ReturnType<typeof parseProfileRoles>['capabilities']
-  effectiveRole: AppRole
 }
 
 /** Profil + effektive Rollen (inkl. Dev-Role-Preview) pro Request. */
@@ -82,7 +79,6 @@ export const getRequestEffectiveRoles = cache(
       systemRole,
       functionRole,
       capabilities: serverRoles.capabilities,
-      effectiveRole: legacyAppRoleFrom(systemRole, functionRole),
     }
   },
 )

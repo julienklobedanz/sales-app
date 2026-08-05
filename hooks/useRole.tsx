@@ -4,17 +4,13 @@ import * as React from 'react'
 
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { hasCapability } from '@/lib/roles/capability-access'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import type { AppRole } from '@/lib/roles/types'
 
-export type { AppRole, SystemRole, FunctionRole, Capability }
+export type { SystemRole, FunctionRole, Capability }
 
 export type RoleContextValue = {
   systemRole: SystemRole
   functionRole: FunctionRole
   capabilities: Partial<Record<Capability, boolean>>
-  /** Abgeleitete Legacy-Rolle — Übergangsphase, deprecated */
-  role: AppRole
 }
 
 const RoleContext = React.createContext<RoleContextValue | null>(null)
@@ -29,9 +25,8 @@ export function RoleProvider({
   functionRole: FunctionRole
   capabilities?: Partial<Record<Capability, boolean>>
 }>) {
-  const role = legacyAppRoleFrom(systemRole, functionRole)
   return (
-    <RoleContext.Provider value={{ systemRole, functionRole, capabilities, role }}>
+    <RoleContext.Provider value={{ systemRole, functionRole, capabilities }}>
       {children}
     </RoleContext.Provider>
   )

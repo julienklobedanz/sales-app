@@ -39,7 +39,6 @@ export default async function DashboardLayout({
 
   const {
     profile,
-    effectiveRole,
     systemRole: effectiveSystemRole,
     functionRole: effectiveFunctionRole,
     capabilities: effectiveCapabilities,
@@ -87,7 +86,6 @@ export default async function DashboardLayout({
       user={user}
       profile={{
         full_name: profile.full_name,
-        role: effectiveRole,
         systemRole: effectiveSystemRole,
         functionRole: effectiveFunctionRole,
         capabilities: effectiveCapabilities,
