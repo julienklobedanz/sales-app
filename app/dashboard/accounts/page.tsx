@@ -21,7 +21,7 @@ import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { syncHubSpotWonDealsForOrganization } from '@/lib/crm/sync-hubspot-won-deals'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 type CompanyRow = {
   id: string

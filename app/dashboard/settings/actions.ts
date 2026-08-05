@@ -12,7 +12,8 @@ import {
   salesContactValidationMessage,
 } from '@/lib/profile/sales-contact'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { isSalesAppView } from '@/lib/roles/reference-access'
 
 function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null {

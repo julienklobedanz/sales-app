@@ -61,7 +61,7 @@ import {
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import {
   profileCanManageOrgData,
   profileIsSalesRestricted,

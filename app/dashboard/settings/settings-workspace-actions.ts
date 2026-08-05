@@ -8,7 +8,7 @@ import { asTableUpdate } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { normalizeUiLocale, UI_LOCALE_COOKIE, type UiLocale } from '@/lib/i18n/ui-locale'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import {
   normalizeSubdomainInput,

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 /** Prüft, ob der String wie eine Domain aussieht (z. B. "biontechse.com"). */
 function looksLikeDomain(s: string): boolean {

@@ -13,7 +13,7 @@ import { ComplianceUploadDialog } from '@/app/dashboard/overview/compliance-uplo
 import { NewReferenceDialog } from '@/app/dashboard/overview/new-reference-dialog'
 import { ShareLinkDialog } from '@/app/dashboard/overview/share-link-dialog'
 import { TrashDialog } from '@/app/dashboard/overview/trash-dialog'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 type CompanyOption = {
   id: string

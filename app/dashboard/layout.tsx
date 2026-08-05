@@ -53,7 +53,8 @@ export default async function DashboardLayout({
 
   const initialNotifications = await getInboxNotificationsForLayout(
     user.id,
-    effectiveRole,
+    effectiveSystemRole,
+    effectiveFunctionRole,
   )
 
   const orgId = profile.organization_id ?? null

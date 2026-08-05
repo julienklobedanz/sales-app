@@ -8,7 +8,7 @@ import {
   canUseDevRolePreview,
   parseDevRolePreviewCookie,
 } from '@/lib/dev-role-preview'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'

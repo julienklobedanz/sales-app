@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { hasCapability } from '@/lib/roles/legacy-mapping'
+import { hasCapability } from '@/lib/roles/capability-access'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import type { AppRole } from '@/lib/roles/types'
 

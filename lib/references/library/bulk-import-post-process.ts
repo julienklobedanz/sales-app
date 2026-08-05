@@ -7,7 +7,7 @@ import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
 import type { BulkImportExtractionResult } from '@/lib/references/bulk-import-review-types'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 /**
  * Fallback: Extraktion aus Storage (wenn keine Datei mehr im Browser verfügbar).

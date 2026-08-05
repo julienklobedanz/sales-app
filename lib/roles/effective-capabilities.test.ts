@@ -4,6 +4,8 @@ import type { Capability } from '@/lib/roles/capabilities'
 import {
   effectiveCapabilities,
   hasCapability,
+} from '@/lib/roles/capability-access'
+import {
   legacyAppRoleFrom,
   legacyRoleToDimensions,
 } from '@/lib/roles/legacy-mapping'

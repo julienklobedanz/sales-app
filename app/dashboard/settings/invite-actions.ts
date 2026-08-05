@@ -7,7 +7,7 @@ import { resolveAuthEmailsByUserIds } from '@/lib/auth/resolve-user-emails'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { sendTeamInviteEmail } from '@/lib/email/team-invite-email'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import {
   DEFAULT_INVITE_ROLES,
   legacyRoleForRpc,

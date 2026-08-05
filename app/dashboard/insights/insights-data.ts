@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { hasCapability } from '@/lib/roles/legacy-mapping'
+import { hasCapability } from '@/lib/roles/capability-access'
 
 export type InsightsScope = 'all' | 'own'
 

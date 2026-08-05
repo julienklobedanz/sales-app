@@ -1,9 +1,5 @@
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import {
-  hasCapability,
-  isSystemAdmin,
-  legacyAppRoleFrom,
-} from '@/lib/roles/legacy-mapping'
+import { hasCapability, isSystemAdmin } from '@/lib/roles/capability-access'
 import {
   getReferenceVisibilityScope,
   type ReferenceVisibilityScope,
@@ -66,7 +62,7 @@ export function isSalesAppView(
   systemRole: SystemRole,
   functionRole: FunctionRole,
 ): boolean {
-  return legacyAppRoleFrom(systemRole, functionRole) === 'sales'
+  return !isSystemAdmin(systemRole) && functionRole !== 'account_manager'
 }
 
 export function canApproveInternalReference(

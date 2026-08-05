@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import type { ReferenceRow } from '../actions'
 import type { Profile } from '../dashboard-types'
 import {

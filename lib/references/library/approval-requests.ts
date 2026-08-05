@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
