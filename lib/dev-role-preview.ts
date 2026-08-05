@@ -1,10 +1,6 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import {
-  legacyAppRoleFrom,
-  legacyRoleToDimensions,
-} from '@/lib/roles/legacy-mapping'
-import type { AppRole } from '@/lib/roles/types'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { COPY } from '@/lib/copy'
 
 /** Cookie für die in der Oberfläche gewählte Rolle (wirkt zusammen mit Profil im Layout). */
@@ -84,13 +80,6 @@ export function parseDevRolePreviewCookie(
   }
 
   return null
-}
-
-/** @deprecated Nutze parseDevRolePreviewCookie — liefert abgeleitete Legacy-Rolle für Notifications. */
-export function parseAppRoleCookie(value: string | undefined): AppRole | null {
-  const preview = parseDevRolePreviewCookie(value)
-  if (!preview) return null
-  return legacyAppRoleFrom(preview.systemRole, preview.functionRole)
 }
 
 export function formatDevRolePreviewCookie(preview: DevRolePreview): string {

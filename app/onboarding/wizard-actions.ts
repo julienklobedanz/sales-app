@@ -18,12 +18,9 @@ import {
   salesContactValidationMessage,
 } from '@/lib/profile/sales-contact'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import {
-  legacyAppRoleFrom,
-  legacyRoleToDimensions,
-  LEGACY_INVITE_APP_ROLES,
-} from '@/lib/roles/legacy-mapping'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 export type FinalizeWorkspaceResult =
   | { success: true }
@@ -33,7 +30,9 @@ export async function finalizeWorkspaceAndProfile(params: {
   inviteToken: string | null
   organizationName: string
   logoDataUrl: string | null
-  role: 'sales' | 'account_manager' | 'admin' | null
+  role?: 'sales' | 'account_manager' | 'admin' | null
+  systemRole?: SystemRole
+  functionRole?: FunctionRole
   fullName: string
   phone: string
 }): Promise<FinalizeWorkspaceResult> {
@@ -116,9 +115,11 @@ export async function finalizeWorkspaceAndProfile(params: {
   }
 
   const chosenDims =
-    params.role && LEGACY_INVITE_APP_ROLES.includes(params.role)
-      ? legacyRoleToDimensions(params.role)
-      : null
+    params.systemRole && params.functionRole
+      ? { systemRole: params.systemRole, functionRole: params.functionRole }
+      : params.role
+        ? legacyRoleToDimensions(params.role)
+        : null
 
   let finalSystemRole: SystemRole
   let finalFunctionRole: FunctionRole
@@ -133,8 +134,6 @@ export async function finalizeWorkspaceAndProfile(params: {
     finalFunctionRole = chosenDims!.functionRole
   }
 
-  const finalLegacyRole = legacyAppRoleFrom(finalSystemRole, finalFunctionRole)
-
   const nameTrim = params.fullName.trim()
   if (!nameTrim) {
     return { success: false, error: 'Bitte deinen vollständigen Namen eingeben.' }
@@ -142,7 +141,7 @@ export async function finalizeWorkspaceAndProfile(params: {
 
   const phoneTrim = params.phone.trim()
   const salesMsg = salesContactValidationMessage()
-  if (finalLegacyRole === 'sales') {
+  if (profileIsSalesRestricted(finalSystemRole, finalFunctionRole)) {
     if (!user.email?.trim()) {
       return { success: false, error: salesMsg.email }
     }

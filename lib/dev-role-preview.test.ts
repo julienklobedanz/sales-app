@@ -6,7 +6,6 @@ import {
   formatDevRolePreviewCookie,
   formatDevRolePreviewLabel,
   isDevRolePreviewEnabled,
-  parseAppRoleCookie,
   parseDevRolePreviewCookie,
 } from './dev-role-preview'
 
@@ -50,19 +49,6 @@ describe('formatDevRolePreviewCookie', () => {
       const cookie = formatDevRolePreviewCookie(preset)
       expect(parseDevRolePreviewCookie(cookie)).toEqual(preset)
     }
-  })
-})
-
-describe('parseAppRoleCookie (deprecated)', () => {
-  it('accepts known roles', () => {
-    expect(parseAppRoleCookie('admin')).toBe('admin')
-    expect(parseAppRoleCookie('sales')).toBe('sales')
-    expect(parseAppRoleCookie('account_manager')).toBe('account_manager')
-  })
-
-  it('rejects unknown values', () => {
-    expect(parseAppRoleCookie('')).toBeNull()
-    expect(parseAppRoleCookie('superadmin')).toBeNull()
   })
 })
 
