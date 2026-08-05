@@ -31,7 +31,6 @@ import type { DashboardNotificationItem } from '@/app/dashboard/actions'
 import type { Profile } from '@/app/dashboard/dashboard-types'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
@@ -319,7 +318,6 @@ export function CognismAppSidebar({
               userName={userName}
               userEmail={userEmail}
               userInitials={userInitials}
-              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
               devRolePreviewEnabled={devRolePreviewEnabled}
               devRolePreviewActive={devRolePreviewActive}
               compact
@@ -376,7 +374,6 @@ export function CognismAppSidebar({
               userName={userName}
               userEmail={userEmail}
               userInitials={userInitials}
-              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
               devRolePreviewEnabled={devRolePreviewEnabled}
               devRolePreviewActive={devRolePreviewActive}
             />

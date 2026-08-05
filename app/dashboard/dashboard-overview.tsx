@@ -8,7 +8,6 @@ import type { ReferenceRow, ReferenceAssetRow } from './actions'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import {
   createSharedPortfolio,
   deleteReference,
@@ -705,7 +704,7 @@ export function DashboardOverview({
         ) : (
           <InboxReferencesConceptClient
             references={filteredReferences}
-            profileRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
+            isAdmin={isSystemAdmin(profile.systemRole)}
             externalContacts={externalContacts}
             variant="embedded"
           />

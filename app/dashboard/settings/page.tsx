@@ -10,7 +10,7 @@ import {
 } from '@/lib/dev-role-preview'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import {
   DEFAULT_DIGEST_LOCAL_TIME,
@@ -304,7 +304,7 @@ export default async function SettingsPage() {
               (profileRow as { booking_url?: string | null })?.booking_url ?? null,
             phone: (profileRow as { phone?: string | null })?.phone ?? null,
             jobTitle: (profileRow as { job_title?: string | null })?.job_title ?? null,
-            profileRole: legacyAppRoleFrom(
+            salesRequired: profileIsSalesRestricted(
               serverRoles.systemRole,
               serverRoles.functionRole,
             ),

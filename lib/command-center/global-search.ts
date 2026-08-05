@@ -12,7 +12,7 @@ import {
 } from '@/lib/compliance/format'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { formatRoleDimensionsLabel } from '@/lib/roles/invite-roles'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { log } from '@/lib/observability/logger'
 
@@ -143,14 +143,6 @@ function ndaStatusLine(status: string, validUntil: string | null): string {
   const days = ndaDaysUntilExpiry(validUntil)
   if (days < 0) return `Abgelaufen (seit ${formatNdaExpiryDateDe(validUntil)})`
   return `Aktiv (bis ${formatNdaExpiryDateDe(validUntil)})`
-}
-
-function internalRoleLabel(role: string | null | undefined): string {
-  const r = String(role ?? '').toLowerCase()
-  if (r === 'admin') return 'Admin'
-  if (r === 'account_manager') return 'Account Team'
-  if (r === 'sales') return 'Sales'
-  return 'Kollege'
 }
 
 export function formatReferenceListLabel(
@@ -422,7 +414,7 @@ export async function searchCommandCenter(
       kind: 'contact_internal',
       id: String(row.id),
       name,
-      roleLabel: internalRoleLabel(legacyAppRoleFrom(systemRole, functionRole)),
+      roleLabel: formatRoleDimensionsLabel(systemRole, functionRole),
     })
   }
 

@@ -21,7 +21,7 @@ export function SettingsProfileCard({
   bookingUrl,
   phone,
   jobTitle,
-  profileRole,
+  salesRequired,
   hideSubmitButton = false,
   saveSignal = 0,
   onDirtyChange,
@@ -33,12 +33,11 @@ export function SettingsProfileCard({
   bookingUrl?: string | null
   phone?: string | null
   jobTitle?: string | null
-  profileRole: 'admin' | 'sales' | 'account_manager'
+  salesRequired: boolean
   hideSubmitButton?: boolean
   saveSignal?: number
   onDirtyChange?: (dirty: boolean) => void
 }) {
-  const salesRequired = profileRole === 'sales'
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null)

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { ROUTES } from '@/lib/routes'
 import { buildRefstackEmailHtml } from '@/lib/email/refstack-email-layout'
 import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 export type MarketSignalsDigestRole = 'admin' | 'sales' | 'account_manager'
@@ -52,7 +52,9 @@ export function marketSignalsDigestRoleFromProfile(
   profile: Parameters<typeof parseProfileRoles>[0],
 ): MarketSignalsDigestRole {
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  return parseMarketSignalsDigestRole(legacyAppRoleFrom(systemRole, functionRole))
+  if (functionRole === 'account_manager') return ACCOUNT_MANAGER_DIGEST_ROLE
+  if (isSystemAdmin(systemRole)) return ADMIN_DIGEST_ROLE
+  return SALES_DIGEST_ROLE
 }
 
 /** Favoriten (+ bei Admin/AM Accounts mit aktivem Deal) – gleiche Logik wie Digest/Inbox-Priorität. */
