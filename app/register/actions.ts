@@ -138,7 +138,6 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
 
       const parsed = inviteData as {
         organization_id?: string
-        role?: string
         system_role?: string
         function_role?: string
       } | null

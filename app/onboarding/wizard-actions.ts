@@ -56,7 +56,6 @@ export async function finalizeWorkspaceAndProfile(params: {
     })
     const parsed = data as {
       organization_id?: string
-      role?: string | null
       system_role?: string | null
       function_role?: string | null
     } | null

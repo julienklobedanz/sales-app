@@ -27,8 +27,3 @@ export function legacyRoleToDimensions(legacyRole: string | null | undefined): {
   return { systemRole: 'member', functionRole: 'sales_rep' }
 }
 
-export const LEGACY_INVITE_APP_ROLES: readonly AppRole[] = [
-  'admin',
-  'sales',
-  'account_manager',
-]
