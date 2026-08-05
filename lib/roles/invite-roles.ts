@@ -42,6 +42,7 @@ function asFunctionRole(value: unknown): FunctionRole | null {
 export function parseInviteRoleDimensions(row: {
   system_role?: string | null
   function_role?: string | null
+  /** @deprecated Nur für Alt-Daten / Onboarding-UI-Labels. */
   role?: string | null
 }): InviteRoleDimensions {
   const systemRole = asSystemRole(row.system_role)
@@ -49,7 +50,10 @@ export function parseInviteRoleDimensions(row: {
   if (systemRole && functionRole) {
     return { systemRole, functionRole }
   }
-  return legacyRoleToDimensions(row.role)
+  if (row.role) {
+    return legacyRoleToDimensions(row.role)
+  }
+  return DEFAULT_INVITE_ROLES
 }
 
 export function formatRoleDimensionsLabel(

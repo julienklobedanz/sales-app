@@ -267,7 +267,6 @@ export async function resendInviteEmail(params: {
       ? (parsed as {
           email?: string | null
           token?: string | null
-          role?: string | null
           system_role?: string | null
           function_role?: string | null
         })
@@ -278,7 +277,6 @@ export async function resendInviteEmail(params: {
   const inviteRoles = parseInviteRoleDimensions({
     system_role: invite?.system_role,
     function_role: invite?.function_role,
-    role: invite?.role,
   })
   if (!email || !token) {
     return { success: false, error: 'Einladung nicht gefunden oder abgelaufen.' }
@@ -387,7 +385,6 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
     const i = row as {
       id?: string
       email?: string | null
-      role?: string | null
       system_role?: string | null
       function_role?: string | null
     }
