@@ -18,14 +18,8 @@ import {
   hashCustomerManageToken,
   linkExpiryDaysFromWorkflow,
   parsePortfolioRpcJson,
+  type CreateSharedPortfolioRecipient,
 } from '@/lib/references/library/sharing-helpers'
-
-export type CreateSharedPortfolioRecipient = {
-  label: string
-  visitorEmail?: string | null
-  externalContactId?: string | null
-  companyId?: string | null
-}
 
 function generatePortfolioRecipientToken(): string {
   return randomBytes(18)
