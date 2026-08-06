@@ -54,10 +54,13 @@
 
 ## T3 (Block B) — `references`/`evidence`-Namen konsolidieren
 
-**Soll:** Die Modul-Ordner-Bezeichnung `references` (Server-Actions/Helfer, **keine** Route) an die UI-Route `evidence` angleichen — ein Name für das Domänenobjekt. Variante: Module nach `app/dashboard/evidence/_actions/` (oder `lib/evidence/`) verschieben und die **42 Importe** aktualisieren.
-**Charakter:** mechanischer Rename/Move — ein gebündelter PR, am besten per IDE-Refactor; danach Voll-Build.
-**Akzeptanz:** Keine `@/app/dashboard/references/`-Importe mehr; Funktion unverändert; Tests grün.
-**Hinweis:** Öffentliche Routen/Slug-Pfade (`/p/[slug]`) und Storage-Bucket-Namen **nicht** umbenennen — nur interne Modulpfade.
+**Status (2026-08-06): erledigt unter Produktentscheid `references`** — nicht wie unten historisch skizziert Richtung `evidence`.  
+Aktuell: Routen/Ordner/`ROUTES`/`lib` = `references`; Redirects von `/dashboard/evidence`; siehe [`arbeitspaket-rename-smart-match-references.md`](./arbeitspaket-rename-smart-match-references.md) und Queue #8.
+
+**Historischer Soll (obsolet):** Die Modul-Ordner-Bezeichnung `references` an die UI-Route `evidence` angleichen. Gegenläufige Produktentscheidung: App an DB-Namen **`references`**.
+
+**Akzeptanz (aktuell):** Domäne heißt `references`; Legacy-URLs redirecten; `evidence_events` unberührt.  
+**Hinweis:** Öffentliche Routen/Slug-Pfade (`/p/[slug]`) und Storage-Bucket-Namen **nicht** umbenennen; Feld `evidence` in RFP/Deal-Desk (= Beleg) bleibt.
 
 ---
 

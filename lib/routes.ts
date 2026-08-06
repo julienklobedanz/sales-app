@@ -97,7 +97,7 @@ export const LEGACY_REDIRECTS = [
     destination: '/dashboard/references/:id/edit',
     permanent: true,
   },
-  // Alte Concept-URL (W3); Lesezeichen weiter auf Evidence leiten
+  // Alte Concept-URL (W3); Lesezeichen weiter auf Referenzen leiten
   {
     source: '/dashboard/concepts/inbox-references',
     destination: ROUTES.references.root,

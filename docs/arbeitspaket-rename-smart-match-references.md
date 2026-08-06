@@ -10,12 +10,17 @@
 - `docs/ai-coding-agent-guide.md`
 - `lib/copy.ts` (zentrale UI-Labels), `lib/routes.ts` (zentrale Routen), `middleware.ts`
 
-## Ist-Stand (verifiziert)
+## Status (2026-08-06)
 
-- **Display-Labels** liegen zentral in `lib/copy.ts`:
+**T1 + T2 weitgehend erledigt** (Routen/Ordner/`ROUTES.references`/`lib/references`, Redirects, COPY-Keys).  
+Rest: `evidence_events` bleibt; RFP-Feld `evidence` (= Beleg) ist bewusst anderer Begriff. Siehe Queue **#8** in `tech-debt-offen-backlog.md`.
+
+## Ist-Stand (historisch, vor Rename)
+
+- **Display-Labels** lagen zentral in `lib/copy.ts`:
   - `nav.match = 'Finden'`, `pages.match = 'Finden'` → Ziel **„Smart Match"**.
   - `nav.evidence = 'Referenzen'`, `pages.evidence = 'Referenzen'` → **bereits korrekt** (kein Display-Change nötig).
-- **Routen/Code** liegen zentral in `lib/routes.ts`:
+- **Routen/Code** lagen zentral in `lib/routes.ts`:
   - `ROUTES.match = '/dashboard/match'`, `ROUTES.matchWithDeal(dealId)`.
   - `ROUTES.evidence.{root,new,newBulk,detail,edit} = '/dashboard/evidence/…'`.
 - **Ordner:** `app/dashboard/match/*`, `app/dashboard/evidence/*` (inkl. `new/`, `[id]/`, `[id]/edit/`).

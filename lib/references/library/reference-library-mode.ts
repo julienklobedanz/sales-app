@@ -1,6 +1,8 @@
 export type ReferenceLibraryMode = 'references' | 'certificates'
 
-export const REFERENCE_LIBRARY_MODE_STORAGE_KEY = 'evidence-library-mode-v1'
+export const REFERENCE_LIBRARY_MODE_STORAGE_KEY = 'reference-library-mode-v1'
+/** Prefixed legacy key from pre-rename localStorage (Queue #8). */
+const LEGACY_LIBRARY_MODE_STORAGE_KEY = 'evidence-library-mode-v1'
 
 /** Kurzlabels für Top-Bar, Segment-Switch und CTAs. */
 export const REFERENCE_PROOF_SEGMENT_LABELS: Record<ReferenceLibraryMode, string> = {
@@ -21,7 +23,9 @@ export function referenceLibraryTitle(mode: ReferenceLibraryMode): string {
 export function loadReferenceLibraryModeFromStorage(): ReferenceLibraryMode {
   if (typeof window === 'undefined') return 'references'
   try {
-    const raw = localStorage.getItem(REFERENCE_LIBRARY_MODE_STORAGE_KEY)
+    const raw =
+      localStorage.getItem(REFERENCE_LIBRARY_MODE_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_LIBRARY_MODE_STORAGE_KEY)
     return raw === 'certificates' ? 'certificates' : 'references'
   } catch {
     return 'references'
