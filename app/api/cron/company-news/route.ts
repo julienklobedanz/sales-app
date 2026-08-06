@@ -79,9 +79,7 @@ export async function GET(request: Request) {
   const orgIds = Array.from(
     new Set(
       (favoriteOrgs ?? [])
-        .map((row) =>
-          String((row as { organization_id?: string | null }).organization_id ?? ''),
-        )
+        .map((row) => row.organization_id ?? '')
         .filter(Boolean),
     ),
   )

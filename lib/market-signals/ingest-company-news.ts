@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import {
   isMissingEnrichmentColumnsError,
   stripEnrichmentFields,
@@ -170,7 +171,7 @@ async function fetchMergedCompanyArticles(
  * zuletzt breites Google News. Leadership-Titel → executive_events.
  */
 export async function runCompanyNewsIngest(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   options?: {
     organizationId?: string
     ingestMode?: 'all_accounts' | 'focus_only'
@@ -205,8 +206,8 @@ export async function runCompanyNewsIngest(
     errors.push(`deals: ${dealErr.message}`)
   } else {
     for (const row of dealRows ?? []) {
-      if (isActiveDealStatus((row as { status?: unknown }).status)) {
-        const id = String((row as { company_id?: string | null }).company_id ?? '')
+      if (isActiveDealStatus(row.status)) {
+        const id = row.company_id ?? ''
         if (id) dealCompanyIds.add(id)
       }
     }
@@ -235,27 +236,23 @@ export async function runCompanyNewsIngest(
 
   const candidates =
     ingestMode === 'all_accounts'
-      ? ((allCompanies ?? []) as CompanyNewsIngestCompanyRow[] &
-          { is_favorite?: boolean }[])
-      : ((allCompanies ?? []).filter((row) =>
-          Boolean((row as { is_favorite?: boolean | null }).is_favorite),
-        ) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
+      ? (allCompanies ?? [])
+      : (allCompanies ?? []).filter((row) => Boolean(row.is_favorite))
 
   const seen = new Set<string>()
   const uniqueList: CompanyNewsIngestCompanyRow[] = []
   for (const row of candidates) {
-    const id = String(row.id)
-    if (!id || seen.has(id)) continue
+    const id = row.id
+    if (!id || seen.has(id) || !row.organization_id) continue
     seen.add(id)
     uniqueList.push({
       id,
-      organization_id: String(row.organization_id),
+      organization_id: row.organization_id,
       name: String(row.name ?? ''),
-      website_url: (row.website_url as string | null) ?? null,
-      account_status: (row.account_status as string | null) ?? null,
-      industry: (row as { industry?: string | null }).industry ?? null,
-      newsroom_urls: ((row as { newsroom_urls?: string[] | null }).newsroom_urls ??
-        null) as string[] | null,
+      website_url: row.website_url ?? null,
+      account_status: row.account_status ?? null,
+      industry: row.industry ?? null,
+      newsroom_urls: row.newsroom_urls ?? null,
     })
     if (uniqueList.length >= maxCompanies) break
   }
@@ -358,7 +355,7 @@ export async function runCompanyNewsIngest(
               ).error
             }
             if (insErr) {
-              const code = (insErr as { code?: string }).code
+              const code = insErr.code
               if (
                 code !== '23505' &&
                 !/duplicate key|unique constraint/i.test(insErr.message)
@@ -399,7 +396,7 @@ export async function runCompanyNewsIngest(
             ).error
           }
           if (insErr) {
-            const code = (insErr as { code?: string }).code
+            const code = insErr.code
             if (
               code !== '23505' &&
               !/duplicate key|unique constraint/i.test(insErr.message)

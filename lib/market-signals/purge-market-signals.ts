@@ -1,8 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { isLowValueRssTitle } from '@/lib/market-signals/sales-signal-relevance'
 
+type DbClient = SupabaseClient<Database>
+
 export async function getFocusCompanyIdsForOrg(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   organizationId: string,
   maxCompanies = 40,
 ): Promise<string[]> {
@@ -13,11 +16,11 @@ export async function getFocusCompanyIdsForOrg(
     .eq('is_favorite', true)
     .limit(maxCompanies)
   if (error) throw new Error(error.message)
-  return (data ?? []).map((r) => String(r.id)).filter(Boolean)
+  return (data ?? []).map((r) => r.id).filter(Boolean)
 }
 
 export async function getOrgCompanyIds(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   organizationId: string,
 ): Promise<string[]> {
   const { data, error } = await supabase
@@ -26,7 +29,7 @@ export async function getOrgCompanyIds(
     .eq('organization_id', organizationId)
     .limit(8000)
   if (error) throw new Error(error.message)
-  return (data ?? []).map((r) => String(r.id)).filter(Boolean)
+  return (data ?? []).map((r) => r.id).filter(Boolean)
 }
 
 export type PurgeLowValueResult = {
@@ -36,7 +39,7 @@ export type PurgeLowValueResult = {
 
 /** Entfernt Stellenanzeigen und anderes RSS-Rauschen anhand der Titel-Heuristik. */
 export async function purgeLowValueMarketSignals(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   companyIds: string[],
 ): Promise<PurgeLowValueResult> {
   if (!companyIds.length) return { accountNewsDeleted: 0, executiveDeleted: 0 }
@@ -54,8 +57,8 @@ export async function purgeLowValueMarketSignals(
     if (newsFetchErr) throw new Error(newsFetchErr.message)
 
     const lowValueNewsIds = (newsRows ?? [])
-      .filter((r) => isLowValueRssTitle(String((r as { body?: string }).body ?? '')))
-      .map((r) => String((r as { id?: string }).id ?? ''))
+      .filter((r) => isLowValueRssTitle(String(r.body ?? '')))
+      .map((r) => r.id)
       .filter(Boolean)
 
     if (lowValueNewsIds.length) {
@@ -75,12 +78,8 @@ export async function purgeLowValueMarketSignals(
     if (execFetchErr) throw new Error(execFetchErr.message)
 
     const lowValueExecIds = (execRows ?? [])
-      .filter((r) =>
-        isLowValueRssTitle(
-          String((r as { change_summary?: string }).change_summary ?? ''),
-        ),
-      )
-      .map((r) => String((r as { id?: string }).id ?? ''))
+      .filter((r) => isLowValueRssTitle(String(r.change_summary ?? '')))
+      .map((r) => r.id)
       .filter(Boolean)
 
     if (lowValueExecIds.length) {
@@ -106,7 +105,7 @@ export type PurgeRssIngestResult = {
  * Manuelle Einträge (ohne content_hash / ingest_source != RSS) bleiben erhalten.
  */
 export async function purgeRssIngestedSignalsForCompanies(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   companyIds: string[],
 ): Promise<PurgeRssIngestResult> {
   if (!companyIds.length) return { accountNewsDeleted: 0, executiveDeleted: 0 }
@@ -142,7 +141,7 @@ export type RefreshMarketSignalsPurgeResult = PurgeLowValueResult & PurgeRssInge
 
 /** Vor manuellem Feed-Refresh: Rauschen entfernen und RSS-Zeilen für Favoriten zurücksetzen. */
 export async function prepareMarketSignalsFeedRefresh(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   organizationId: string,
 ): Promise<RefreshMarketSignalsPurgeResult> {
   const [orgCompanyIds, focusCompanyIds] = await Promise.all([

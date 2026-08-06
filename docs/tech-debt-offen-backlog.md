@@ -10,8 +10,8 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase Kern-Domänen + Shared Portfolio + **Market Signals Slice 1** (Instant Alerts/Digest/Champion/Newsroom/MS-Actions) |
-| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — Rest (MS Ingest/Data-Detail, Command Center, Cron) + **T4** |
+| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase Kern-Domänen + Shared Portfolio + Market Signals **Slices 1–2** |
+| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — Rest (Command Center / Register) + **T4** |
 | **Offen (Queue)** | #3 Rest · #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #8 `references`/`evidence` Rename · #9 Invite-SQL-Kosmetik (optional) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames; produktweite `evidence`↔`references`-Entscheidung |
 
@@ -26,7 +26,7 @@
 | **0** | Inventar-Hygiene | ✅ | — | — | — |
 | **1** | E4 Service-Role | ✅ Audit + Hotspots | Boy-Scout: Kommentar an neuen Service-Role-Callern | XS ongoing | bei Touch |
 | **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
-| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | MS Ingest/Executive Rest · Command Center · ggf. T4 | M | Market Signals Slice 2 (ingest) **oder** T4 CI-Gate |
+| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | Command Center / Onboarding-RPC Rest; dann **T4** CI-Gate | S–M | **T4** CI-`typecheck`-Gate prüfen |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
@@ -51,15 +51,14 @@
 | Shared Portfolio | ✅ Slice 1 | `app/p/actions` RPC-Json-Guards |
 | Deal-Desk | ✅ Quick | workspace-persistence typed; page redirect |
 | Notifications | ✅ Quick | Inbox org/champion rows |
-| Market Signals | ✅ Slice 1 | Instant Alerts, Digest, Champion, Newsroom, Action orgIds; data joins |
-| Andere | offen | MS Ingest/Executive Rest, Command Center, Register/Onboarding RPC |
+| Market Signals | ✅ Slices 1–2 | Instant/Digest/Champion + Ingest/Purge/Backfill/Data deals |
+| Andere | offen | Command Center, Register/Onboarding RPC (vereinzelt) |
 | **T4 CI** | offen | `typecheck` in CI **scharf**, wenn Domänen-Casts weitgehend weg / typecheck stabil 0 |
 
 **Empfohlene nächsten PRs (klein halten):**
 
-1. Market Signals Slice 2 — Ingest/Executive-Intel Rest-Casts **oder**  
-2. Typed-Supabase **T4** — CI-`typecheck`-Gate  
-3. Optional: Command Center Boy-Scout
+1. Typed-Supabase **T4** — CI-`typecheck`-Gate  
+2. Optional: Command Center / Register Boy-Scout
 
 ---
 
@@ -102,7 +101,7 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 | P1-6 | ✅ App/Lib; DB `companies` bleibt |
 | E4 / E7 | ✅ |
 | E6 Logger | ✅ App/Lib; Sink/Scripts bewusst |
-| Typed-Supabase T3 | 🟡 aktiv (Kern + MS Slice 1 ✅; Ingest/CC Rest) |
+| Typed-Supabase T3 | 🟡 aktiv (Kern + MS ✅; CC/Onboarding Rest) → T4 als Nächstes |
 | Typed-Supabase T4 | offen (nach T3-Ruhe) |
 | Welle 5 T3 Paths | → Queue #8 |
 | Welle 5 T4 `workspace_state` | vor Start erneut `grep`en |

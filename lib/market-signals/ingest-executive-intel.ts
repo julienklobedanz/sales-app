@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import {
   isMissingEnrichmentColumnsError,
   stripEnrichmentFields,
@@ -124,7 +125,7 @@ export type RunExecutiveIntelIngestResult = {
  * Zuordnung zu company_id über Stakeholder-Name oder frühere Executive-Events.
  */
 export async function runExecutiveIntelIngest(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   options?: {
     organizationId?: string
     maxPeople?: number
@@ -154,9 +155,7 @@ export async function runExecutiveIntelIngest(
   }
 
   const userIds = [
-    ...new Set(
-      (watchRaw ?? []).map((w) => String((w as { user_id?: string }).user_id ?? '')),
-    ),
+    ...new Set((watchRaw ?? []).map((w) => w.user_id).filter(Boolean)),
   ]
   const { data: profs, error: profErr } = await supabase
     .from('profiles')
@@ -174,9 +173,7 @@ export async function runExecutiveIntelIngest(
 
   const orgByUser = new Map<string, string>()
   for (const p of profs ?? []) {
-    const id = String((p as { id?: string }).id ?? '')
-    const oid = String((p as { organization_id?: string | null }).organization_id ?? '')
-    if (id && oid) orgByUser.set(id, oid)
+    if (p.id && p.organization_id) orgByUser.set(p.id, p.organization_id)
   }
 
   type Watched = {
@@ -188,13 +185,10 @@ export async function runExecutiveIntelIngest(
   const watchedByOrg = new Map<string, Map<string, Watched>>()
 
   for (const row of watchRaw ?? []) {
-    const uid = String((row as { user_id?: string }).user_id ?? '')
-    const personKey = normalizeChampionKey(
-      (row as { person_key?: string }).person_key ?? '',
-    )
-    const personName = String((row as { person_name?: string }).person_name ?? '').trim()
-    const watchlistCompanyName =
-      String((row as { company_name?: string | null }).company_name ?? '').trim() || null
+    const uid = row.user_id
+    const personKey = normalizeChampionKey(row.person_key ?? '')
+    const personName = String(row.person_name ?? '').trim()
+    const watchlistCompanyName = String(row.company_name ?? '').trim() || null
     if (!personKey || !personName) continue
     const orgId = orgByUser.get(uid)
     if (!orgId) continue
@@ -223,8 +217,8 @@ export async function runExecutiveIntelIngest(
         .select('id, name')
         .eq('organization_id', orgId)
       const orgCompanyList = (orgCompanies ?? []).map((c) => ({
-        id: String((c as { id?: string }).id ?? ''),
-        name: String((c as { name?: string | null }).name ?? '').trim(),
+        id: c.id,
+        name: String(c.name ?? '').trim(),
       }))
       const allowedCompanyIds = new Set(orgCompanyList.map((c) => c.id).filter(Boolean))
       const companyIdByNormalizedName = new Map<string, string>()
@@ -258,8 +252,8 @@ export async function runExecutiveIntelIngest(
           .in('company_id', Array.from(allowedCompanyIds))
           .limit(3000)
         for (const s of stakeholders ?? []) {
-          const name = String((s as { name?: string | null }).name ?? '')
-          const cid = String((s as { company_id?: string }).company_id ?? '')
+          const name = String(s.name ?? '')
+          const cid = s.company_id ?? ''
           const k = normalizeChampionKey(name)
           if (!k || !cid || stakeholderCompanyByKey.has(k)) continue
           stakeholderCompanyByKey.set(k, cid)
@@ -275,10 +269,8 @@ export async function runExecutiveIntelIngest(
           .order('detected_at', { ascending: false })
           .limit(800)
         for (const e of evs ?? []) {
-          const k = normalizeChampionKey(
-            String((e as { person_name?: string }).person_name ?? ''),
-          )
-          const cid = String((e as { company_id?: string }).company_id ?? '')
+          const k = normalizeChampionKey(String(e.person_name ?? ''))
+          const cid = e.company_id
           if (!k || !cid || eventCompanyByKey.has(k)) continue
           eventCompanyByKey.set(k, cid)
         }
@@ -363,7 +355,7 @@ export async function runExecutiveIntelIngest(
               ).error
             }
             if (insErr) {
-              const code = (insErr as { code?: string }).code
+              const code = insErr.code
               if (
                 code !== '23505' &&
                 !/duplicate key|unique constraint/i.test(insErr.message)
