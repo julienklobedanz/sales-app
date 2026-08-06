@@ -82,9 +82,7 @@ export async function setCompanyInternalReferenceApprovalContactImpl(
     .eq('id', companyId)
     .single()
   if (cErr || !company) return { success: false, error: 'Account nicht gefunden.' }
-  if (
-    (company as { organization_id: string }).organization_id !== profile.organization_id
-  ) {
+  if (company.organization_id !== profile.organization_id) {
     return { success: false, error: 'Keine Berechtigung.' }
   }
 
@@ -95,7 +93,7 @@ export async function setCompanyInternalReferenceApprovalContactImpl(
       .eq('id', contactPersonId)
       .single()
     if (cpErr || !cp) return { success: false, error: 'Kontakt nicht gefunden.' }
-    if ((cp as { company_id: string }).company_id !== companyId) {
+    if (cp.company_id !== companyId) {
       return { success: false, error: 'Kontakt gehört nicht zu diesem Account.' }
     }
   }
@@ -146,9 +144,7 @@ export async function createContactPersonImpl(
     supabase.from('profiles').select('organization_id').eq('id', user.id).single(),
   ])
   const organization_id =
-    (company as { organization_id?: string | null } | null)?.organization_id ??
-    (profile as { organization_id?: string | null } | null)?.organization_id ??
-    null
+    company?.organization_id ?? profile?.organization_id ?? null
 
   const insertRow: Record<string, unknown> = {
     company_id: companyId,

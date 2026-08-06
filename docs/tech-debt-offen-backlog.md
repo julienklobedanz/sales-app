@@ -24,7 +24,7 @@
 | **0** | Inventar-Hygiene | P0/P2/Mapping-Zeilen auf Ist-Stand bringen (viele ✅ fehlen in den Tabellen); Header-Datum | XS | Verhindert Doppelarbeit und falsche Prioritäten | [`tech-debt-inventar.md`](./tech-debt-inventar.md) — **✅ 2026-08-06** |
 | **1** | E4 Service-Role-Audit | Alle `service-role`-Nutzungen rechtfertigen + fehlende Org/Token-Grenzen schließen | M | Cross-Tenant-Risiko; unabhängig von Naming; vor Pilot | [`arbeitspaket-service-role-audit-e4.md`](./arbeitspaket-service-role-audit-e4.md) — **Audit + Hotspot-Härtung ✅**; Rest Boy-Scout Kommentare |
 | **2** | E7 Schema-Sync / Drift-Gate | Remote vs. Repo-Migrationen; `looseSelect`-Löcher; CI-Migrations-Gate festziehen | M | Schützt das schon vorhandene `database.types.ts`-Fundament | [`arbeitspaket-schema-sync-e7.md`](./arbeitspaket-schema-sync-e7.md) — **✅ T1–T4** (2026-08-06 verifiziert) |
-| **3** | Typed-Supabase Cast-Abbau | `as { … }`-Row-Casts schrumpfen; Clients/`from()` stärker an `Database` koppeln | L (scheibenweise) | Verhindert die Fehlerklasse der role-Spalten-Drift; hoher Hebel nach E7 | [`arbeitspaket-typed-supabase.md`](./arbeitspaket-typed-supabase.md) |
+| **3** | Typed-Supabase Cast-Abbau | `as { … }`-Row-Casts schrumpfen; Clients/`from()` stärker an `Database` koppeln | L (scheibenweise) | Verhindert die Fehlerklasse der role-Spalten-Drift; hoher Hebel nach E7 | [`arbeitspaket-typed-supabase.md`](./arbeitspaket-typed-supabase.md) — **Slice 1** Accounts server reads/writes in Arbeit |
 | **4** | **P1-6** Accounts Naming | App/Lib: `company*` → `account*` wo Domäne „Account“; **DB `companies` bleibt** | L (3–5 PRs) | Letzter klarer Inventar-Welle-5-Block; rein mechanisch → nach Security/Typen, bevor noch größere Renames | Inventar P1-6 — **✅** Slices 1–5; DB/`company_id`/Firmennamen bewusst offen |
 | **5** | God-File-Nacharbeit | Overview (~719), Share-Link (~420), MS-Feed (~429) weiter slicen **nur bei Feature-Touch** | M (ongoing) | Kein eigener Big-Bang; Effizienz = bei Feature-PRs mitnehmen | Inventar God-Files / E5 |
 | **6** | Result `{ ok }` → `{ success }` | ~27 Dateien / ~136 Matches in Libs/Cron | S–M Boy-Scout | Kein Massen-PR; bei jeder Lib-Berührung | Inventar Result-Konvention; Guide §3.1 |
@@ -77,5 +77,5 @@ Nicht ein PR. Reihenfolge minimiert Konflikte und hält Reviews lesbar:
 | P0 Quick Wins, P1-1…5/7–10, P2 Quick Wins, P3-1/2/4/5 | **erledigt** — nicht erneut anfassen |
 | P1-6 | **✅** App/Lib (Slices 1–5); DB `companies` bleibt |
 | E6 Logger heiße Pfade | **erledigt**; Rest Boy-Scout |
-| E4 / E7 / Typed-Supabase Vertiefung | **offen** → Queue #1–3 |
+| E4 / E7 / Typed-Supabase Vertiefung | E4/E7 ✅; Typed-Supabase → Queue #3 (Slice 1 Accounts) |
 | Welle 5 T3/T4 | T1/T2 Rollen weitgehend erledigt; T3 → Queue #8; T4 `workspace_state` vor Start erneut `grep`en (kann schon weg sein) |

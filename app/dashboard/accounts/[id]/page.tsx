@@ -47,7 +47,7 @@ export default async function AccountDetailPage({
       .select('name')
       .eq('id', orgId)
       .maybeSingle()
-    organizationName = (orgRow as { name?: string } | null)?.name?.trim() || null
+    organizationName = orgRow?.name?.trim() || null
   }
 
   const { data: company } = await supabase
@@ -106,30 +106,29 @@ export default async function AccountDetailPage({
 
   const marketSignals = {
     championMoves: (executiveEventsResult.data ?? []).map((row) => {
-      const ek = String((row as { event_kind?: string }).event_kind ?? 'role_change')
+      const ek = row.event_kind ?? 'role_change'
       return {
-        id: String(row.id),
-        personName: String(row.person_name ?? ''),
-        personTitleBefore: (row.person_title_before as string | null) ?? null,
-        personTitleAfter: (row.person_title_after as string | null) ?? null,
-        changeSummary: String(row.change_summary ?? ''),
-        detectedAt: String(row.detected_at ?? ''),
+        id: row.id,
+        personName: row.person_name ?? '',
+        personTitleBefore: row.person_title_before ?? null,
+        personTitleAfter: row.person_title_after ?? null,
+        changeSummary: row.change_summary ?? '',
+        detectedAt: row.detected_at ?? '',
         eventKind:
           ek === 'news_mention' ? ('news_mention' as const) : ('role_change' as const),
-        sourceUrl:
-          ((row as { source_url?: string | null }).source_url as string | null) ?? null,
+        sourceUrl: row.source_url ?? null,
       }
     }),
     accountNews: (accountNewsResult.data ?? []).map((row) => {
-      const seg = String(row.segment ?? 'customer')
+      const seg = row.segment ?? 'customer'
       const segment: 'customer' | 'prospect' =
         seg === 'prospect' ? 'prospect' : 'customer'
       return {
-        id: String(row.id),
-        body: String(row.body ?? ''),
-        sourceLabel: (row.source_label as string | null) ?? null,
-        sourceUrl: (row.source_url as string | null) ?? null,
-        publishedOn: String(row.published_on ?? ''),
+        id: row.id,
+        body: row.body ?? '',
+        sourceLabel: row.source_label ?? null,
+        sourceUrl: row.source_url ?? null,
+        publishedOn: row.published_on ?? '',
         segment,
       }
     }),
@@ -141,10 +140,7 @@ export default async function AccountDetailPage({
         <AccountDetailClient
           company={{
             ...company,
-            entity_kind:
-              (company as { entity_kind?: string }).entity_kind === 'partner'
-                ? 'partner'
-                : 'account',
+            entity_kind: company.entity_kind === 'partner' ? 'partner' : 'account',
           }}
           organizationName={organizationName}
           strategy={strategy}

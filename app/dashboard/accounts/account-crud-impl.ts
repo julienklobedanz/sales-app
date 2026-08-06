@@ -29,7 +29,7 @@ export async function updateCompanyAccountStatusImpl(
     .update({
       account_status,
       account_status_source: account_status ? 'manual' : 'crm',
-    } as { account_status: string | null; account_status_source: string | null })
+    })
     .eq('id', companyId)
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.accounts)
@@ -411,7 +411,7 @@ export async function updateCompanyImpl(payload: {
   }
 
   const nextWebsite = payload.website_url?.trim() || null
-  const prevWebsite = (row as { website_url?: string | null }).website_url ?? null
+  const prevWebsite = row.website_url ?? null
 
   const { error } = await supabase
     .from('companies')
@@ -471,9 +471,7 @@ export async function deleteCompanyWithDataImpl(
     .eq('id', companyId)
     .single()
   if (companyErr || !company) return { success: false, error: 'Account nicht gefunden.' }
-  if (
-    (company as { organization_id: string }).organization_id !== profile.organization_id
-  ) {
+  if (company.organization_id !== profile.organization_id) {
     return { success: false, error: 'Keine Berechtigung.' }
   }
 
