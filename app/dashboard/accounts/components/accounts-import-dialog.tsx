@@ -17,10 +17,10 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import {
-  COMPANIES_IMPORT_ACCEPT,
-  downloadCompaniesImportTemplate,
-  isCompaniesImportFile,
-} from '@/lib/accounts/companies-import-shared'
+  ACCOUNTS_IMPORT_ACCEPT,
+  downloadAccountsImportTemplate,
+  isAccountsImportFile,
+} from '@/lib/accounts/accounts-import-shared'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -31,7 +31,7 @@ type Props = {
   onImport: (file: File) => boolean | Promise<boolean>
 }
 
-export function CompaniesImportDialog({
+export function AccountsImportDialog({
   open,
   onOpenChange,
   entityKind,
@@ -58,7 +58,7 @@ export function CompaniesImportDialog({
 
   function acceptFile(next: File | undefined) {
     if (!next) return
-    if (!isCompaniesImportFile(next)) {
+    if (!isAccountsImportFile(next)) {
       toast.error(COPY.accounts.importInvalidFile)
       return
     }
@@ -88,7 +88,7 @@ export function CompaniesImportDialog({
             className="w-full justify-center gap-2"
             disabled={importing}
             onClick={() => {
-              void downloadCompaniesImportTemplate(entityKind).catch(() => {
+              void downloadAccountsImportTemplate(entityKind).catch(() => {
                 toast.error('Vorlage konnte nicht geladen werden.')
               })
             }}
@@ -180,7 +180,7 @@ export function CompaniesImportDialog({
           <input
             ref={inputRef}
             type="file"
-            accept={COMPANIES_IMPORT_ACCEPT}
+            accept={ACCOUNTS_IMPORT_ACCEPT}
             className="sr-only"
             disabled={importing}
             onChange={(e) => {

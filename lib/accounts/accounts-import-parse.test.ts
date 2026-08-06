@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   normalizePartnerCategoryFromImport,
-  parseCompaniesImportRow,
+  parseAccountsImportRow,
   parseEmployeeCountFromImport,
   pickSheetRowValue,
-} from './companies-import-parse'
+} from './accounts-import-parse'
 
 describe('pickSheetRowValue', () => {
   it('finds the first non-empty alias', () => {
@@ -34,14 +34,14 @@ describe('normalizePartnerCategoryFromImport', () => {
   })
 })
 
-describe('parseCompaniesImportRow', () => {
+describe('parseAccountsImportRow', () => {
   it('skips rows without a name', () => {
-    expect(parseCompaniesImportRow({ Website: 'https://a.de' }, 'account')).toBeNull()
+    expect(parseAccountsImportRow({ Website: 'https://a.de' }, 'account')).toBeNull()
   })
 
   it('parses account rows without partner category', () => {
     expect(
-      parseCompaniesImportRow(
+      parseAccountsImportRow(
         {
           Name: 'Acme',
           Branche: 'IT',
@@ -61,7 +61,7 @@ describe('parseCompaniesImportRow', () => {
 
   it('parses partner rows with category', () => {
     expect(
-      parseCompaniesImportRow({ Name: 'Partner AG', Kategorie: 'legal' }, 'partner'),
+      parseAccountsImportRow({ Name: 'Partner AG', Kategorie: 'legal' }, 'partner'),
     ).toMatchObject({
       name: 'Partner AG',
       partnerCategory: 'legal',

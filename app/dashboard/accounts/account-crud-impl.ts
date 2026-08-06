@@ -7,7 +7,7 @@ import {
   type AccountStatusValue,
 } from '@/lib/accounts/account-status'
 import type { PartnerCategory } from '@/lib/accounts/account-entity'
-import { parseCompaniesImportRow } from '@/lib/accounts/companies-import-parse'
+import { parseAccountsImportRow } from '@/lib/accounts/accounts-import-parse'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-account-for-import'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import {
@@ -306,7 +306,7 @@ export async function bulkCreateCompaniesFromSheetImpl(
   let failedCount = 0
 
   for (const row of rows) {
-    const parsed = parseCompaniesImportRow(row, entityKind)
+    const parsed = parseAccountsImportRow(row, entityKind)
     if (!parsed) {
       skippedCount += 1
       continue

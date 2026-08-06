@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { buildCompaniesImportTemplateXlsx } from '@/lib/accounts/companies-import-template'
+import { buildAccountsImportTemplateXlsx } from '@/lib/accounts/accounts-import-template'
 import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Ungültiger Import-Typ.' }, { status: 400 })
   }
 
-  const { buffer, filename } = buildCompaniesImportTemplateXlsx(entityKind)
+  const { buffer, filename } = buildAccountsImportTemplateXlsx(entityKind)
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

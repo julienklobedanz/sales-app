@@ -1,6 +1,6 @@
 import type { PartnerCategory } from '@/lib/accounts/account-entity'
 
-export const COMPANIES_IMPORT_NAME_KEYS = [
+export const ACCOUNTS_IMPORT_NAME_KEYS = [
   'name',
   'Name',
   'account',
@@ -9,21 +9,21 @@ export const COMPANIES_IMPORT_NAME_KEYS = [
   'Unternehmen',
 ] as const
 
-export const COMPANIES_IMPORT_WEBSITE_KEYS = [
+export const ACCOUNTS_IMPORT_WEBSITE_KEYS = [
   'website',
   'Website',
   'domain',
   'Domain',
 ] as const
 
-export const COMPANIES_IMPORT_INDUSTRY_KEYS = [
+export const ACCOUNTS_IMPORT_INDUSTRY_KEYS = [
   'industry',
   'Industry',
   'branche',
   'Branche',
 ] as const
 
-export const COMPANIES_IMPORT_HEADQUARTERS_KEYS = [
+export const ACCOUNTS_IMPORT_HEADQUARTERS_KEYS = [
   'headquarters',
   'Headquarters',
   'hq',
@@ -32,7 +32,7 @@ export const COMPANIES_IMPORT_HEADQUARTERS_KEYS = [
   'Standort',
 ] as const
 
-export const COMPANIES_IMPORT_EMPLOYEE_KEYS = [
+export const ACCOUNTS_IMPORT_EMPLOYEE_KEYS = [
   'employee_count',
   'Employee Count',
   'employees',
@@ -41,7 +41,7 @@ export const COMPANIES_IMPORT_EMPLOYEE_KEYS = [
   'Mitarbeiter',
 ] as const
 
-export const COMPANIES_IMPORT_PARTNER_CATEGORY_KEYS = [
+export const ACCOUNTS_IMPORT_PARTNER_CATEGORY_KEYS = [
   'partner_category',
   'Partner Category',
   'Kategorie',
@@ -78,7 +78,7 @@ export function normalizePartnerCategoryFromImport(raw: string): PartnerCategory
   return 'other'
 }
 
-export type ParsedCompaniesImportRow = {
+export type ParsedAccountsImportRow = {
   name: string
   website: string
   industry: string
@@ -87,24 +87,24 @@ export type ParsedCompaniesImportRow = {
   partnerCategory: PartnerCategory | null
 }
 
-export function parseCompaniesImportRow(
+export function parseAccountsImportRow(
   row: Record<string, unknown>,
   entityKind: 'account' | 'partner',
-): ParsedCompaniesImportRow | null {
-  const name = pickSheetRowValue(row, COMPANIES_IMPORT_NAME_KEYS)
+): ParsedAccountsImportRow | null {
+  const name = pickSheetRowValue(row, ACCOUNTS_IMPORT_NAME_KEYS)
   if (!name) return null
 
-  const employeeRaw = pickSheetRowValue(row, COMPANIES_IMPORT_EMPLOYEE_KEYS)
+  const employeeRaw = pickSheetRowValue(row, ACCOUNTS_IMPORT_EMPLOYEE_KEYS)
   const partnerCategoryRaw = pickSheetRowValue(
     row,
-    COMPANIES_IMPORT_PARTNER_CATEGORY_KEYS,
+    ACCOUNTS_IMPORT_PARTNER_CATEGORY_KEYS,
   )
 
   return {
     name,
-    website: pickSheetRowValue(row, COMPANIES_IMPORT_WEBSITE_KEYS),
-    industry: pickSheetRowValue(row, COMPANIES_IMPORT_INDUSTRY_KEYS),
-    headquarters: pickSheetRowValue(row, COMPANIES_IMPORT_HEADQUARTERS_KEYS),
+    website: pickSheetRowValue(row, ACCOUNTS_IMPORT_WEBSITE_KEYS),
+    industry: pickSheetRowValue(row, ACCOUNTS_IMPORT_INDUSTRY_KEYS),
+    headquarters: pickSheetRowValue(row, ACCOUNTS_IMPORT_HEADQUARTERS_KEYS),
     employeeCount: parseEmployeeCountFromImport(employeeRaw),
     partnerCategory:
       entityKind === 'partner'
