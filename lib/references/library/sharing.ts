@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
@@ -295,40 +296,25 @@ async function notifyCustomerOfSperrlink(
     .maybeSingle()
 
   if (!ref) return false
-  const row = ref as {
-    title?: string
-    status?: string
-    organization_id?: string | null
-    customer_approval_status?: string | null
-    approval_contact_id?: string | null
-    approval_external_contact_id?: string | null
-    approval_delegated_to_email?: string | null
-    approval_delegated_to_name?: string | null
-    companies?: { name?: string } | { name?: string }[] | null
-  }
 
-  if (!hasActiveCustomerApprovalWorkflow(row.customer_approval_status, row.status)) {
+  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
     return false
   }
 
-  const company =
-    Array.isArray(row.companies) && row.companies.length > 0
-      ? row.companies[0]
-      : (row.companies as { name?: string } | null)
-  const companyName = company?.name?.trim() || 'Referenz'
+  const companyName = accountFromJoin(ref.companies)?.name?.trim() || 'Referenz'
 
   return sendCustomerSperrlinkEmail({
     admin: supabase,
-    organizationId: row.organization_id,
-    refTitle: String(row.title ?? 'Referenz'),
+    organizationId: ref.organization_id,
+    refTitle: String(ref.title ?? 'Referenz'),
     companyName,
     manageUrl,
     isNewLink,
     recipient: {
-      approval_contact_id: row.approval_contact_id ?? null,
-      approval_external_contact_id: row.approval_external_contact_id ?? null,
-      approval_delegated_to_email: row.approval_delegated_to_email ?? null,
-      approval_delegated_to_name: row.approval_delegated_to_name ?? null,
+      approval_contact_id: ref.approval_contact_id ?? null,
+      approval_external_contact_id: ref.approval_external_contact_id ?? null,
+      approval_delegated_to_email: ref.approval_delegated_to_email ?? null,
+      approval_delegated_to_name: ref.approval_delegated_to_name ?? null,
     },
   })
 }
@@ -352,7 +338,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
     .contains('reference_ids', [id])
     .limit(1)
 
-  const slug = (rows?.[0] as { slug?: string } | undefined)?.slug
+  const slug = rows?.[0]?.slug
   const origin = getAppOrigin()
 
   if (slug) {
@@ -640,14 +626,10 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
     .in('id', ids)
     .is('deleted_at', null)
   if (!rows?.length) return []
-  return rows.map((r: Record<string, unknown>) => {
-    const raw = r.companies
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
-    const start = r.project_start as string | null
-    const end = r.project_end as string | null
+  return rows.map((r) => {
+    const company = accountFromJoin(r.companies)
+    const start = r.project_start
+    const end = r.project_end
     let duration_months: number | null = null
     if (start && end) {
       const s = new Date(start)
@@ -660,38 +642,38 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
       }
     }
     return {
-      id: r.id as string,
-      title: r.title as string,
-      summary: (r.summary as string | null) ?? null,
-      industry: (r.industry as string | null) ?? null,
-      country: (r.country as string | null) ?? null,
-      website: (r.website as string | null) ?? null,
-      employee_count: (r.employee_count as number | null) ?? null,
-      volume_eur: (r.volume_eur as string | null) ?? null,
-      contract_type: (r.contract_type as string | null) ?? null,
-      incumbent_provider: (r.incumbent_provider as string | null) ?? null,
-      competitors: (r.competitors as string | null) ?? null,
-      customer_challenge: (r.customer_challenge as string | null) ?? null,
-      our_solution: (r.our_solution as string | null) ?? null,
+      id: r.id,
+      title: r.title,
+      summary: r.summary ?? null,
+      industry: r.industry ?? null,
+      country: r.country ?? null,
+      website: r.website ?? null,
+      employee_count: r.employee_count ?? null,
+      volume_eur: r.volume_eur ?? null,
+      contract_type: r.contract_type ?? null,
+      incumbent_provider: r.incumbent_provider ?? null,
+      competitors: r.competitors ?? null,
+      customer_challenge: r.customer_challenge ?? null,
+      our_solution: r.our_solution ?? null,
       status: normalizeStatus(r.status),
-      customer_approval_status: (r.customer_approval_status as string | null) ?? null,
-      created_at: r.created_at as string,
-      updated_at: (r.updated_at as string | null) ?? null,
-      company_id: r.company_id as string,
+      customer_approval_status: r.customer_approval_status ?? null,
+      created_at: r.created_at ?? '',
+      updated_at: r.updated_at ?? null,
+      company_id: r.company_id,
       company_name: company?.name ?? '—',
-      company_logo_url: company?.logo_url ?? null,
-      contact_id: (r.contact_id as string | null) ?? null,
+      company_logo_url: company?.logoUrl ?? null,
+      contact_id: r.contact_id ?? null,
       contact_email: null,
       contact_display: null,
       customer_contact: null,
-      file_path: (r.file_path as string | null) ?? null,
+      file_path: r.file_path ?? null,
       is_favorited: false,
-      tags: (r.tags as string | null) ?? null,
+      tags: r.tags ?? null,
       project_status: (r.project_status as 'active' | 'completed' | null) ?? null,
-      project_start: (r.project_start as string | null) ?? null,
-      project_end: (r.project_end as string | null) ?? null,
+      project_start: r.project_start ?? null,
+      project_end: r.project_end ?? null,
       duration_months,
-      is_nda_deal: (r.is_nda_deal as boolean | undefined) ?? false,
+      is_nda_deal: r.is_nda_deal ?? false,
     }
   })
 }
