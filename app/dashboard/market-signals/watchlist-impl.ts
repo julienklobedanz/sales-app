@@ -22,7 +22,7 @@ export async function setCompanyWatchlistStateImpl(
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false as const, error: 'Keine Organisation gefunden' }
 
   const { error } = await supabase
@@ -55,7 +55,7 @@ export async function setCompaniesWatchlistStateImpl(
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false as const, error: 'Keine Organisation gefunden' }
 
   const { error } = await supabase
@@ -88,7 +88,7 @@ export async function watchCompanyFromSuggestionImpl(input: {
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
 
   const suggestionId = input.id.trim()
@@ -202,7 +202,7 @@ export async function setChampionWatchlistStateImpl(
       .select('organization_id')
       .eq('id', user.id)
       .maybeSingle()
-    const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+    const orgId = profile?.organization_id
 
     let personTitle: string | null = null
     if (orgId) {
