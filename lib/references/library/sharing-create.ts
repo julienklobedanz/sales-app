@@ -1,6 +1,7 @@
 'use server'
 
 import { randomBytes } from 'crypto'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
 import { logEvent } from '@/lib/events/log-event'
