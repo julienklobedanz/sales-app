@@ -7,6 +7,7 @@ import { companiesTag, complianceTag, kpisTag, referencesTag } from '@/lib/cache
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import type { ReferenceKpiCounts } from '@/lib/dashboard-home/dashboard-home-types'
 import type { Database } from '@/lib/database.types'
+import type { Tables } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
@@ -107,11 +108,114 @@ export type CachedCompanyRow = {
   industry: string | null
 }
 
+/** Org-Referenzzeile inkl. Joins; optionale Felder fehlen ggf. in Schema-Fallback-Selects. */
+export type CachedOrgReferenceRow = {
+  id: string
+  title: string
+  summary: string | null
+  industry: string | null
+  country: string | null
+  website: string | null
+  employee_count: number | null
+  volume_eur: string | null
+  contract_type: string | null
+  incumbent_provider: string | null
+  competitors: string | null
+  customer_challenge: string | null
+  our_solution: string | null
+  status: Tables<'references'>['status'] | string
+  customer_approval_status: string | null
+  approval_scope_named_mention: boolean | null
+  approval_scope_anonymous_mention: boolean | null
+  created_at: string | null
+  updated_at: string | null
+  company_id: string
+  contact_id: string | null
+  customer_contact_id: string | null
+  customer_contact: string | null
+  file_path: string | null
+  tags: string | null
+  project_status: string | null
+  project_start: string | null
+  project_end: string | null
+  is_nda_deal: boolean
+  companies: unknown
+  contact_persons?: unknown
+}
+
+function toCachedOrgReferenceRow(row: {
+  id: string
+  title: string
+  summary: string | null
+  industry: string | null
+  country: string | null
+  website: string | null
+  employee_count: number | null
+  volume_eur: string | null
+  contract_type: string | null
+  incumbent_provider: string | null
+  competitors: string | null
+  customer_challenge: string | null
+  our_solution: string | null
+  status: Tables<'references'>['status'] | string
+  customer_approval_status: string | null
+  approval_scope_named_mention: boolean | null
+  approval_scope_anonymous_mention: boolean | null
+  created_at: string | null
+  updated_at: string | null
+  company_id: string
+  contact_id: string | null
+  customer_contact_id?: string | null
+  customer_contact?: string | null
+  file_path: string | null
+  tags: string | null
+  project_status: string | null
+  project_start: string | null
+  project_end: string | null
+  is_nda_deal?: boolean | null
+  companies: unknown
+  contact_persons?: unknown
+}): CachedOrgReferenceRow {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    industry: row.industry,
+    country: row.country,
+    website: row.website,
+    employee_count: row.employee_count,
+    volume_eur: row.volume_eur,
+    contract_type: row.contract_type,
+    incumbent_provider: row.incumbent_provider,
+    competitors: row.competitors,
+    customer_challenge: row.customer_challenge,
+    our_solution: row.our_solution,
+    status: row.status,
+    customer_approval_status: row.customer_approval_status,
+    approval_scope_named_mention: row.approval_scope_named_mention,
+    approval_scope_anonymous_mention: row.approval_scope_anonymous_mention,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    company_id: row.company_id,
+    contact_id: row.contact_id,
+    customer_contact_id: row.customer_contact_id ?? null,
+    customer_contact: row.customer_contact ?? null,
+    file_path: row.file_path,
+    tags: row.tags,
+    project_status: row.project_status,
+    project_start: row.project_start,
+    project_end: row.project_end,
+    is_nda_deal: row.is_nda_deal ?? false,
+    companies: row.companies,
+    contact_persons: row.contact_persons,
+  }
+}
+
 async function fetchOrgReferenceRows(
   supabase: DbClient,
   orgId: string,
-): Promise<Record<string, unknown>[]> {
-  let rows: Record<string, unknown>[] | null = null
+): Promise<CachedOrgReferenceRow[]> {
+  let rows: CachedOrgReferenceRow[] | null = null
   let error: { message: string; details?: string } | null = null
 
   const result = await supabase
@@ -122,7 +226,9 @@ async function fetchOrgReferenceRows(
     .order('created_at', { ascending: false })
 
   error = result.error
-  rows = result.data as Record<string, unknown>[] | null
+  if (!error && result.data) {
+    rows = result.data.map(toCachedOrgReferenceRow)
+  }
 
   if (error) {
     const fallback = await supabase
@@ -131,8 +237,8 @@ async function fetchOrgReferenceRows(
       .eq('organization_id', orgId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-    if (!fallback.error) {
-      rows = fallback.data as Record<string, unknown>[]
+    if (!fallback.error && fallback.data) {
+      rows = fallback.data.map(toCachedOrgReferenceRow)
       error = null
     }
   }
@@ -144,8 +250,9 @@ async function fetchOrgReferenceRows(
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (!withDeletedColumn.error && withDeletedColumn.data) {
-      const data = withDeletedColumn.data as Record<string, unknown>[]
-      rows = data.filter((r) => r.deleted_at == null || r.deleted_at === undefined)
+      rows = withDeletedColumn.data
+        .filter((r) => r.deleted_at == null)
+        .map(toCachedOrgReferenceRow)
       error = null
     }
   }
@@ -156,8 +263,8 @@ async function fetchOrgReferenceRows(
       .select(REFERENCE_ROWS_SELECT_NO_CONTACT)
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
-    if (!noDeletedFilter.error) {
-      rows = noDeletedFilter.data as Record<string, unknown>[]
+    if (!noDeletedFilter.error && noDeletedFilter.data) {
+      rows = noDeletedFilter.data.map(toCachedOrgReferenceRow)
       error = null
     }
   }
@@ -168,8 +275,8 @@ async function fetchOrgReferenceRows(
       .select(REFERENCE_ROWS_SELECT_MINIMAL)
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
-    if (!minimal.error) {
-      rows = minimal.data as Record<string, unknown>[]
+    if (!minimal.error && minimal.data) {
+      rows = minimal.data.map(toCachedOrgReferenceRow)
       error = null
     }
   }
@@ -180,7 +287,7 @@ async function fetchOrgReferenceRows(
 
 export function getCachedOrgReferenceRows(
   orgId: string,
-): Promise<Record<string, unknown>[]> {
+): Promise<CachedOrgReferenceRow[]> {
   return readWithOrgCache(
     'org-references',
     orgId,
@@ -239,7 +346,7 @@ async function fetchOrgCompanies(
     .eq('organization_id', orgId)
     .order('name')
   if (error) return []
-  return (data ?? []) as CachedCompanyRow[]
+  return data ?? []
 }
 
 export function getCachedOrgCompanies(orgId: string): Promise<CachedCompanyRow[]> {

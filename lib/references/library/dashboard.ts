@@ -97,7 +97,7 @@ export async function getDashboardDataImpl(
       .not('deleted_at', 'is', null),
   ])
 
-  const orgRefIds = (rows ?? []).map((r) => String(r.id ?? '')).filter(Boolean)
+  const orgRefIds = rows.map((r) => r.id).filter(Boolean)
 
   const [portfolioResult, dealRefResult] =
     orgRefIds.length > 0
@@ -120,7 +120,7 @@ export async function getDashboardDataImpl(
     favs.forEach((f) => favoriteIds.add(f.reference_id))
   }
 
-  let references = (rows ?? []).map((r: Record<string, unknown>) => {
+  let references = rows.map((r) => {
     const company = accountFromJoin(r.companies)
     const contact = contactPersonFromJoin(r.contact_persons)
     const contactDisplay = contact
@@ -128,9 +128,12 @@ export async function getDashboardDataImpl(
         contact.email ||
         null
       : null
-    const start = r.project_start as string | null
-    const end = r.project_end as string | null
-    const status = (r.project_status as 'active' | 'completed' | null) ?? null
+    const start = r.project_start
+    const end = r.project_end
+    const projectStatus: 'active' | 'completed' | null =
+      r.project_status === 'active' || r.project_status === 'completed'
+        ? r.project_status
+        : null
     let duration_months: number | null = null
     if (start && end) {
       const s = new Date(start)
@@ -142,7 +145,7 @@ export async function getDashboardDataImpl(
             (e.getUTCMonth() - s.getUTCMonth()),
         )
       }
-    } else if (status === 'active' && start) {
+    } else if (projectStatus === 'active' && start) {
       const s = new Date(start)
       const now = new Date()
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(now.getTime())) {
@@ -154,43 +157,41 @@ export async function getDashboardDataImpl(
       }
     }
     return {
-      id: r.id as string,
-      title: r.title as string,
-      summary: (r.summary as string | null) ?? null,
-      industry: (r.industry as string | null) ?? null,
-      country: (r.country as string | null) ?? null,
-      website: (r.website as string | null) ?? null,
-      employee_count: (r.employee_count as number | null) ?? null,
-      volume_eur: (r.volume_eur as string | null) ?? null,
-      contract_type: (r.contract_type as string | null) ?? null,
-      incumbent_provider: (r.incumbent_provider as string | null) ?? null,
-      competitors: (r.competitors as string | null) ?? null,
-      customer_challenge: (r.customer_challenge as string | null) ?? null,
-      our_solution: (r.our_solution as string | null) ?? null,
+      id: r.id,
+      title: r.title,
+      summary: r.summary,
+      industry: r.industry,
+      country: r.country,
+      website: r.website,
+      employee_count: r.employee_count,
+      volume_eur: r.volume_eur,
+      contract_type: r.contract_type,
+      incumbent_provider: r.incumbent_provider,
+      competitors: r.competitors,
+      customer_challenge: r.customer_challenge,
+      our_solution: r.our_solution,
       status: normalizeStatus(r.status),
-      customer_approval_status: (r.customer_approval_status as string | null) ?? null,
-      approval_scope_named_mention:
-        (r.approval_scope_named_mention as boolean | null) ?? null,
-      approval_scope_anonymous_mention:
-        (r.approval_scope_anonymous_mention as boolean | null) ?? null,
-      created_at: r.created_at as string,
-      updated_at: (r.updated_at as string | null) ?? null,
-      company_id: r.company_id as string,
+      customer_approval_status: r.customer_approval_status,
+      approval_scope_named_mention: r.approval_scope_named_mention,
+      approval_scope_anonymous_mention: r.approval_scope_anonymous_mention,
+      created_at: r.created_at ?? '',
+      updated_at: r.updated_at,
+      company_id: r.company_id,
       company_name: company?.name ?? '—',
       company_logo_url: company?.logoUrl ?? null,
-      contact_id: (r.contact_id as string | null) ?? null,
+      contact_id: r.contact_id,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
-      customer_contact_id: (r.customer_contact_id as string | null) ?? null,
-      customer_contact: (r.customer_contact as string | null) ?? null,
-      file_path: (r.file_path as string | null) ?? null,
-      is_favorited: favoriteIds.has(r.id as string),
-      tags: (r.tags as string | null) ?? null,
-      project_status: (r.project_status as 'active' | 'completed' | null) ?? null,
-      project_start: (r.project_start as string | null) ?? null,
-      project_end: (r.project_end as string | null) ?? null,
+      customer_contact_id: r.customer_contact_id,
+      customer_contact: r.customer_contact,
+      file_path: r.file_path,
+      is_favorited: favoriteIds.has(r.id),
+      tags: r.tags,
+      project_status: projectStatus,
+      project_start: r.project_start,
+      project_end: r.project_end,
       duration_months,
-      is_nda_deal: (r.is_nda_deal as boolean | undefined) ?? false,
+      is_nda_deal: r.is_nda_deal,
     }
   })
 
