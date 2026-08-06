@@ -8,10 +8,10 @@
 ## Vorab lesen
 
 - `docs/ai-coding-agent-guide.md`
-- `app/dashboard/accounts/company-detail-client.tsx` (Orchestrator, 4 Tabs)
-- `app/dashboard/accounts/company-detail-strategy-tab.tsx` (Signale + MEDDPICC + Buying Center)
-- `app/dashboard/accounts/company-detail-power-map-tab.tsx` (separater Buying-Center-/Power-Map-Tab)
-- `app/dashboard/accounts/company-detail-pipeline-tab.tsx`, `company-detail-proof-points-tab.tsx`
+- `app/dashboard/accounts/account-detail-client.tsx` (Orchestrator, 4 Tabs)
+- `app/dashboard/accounts/account-detail-strategy-tab.tsx` (Signale + MEDDPICC + Buying Center)
+- `app/dashboard/accounts/account-detail-power-map-tab.tsx` (separater Buying-Center-/Power-Map-Tab)
+- `app/dashboard/accounts/account-detail-pipeline-tab.tsx`, `account-detail-proof-points-tab.tsx`
 - `app/dashboard/match/match-rfp-client.tsx` (Coverage-Matrix als Vorlage) + die semantische Suche `matchReferences`
 
 ## Ist-Stand (verifiziert) — wichtig
@@ -45,7 +45,7 @@ Der Account-Detail hat **4 Tabs**: `mission_control` (Strategy), `buying_center`
 1. Tabs von 4 → **3**: `overview` (= bisher `mission_control`), `deals` (= `pipeline`), `references` (= `proof_points`). Den separaten `buying_center`/Power-Map-Tab **auflösen**.
 2. **Buying-Center-Konsolidierung:** Die reichhaltigere der beiden Darstellungen behalten (Power-Map-Tab-Logik vs. Strategy-Spalte vergleichen) und **eine** Buying-Center-Sektion in `overview` rendern. Tote Komponente entfernen bzw. als reine Unterkomponente einbinden.
 3. **Signal-Strip:** Die `marketSignals.accountNews`-Karte aus der Strategy-Tab heraus in einen **prominenten Streifen im Header** (über den Tabs) heben: jüngstes Signal + Quelle + CTA **„mit Beweis reagieren"** → `ROUTES.matchWithDeal` bzw. Smart Match mit Account-Kontext. Bei 0 Signalen: dezenter Leerzustand, kein leerer Block.
-4. `initialTab`-Param-Whitelist und `activeTab`-Union in `company-detail-client.tsx` auf die neuen 3 Werte anpassen; alte Query-Werte (`mission_control`/`buying_center`/`pipeline`/`proof_points`) auf die neuen mappen (Deep-Link-Kompatibilität).
+4. `initialTab`-Param-Whitelist und `activeTab`-Union in `account-detail-client.tsx` auf die neuen 3 Werte anpassen; alte Query-Werte (`mission_control`/`buying_center`/`pipeline`/`proof_points`) auf die neuen mappen (Deep-Link-Kompatibilität).
 
 ## T2 — Proof-Coverage je Deal (die Proof-Linse, Kern)
 
@@ -77,7 +77,7 @@ create index on public.deal_requirements(deal_id);
 
 ## T4 — Proof-Points mit echtem Match statt Heuristik
 
-- In `company-detail-proof-points-tab.tsx` die `matchScore`-Heuristik durch die echte Embedding-Suche ersetzen (oder den Fit als „grobe Schätzung" klar kennzeichnen, bis die Suche serverseitig vorberechnet ist). Mindestens den Inline-Link auf **„Smart Match"** (statt „Match") ziehen.
+- In `account-detail-proof-points-tab.tsx` die `matchScore`-Heuristik durch die echte Embedding-Suche ersetzen (oder den Fit als „grobe Schätzung" klar kennzeichnen, bis die Suche serverseitig vorberechnet ist). Mindestens den Inline-Link auf **„Smart Match"** (statt „Match") ziehen.
 
 ---
 

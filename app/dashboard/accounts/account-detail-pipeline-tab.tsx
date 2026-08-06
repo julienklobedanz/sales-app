@@ -22,7 +22,7 @@ import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
 import { ROUTES } from '@/lib/routes'
 import { formatDealVolume } from '@/lib/format'
 
-export function CompanyDetailPipelineTab({
+export function AccountDetailPipelineTab({
   activeDeals,
   hubspotPortalId = null,
 }: {

@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { LinkIcon, Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { ExternalContactRow, StakeholderRole, StakeholderRow } from './actions'
-import type { CompanyDetailClientProps } from './company-detail-types'
+import type { AccountDetailClientProps } from './account-detail-types'
 import { formatReferenceDate } from '@/lib/format'
 import { COPY } from '@/lib/copy'
 import { externalContactJobTitle } from './company-contact-action-buttons'
@@ -57,12 +57,12 @@ type Props = {
   saveStrategy: (opts?: { silent?: boolean }) => Promise<void>
   stakeholders: StakeholderRow[]
   externalContacts: ExternalContactRow[]
-  marketSignals: CompanyDetailClientProps['marketSignals']
+  marketSignals: AccountDetailClientProps['marketSignals']
   onSetStakeholderRole: (id: string, role: StakeholderRole) => Promise<void>
   onSetExternalBuyingCenterRole: (id: string, role: StakeholderRole) => Promise<void>
 }
 
-export function CompanyDetailStrategyTab({
+export function AccountDetailStrategyTab({
   canEdit,
   strategySaving,
   strategyFields,

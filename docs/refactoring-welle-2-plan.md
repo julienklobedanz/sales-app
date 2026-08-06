@@ -19,7 +19,7 @@ Ziel dieser zweiten Refaktorisierungswelle ist **Perfektion im Sinne von Wartbar
   - **(8)** COPY-Rollout 2: `lib/copy.ts` um Tabellen-, Evidence-, Dashboard- und Command-Palette-Strings erweitert; Verwendung u. a. in Evidence-DataTable, `dashboard-overview`, `components/ui/app-data-table`, `components/ui/command-palette`.
   - **(9)** DataTable: gemeinsame `DataTablePagination`; später **`AppDataTable`** als eine Basis für Evidence + Deals (siehe `components/ui/app-data-table.tsx`).
   - **(10)** Danger Zone: klare UX + `COPY.settings.*` (kein toter Button ohne Hinweis).
-- **P2 – erledigt (Company-Detail):** **(7)** `company-detail-client.tsx` in Tab-, Header- und Dialog-Module unter `app/dashboard/accounts/` aufgeteilt (`company-detail-*`, `company-stakeholder-*`, `company-contact-dialog`).
+- **P2 – erledigt (Company-Detail):** **(7)** `account-detail-client.tsx` in Tab-, Header- und Dialog-Module unter `app/dashboard/accounts/` aufgeteilt (`account-detail-*`, `company-stakeholder-*`, `company-contact-dialog`).
 
 ---
 
@@ -40,7 +40,7 @@ Ziel dieser zweiten Refaktorisierungswelle ist **Perfektion im Sinne von Wartbar
 6. **`app/dashboard/evidence/new/reference-form.tsx` zerlegen** (ohne Behavior-Change):
    - Dropzones/Step-Komponenten/Form-Sections extrahieren.
    - Ziel: „Wizard“-Komposition, klare Props, lokale State-Logik pro Section.
-7. **`app/dashboard/accounts/company-detail-client.tsx` verkleinern**:
+7. **`app/dashboard/accounts/account-detail-client.tsx` verkleinern**:
    - Sektionen und Dialoge extrahieren (analog Deals/Evidence).
 
 ### P2 – Konsistenz & Standardisierung (nach dem Aufsplit)

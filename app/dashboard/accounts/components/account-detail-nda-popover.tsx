@@ -70,7 +70,7 @@ type Props = {
   openOnMount?: boolean
 }
 
-export function CompanyDetailNdaPopover({
+export function AccountDetailNdaPopover({
   companyId,
   companyName,
   initialAgreements,

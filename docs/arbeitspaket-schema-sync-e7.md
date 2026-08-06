@@ -13,15 +13,17 @@
 
 ---
 
-## Ist-Stand (verifiziert)
+## Status (2026-08-06)
 
-- **Drift:** Repo enthält Migrationen, deren Spalten **nicht** in den generierten (Remote-)Typen sind — u. a.:
-  - `supabase/migrations/20250302210000_roadmap_projects_tags.sql` (`company_roadmap_projects.tags`)
-  - `supabase/migrations/20260527150000_deal_desk_projects_archived_at.sql` (`deal_desk_projects.archived_at`)
-- **Escape-Hatches:** `looseSelect` (umgeht Spalten-Inferenz) an **7** Stellen in **2** Dateien:
-  - `app/dashboard/deal-desk/actions.ts` (4×, `archived_at`/legacy-Selects)
-  - `app/dashboard/accounts/actions.ts` (`company_id, tags`)
-- **Kein `supabase/config.toml`** im Repo → CLI-Projekt/Link ist nicht eingerichtet (relevant für T4).
+| Task | Status |
+| ---- | ------ |
+| T1 Drift ermitteln | ✅ historisch in `docs/schema-sync.md` |
+| T2 Remote + Typen | ✅ `tags`/`archived_at` in `lib/database.types.ts`; Repair-Migration vorhanden |
+| T3 `looseSelect` entfernen | ✅ `grep looseSelect` → 0; Modul entfernt |
+| T4 CI-Migrations-Gate | ✅ Job `db-migrations` in `.github/workflows/ci.yml` (`supabase start`) |
+| `supabase/config.toml` | ✅ vorhanden |
+
+**Offen / Boy-Scout:** Remote-Drift gelegentlich mit `npx supabase migration list --linked` prüfen (braucht Link/Secrets — nicht jeder Dev). Typed-Cast-Abbau → eigenes Paket E1/E2 T3.
 
 ---
 

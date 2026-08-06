@@ -20,19 +20,19 @@ import {
   upsertCompanyStrategy,
 } from './actions'
 import { CompanyContactDialog } from './company-contact-dialog'
-import type { CompanyDetailClientProps } from './company-detail-types'
-import { CompanyDetailHeader } from './company-detail-header'
-import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
+import type { AccountDetailClientProps } from './account-detail-types'
+import { AccountDetailHeader } from './account-detail-header'
+import { AccountDetailStrategyTab } from './account-detail-strategy-tab'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
-import { CompanyDetailPipelineTab } from './company-detail-pipeline-tab'
-import { CompanyDetailProofPointsTab } from './company-detail-proof-points-tab'
-import { CompanyDetailPowerMapTab } from './company-detail-power-map-tab'
+import { AccountDetailPipelineTab } from './account-detail-pipeline-tab'
+import { AccountDetailProofPointsTab } from './account-detail-proof-points-tab'
+import { AccountDetailPowerMapTab } from './account-detail-power-map-tab'
 
 const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
   'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
 
-export function CompanyDetailClient({
+export function AccountDetailClient({
   company,
   organizationName,
   strategy: initialStrategy,
@@ -45,7 +45,7 @@ export function CompanyDetailClient({
   marketSignals,
   initialEditOpen,
   ndaAgreements,
-}: CompanyDetailClientProps) {
+}: AccountDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
   const router = useRouter()
   const pathname = usePathname()
@@ -394,7 +394,7 @@ export function CompanyDetailClient({
 
   return (
     <div className="space-y-6">
-      <CompanyDetailHeader
+      <AccountDetailHeader
         company={company}
         canEdit={canEditAccount}
         onEditClick={() => setEditAccountOpen(true)}
@@ -448,7 +448,7 @@ export function CompanyDetailClient({
         </TabsList>
 
         <TabsContent value="mission_control" className="mt-2">
-          <CompanyDetailStrategyTab
+          <AccountDetailStrategyTab
             canEdit={canEditStrategy}
             strategySaving={strategySaving}
             strategyFields={strategyFields}
@@ -500,7 +500,7 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="buying_center" className="mt-2">
-          <CompanyDetailPowerMapTab
+          <AccountDetailPowerMapTab
             stakeholders={stakeholders}
             marketSignals={marketSignals}
             internalContacts={internalContacts}
@@ -519,14 +519,14 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-2">
-          <CompanyDetailPipelineTab
+          <AccountDetailPipelineTab
             activeDeals={activeDeals}
             hubspotPortalId={hubspotPortalId}
           />
         </TabsContent>
 
         <TabsContent value="proof_points" className="mt-2">
-          <CompanyDetailProofPointsTab company={company} references={references} />
+          <AccountDetailProofPointsTab company={company} references={references} />
         </TabsContent>
       </Tabs>
 

@@ -10,7 +10,7 @@
 - `docs/ai-coding-agent-guide.md`
 - `supabase/migrations/20250224100000_deals_and_deal_references.sql` (`deals`, `deal_references`)
 - `supabase/migrations/20260416170000_epic15_event_tracking.sql` (`evidence_events`, u. a. `share_link_viewed`, `reference_shared`)
-- `app/dashboard/accounts/company-detail-proof-points-tab.tsx` (künftiger Ort der Historie)
+- `app/dashboard/accounts/account-detail-proof-points-tab.tsx` (künftiger Ort der Historie)
 - [[arbeitspaket-accounts-proof-linse]] (liefert den entschachtelten Account-View)
 
 ## Grundprinzip

@@ -43,7 +43,7 @@ type Props = {
   onRemove: (id: string) => void
 }
 
-export function CompanyDetailStakeholdersTab({
+export function AccountDetailStakeholdersTab({
   stakeholders,
   externalContacts,
   companyName,

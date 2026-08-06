@@ -15,9 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import type { CompanyDetailCompany } from './company-detail-types'
+import type { AccountDetailCompany } from './account-detail-types'
 import type { CompanyRefRow } from './actions'
-import { referenceStatusLabel } from './company-detail-constants'
+import { referenceStatusLabel } from './account-detail-constants'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
 
@@ -41,11 +41,11 @@ function matchScore(params: {
   return Math.min(100, score)
 }
 
-export function CompanyDetailProofPointsTab({
+export function AccountDetailProofPointsTab({
   company,
   references,
 }: {
-  company: CompanyDetailCompany
+  company: AccountDetailCompany
   references: CompanyRefRow[]
 }) {
   return (

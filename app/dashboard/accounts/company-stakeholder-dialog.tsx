@@ -18,7 +18,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Loader } from '@hugeicons/core-free-icons'
 import type { StakeholderRole } from './actions'
-import { STAKEHOLDER_ROLE_BADGES } from './company-detail-constants'
+import { STAKEHOLDER_ROLE_BADGES } from './account-detail-constants'
 import { AppIcon } from '@/lib/icons'
 
 type Props = {

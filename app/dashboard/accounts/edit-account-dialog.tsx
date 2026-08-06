@@ -25,7 +25,7 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { updateCompany } from './actions'
 import { COPY } from '@/lib/copy'
-import type { CompanyDetailCompany } from './company-detail-types'
+import type { AccountDetailCompany } from './account-detail-types'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import {
   fetchCompanyEnrichment,
@@ -47,7 +47,7 @@ export function EditAccountDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  company: CompanyDetailCompany
+  company: AccountDetailCompany
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
