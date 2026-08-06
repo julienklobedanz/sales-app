@@ -202,30 +202,15 @@ export default async function SettingsPage() {
     .single()
 
   const organizationId = profileRow?.organization_id ?? null
-  let orgRow: {
-    id: string
-    name: string
-    logo_url: string | null
-    primary_color: string | null
-    secondary_color: string | null
-    date_display_format: string
-    export_settings: unknown
-    stripe_subscription_id: string | null
-    subscription_status: string | null
-    subdomain: string | null
-    api_settings: unknown
-    workflow_settings: unknown
-  } | null = null
-  if (organizationId) {
-    const { data } = await supabase
-      .from('organizations')
-      .select(
-        'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings',
-      )
-      .eq('id', organizationId)
-      .single()
-    orgRow = data
-  }
+  const { data: orgRow } = organizationId
+    ? await supabase
+        .from('organizations')
+        .select(
+          'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings',
+        )
+        .eq('id', organizationId)
+        .single()
+    : { data: null }
 
   const teamMembers = await getTeamMembers()
 
@@ -275,12 +260,8 @@ export default async function SettingsPage() {
   const [firstName = '', ...rest] = fullName.trim().split(/\s+/)
   const lastName = rest.join(' ') ?? ''
 
-  const apiSettingsParsed = parseOrganizationApiSettings(
-    (orgRow as { api_settings?: unknown } | null)?.api_settings,
-  )
-  const capabilitySettings = parseOrgCapabilitySettings(
-    (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings,
-  )
+  const apiSettingsParsed = parseOrganizationApiSettings(orgRow?.api_settings)
+  const capabilitySettings = parseOrgCapabilitySettings(orgRow?.workflow_settings)
 
   return (
     <div className="flex flex-col space-y-6">
@@ -299,52 +280,36 @@ export default async function SettingsPage() {
             userEmail: user.email ?? '',
             firstName,
             lastName,
-            avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
-            bookingUrl:
-              (profileRow as { booking_url?: string | null })?.booking_url ?? null,
-            phone: (profileRow as { phone?: string | null })?.phone ?? null,
-            jobTitle: (profileRow as { job_title?: string | null })?.job_title ?? null,
+            avatarUrl: profileRow?.avatar_url ?? null,
+            bookingUrl: profileRow?.booking_url ?? null,
+            phone: profileRow?.phone ?? null,
+            jobTitle: profileRow?.job_title ?? null,
             salesRequired: profileIsSalesRestricted(
               serverRoles.systemRole,
               serverRoles.functionRole,
             ),
             notificationSettings: parseProfileNotificationSettings(
-              (profileRow as { notification_settings?: unknown } | null)
-                ?.notification_settings,
+              profileRow?.notification_settings,
             ),
           }}
           org={{
             id: orgRow?.id ?? null,
             name: orgRow?.name ?? '',
             logoUrl: orgRow?.logo_url ?? null,
-            primaryColor:
-              (orgRow as { primary_color?: string | null } | null)?.primary_color ??
-              '#2563EB',
-            secondaryColor:
-              (orgRow as { secondary_color?: string | null } | null)?.secondary_color ??
-              '#1D4ED8',
-            dateDisplayFormat:
-              (orgRow as { date_display_format?: string | null } | null)
-                ?.date_display_format ?? 'de-DE',
-            uiLocale: uiLocaleFromApiSettings(
-              (orgRow as { api_settings?: unknown } | null)?.api_settings,
-            ),
-            exportSettings: parsePdfExportSettings(
-              (orgRow as { export_settings?: unknown } | null)?.export_settings,
-            ),
+            primaryColor: orgRow?.primary_color ?? '#2563EB',
+            secondaryColor: orgRow?.secondary_color ?? '#1D4ED8',
+            dateDisplayFormat: orgRow?.date_display_format ?? 'de-DE',
+            uiLocale: uiLocaleFromApiSettings(orgRow?.api_settings),
+            exportSettings: parsePdfExportSettings(orgRow?.export_settings),
             subscriptionStatus: orgRow?.subscription_status ?? null,
             subscriptionId: orgRow?.stripe_subscription_id ?? null,
-            subdomain: (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
-            billingSettings: parseOrganizationBillingSettings(
-              (orgRow as { api_settings?: unknown } | null)?.api_settings,
-            ),
+            subdomain: orgRow?.subdomain ?? '',
+            billingSettings: parseOrganizationBillingSettings(orgRow?.api_settings),
             apiSettings: {
               apiKeyMask: apiSettingsParsed.apiKeyMask,
               useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,
             },
-            workflowSettings: parseOrganizationWorkflowSettings(
-              (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings,
-            ),
+            workflowSettings: parseOrganizationWorkflowSettings(orgRow?.workflow_settings),
             capabilitySettings,
           }}
           teamMembers={teamMembers}
