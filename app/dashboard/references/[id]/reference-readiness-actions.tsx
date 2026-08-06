@@ -2,35 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, LinkIcon, Pencil, Send } from '@hugeicons/core-free-icons'
-import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   approveInternalAndSend,
   getApprovalLink,
@@ -44,13 +16,16 @@ import {
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import type { ApprovalContactOption } from '@/lib/references/library/approval-contacts'
 import type { ApproveInternalRecipientOptions } from '@/lib/references/library/approvals'
-import { AppIcon } from '@/lib/icons'
 import { canSubmitApprovalRecipient } from '@/lib/references/approval-recipient-input'
 import type { ReferenceReadinessState } from '@/lib/references/reference-readiness-state'
 import { cn } from '@/lib/utils'
-import { ApprovalContactSuggestField } from './approval-contact-suggest-field'
-import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceReadinessShowcaseLinks } from './reference-readiness-showcase-links'
+import { ReferenceReadinessActionDialogs } from './reference-readiness/reference-readiness-action-dialogs'
+import { ReferenceReadinessMagicLinkPanel } from './reference-readiness/reference-readiness-magic-link-panel'
+import {
+  ReferenceReadinessPrimaryActions,
+  ReferenceReadinessWorkflowReroute,
+} from './reference-readiness/reference-readiness-primary-actions'
 
 type Props = {
   referenceId: string
@@ -372,52 +347,18 @@ export function ReferenceReadinessActions({
         </p>
       ) : null}
 
-      {primaryIsRequest ? (
-        <div className="w-full max-w-sm transition-opacity duration-200">
-          <RequestApprovalDialog
-            referenceId={referenceId}
-            defaultAccountManagerEmail={defaultAccountManagerEmail}
-            triggerId="reference-readiness-approval-trigger"
-            triggerVariant="default"
-            triggerClassName="w-full"
-            triggerLabel="Freigabe starten"
-            autoOpen={autoOpenApprovalDialog}
-          />
-        </div>
-      ) : null}
-
-      {readiness.phase === 'internal_start' ? (
-        <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
-          {canInternalApprove
-            ? 'Bitte bestätigen Sie zuerst die interne Freigabe über den Button „Intern freigeben“ in Ihrer E-Mail. Danach können Sie hier die Kundenfreigabe vorbereiten.'
-            : 'Interne Freigabe ausstehend — der Account Manager muss den Link in der E-Mail bestätigen, bevor die Kundenfreigabe vorbereitet werden kann.'}
-        </p>
-      ) : null}
-
-      {primaryIsPrepareCustomer ? (
-        <Button
-          type="button"
-          variant="default"
-          className="w-full max-w-sm transition-opacity duration-200"
-          onClick={openInternalApproveDialog}
-          disabled={pending}
-        >
-          Kundenfreigabe vorbereiten
-        </Button>
-      ) : null}
-
-      {primaryIsWithdrawnRestart ? (
-        <div className="w-full max-w-sm transition-opacity duration-200">
-          <RequestApprovalDialog
-            referenceId={referenceId}
-            defaultAccountManagerEmail={defaultAccountManagerEmail}
-            triggerId="reference-readiness-withdrawn-restart-trigger"
-            triggerVariant="default"
-            triggerClassName="w-full"
-            triggerLabel="Freigabe erneut starten"
-          />
-        </div>
-      ) : null}
+      <ReferenceReadinessPrimaryActions
+        referenceId={referenceId}
+        readiness={readiness}
+        pending={pending}
+        canInternalApprove={canInternalApprove}
+        defaultAccountManagerEmail={defaultAccountManagerEmail}
+        autoOpenApprovalDialog={autoOpenApprovalDialog}
+        primaryIsRequest={primaryIsRequest}
+        primaryIsPrepareCustomer={primaryIsPrepareCustomer}
+        primaryIsWithdrawnRestart={primaryIsWithdrawnRestart}
+        onPrepareCustomer={openInternalApproveDialog}
+      />
 
       {visibleChangeRequestComment ? (
         <div className="w-full max-w-sm space-y-1.5 text-sm">
@@ -428,101 +369,18 @@ export function ReferenceReadinessActions({
         </div>
       ) : null}
 
-      {readiness.showMagicLink ? (
-        <div className="flex w-full max-w-sm flex-col items-stretch gap-1.5 transition-opacity duration-200">
-          <p className="text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            {readiness.phase === 'pending_customer' ? 'Kunden-Freigabe' : 'Freigabe-Link'}
-          </p>
-          {showRequestApprovalAgain ? (
-            <Button
-              type="button"
-              variant="default"
-              className="w-full gap-2"
-              onClick={() => onRequestApprovalAgain()}
-              disabled={pending}
-            >
-              <AppIcon icon={Send} size={16} />
-              Freigabe erneut anfragen
-            </Button>
-          ) : null}
-          {canEditCustomerEmail ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={openEditRecipientDialog}
-              disabled={pending}
-            >
-              <AppIcon icon={Pencil} size={16} />
-              Kunden E-Mail ändern
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={showRequestApprovalAgain ? 'outline' : 'default'}
-            className="w-full gap-2"
-            onClick={() => onCopyApprovalLink()}
-            disabled={pending}
-          >
-            <AppIcon icon={LinkIcon} size={16} />
-            Freigabe-Link kopieren
-          </Button>
-          {readiness.showRegenerateLink ? (
-            <div className="flex w-full">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-w-0 flex-1 gap-2 rounded-r-none"
-                onClick={() => void onOpenApprovalLink()}
-                disabled={pending}
-              >
-                <AppIcon icon={ExternalLink} size={16} />
-                Freigabe-Seite öffnen
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="shrink-0 rounded-l-none border-l-0 px-2.5"
-                    disabled={pending}
-                    aria-label="Weitere Freigabe-Aktionen"
-                  >
-                    <ChevronDown className="size-4" aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setRegenerateOpen(true)}>
-                    Neuer Freigabe-Link
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={() => void onOpenApprovalLink()}
-              disabled={pending}
-            >
-              <AppIcon icon={ExternalLink} size={16} />
-              Freigabe-Seite öffnen
-            </Button>
-          )}
-          {readiness.showWithdraw ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={onWithdraw}
-              disabled={pending}
-            >
-              Anfrage widerrufen
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      <ReferenceReadinessMagicLinkPanel
+        readiness={readiness}
+        pending={pending}
+        showRequestApprovalAgain={showRequestApprovalAgain}
+        canEditCustomerEmail={canEditCustomerEmail}
+        onRequestApprovalAgain={onRequestApprovalAgain}
+        onOpenEditRecipient={openEditRecipientDialog}
+        onCopyApprovalLink={onCopyApprovalLink}
+        onOpenApprovalLink={onOpenApprovalLink}
+        onOpenRegenerate={() => setRegenerateOpen(true)}
+        onWithdraw={onWithdraw}
+      />
 
       {showShowcaseSection && existingSharePath ? (
         <ReferenceReadinessShowcaseLinks
@@ -539,212 +397,41 @@ export function ReferenceReadinessActions({
         </p>
       ) : null}
 
-      {showWorkflowRerouteActions ? (
-        <div className="flex w-full max-w-sm flex-col items-stretch gap-1.5 transition-opacity duration-200">
-          {canEditCoordinatorEmail ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={openEditCoordinatorDialog}
-              disabled={pending}
-            >
-              <AppIcon icon={Pencil} size={16} />
-              Interne Anspr. E-Mail ändern
-            </Button>
-          ) : null}
-          {canEditCustomerEmail && !readiness.showMagicLink ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={openEditRecipientDialog}
-              disabled={pending}
-            >
-              <AppIcon icon={Pencil} size={16} />
-              Kunden E-Mail ändern
-            </Button>
-          ) : null}
-          {readiness.showWithdraw ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={onWithdraw}
-              disabled={pending}
-            >
-              Anfrage widerrufen
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      <ReferenceReadinessWorkflowReroute
+        readiness={readiness}
+        pending={pending}
+        showWorkflowRerouteActions={showWorkflowRerouteActions}
+        canEditCoordinatorEmail={canEditCoordinatorEmail}
+        canEditCustomerEmail={canEditCustomerEmail}
+        onOpenEditCoordinator={openEditCoordinatorDialog}
+        onOpenEditRecipient={openEditRecipientDialog}
+        onWithdraw={onWithdraw}
+      />
 
-      {readiness.showWithdraw &&
-      !readiness.showMagicLink &&
-      !showWorkflowRerouteActions ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full max-w-sm border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive transition-opacity duration-200"
-          onClick={onWithdraw}
-          disabled={pending}
-        >
-          Anfrage widerrufen
-        </Button>
-      ) : null}
-
-      <Dialog open={editCoordinatorOpen} onOpenChange={setEditCoordinatorOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Interne Ansprechperson ändern</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Die neue Person erhält eine E-Mail mit einem Link zur internen Freigabe. Der
-            bisherige interne Freigabe-Link verliert seine Gültigkeit.
-          </p>
-          <div className="grid gap-2 py-2">
-            <Label htmlFor="edit-coordinator-email">E-Mail des Account Managers</Label>
-            <Input
-              id="edit-coordinator-email"
-              type="email"
-              value={coordinatorEmail}
-              onChange={(e) => setCoordinatorEmail(e.target.value)}
-              placeholder="name@firma.de"
-              disabled={pending}
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditCoordinatorOpen(false)}
-              disabled={pending}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              onClick={onConfirmEditCoordinator}
-              disabled={pending || !isApprovalRecipientEmail(coordinatorEmail.trim())}
-            >
-              Speichern &amp; informieren
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={editRecipientOpen} onOpenChange={setEditRecipientOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Kunden E-Mail ändern</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Der neue Kontakt erhält künftige Freigabe-E-Mails. Der Freigebende Kunde wird
-            aus der E-Mail-Adresse abgeleitet. Eine bestehende Delegation wird
-            zurückgesetzt.
-          </p>
-          <div className="grid gap-2 py-2">
-            <Label htmlFor="edit-approval-recipient">Kontakt (Name oder E-Mail)</Label>
-            <ApprovalContactSuggestField
-              id="edit-approval-recipient"
-              contacts={contacts}
-              loading={loadingContacts}
-              disabled={pending}
-              value={contactQuery}
-              selected={selectedContact}
-              onValueChange={setContactQuery}
-              onSelectContact={(c) => {
-                setSelectedContact(c)
-                setContactQuery(c.email ?? c.label)
-              }}
-              onClearSelection={() => setSelectedContact(null)}
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditRecipientOpen(false)}
-              disabled={pending}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              onClick={onConfirmEditRecipient}
-              disabled={pending || loadingContacts || !canConfirmRecipient}
-            >
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Kundenkontakt für die Freigabe</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Es wird kein automatischer E-Mail-Versand ausgelöst. Der Kontakt wird
-            gespeichert; den Freigabe-Link kopieren Sie anschließend und senden ihn
-            manuell. Unbekannte E-Mail-Adressen werden als Kundenkontakt angelegt.
-          </p>
-          <div className="grid gap-2 py-2">
-            <Label htmlFor="internal-approve-contact">Kontakt (Name oder E-Mail)</Label>
-            <ApprovalContactSuggestField
-              id="internal-approve-contact"
-              contacts={contacts}
-              loading={loadingContacts}
-              disabled={pending}
-              value={contactQuery}
-              selected={selectedContact}
-              onValueChange={setContactQuery}
-              onSelectContact={(c) => {
-                setSelectedContact(c)
-                setContactQuery(c.email ?? c.label)
-              }}
-              onClearSelection={() => setSelectedContact(null)}
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-              disabled={pending}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              onClick={onConfirmInternalApprove}
-              disabled={pending || loadingContacts || !canConfirmRecipient}
-            >
-              Kundenfreigabe vorbereiten
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Neuen Freigabelink erzeugen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der bisherige Link verliert damit seine Gültigkeit und die Kundenfreigabe
-              wird auf „ausstehend“ zurückgesetzt. Bitte senden Sie den neuen Magic Link
-              erneut an den Kunden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction disabled={pending} onClick={() => onRegenerateLink()}>
-              Neuen Link erzeugen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ReferenceReadinessActionDialogs
+        pending={pending}
+        loadingContacts={loadingContacts}
+        contacts={contacts}
+        contactQuery={contactQuery}
+        setContactQuery={setContactQuery}
+        selectedContact={selectedContact}
+        setSelectedContact={setSelectedContact}
+        canConfirmRecipient={canConfirmRecipient}
+        editCoordinatorOpen={editCoordinatorOpen}
+        setEditCoordinatorOpen={setEditCoordinatorOpen}
+        coordinatorEmail={coordinatorEmail}
+        setCoordinatorEmail={setCoordinatorEmail}
+        onConfirmEditCoordinator={onConfirmEditCoordinator}
+        editRecipientOpen={editRecipientOpen}
+        setEditRecipientOpen={setEditRecipientOpen}
+        onConfirmEditRecipient={onConfirmEditRecipient}
+        dialogOpen={dialogOpen}
+        setDialogOpen={setDialogOpen}
+        onConfirmInternalApprove={onConfirmInternalApprove}
+        regenerateOpen={regenerateOpen}
+        setRegenerateOpen={setRegenerateOpen}
+        onRegenerateLink={onRegenerateLink}
+      />
     </div>
   )
 }
