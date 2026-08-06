@@ -2,7 +2,9 @@ import 'server-only'
 
 import { randomUUID } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
+import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
 import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
@@ -12,7 +14,7 @@ export type DelegateInternalApprovalResult =
   | { ok: false; reason: 'invalid' | 'not_pending' | 'invalid_email' }
 
 export async function delegateInternalApprovalFromToken(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
   token: string,
   delegateEmail: string,
 ): Promise<DelegateInternalApprovalResult> {
@@ -45,11 +47,7 @@ export async function delegateInternalApprovalFromToken(
   if (internal !== 'pending_internal') return { ok: false, reason: 'not_pending' }
 
   const newToken = randomUUID()
-  const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
-  const accountCompanyName =
-    typeof company?.name === 'string' && company.name.trim()
-      ? company.name.trim()
-      : 'Account'
+  const accountCompanyName = companyNameFromReferenceRow(row.companies, 'Account')
   const requesterName = String(row.approval_requester_name ?? '').trim()
   const previousEmail = String(row.approval_coordinator_email ?? '').trim()
 
@@ -65,7 +63,7 @@ export async function delegateInternalApprovalFromToken(
 
   if (updateError) return { ok: false, reason: 'invalid' }
 
-  const orgId = (row as { organization_id?: string | null }).organization_id
+  const orgId = row.organization_id
   if (orgId) {
     try {
       await admin.from('evidence_events').insert({
@@ -93,7 +91,7 @@ export async function delegateInternalApprovalFromToken(
     requesterName,
     message: typeof row.approval_message === 'string' ? row.approval_message : null,
     internalReviewToken: newToken,
-    referenceId: row.id as string,
+    referenceId: row.id,
   })
 
   return { ok: true, delegatedToEmail: email, emailSent }

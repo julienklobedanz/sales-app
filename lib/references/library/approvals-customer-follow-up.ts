@@ -18,13 +18,11 @@ import {
 } from '@/lib/email/resend-dev-override'
 import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { log } from '@/lib/observability/logger'
+import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
 import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/references/library/approvals-email-templates'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
-import type {
-  ReferenceApprovalRow,
-  RequestCustomerApprovalAgainResult,
-} from '@/lib/references/library/approvals-types'
+import type { RequestCustomerApprovalAgainResult } from '@/lib/references/library/approvals-types'
 
 export async function requestCustomerApprovalAgainAfterChangesImpl(
   referenceId: string,
@@ -67,13 +65,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
 
   if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
 
-  const ref = row as unknown as ReferenceApprovalRow & {
-    approval_token?: string | null
-    approval_requested_by?: string | null
-    approval_delegated_to_name?: string | null
-    approval_delegated_to_email?: string | null
-    approval_comment?: string | null
-  }
+  const ref = row
 
   if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
     return { success: false, error: 'Es liegt keine aktive Kunden-Freigabe vor.' }
@@ -105,11 +97,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   const token = typeof ref.approval_token === 'string' ? ref.approval_token.trim() : ''
   if (!token) return { success: false, error: 'Noch kein Freigabelink verfügbar.' }
 
-  const company =
-    Array.isArray(ref.companies) && ref.companies.length > 0
-      ? (ref.companies[0] as { name?: string })
-      : (ref.companies as { name?: string } | null)
-  const companyName = company?.name ?? 'Referenz'
+  const companyName = companyNameFromReferenceRow(ref.companies)
 
   let contactEmail: string
   let firstName: string

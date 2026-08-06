@@ -318,9 +318,7 @@ export function useReferenceForm({
       )
       if (result.success) {
         toast.success('Referenz wurde angelegt.')
-        const refId =
-          (result as unknown as { referenceId?: string; id?: string }).referenceId ??
-          (result as { id?: string }).id
+        const refId = result.referenceId
         if (refId && selectedFile) {
           void (async () => {
             const supabase = createClient()
@@ -331,9 +329,7 @@ export function useReferenceForm({
               .select('organization_id')
               .eq('id', me.user.id)
               .single()
-            const orgId =
-              (profile as { organization_id?: string | null } | null)?.organization_id ??
-              null
+            const orgId = profile?.organization_id ?? null
             if (!orgId) return
             const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\\-_]/g, '_')
             const storagePath = `${orgId}/${refId}/${Date.now()}-${safeName}`
