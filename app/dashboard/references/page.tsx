@@ -87,9 +87,7 @@ export default async function ReferencesHubPage() {
     ? filterReferencesForSales(dashboard.references)
     : dashboard.references
 
-  const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(
-    (orgRow as { date_display_format?: string | null } | null)?.date_display_format,
-  )
+  const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(orgRow?.date_display_format)
 
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 

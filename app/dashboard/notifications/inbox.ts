@@ -273,7 +273,7 @@ export async function getInboxNotificationsImpl(
     .eq('id', userId)
     .maybeSingle()
 
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return []
 
   const { data: events, error } = await supabase
@@ -388,10 +388,8 @@ export async function getInboxNotificationsImpl(
     .limit(500)
   const championPersonKeys = new Set(
     (championRows ?? []).flatMap((row) => {
-      const key = normalizeText((row as { person_key?: string | null }).person_key ?? '')
-      const name = normalizeText(
-        (row as { person_name?: string | null }).person_name ?? '',
-      )
+      const key = normalizeText(row.person_key ?? '')
+      const name = normalizeText(row.person_name ?? '')
       return [key, name].filter(Boolean)
     }),
   )

@@ -34,7 +34,7 @@ export default async function DealDeskPage({
           .eq('organization_id', orgId)
           .maybeSingle()
 
-        const dealId = (project as { deal_id?: string | null } | null)?.deal_id
+        const dealId = project?.deal_id
         if (dealId) {
           redirect(ROUTES.deals.detailRfp(dealId))
         }
