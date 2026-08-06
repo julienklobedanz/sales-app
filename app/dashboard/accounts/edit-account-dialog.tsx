@@ -35,7 +35,7 @@ import {
   ACCOUNT_STATUS_FORM_OPTIONS,
   accountStatusFromDb,
   type AccountStatusFormValue,
-} from '@/lib/accounts/company-account-status'
+} from '@/lib/accounts/account-status'
 import { IndustrySelect } from '@/components/forms/industry-select'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { formatThousandsDots, parseThousandsDotsToInt } from '@/lib/format'

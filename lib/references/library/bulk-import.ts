@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgReferences } from '@/lib/cache/revalidate-org'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
-import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
+import { resolveOrCreateAccountForImport } from '@/lib/accounts/resolve-account-for-import'
 import { extractPlainTextFromBuffer } from '@/lib/document-text'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
@@ -103,13 +103,13 @@ export async function bulkCreateReferencesFromFilesImpl(
 
     let companyResolved
     if (companyHint) {
-      companyResolved = await resolveOrCreateCompanyForImport(
+      companyResolved = await resolveOrCreateAccountForImport(
         supabase,
         organizationId,
         companyHint,
       )
     } else {
-      companyResolved = await resolveOrCreateCompanyForImport(
+      companyResolved = await resolveOrCreateAccountForImport(
         supabase,
         organizationId,
         'Unbekannter Kunde',

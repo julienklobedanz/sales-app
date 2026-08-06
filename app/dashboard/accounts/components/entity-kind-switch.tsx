@@ -3,12 +3,12 @@
 import { Building2, User } from 'lucide-react'
 
 import { AccountsToolbarTooltip } from './accounts-toolbar-tooltip'
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import { cn } from '@/lib/utils'
 
 type Props = {
-  value: CompanyEntityKind
-  onChange: (value: CompanyEntityKind) => void
+  value: AccountEntityKind
+  onChange: (value: AccountEntityKind) => void
 }
 
 export function EntityKindSwitch({ value, onChange }: Props) {

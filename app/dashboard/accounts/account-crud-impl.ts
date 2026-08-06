@@ -3,12 +3,12 @@ import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import * as XLSX from 'xlsx'
 import {
-  normalizeCompanyAccountStatus,
-  type CompanyAccountStatusValue,
-} from '@/lib/accounts/company-account-status'
-import type { PartnerCategory } from '@/lib/accounts/company-entity'
+  normalizeAccountStatus,
+  type AccountStatusValue,
+} from '@/lib/accounts/account-status'
+import type { PartnerCategory } from '@/lib/accounts/account-entity'
 import { parseCompaniesImportRow } from '@/lib/accounts/companies-import-parse'
-import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
+import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-account-for-import'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import {
   discoverAndSaveCompanyNewsrooms,
@@ -21,7 +21,7 @@ import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 /** Setzt nur `account_status`. Stammdaten inkl. Status: {@link updateCompany}. */
 export async function updateCompanyAccountStatusImpl(
   companyId: string,
-  account_status: CompanyAccountStatusValue | null,
+  account_status: AccountStatusValue | null,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
@@ -103,7 +103,7 @@ export async function createCompanyImpl(payload: {
       logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
       employee_count: payload.employee_count ?? null,
       description: payload.description?.trim() || null,
-      account_status: normalizeCompanyAccountStatus(payload.account_status),
+      account_status: normalizeAccountStatus(payload.account_status),
     })
     .select('id')
     .single()
@@ -397,7 +397,7 @@ export async function updateCompanyImpl(payload: {
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
 
-  const account_status = normalizeCompanyAccountStatus(payload.account_status)
+  const account_status = normalizeAccountStatus(payload.account_status)
 
   const { data: row, error: fetchError } = await supabase
     .from('companies')

@@ -20,8 +20,8 @@ import { cn } from '@/lib/utils'
 import { accountStatusDisplay } from '@/lib/accounts/account-status-display'
 import {
   ACCOUNT_STATUS_FORM_OPTIONS,
-  type CompanyAccountStatusValue,
-} from '@/lib/accounts/company-account-status'
+  type AccountStatusValue,
+} from '@/lib/accounts/account-status'
 import { updateCompanyAccountStatus } from '../actions'
 
 const SELECTABLE_STATUSES = ACCOUNT_STATUS_FORM_OPTIONS.filter(
@@ -32,7 +32,7 @@ export function AccountStatusBadge({
   status,
   className,
 }: {
-  status: CompanyAccountStatusValue | null | undefined
+  status: AccountStatusValue | null | undefined
   className?: string
 }) {
   const display = accountStatusDisplay(status)
@@ -69,7 +69,7 @@ export function AccountStatusPicker({
   className,
 }: {
   companyId: string
-  status: CompanyAccountStatusValue | null
+  status: AccountStatusValue | null
   canManage: boolean
   variant?: 'badge' | 'button'
   className?: string
@@ -78,7 +78,7 @@ export function AccountStatusPicker({
   const [pending, setPending] = useState(false)
   const display = accountStatusDisplay(status)
 
-  async function handleSelect(next: CompanyAccountStatusValue | null) {
+  async function handleSelect(next: AccountStatusValue | null) {
     if (!canManage || pending) return
     setPending(true)
     try {
@@ -133,7 +133,7 @@ export function AccountStatusPicker({
           <DropdownMenuItem
             key={opt.value}
             disabled={status === opt.value}
-            onSelect={() => void handleSelect(opt.value as CompanyAccountStatusValue)}
+            onSelect={() => void handleSelect(opt.value as AccountStatusValue)}
           >
             <div className="flex flex-col gap-0.5">
               <span className="font-medium">{opt.label}</span>

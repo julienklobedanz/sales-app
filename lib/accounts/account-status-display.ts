@@ -1,4 +1,4 @@
-import type { CompanyAccountStatusValue } from './company-account-status'
+import type { AccountStatusValue } from './account-status'
 import { statusTone } from '@/lib/ui/status-tone'
 
 export type AccountStatusDisplay = {
@@ -6,7 +6,7 @@ export type AccountStatusDisplay = {
   className: string
 }
 
-const DISPLAY: Record<CompanyAccountStatusValue, AccountStatusDisplay> = {
+const DISPLAY: Record<AccountStatusValue, AccountStatusDisplay> = {
   target: {
     label: 'Target',
     className: statusTone.info,
@@ -26,7 +26,7 @@ const DISPLAY: Record<CompanyAccountStatusValue, AccountStatusDisplay> = {
 }
 
 export function accountStatusDisplay(
-  status: CompanyAccountStatusValue | null | undefined,
+  status: AccountStatusValue | null | undefined,
 ): AccountStatusDisplay | null {
   if (!status) return null
   return DISPLAY[status] ?? null

@@ -41,7 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { resolveNdaDisplayStatus } from '@/lib/accounts/company-entity'
+import { resolveNdaDisplayStatus } from '@/lib/accounts/account-entity'
 import { shouldNotifyNdaExpiry } from '@/lib/accounts/nda-expiry'
 import type { NdaAgreementRow } from '../nda-actions'
 import {

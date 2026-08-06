@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveNdaDisplayStatus } from './company-entity'
+import { resolveNdaDisplayStatus } from './account-entity'
 
 describe('resolveNdaDisplayStatus', () => {
   it('returns none when no rows or no uploaded PDF', () => {

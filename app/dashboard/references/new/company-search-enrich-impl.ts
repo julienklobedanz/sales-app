@@ -1,7 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-import'
+import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-account-for-import'
 import {
   fetchBrandfetchCompany,
   pickBestLogoUrlFromBrandfetchJson,

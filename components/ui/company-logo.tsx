@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Building2 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { requestCompanyBrandfetchRetry } from '@/lib/accounts/company-brandfetch-retry-client'
+import { requestAccountBrandfetchRetry } from '@/lib/accounts/account-brandfetch-retry-client'
 import { refreshCompanyBrandfetchOnLogoIssue } from '@/lib/references/library/sync-company-brandfetch'
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
@@ -87,7 +87,7 @@ export function CompanyLogo({
       const id = String(companyId ?? '').trim()
       if (!id) return
 
-      void requestCompanyBrandfetchRetry(id, failedLogoUrl, (cid, failed) =>
+      void requestAccountBrandfetchRetry(id, failedLogoUrl, (cid, failed) =>
         refreshCompanyBrandfetchOnLogoIssue(cid, failed),
       ).then((result) => {
         if (result?.logo_url) {

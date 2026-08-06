@@ -1,4 +1,4 @@
-import type { PartnerCategory } from '@/lib/accounts/company-entity'
+import type { PartnerCategory } from '@/lib/accounts/account-entity'
 
 export const COMPANIES_IMPORT_NAME_KEYS = [
   'name',

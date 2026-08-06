@@ -1,7 +1,7 @@
 import { formatReferenceDate } from '@/lib/format'
 
-import type { CompanyAccountStatusValue } from './company-account-status'
-import type { NdaDisplayStatus } from './company-entity'
+import type { AccountStatusValue } from './account-status'
+import type { NdaDisplayStatus } from './account-entity'
 import {
   contractEndPrimaryTone,
   formatContractEndRelativeLabel,
@@ -36,7 +36,7 @@ export type NextContractEnd = {
 }
 
 export type ResolveAccountCardPrimaryActionInput = {
-  accountStatus: CompanyAccountStatusValue | null
+  accountStatus: AccountStatusValue | null
   nextApproval: NextApprovalExpiry | null
   nextContract: NextContractEnd | null
   nextNdaExpiry: string | null

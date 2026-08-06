@@ -17,7 +17,7 @@ import {
   type MarketSignalBadge,
 } from '@/lib/market-signals/signal-badge'
 import { formatSignalSourceLabel } from '@/lib/market-signals/leadership-move'
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { log } from '@/lib/observability/logger'
 
 export type NotificationInboxGroup = 'signals' | 'approvals' | 'other'
@@ -399,7 +399,7 @@ export async function getInboxNotificationsImpl(
   const favoriteCompanyNames = new Set(
     (executiveRows ?? [])
       .map((row) => {
-        const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
+        const co = accountFromJoin(row.companies, { fallbackName: 'Account' })!
         if (!co.isFavorite) return null
         return normalizeText(co.name)
       })
@@ -408,7 +408,7 @@ export async function getInboxNotificationsImpl(
 
   const executiveSeen = new Set<string>()
   const executiveCandidates: InboxCandidate[] = (executiveRows ?? []).flatMap((row) => {
-    const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
+    const co = accountFromJoin(row.companies, { fallbackName: 'Account' })!
     const personName = String(row.person_name ?? '').trim()
     const changeSummary = String(row.change_summary ?? '')
     const summaryNorm = normalizeText(changeSummary)
@@ -491,7 +491,7 @@ export async function getInboxNotificationsImpl(
 
   const newsSeen = new Set<string>()
   const newsCandidates: InboxCandidate[] = (newsRows ?? []).flatMap((row) => {
-    const co = companyFromJoin(row.companies, { fallbackName: 'Account' })!
+    const co = accountFromJoin(row.companies, { fallbackName: 'Account' })!
     const body = String(row.body ?? '').trim()
     const badge = resolveNewsSignalBadge(body, co.name)
     const personName = newsPersonNameFromBody(body, co.name)?.trim() || null

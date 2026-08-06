@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import {
   COMPANIES_IMPORT_ACCEPT,
   downloadCompaniesImportTemplate,
@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils'
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  entityKind: CompanyEntityKind
+  entityKind: AccountEntityKind
   importing: boolean
   onImport: (file: File) => boolean | Promise<boolean>
 }

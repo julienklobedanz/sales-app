@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { companyFromJoin } from './company-from-join'
+import { accountFromJoin } from './account-from-join'
 
-describe('companyFromJoin', () => {
+describe('accountFromJoin', () => {
   it('unwraps object and array joins', () => {
     expect(
-      companyFromJoin({
+      accountFromJoin({
         id: 'c1',
         name: 'Acme',
         logo_url: 'https://x/logo.png',
@@ -17,7 +17,7 @@ describe('companyFromJoin', () => {
       logoUrl: 'https://x/logo.png',
       isFavorite: true,
     })
-    expect(companyFromJoin([{ name: 'Beta', logo_url: null }])).toEqual({
+    expect(accountFromJoin([{ name: 'Beta', logo_url: null }])).toEqual({
       id: null,
       name: 'Beta',
       logoUrl: null,
@@ -26,9 +26,9 @@ describe('companyFromJoin', () => {
   })
 
   it('returns null when empty unless fallbackName is set', () => {
-    expect(companyFromJoin(null)).toBeNull()
-    expect(companyFromJoin({})).toBeNull()
-    expect(companyFromJoin(null, { fallbackName: 'Account' })).toEqual({
+    expect(accountFromJoin(null)).toBeNull()
+    expect(accountFromJoin({})).toBeNull()
+    expect(accountFromJoin(null, { fallbackName: 'Account' })).toEqual({
       id: null,
       name: 'Account',
       logoUrl: null,

@@ -1,9 +1,9 @@
 'use server'
 
-import type { PartnerCategory } from '@/lib/accounts/company-entity'
+import type { PartnerCategory } from '@/lib/accounts/account-entity'
 import type {
   AccountDealRow,
-  CompanyAccountStatusValue,
+  AccountStatusValue,
   CompanyRefRow,
   CompanyStrategyRow,
   ContactPersonRow,
@@ -56,7 +56,7 @@ import {
 import { generateOnePagerHtmlImpl } from './onepager-impl'
 
 export type {
-  CompanyAccountStatusValue,
+  AccountStatusValue,
   CompanyStrategyRow,
   StakeholderRole,
   StakeholderRow,
@@ -253,7 +253,7 @@ export async function getExpiringDealsByCompanyId(
 
 export async function updateCompanyAccountStatus(
   companyId: string,
-  account_status: CompanyAccountStatusValue | null,
+  account_status: AccountStatusValue | null,
 ): Promise<{ success: boolean; error?: string }> {
   return updateCompanyAccountStatusImpl(companyId, account_status)
 }

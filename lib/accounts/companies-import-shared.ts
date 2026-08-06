@@ -1,9 +1,9 @@
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 
 export const COMPANIES_IMPORT_ACCEPT =
   '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv'
 
-export function companiesImportTemplateFilename(entityKind: CompanyEntityKind): string {
+export function companiesImportTemplateFilename(entityKind: AccountEntityKind): string {
   return entityKind === 'partner'
     ? 'partner-import-vorlage.xlsx'
     : 'accounts-import-vorlage.xlsx'
@@ -23,7 +23,7 @@ export function isCompaniesImportFile(file: File): boolean {
 
 /** Template-Download über Server-API (xlsx bleibt serverseitig). */
 export async function downloadCompaniesImportTemplate(
-  entityKind: CompanyEntityKind,
+  entityKind: AccountEntityKind,
 ): Promise<void> {
   const res = await fetch(`/api/accounts/import-template?kind=${entityKind}`)
   if (!res.ok) {

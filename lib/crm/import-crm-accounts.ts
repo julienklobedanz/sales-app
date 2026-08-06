@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { syncExistingCompanyBrandfetch } from '@/lib/accounts/resolve-company-for-import'
+import { syncExistingAccountBrandfetch } from '@/lib/accounts/resolve-account-for-import'
 import { touchOrganizationCrmLastSync } from '@/lib/crm/connections'
 import { syncHubSpotWonDealsForOrganization } from '@/lib/crm/sync-hubspot-won-deals'
 import {
@@ -58,7 +58,7 @@ async function enrichCompaniesWithBrandfetch(
 
   for (const companyId of companyIds) {
     try {
-      const result = await syncExistingCompanyBrandfetch(
+      const result = await syncExistingAccountBrandfetch(
         supabase,
         organizationId,
         companyId,
