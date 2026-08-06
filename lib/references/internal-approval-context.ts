@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type InternalApprovalPageContext =
   | {
-      ok: true
+      success: true
       referenceId: string
       referenceTitle: string
       accountCompanyName: string
@@ -14,14 +14,14 @@ export type InternalApprovalPageContext =
       alreadyApproved: boolean
       canAct: boolean
     }
-  | { ok: false; reason: 'invalid' | 'not_pending' }
+  | { success: false; reason: 'invalid' | 'not_pending' }
 
 export async function getInternalApprovalPageContext(
   admin: SupabaseClient,
   token: string,
 ): Promise<InternalApprovalPageContext> {
   const trimmed = token.trim()
-  if (!trimmed) return { ok: false, reason: 'invalid' }
+  if (!trimmed) return { success: false, reason: 'invalid' }
 
   const { data: row, error } = await admin
     .from('references')
@@ -40,7 +40,7 @@ export async function getInternalApprovalPageContext(
     .eq('approval_internal_review_token', trimmed)
     .maybeSingle()
 
-  if (error || !row?.id) return { ok: false, reason: 'invalid' }
+  if (error || !row?.id) return { success: false, reason: 'invalid' }
 
   const internal = String(row.approval_internal_status ?? '').toLowerCase()
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
@@ -51,7 +51,7 @@ export async function getInternalApprovalPageContext(
 
   if (internal === 'approved_internal') {
     return {
-      ok: true,
+      success: true,
       referenceId: row.id as string,
       referenceTitle: String(row.title ?? 'Referenz'),
       accountCompanyName,
@@ -67,11 +67,11 @@ export async function getInternalApprovalPageContext(
   }
 
   if (internal !== 'pending_internal') {
-    return { ok: false, reason: 'not_pending' }
+    return { success: false, reason: 'not_pending' }
   }
 
   return {
-    ok: true,
+    success: true,
     referenceId: row.id as string,
     referenceTitle: String(row.title ?? 'Referenz'),
     accountCompanyName,

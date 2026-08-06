@@ -7,19 +7,19 @@ import { notifyInternalTeamInternalApproved } from '@/lib/references/approval-wo
 
 export type ConfirmInternalApprovalResult =
   | {
-      ok: true
+      success: true
       referenceId: string
       referenceTitle: string
       alreadyApproved: boolean
     }
-  | { ok: false; reason: 'invalid' | 'not_pending' }
+  | { success: false; reason: 'invalid' | 'not_pending' }
 
 export async function confirmInternalApprovalFromToken(
   admin: SupabaseClient<Database>,
   token: string,
 ): Promise<ConfirmInternalApprovalResult> {
   const trimmed = token.trim()
-  if (!trimmed) return { ok: false, reason: 'invalid' }
+  if (!trimmed) return { success: false, reason: 'invalid' }
 
   const { data: row, error } = await admin
     .from('references')
@@ -29,12 +29,12 @@ export async function confirmInternalApprovalFromToken(
     .eq('approval_internal_review_token', trimmed)
     .maybeSingle()
 
-  if (error || !row?.id) return { ok: false, reason: 'invalid' }
+  if (error || !row?.id) return { success: false, reason: 'invalid' }
 
   const internal = String(row.approval_internal_status ?? '').toLowerCase()
   if (internal === 'approved_internal') {
     return {
-      ok: true,
+      success: true,
       referenceId: row.id,
       referenceTitle: String(row.title ?? 'Referenz'),
       alreadyApproved: true,
@@ -42,7 +42,7 @@ export async function confirmInternalApprovalFromToken(
   }
 
   if (internal !== 'pending_internal') {
-    return { ok: false, reason: 'not_pending' }
+    return { success: false, reason: 'not_pending' }
   }
 
   const { error: updateError } = await admin
@@ -55,7 +55,7 @@ export async function confirmInternalApprovalFromToken(
     .eq('id', row.id)
     .eq('approval_internal_status', 'pending_internal')
 
-  if (updateError) return { ok: false, reason: 'invalid' }
+  if (updateError) return { success: false, reason: 'invalid' }
 
   const orgId = row.organization_id
   if (orgId) {
@@ -77,7 +77,7 @@ export async function confirmInternalApprovalFromToken(
   })
 
   return {
-    ok: true,
+    success: true,
     referenceId: row.id,
     referenceTitle: String(row.title ?? 'Referenz'),
     alreadyApproved: false,
