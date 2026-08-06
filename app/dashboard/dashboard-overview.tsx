@@ -4,17 +4,11 @@ import React from 'react'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { ReferenceRow, ReferenceAssetRow } from './actions'
+import type { ReferenceRow } from './actions'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import {
-  createSharedPortfolio,
-  deleteReference,
-  getExistingShareForReference,
-  getReferenceAssets,
-  toggleFavorite,
-} from './actions'
+import { deleteReference, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-types'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
@@ -28,20 +22,12 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
-import { type ReferenceColumnKey } from './overview/reference-table-column-renders'
 import {
   COLUMN_KEYS,
   COLUMN_LABELS,
-  COLUMN_ORDER_STORAGE_KEY,
-  COLUMN_SIZING_STORAGE_KEY,
-  COLUMN_VISIBLE_STORAGE_KEY,
-  DEFAULT_VISIBLE,
   REFERENCE_SHOW_EXPIRED_CERTS_KEY,
   STATUS_LABELS,
-  loadColumnOrderFromStorage,
-  loadReferenceColumnWidthsFromStorage,
   loadShowExpiredCertificatesFromStorage,
-  loadVisibleColumnsFromStorage,
 } from './overview/reference-overview-columns'
 import {
   buildReferenceFilterOptions,
@@ -54,12 +40,18 @@ import {
   buildCompanyIndustryById,
   buildCompanyLogoById,
 } from './overview/reference-company-maps'
+import {
+  copyReferenceShareLink,
+  createAndCopyCollectionShareLink,
+} from './overview/reference-overview-share-link'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
+import type { ReferenceColumnKey } from './overview/reference-table-column-types'
+import { useReferenceDetailSheet } from './overview/use-reference-detail-sheet'
+import { useReferenceOverviewColumns } from './overview/use-reference-overview-columns'
 import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { toast } from 'sonner'
-import { clampColumnWidth, saveColumnWidthsToStorage } from '@/lib/table-column-sizing'
 import type { OrgDateDisplayFormat } from '@/lib/format'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
@@ -165,10 +157,16 @@ export function DashboardOverview({
     profile.functionRole,
   )
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
-  const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
-  const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
+  const {
+    selectedRef,
+    setSelectedRef,
+    sheetOpen,
+    setSheetOpen,
+    detailAssets,
+    setDetailAssets,
+    detailAssetsLoading,
+    handleReferenceSheetOpenChange,
+  } = useReferenceDetailSheet()
   const {
     setComplianceUploadOpen,
     setComplianceBulkUploadOpen,
@@ -184,24 +182,18 @@ export function DashboardOverview({
   } = useReferencesOverviewDialogsState()
   const [pageSize, setPageSize] = useState(30)
   const [pageIndex, setPageIndex] = useState(0)
-  const [visibleColumns, setVisibleColumns] = useState<
-    Record<(typeof COLUMN_KEYS)[number], boolean>
-  >(loadVisibleColumnsFromStorage)
-  const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
-    loadColumnOrderFromStorage(),
-  )
-  const [columnWidths, setColumnWidths] = useState<Record<ReferenceColumnKey, number>>(
-    () => loadReferenceColumnWidthsFromStorage(),
-  )
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
-
-  const handleReferenceSheetOpenChange = useCallback((open: boolean) => {
-    setSheetOpen(open)
-    if (!open) {
-      setDetailAssets([])
-      setDetailAssetsLoading(false)
-    }
-  }, [])
+  const {
+    visibleColumns,
+    setVisibleColumns,
+    columnOrder,
+    columnWidths,
+    dragOverColumn,
+    setDragOverColumn,
+    handleColumnWidthChange,
+    resetVisibleColumns,
+    orderedVisibleColumnKeys,
+    moveColumnOrder,
+  } = useReferenceOverviewColumns()
 
   useLayoutEffect(() => {
     syncReferenceLibraryModeFromStorage()
@@ -239,72 +231,9 @@ export function DashboardOverview({
     }
   }, [showExpiredCertificates])
 
-  useEffect(() => {
-    if (!selectedRef?.id || !sheetOpen) return
-    let cancelled = false
-    void (async () => {
-      setDetailAssetsLoading(true)
-      try {
-        const assets = await getReferenceAssets(selectedRef.id)
-        if (!cancelled) setDetailAssets(assets)
-      } finally {
-        if (!cancelled) setDetailAssetsLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [selectedRef?.id, sheetOpen])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_ORDER_STORAGE_KEY, JSON.stringify(columnOrder))
-    } catch {
-      /* ignore */
-    }
-  }, [columnOrder])
-
-  useEffect(() => {
-    saveColumnWidthsToStorage(COLUMN_SIZING_STORAGE_KEY, columnWidths)
-  }, [columnWidths])
-
-  const handleColumnWidthChange = useCallback(
-    (column: ReferenceColumnKey, width: number) => {
-      setColumnWidths((prev) => ({
-        ...prev,
-        [column]: clampColumnWidth(width),
-      }))
-    },
-    [],
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id)),
   )
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_VISIBLE_STORAGE_KEY, JSON.stringify(visibleColumns))
-    } catch {
-      /* ignore */
-    }
-  }, [visibleColumns])
-
-  const resetVisibleColumns = useCallback(() => {
-    setVisibleColumns({ ...DEFAULT_VISIBLE })
-  }, [])
-
-  const orderedVisibleColumnKeys = useMemo(
-    () => columnOrder.filter((k) => visibleColumns[k]),
-    [columnOrder, visibleColumns],
-  )
-
-  const moveColumnOrder = useCallback((from: string, to: string) => {
-    if (from === to) return
-    setColumnOrder((prev) => {
-      const next = prev.filter((k) => k !== from)
-      const insertAt = next.indexOf(to as ReferenceColumnKey)
-      if (insertAt === -1) return prev
-      next.splice(insertAt, 0, from as ReferenceColumnKey)
-      return next
-    })
-  }, [])
 
   const handleToggleFavorite = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -331,10 +260,6 @@ export function DashboardOverview({
       },
     )
   }
-
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
-    () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id)),
-  )
 
   const referencesWithLocalFavorites = useMemo(
     () =>
@@ -469,25 +394,6 @@ export function DashboardOverview({
     toast.success('ID in die Zwischenablage kopiert')
   }
 
-  async function copyReferenceShareLink(referenceId: string) {
-    const existing = await getExistingShareForReference(referenceId)
-    let shareUrl = existing?.url ?? null
-    if (!shareUrl) {
-      const created = await createSharedPortfolio([referenceId])
-      if (!created.success) {
-        toast.error(created.error ?? 'Kundenlink konnte nicht erstellt werden.')
-        return
-      }
-      shareUrl = created.url
-    }
-    const absoluteUrl =
-      shareUrl.startsWith('http://') || shareUrl.startsWith('https://')
-        ? shareUrl
-        : new URL(shareUrl, window.location.origin).toString()
-    await navigator.clipboard.writeText(absoluteUrl)
-    toast.success('Kundenlink kopiert.')
-  }
-
   const canCreateReference = userCanCreateReference(
     profile.functionRole,
     profile.systemRole,
@@ -592,20 +498,7 @@ export function DashboardOverview({
             onClearSelection={() => setSelectedRefIds(new Set())}
             onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
             onCreateSharedPortfolio={async () => {
-              const selected = Array.from(selectedRefIds)
-              const result = await createSharedPortfolio(selected)
-              if (!result.success) {
-                toast.error(
-                  result.error ?? 'Kollektions-Link konnte nicht erstellt werden.',
-                )
-                return
-              }
-              const absoluteUrl =
-                result.url.startsWith('http://') || result.url.startsWith('https://')
-                  ? result.url
-                  : new URL(result.url, window.location.origin).toString()
-              await navigator.clipboard.writeText(absoluteUrl)
-              toast.success('Kollektions-Link erstellt und kopiert.')
+              await createAndCopyCollectionShareLink(Array.from(selectedRefIds))
             }}
             onDownloadPdfs={() => {
               const base = process.env.NEXT_PUBLIC_SUPABASE_URL
