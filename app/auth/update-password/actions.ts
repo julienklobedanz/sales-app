@@ -15,7 +15,7 @@ export async function updatePasswordAfterReset(
 
   if (!password) return { error: 'Bitte neues Passwort eingeben.' }
   const policy = validatePasswordPolicy(password)
-  if (!policy.ok) return { error: policy.error }
+  if (!policy.success) return { error: policy.error }
   if (password !== confirm) {
     return { error: 'Die Passwörter stimmen nicht überein.' }
   }

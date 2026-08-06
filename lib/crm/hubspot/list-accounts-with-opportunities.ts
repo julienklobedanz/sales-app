@@ -67,7 +67,7 @@ async function fetchAllOpenDeals(
       { method: 'POST', body: JSON.stringify(body) },
     )
 
-    if (!res.ok) break
+    if (!res.success) break
 
     const batch = res.data.results ?? []
     deals.push(...batch)
@@ -101,7 +101,7 @@ async function fetchCompaniesByIds(
       },
     )
 
-    if (!res.ok) continue
+    if (!res.success) continue
 
     for (const row of res.data.results ?? []) {
       const name = String(row.properties?.name ?? '').trim()
@@ -153,7 +153,7 @@ export async function listHubSpotAccountsWithOpenOpportunities(
     },
   )
 
-  if (!associations.ok) {
+  if (!associations.success) {
     return { success: false, error: associations.error }
   }
 

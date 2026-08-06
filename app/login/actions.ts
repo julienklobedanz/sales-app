@@ -71,7 +71,7 @@ export async function sendMagicLinkSignIn(formData: FormData): Promise<AltSignIn
     inviteToken,
   })
 
-  if (resendResult.ok) {
+  if (resendResult.success) {
     return { success: successMessage }
   }
 

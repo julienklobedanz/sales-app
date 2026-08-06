@@ -202,7 +202,7 @@ export async function changeOwnPassword(
     return { error: 'Die neuen Passwörter stimmen nicht überein.' }
   }
   const policy = validatePasswordPolicy(newPassword)
-  if (!policy.ok) return { error: policy.error }
+  if (!policy.success) return { error: policy.error }
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: user.email,

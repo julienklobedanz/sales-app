@@ -77,7 +77,7 @@ async function fetchClosedWonDeals(
       { method: 'POST', body: JSON.stringify(body) },
     )
 
-    if (!res.ok) break
+    if (!res.success) break
 
     const batch = (res.data.results ?? []).filter((deal) => {
       const stage = deal.properties?.dealstage ?? ''
@@ -125,7 +125,7 @@ export async function syncHubSpotWonDealsForOrganization(
     },
   )
 
-  if (!associations.ok) return { upserted: 0, skipped: dealIds.length }
+  if (!associations.success) return { upserted: 0, skipped: dealIds.length }
 
   const companyIdByDealId = new Map<string, string>()
   for (const row of associations.data.results ?? []) {

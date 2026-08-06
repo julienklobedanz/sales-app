@@ -77,10 +77,10 @@ export async function hubSpotApiFetch<T>(
   organizationId: string,
   path: string,
   init?: RequestInit,
-): Promise<{ ok: true; data: T } | { ok: false; error: string; status: number }> {
+): Promise<{ success: true; data: T } | { success: false; error: string; status: number }> {
   const accessToken = await getHubSpotAccessTokenForOrg(supabase, organizationId)
   if (!accessToken) {
-    return { ok: false, error: 'HubSpot ist nicht verbunden.', status: 401 }
+    return { success: false, error: 'HubSpot ist nicht verbunden.', status: 401 }
   }
 
   const res = await fetch(`https://api.hubapi.com${path}`, {
@@ -95,14 +95,14 @@ export async function hubSpotApiFetch<T>(
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as HubSpotApiError
     return {
-      ok: false,
+      success: false,
       error: err.message ?? `HubSpot API Fehler (${res.status})`,
       status: res.status,
     }
   }
 
   const data = (await res.json()) as T
-  return { ok: true, data }
+  return { success: true, data }
 }
 
 export function buildHubSpotDealUrl(params: {

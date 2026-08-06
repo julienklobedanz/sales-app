@@ -100,7 +100,7 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
   if (!email) return { error: 'Bitte E-Mail-Adresse eingeben.' }
   if (!password) return { error: 'Bitte Passwort eingeben.' }
   const policy = validatePasswordPolicy(password)
-  if (!policy.ok) return { error: policy.error }
+  if (!policy.success) return { error: policy.error }
 
   const supabase = await createServerSupabaseClient()
 
