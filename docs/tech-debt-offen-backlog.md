@@ -28,7 +28,7 @@
 | **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
 | **3** | Typed-Supabase Cast-Abbau | ✅ T1–T4 | Rest-Casts nur Boundaries (HTTP/RPC/Json); Boy-Scout bei Touch | — | CI: `typecheck` vor Build |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
-| **5** | God-File-Nacharbeit | Slice 1–2 ✅ | Detail-Sheet + Readiness-Actions gesliced | M ongoing | nächster: overview / sharing |
+| **5** | God-File-Nacharbeit | Slice 1–3 ✅ | Detail-Sheet, Readiness-Actions, `sharing.ts` → create/manage/queries/helpers | M ongoing | nächster: overview / watchlist |
 | **6** | `{ ok }` → `{ success }` | Lib ✅ | Slices 1–4; Rest nur Cron/Push-HTTP-Body | XS | Cron/Push separat wenn Monitoring-Clients ok |
 | **7** | P3-3 DE/EN-Dateinamen | ✅ Slice | `ai-draft-*`, `customer-control-link-email`; API `/api/ai-draft` + Redirect; UI-Copy „Sperrlink“/Event `ki_entwurf_generated` bleiben | — | Rest nur bei Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
