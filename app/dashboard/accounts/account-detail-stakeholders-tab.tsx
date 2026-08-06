@@ -21,8 +21,8 @@ import {
   ContactActionButtons,
   externalContactJobTitle,
   formatLastInteraction,
-} from './company-contact-action-buttons'
-import { StakeholderRoleBadge } from './company-stakeholder-role-badge'
+} from './account-contact-action-buttons'
+import { StakeholderRoleBadge } from './account-stakeholder-role-badge'
 import { AppIcon } from '@/lib/icons'
 import { buildInternalContactLinkedInHref } from '@/lib/linkedin-people-search'
 

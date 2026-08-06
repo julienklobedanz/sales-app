@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table'
 import { Plus } from '@hugeicons/core-free-icons'
 import type { ContactPersonRow } from './actions'
-import { ContactActionButtons, contactRoleLabel } from './company-contact-action-buttons'
+import { ContactActionButtons, contactRoleLabel } from './account-contact-action-buttons'
 import { AppIcon } from '@/lib/icons'
 import { buildInternalContactLinkedInHref } from '@/lib/linkedin-people-search'
 

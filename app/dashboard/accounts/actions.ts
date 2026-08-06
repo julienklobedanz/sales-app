@@ -52,7 +52,7 @@ import {
   bulkCreateCompaniesFromSheetImpl,
   updateCompanyImpl,
   deleteCompanyWithDataImpl,
-} from './company-crud-impl'
+} from './account-crud-impl'
 import { generateOnePagerHtmlImpl } from './onepager-impl'
 
 export type {

@@ -35,7 +35,7 @@ type Props = {
   onSave: () => void
 }
 
-export function CompanyContactDialog({
+export function AccountContactDialog({
   open,
   onOpenChange,
   editing,

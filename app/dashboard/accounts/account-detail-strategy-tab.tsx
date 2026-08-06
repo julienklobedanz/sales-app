@@ -9,7 +9,7 @@ import type { ExternalContactRow, StakeholderRole, StakeholderRow } from './acti
 import type { AccountDetailClientProps } from './account-detail-types'
 import { formatReferenceDate } from '@/lib/format'
 import { COPY } from '@/lib/copy'
-import { externalContactJobTitle } from './company-contact-action-buttons'
+import { externalContactJobTitle } from './account-contact-action-buttons'
 import {
   Select,
   SelectContent,
