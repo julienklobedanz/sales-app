@@ -36,14 +36,16 @@ function makeAdmin(overrides: {
       return {
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({
-              data: {
-                ...roleDimsFromLegacy(overrides.requesterRole ?? 'admin'),
-                notification_settings:
-                  overrides.emailOnApprovalUpdate === false
-                    ? { email_on_approval_update: false }
-                    : { email_on_approval_update: true },
-              },
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: {
+                  ...roleDimsFromLegacy(overrides.requesterRole ?? 'admin'),
+                  notification_settings:
+                    overrides.emailOnApprovalUpdate === false
+                      ? { email_on_approval_update: false }
+                      : { email_on_approval_update: true },
+                },
+              }),
             }),
           }),
         }),
@@ -53,8 +55,10 @@ function makeAdmin(overrides: {
       return {
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({
-              data: { internal_reference_approval_contact_id: 'contact-1' },
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: { internal_reference_approval_contact_id: 'contact-1' },
+              }),
             }),
           }),
         }),
@@ -88,6 +92,7 @@ describe('resolveApprovalWorkflowNotifyEmails', () => {
     const admin = makeAdmin({ coordinatorEmail: 'coordinator@account.com' })
     const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
       companyId: 'company-1',
+      organizationId: 'org-1',
       requesterId: 'user-requester',
       coordinatorEmail: 'coordinator@account.com',
     })
@@ -103,6 +108,7 @@ describe('resolveApprovalWorkflowNotifyEmails', () => {
     })
     const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
       companyId: 'company-1',
+      organizationId: 'org-1',
       requesterId: 'user-requester',
       coordinatorEmail: 'am@account.com',
     })
@@ -113,6 +119,7 @@ describe('resolveApprovalWorkflowNotifyEmails', () => {
     const admin = makeAdmin({ coordinatorEmail: 'requester@refstack.com' })
     const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
       companyId: 'company-1',
+      organizationId: 'org-1',
       requesterId: 'user-requester',
       coordinatorEmail: 'requester@refstack.com',
     })
@@ -126,9 +133,21 @@ describe('resolveApprovalWorkflowNotifyEmails', () => {
     })
     const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
       companyId: 'company-1',
+      organizationId: 'org-1',
       requesterId: 'user-requester',
       coordinatorEmail: 'am@account.com',
     })
     expect(emails).toEqual(['am@account.com'])
+  })
+
+  it('returns no emails without organizationId', async () => {
+    const admin = makeAdmin({ coordinatorEmail: 'am@account.com' })
+    const emails = await resolveApprovalWorkflowNotifyEmails(admin, {
+      companyId: 'company-1',
+      organizationId: '  ',
+      requesterId: 'user-requester',
+      coordinatorEmail: 'am@account.com',
+    })
+    expect(emails).toEqual([])
   })
 })

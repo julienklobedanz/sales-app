@@ -59,11 +59,30 @@ Kategorisiert nach **Sicherheitsgrenze** (warum der RLS-Bypass legitim wäre) �
 3. **Dokumentieren**: an jeder verbleibenden service-role-Stelle ein kurzer Kommentar „Service-Role weil … / Grenze: …".
 4. **Konvention** in `docs/ai-coding-agent-guide.md` ergänzen: Service-Role nur mit Begründung + expliziter Grenze.
 
-**Ergebnis-Tabelle (ausfüllen):**
+**Status 2026-08-06:** Audit durchgeführt; kritische Härtungen gelandet (Notify-Recipients erfordert `organizationId`; Revoke-Reset filtert `organization_id`; Cache asserted Org-ID). Guide-Konvention bereits vorhanden. Rest: Kommentare an verbleibenden Call-Sites Boy-Scout + optional Public-Portfolio-Session enger.
+
+**Ergebnis-Tabelle (2026-08-06):**
 
 | Datei | Kategorie | Grenze verifiziert? | Bypass nötig? | Aktion |
 | ----- | --------- | ------------------- | ------------- | ------ |
-| …     | A/B/C/D   | ja/nein             | ja/nein       | —      |
+| `app/approval/[token]/actions.ts` | A | ja | ja | keep+comment |
+| `app/internal-approval/[token]/actions.ts` | A | ja | ja | keep+comment |
+| `app/internal-approval/[token]/page.tsx` | A | ja | ja | keep+comment |
+| `app/p/actions.ts` + `reset-after-customer-access-revoke` | A | ja (gehärtet) | ja | org-Filter auf Update |
+| `lib/references/resolve-approval-edit-url-for-manage.ts` | A | ja | ja | keep+comment |
+| `lib/public-portfolio/resolve-public-pdf-export-context.ts` | A | ja | ja | keep+comment |
+| `app/api/public-portfolio/session/route.ts` | A | partial | ja | Boy-Scout Kommentar / Rate-Limit später |
+| Cron `customer-approval-reminder` / `company-news` / `market-signals-digest` / `brandfetch-accounts` | B | ja (Bearer `CRON_SECRET`) | ja | keep+comment |
+| `app/register/actions.ts` / `lib/auth/send-magic-link-email.ts` | C | n/a Auth | ja | keep+comment |
+| `lib/auth/resolve-user-emails.ts` | C | Caller-Vertrauen | ja | Doku verschärft |
+| `lib/references/approval-workflow-notify-recipients.ts` | C/D | ja (gehärtet) | ja | `organizationId` Pflicht |
+| `lib/reference-manager-email.ts` | C | ja | ja | keep+comment |
+| `app/dashboard/settings/actions.ts` | C | ja | ja | keep+comment |
+| `app/dashboard/settings/settings-workspace-actions.ts` | D | ja | ja | keep+comment |
+| `app/dashboard/market-signals/signal-ingest-impl.ts` | D | ja (Session-Org) | prüfen | investigate später |
+| `lib/cache/cached-org-reads.ts` | D | ja (gehärtet) | ja | `assertOrgId` + Kommentar |
+
+Nicht mehr im Scope (kein Service-Role mehr): `lib/evidence/approvals.ts`, `lib/crm/connections.ts`.
 
 ---
 

@@ -12,18 +12,32 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
 type DbClient = SupabaseClient<Database>
 
-/** Service-Role in unstable_cache (kein cookies()); Grenze: orgId-Filter in fetcher. */
+/** Service-Role in unstable_cache (kein cookies()); Grenze: orgId-Filter in fetcher.
+ * Caller dürfen nur Session-/Server-Org-IDs übergeben — nie Client-Input als orgId. */
+function assertOrgId(orgId: string): string {
+  const id = orgId.trim()
+  if (!id) {
+    throw new Error('cached-org-reads: organizationId required')
+  }
+  return id
+}
+
 function readWithOrgCache<T>(
   cacheKey: string,
   orgId: string,
   tags: string[],
   fetcher: (client: DbClient, orgId: string) => Promise<T>,
 ): Promise<T> {
+  const scopedOrgId = assertOrgId(orgId)
+  // Service-Role weil: unstable_cache darf cookies()/Session-Client nicht nutzen.
+  // Grenze: jede Query in fetcher filtert .eq('organization_id', scopedOrgId); Caller liefert Session-Org.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
-    return createServerSupabaseClient().then((client) => fetcher(client, orgId))
+    return createServerSupabaseClient().then((client) => fetcher(client, scopedOrgId))
   }
-  return unstable_cache(() => fetcher(admin, orgId), [cacheKey, orgId], { tags })()
+  return unstable_cache(() => fetcher(admin, scopedOrgId), [cacheKey, scopedOrgId], {
+    tags,
+  })()
 }
 
 const COMPLIANCE_SELECT =
