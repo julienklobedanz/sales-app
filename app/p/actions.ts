@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
+import { createHash } from 'crypto'
+import type { Json } from '@/lib/database.types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
@@ -10,7 +12,6 @@ import { ROUTES } from '@/lib/routes'
 import { publicPortfolioUnlockCookieName } from '@/lib/public-portfolio-cookie'
 import { log } from '@/lib/observability/logger'
 import { writeAuditLog } from '@/lib/audit/log-audit'
-import { createHash } from 'crypto'
 
 /** Referenz-Objekt wie von get_public_portfolio RPC zurückgegeben (kompatibel mit ReferenceRow) */
 export type PublicReference = {
@@ -89,6 +90,91 @@ export type PublicShareOwner =
     }
   | { found: false }
 
+/** RPC-Returns sind `Json` — Record-Guard statt Row-Cast. */
+function rpcRecord(data: Json | null | undefined): Record<string, unknown> | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null
+  return data as Record<string, unknown>
+}
+
+function rpcString(obj: Record<string, unknown>, key: string): string | undefined {
+  const v = obj[key]
+  return typeof v === 'string' ? v : undefined
+}
+
+function rpcBool(obj: Record<string, unknown>, key: string): boolean | undefined {
+  const v = obj[key]
+  return typeof v === 'boolean' ? v : undefined
+}
+
+function rpcNumber(obj: Record<string, unknown>, key: string): number | undefined {
+  const v = obj[key]
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined
+}
+
+function rpcNullableString(
+  obj: Record<string, unknown>,
+  key: string,
+): string | null | undefined {
+  const v = obj[key]
+  if (v === null) return null
+  return typeof v === 'string' ? v : undefined
+}
+
+function parsePublicReferences(raw: unknown): PublicReference[] {
+  if (!Array.isArray(raw)) return []
+  const out: PublicReference[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const r = item as Record<string, unknown>
+    const id = typeof r.id === 'string' ? r.id : ''
+    if (!id) continue
+    out.push({
+      id,
+      title: typeof r.title === 'string' ? r.title : '',
+      summary: typeof r.summary === 'string' ? r.summary : null,
+      industry: typeof r.industry === 'string' ? r.industry : null,
+      country: typeof r.country === 'string' ? r.country : null,
+      status: typeof r.status === 'string' ? r.status : '',
+      company_name: typeof r.company_name === 'string' ? r.company_name : '',
+      company_logo_url: typeof r.company_logo_url === 'string' ? r.company_logo_url : null,
+      website: typeof r.website === 'string' ? r.website : null,
+      employee_count:
+        typeof r.employee_count === 'number' && Number.isFinite(r.employee_count)
+          ? r.employee_count
+          : null,
+      volume_eur: typeof r.volume_eur === 'string' ? r.volume_eur : null,
+      contract_type: typeof r.contract_type === 'string' ? r.contract_type : null,
+      incumbent_provider:
+        typeof r.incumbent_provider === 'string' ? r.incumbent_provider : null,
+      competitors: typeof r.competitors === 'string' ? r.competitors : null,
+      customer_challenge:
+        typeof r.customer_challenge === 'string' ? r.customer_challenge : null,
+      our_solution: typeof r.our_solution === 'string' ? r.our_solution : null,
+      tags: typeof r.tags === 'string' ? r.tags : null,
+      project_status: typeof r.project_status === 'string' ? r.project_status : null,
+      project_start: typeof r.project_start === 'string' ? r.project_start : null,
+      project_end: typeof r.project_end === 'string' ? r.project_end : null,
+      duration_months:
+        typeof r.duration_months === 'number' && Number.isFinite(r.duration_months)
+          ? r.duration_months
+          : null,
+      approval_quote_approved:
+        typeof r.approval_quote_approved === 'string' ? r.approval_quote_approved : null,
+      approval_reference_giver_name:
+        typeof r.approval_reference_giver_name === 'string'
+          ? r.approval_reference_giver_name
+          : null,
+      approval_token:
+        typeof r.approval_token === 'string'
+          ? r.approval_token
+          : r.approval_token === null
+            ? null
+            : undefined,
+    })
+  }
+  return out
+}
+
 async function getUnlockTokenForSlug(slug: string): Promise<string | null> {
   const jar = await cookies()
   const v = jar.get(publicPortfolioUnlockCookieName(slug))?.value
@@ -110,34 +196,30 @@ export async function getPublicPortfolio(
     ),
   })
   if (error) return { found: false, reason: 'not_found' }
-  const payload = data as {
-    access?: string
-    reason?: string
-    slug?: string
-    found?: boolean
-    view_count?: number
-    references?: PublicReference[]
-  } | null
+  const payload = rpcRecord(data)
+  if (!payload) return { found: false, reason: 'not_found' }
 
-  if (payload?.access === 'denied') {
-    const r = payload.reason === 'expired' ? 'expired' : 'not_found'
+  const access = rpcString(payload, 'access')
+  if (access === 'denied') {
+    const r = rpcString(payload, 'reason') === 'expired' ? 'expired' : 'not_found'
     return { found: false, reason: r }
   }
-  if (payload?.access === 'locked') {
-    const gm = (payload as { gate_mode?: string }).gate_mode
+  if (access === 'locked') {
+    const gm = rpcString(payload, 'gate_mode')
     const gateMode =
       gm === 'email' ? 'email' : gm === 'password' ? 'password' : ('password' as const)
-    return { found: false, reason: 'locked', slug: payload.slug, gateMode }
+    return { found: false, reason: 'locked', slug: rpcString(payload, 'slug'), gateMode }
   }
-  if (payload?.access !== 'ok' || !payload.slug) {
+  const portfolioSlug = rpcString(payload, 'slug')
+  if (access !== 'ok' || !portfolioSlug) {
     return { found: false, reason: 'not_found' }
   }
   return {
     found: true,
-    slug: payload.slug,
-    view_count: payload.view_count ?? 0,
-    canDeactivate: Boolean((payload as { can_deactivate?: boolean }).can_deactivate),
-    references: Array.isArray(payload.references) ? payload.references : [],
+    slug: portfolioSlug,
+    view_count: rpcNumber(payload, 'view_count') ?? 0,
+    canDeactivate: Boolean(rpcBool(payload, 'can_deactivate')),
+    references: parsePublicReferences(payload.references),
   }
 }
 
@@ -174,20 +256,16 @@ export async function getPublicPortfolioBranding(
     p_unlock_token: nullToUndefined(token),
   })
   if (error) return { found: false }
-  const payload = data as {
-    found?: boolean
-    name?: string
-    logo_url?: string | null
-    primary_color?: string
-    secondary_color?: string
-  } | null
-  if (!payload?.found || !payload.name) return { found: false }
+  const payload = rpcRecord(data)
+  if (!payload || !rpcBool(payload, 'found')) return { found: false }
+  const name = rpcString(payload, 'name')
+  if (!name) return { found: false }
   return {
     found: true,
-    name: payload.name,
-    logo_url: payload.logo_url ?? null,
-    primary_color: payload.primary_color ?? '#2563EB',
-    secondary_color: payload.secondary_color ?? '#1D4ED8',
+    name,
+    logo_url: rpcNullableString(payload, 'logo_url') ?? null,
+    primary_color: rpcString(payload, 'primary_color') ?? '#2563EB',
+    secondary_color: rpcString(payload, 'secondary_color') ?? '#1D4ED8',
   }
 }
 
@@ -201,24 +279,19 @@ export async function getPublicPortfolioShareOwner(
     p_unlock_token: nullToUndefined(token),
   })
   if (error) return { found: false }
-  const payload = data as {
-    found?: boolean
-    name?: string
-    position?: string
-    avatar_url?: string | null
-    email?: string | null
-    phone?: string | null
-    booking_url?: string | null
-  } | null
-  if (!payload?.found || !payload.name) return { found: false }
+  const payload = rpcRecord(data)
+  if (!payload || !rpcBool(payload, 'found')) return { found: false }
+  const name = rpcString(payload, 'name')
+  if (!name) return { found: false }
+  const booking = rpcNullableString(payload, 'booking_url')
   return {
     found: true,
-    name: payload.name,
-    position: payload.position ?? 'Sales Ansprechpartner',
-    avatar_url: payload.avatar_url ?? null,
-    email: payload.email ?? null,
-    phone: payload.phone ?? null,
-    booking_url: payload.booking_url?.trim() ? payload.booking_url.trim() : null,
+    name,
+    position: rpcString(payload, 'position') ?? 'Sales Ansprechpartner',
+    avatar_url: rpcNullableString(payload, 'avatar_url') ?? null,
+    email: rpcNullableString(payload, 'email') ?? null,
+    phone: rpcNullableString(payload, 'phone') ?? null,
+    booking_url: booking?.trim() ? booking.trim() : null,
   }
 }
 
@@ -252,17 +325,16 @@ async function getUnlockAuditContext(
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
-  const referenceId =
-    data && Array.isArray((data as { reference_ids?: unknown }).reference_ids)
-      ? ((data as { reference_ids: string[] }).reference_ids[0] ?? null)
-      : null
+  const referenceId = Array.isArray(data?.reference_ids)
+    ? (data.reference_ids[0] ?? null)
+    : null
   if (!referenceId) return { orgId: null, referenceId: null }
   const { data: ref } = await supabase
     .from('references')
     .select('organization_id')
     .eq('id', referenceId)
     .single()
-  return { orgId: (ref?.organization_id as string | null) ?? null, referenceId }
+  return { orgId: ref?.organization_id ?? null, referenceId }
 }
 
 /** Kundenansicht: Passwort prüfen und Session-Cookie setzen (ohne Login). */
@@ -311,8 +383,9 @@ export async function unlockPublicPortfolio(
     p_password: password,
   })
   if (error) return { success: false, error: 'unknown' }
-  const payload = data as { success?: boolean; token?: string; error?: string } | null
-  if (!payload?.success || !payload.token) {
+  const payload = rpcRecord(data)
+  const token = payload ? rpcString(payload, 'token') : undefined
+  if (!payload || !rpcBool(payload, 'success') || !token) {
     if (ipHash) {
       await supabase.from('portfolio_unlock_attempts').insert({
         slug,
@@ -331,7 +404,7 @@ export async function unlockPublicPortfolio(
         ip_hash: ipHash ?? null,
       },
     })
-    const e = payload?.error
+    const e = payload ? rpcString(payload, 'error') : undefined
     if (e === 'expired') return { success: false, error: 'expired' }
     if (e === 'invalid_password') return { success: false, error: 'invalid_password' }
     if (e === 'no_password_required')
@@ -340,16 +413,16 @@ export async function unlockPublicPortfolio(
     return { success: false, error: 'unknown' }
   }
 
-  const maxAgeRaw = (payload as { max_age_seconds?: number }).max_age_seconds
+  const maxAgeRaw = rpcNumber(payload, 'max_age_seconds')
   const maxAgeSec =
-    typeof maxAgeRaw === 'number' && Number.isFinite(maxAgeRaw)
+    typeof maxAgeRaw === 'number'
       ? Math.max(60, Math.min(2592000, Math.trunc(maxAgeRaw)))
       : 86400
 
   const jar = await cookies()
   const name = publicPortfolioUnlockCookieName(slug)
 
-  jar.set(name, payload.token, {
+  jar.set(name, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -402,31 +475,25 @@ export async function getPublicPortfolioManageInsights(
     p_reference_id: referenceId?.trim() || undefined,
   })
   if (error) return { found: false }
-  const payload = data as {
-    found?: boolean
-    view_count?: number
-    link_expires_at?: string | null
-    approval_responded_at?: string | null
-    is_anonymous?: boolean | null
-    last_view?: {
-      country_code?: string | null
-      active_seconds?: number
-      started_at?: string
-    } | null
-  } | null
-  if (!payload?.found) return { found: false }
-  const lv = payload.last_view
+  const payload = rpcRecord(data)
+  if (!payload || !rpcBool(payload, 'found')) return { found: false }
+  const lvRaw = payload.last_view
+  const lv =
+    lvRaw && typeof lvRaw === 'object' && !Array.isArray(lvRaw)
+      ? (lvRaw as Record<string, unknown>)
+      : null
+  const startedAt = lv ? rpcString(lv, 'started_at') : undefined
   return {
     found: true,
     viewCount: Number(payload.view_count) || 0,
-    linkExpiresAt: payload.link_expires_at ?? null,
-    approvalRespondedAt: payload.approval_responded_at ?? null,
-    isAnonymous: typeof payload.is_anonymous === 'boolean' ? payload.is_anonymous : null,
-    lastView: lv?.started_at
+    linkExpiresAt: rpcNullableString(payload, 'link_expires_at') ?? null,
+    approvalRespondedAt: rpcNullableString(payload, 'approval_responded_at') ?? null,
+    isAnonymous: rpcBool(payload, 'is_anonymous') ?? null,
+    lastView: startedAt
       ? {
-          countryCode: lv.country_code ?? null,
-          activeSeconds: Number(lv.active_seconds) || 0,
-          startedAt: String(lv.started_at),
+          countryCode: rpcNullableString(lv!, 'country_code') ?? null,
+          activeSeconds: Number(lv!.active_seconds) || 0,
+          startedAt,
         }
       : null,
   }
@@ -443,22 +510,16 @@ export async function resolvePublicPortfolioRecipient(
     p_token: token.trim(),
   })
   if (error) return { found: false }
-  const payload = data as {
-    found?: boolean
-    recipient_id?: string
-    label?: string
-    company_id?: string | null
-    company_name?: string | null
-    company_logo_url?: string | null
-  } | null
-  if (!payload?.found || !payload.recipient_id) return { found: false }
+  const payload = rpcRecord(data)
+  const recipientId = payload ? rpcString(payload, 'recipient_id') : undefined
+  if (!payload || !rpcBool(payload, 'found') || !recipientId) return { found: false }
   return {
     found: true,
-    recipientId: payload.recipient_id,
-    label: payload.label ?? '',
-    companyId: payload.company_id ?? null,
-    companyName: payload.company_name ?? null,
-    companyLogoUrl: payload.company_logo_url ?? null,
+    recipientId,
+    label: rpcString(payload, 'label') ?? '',
+    companyId: rpcNullableString(payload, 'company_id') ?? null,
+    companyName: rpcNullableString(payload, 'company_name') ?? null,
+    companyLogoUrl: rpcNullableString(payload, 'company_logo_url') ?? null,
   }
 }
 
@@ -475,29 +536,23 @@ export async function unlockPublicPortfolioEmail(
     p_email: email,
   })
   if (error) return { success: false, error: 'unknown' }
-  const payload = data as {
-    success?: boolean
-    token?: string
-    error?: string
-    max_age_seconds?: number
-    visitor_name?: string
-    visitor_email?: string
-  } | null
-  if (!payload?.success || !payload.token) {
-    const e = payload?.error
+  const payload = rpcRecord(data)
+  const unlockToken = payload ? rpcString(payload, 'token') : undefined
+  if (!payload || !rpcBool(payload, 'success') || !unlockToken) {
+    const e = payload ? rpcString(payload, 'error') : undefined
     if (e === 'expired') return { success: false, error: 'expired' }
     if (e === 'not_found') return { success: false, error: 'not_found' }
     return { success: false, error: 'unknown' }
   }
 
-  const maxAgeRaw = payload.max_age_seconds
+  const maxAgeRaw = rpcNumber(payload, 'max_age_seconds')
   const maxAgeSec =
-    typeof maxAgeRaw === 'number' && Number.isFinite(maxAgeRaw)
+    typeof maxAgeRaw === 'number'
       ? Math.max(60, Math.min(2592000, Math.trunc(maxAgeRaw)))
       : 604800
 
   const jar = await cookies()
-  jar.set(publicPortfolioUnlockCookieName(slug), payload.token, {
+  jar.set(publicPortfolioUnlockCookieName(slug), unlockToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -507,7 +562,10 @@ export async function unlockPublicPortfolioEmail(
 
   jar.set(
     `portfolio_email_gate_${slug}`,
-    JSON.stringify({ name: payload.visitor_name, email: payload.visitor_email }),
+    JSON.stringify({
+      name: rpcNullableString(payload, 'visitor_name'),
+      email: rpcNullableString(payload, 'visitor_email'),
+    }),
     {
       httpOnly: true,
       sameSite: 'lax',

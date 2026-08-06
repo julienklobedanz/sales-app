@@ -10,8 +10,8 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase **Accounts** + **Deals** + References **Slice 1–5** + Settings **Slice 1** (Page/Profile/MS-Manage/Invites) |
-| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — weitere Domänen (Notifications/Match/DealDesk/…) |
+| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase **Accounts** + **Deals** + References **1–5** + Settings **1** + Shared Portfolio **1** + Deal-Desk/Notifications Quick Wins |
+| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — Rest-Domänen (Market Signals / Command Center / Cron) + **T4** |
 | **Offen (Queue)** | #3 Rest · #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #8 `references`/`evidence` Rename · #9 Invite-SQL-Kosmetik (optional) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames; produktweite `evidence`↔`references`-Entscheidung |
 
@@ -26,7 +26,7 @@
 | **0** | Inventar-Hygiene | ✅ | — | — | — |
 | **1** | E4 Service-Role | ✅ Audit + Hotspots | Boy-Scout: Kommentar an neuen Service-Role-Callern | XS ongoing | bei Touch |
 | **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
-| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | Notifications / Match / DealDesk / Shared; zuletzt **T4** CI-Gate | L | Notifications Inbox oder Match nach Cast-Count |
+| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | Market Signals / Command Center / Cron / Register-RPC; zuletzt **T4** CI-Gate | M | Market-Signals Instant Alerts oder T4-Check |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
@@ -46,16 +46,19 @@
 |--------|-------|------------------------|
 | Accounts | ✅ Slices 1–4 | wenig: CRM-JSON, External-Contacts-Fallback, Error-Shapes |
 | Deals | ✅ Slices 1–2 | wenig: Eligibility/JSON-API-Responses (bewusst) |
-| References | ✅ Slice 1–5 | Rest-Hotspots vereinzelt (Dashboard-Fallback, trash RPC, Quote/JSON-APIs) |
-| Settings | ✅ Slice 1 | Stripe/HubSpot/Push-JSON bewusst; ggf. Rest-Actions Boy-Scout |
-| Andere | offen | Notifications, Match, DealDesk, Command-Center, Shared Portfolio, … |
+| References | ✅ Slice 1–5 | Rest vereinzelt (trash/Quote/JSON); Page date_format ✅ |
+| Settings | ✅ Slice 1 | Stripe/HubSpot/Push-JSON bewusst |
+| Shared Portfolio | ✅ Slice 1 | `app/p/actions` RPC-Json-Guards |
+| Deal-Desk | ✅ Quick | workspace-persistence typed; page redirect |
+| Notifications | ✅ Quick | Inbox org/champion rows |
+| Andere | offen | Market Signals, Command Center, Cron Digests, Onboarding/Register RPC |
 | **T4 CI** | offen | `typecheck` in CI **scharf**, wenn Domänen-Casts weitgehend weg / typecheck stabil 0 |
 
 **Empfohlene nächsten PRs (klein halten):**
 
-1. Notifications Inbox (org/profile row casts) oder Match nach Cast-Count  
-2. Typed-Supabase **T4** — CI-`typecheck`-Gate  
-3. Optional: References-Rest / Settings-HTTP-JSON nur Boy-Scout
+1. Market Signals Instant Alerts / Champion-Display Casts  
+2. Typed-Supabase **T4** — CI-`typecheck`-Gate (wenn Rest ruhig)  
+3. Optional: Command Center / Cron Boy-Scout
 
 ---
 
@@ -98,7 +101,7 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 | P1-6 | ✅ App/Lib; DB `companies` bleibt |
 | E4 / E7 | ✅ |
 | E6 Logger | ✅ App/Lib; Sink/Scripts bewusst |
-| Typed-Supabase T3 | 🟡 aktiv (Accounts/Deals/References/Settings ✅; andere Domänen offen) |
+| Typed-Supabase T3 | 🟡 aktiv (Kern-Domänen weitgehend ✅; Market Signals/CC/Cron Rest) |
 | Typed-Supabase T4 | offen (nach T3-Ruhe) |
 | Welle 5 T3 Paths | → Queue #8 |
 | Welle 5 T4 `workspace_state` | vor Start erneut `grep`en |

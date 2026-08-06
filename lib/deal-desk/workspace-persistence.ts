@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 import type { BidTeamAssignment, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskSmeAssignment } from '@/lib/deal-desk/sme-routing'
@@ -11,6 +12,8 @@ import {
   type NormalizedWorkspaceOverlay,
 } from '@/lib/deal-desk/workspace-merge'
 import { log } from '@/lib/observability/logger'
+
+type DbClient = SupabaseClient<Database>
 
 function isProfileUuid(value: string | null | undefined): value is string {
   if (!value?.trim()) return false
@@ -32,7 +35,7 @@ function isMissingNormalizedTableError(message: string | undefined): boolean {
 }
 
 export async function loadNormalizedWorkspaceOverlaysBatch(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   projectIds: string[],
   organizationId: string,
 ): Promise<Map<string, NormalizedWorkspaceOverlay>> {
@@ -71,33 +74,29 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
   }
 
   for (const row of projectsRes.data ?? []) {
-    const id = String((row as { id: string }).id)
-    const decision = bidDecisionFromDb(
-      (row as { bid_decision?: string | null }).bid_decision,
-    )
-    if (decision) map.set(id, { ...(map.get(id) ?? {}), decision })
+    const decision = bidDecisionFromDb(row.bid_decision)
+    if (decision) map.set(row.id, { ...(map.get(row.id) ?? {}), decision })
   }
 
   for (const row of flagsRes.data ?? []) {
-    const projectId = String((row as { project_id: string }).project_id)
+    const projectId = row.project_id
     const cur = map.get(projectId) ?? {}
     const flags = cur.redFlags ?? []
     flags.push({
-      id: String((row as { flag_key?: string | null }).flag_key ?? row.id),
-      severity: ((row as { severity?: string }).severity ??
-        'medium') as DealDeskRedFlag['severity'],
-      title: String((row as { label?: string }).label ?? 'Red Flag'),
+      id: String(row.flag_key ?? row.id),
+      severity: (row.severity ?? 'medium') as DealDeskRedFlag['severity'],
+      title: String(row.label ?? 'Red Flag'),
       excerpt: '',
-      markedForLegal: Boolean((row as { sent_to_legal?: boolean }).sent_to_legal),
+      markedForLegal: Boolean(row.sent_to_legal),
     })
     map.set(projectId, { ...cur, redFlags: flags })
   }
 
   for (const row of smeRes.data ?? []) {
-    const projectId = String((row as { project_id: string }).project_id)
+    const projectId = row.project_id
     const cur = map.get(projectId) ?? {}
-    const key = String((row as { requirement_key: string }).requirement_key)
-    const profileId = (row as { assignee_profile_id?: string | null }).assignee_profile_id
+    const key = row.requirement_key
+    const profileId = row.assignee_profile_id
     const smeRoutes = { ...(cur.smeRoutes ?? {}), [key]: 'routed' }
     const smeAssignments: Record<string, DealDeskSmeAssignment> = {
       ...(cur.smeAssignments ?? {}),
@@ -113,11 +112,11 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
   }
 
   for (const row of bidRes.data ?? []) {
-    const projectId = String((row as { project_id: string }).project_id)
+    const projectId = row.project_id
     const cur = map.get(projectId) ?? {}
     const team = cur.bidTeam ?? []
-    const role = String((row as { role?: string | null }).role ?? `member_${team.length}`)
-    const profileId = (row as { profile_id?: string | null }).profile_id
+    const role = String(row.role ?? `member_${team.length}`)
+    const profileId = row.profile_id
     team.push({
       role: role as BidTeamAssignment['role'],
       label: role,
@@ -131,7 +130,7 @@ export async function loadNormalizedWorkspaceOverlaysBatch(
 }
 
 export async function loadNormalizedWorkspaceOverlay(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   projectId: string,
   organizationId: string,
 ): Promise<NormalizedWorkspaceOverlay | null> {
@@ -144,7 +143,7 @@ export async function loadNormalizedWorkspaceOverlay(
 }
 
 export async function persistNormalizedWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   projectId: string,
   organizationId: string,
   workspace: DealDeskWorkspaceState,

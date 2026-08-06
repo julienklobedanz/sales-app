@@ -90,11 +90,7 @@ export default async function ApprovalPage({
     return <InvalidLink />
   }
 
-  const companyRaw = row.companies
-  const company =
-    Array.isArray(companyRaw) && companyRaw.length > 0
-      ? (companyRaw[0] as { name?: string; organization_id?: string | null })
-      : (companyRaw as { name?: string; organization_id?: string | null } | null)
+  const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
 
   const orgId = company?.organization_id ?? null
   let orgName = company?.name ?? '—'
