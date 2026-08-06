@@ -216,12 +216,12 @@ export async function POST(req: NextRequest) {
   }
 
   const loaded = await loadDealDocumentAsFile(supabase, dealDoc)
-  if (!loaded.ok) {
+  if (!loaded.success) {
     return fail(loaded.error, 400)
   }
 
   const plain = await extractRfpPlainTextFromFile(loaded.file, { maxChars: 120_000 })
-  if (!plain.ok) {
+  if (!plain.success) {
     return fail(plain.error, 400)
   }
 

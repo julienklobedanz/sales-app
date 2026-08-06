@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const plain = await extractPlainTextFromBuffer(buffer, file.name, file.type)
-    if (!plain.ok) {
+    if (!plain.success) {
       return NextResponse.json({ success: false, error: plain.error }, { status: 400 })
     }
 

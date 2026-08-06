@@ -29,9 +29,9 @@ async function ensureAusschreibungKind(doc: DealDocumentRow): Promise<boolean> {
 export async function runDealRfpAnalyze(
   dealId: string,
   doc: DealDocumentRow,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
   const kindOk = await ensureAusschreibungKind(doc)
-  if (!kindOk) return { ok: false }
+  if (!kindOk) return { success: false }
 
   const res = await fetch('/api/rfp/analyze', {
     method: 'POST',
@@ -40,9 +40,9 @@ export async function runDealRfpAnalyze(
   })
   const json = (await res.json()) as { success?: boolean; error?: string }
   if (!res.ok || !json.success) {
-    return { ok: false, error: json.error ?? COPY.deals.cockpit.documentsAnalyzeFailed }
+    return { success: false, error: json.error ?? COPY.deals.cockpit.documentsAnalyzeFailed }
   }
-  return { ok: true }
+  return { success: true }
 }
 
 export function DealRfpAnalyzeButton({
@@ -80,7 +80,7 @@ export function DealRfpAnalyzeButton({
     setPending(true)
     try {
       const result = await runDealRfpAnalyze(dealId, targetDoc)
-      if (!result.ok) {
+      if (!result.success) {
         toast.error(result.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
         return
       }

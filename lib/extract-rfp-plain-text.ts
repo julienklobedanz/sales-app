@@ -46,11 +46,11 @@ export async function extractRfpPlainTextFromFile(
   const mimeType = file.type ?? ''
 
   if (!file?.size) {
-    return { ok: false, error: 'Keine Datei übergeben.' }
+    return { success: false, error: 'Keine Datei übergeben.' }
   }
   if (file.size > MAX_BYTES) {
     return {
-      ok: false,
+      success: false,
       error: `Datei zu groß (max. 4,5 MB). Aktuell: ${(file.size / 1024 / 1024).toFixed(1)} MB.`,
     }
   }
@@ -61,16 +61,16 @@ export async function extractRfpPlainTextFromFile(
       const text = extractExcelPlainText(buffer).trim()
       if (text.length < 40) {
         return {
-          ok: false,
+          success: false,
           error:
             'In der Excel-Datei wurde zu wenig lesbarer Inhalt gefunden (leere oder rein formatierte Tabellen).',
           isScanLikely: false,
         }
       }
-      return { ok: true, text: text.slice(0, maxChars) }
+      return { success: true, text: text.slice(0, maxChars) }
     } catch {
       return {
-        ok: false,
+        success: false,
         error:
           'Excel konnte nicht gelesen werden. Bitte als XLSX speichern oder PDF/Word verwenden.',
       }
