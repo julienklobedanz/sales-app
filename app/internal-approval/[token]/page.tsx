@@ -35,7 +35,7 @@ export default async function InternalApprovalPage({
 
   const context = await getInternalApprovalPageContext(admin, token)
 
-  if (!context.ok) {
+  if (!context.success) {
     return (
       <InvalidCard
         title="Link ungültig"

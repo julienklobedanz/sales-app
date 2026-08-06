@@ -21,7 +21,7 @@ export async function confirmInternalApprovalAction(
   if (!admin) return { success: false, error: 'server_config' }
 
   const result = await confirmInternalApprovalFromToken(admin, token)
-  if (!result.ok) {
+  if (!result.success) {
     return {
       success: false,
       error:
@@ -48,7 +48,7 @@ export async function delegateInternalApprovalAction(
   if (!admin) return { success: false, error: 'server_config' }
 
   const result = await delegateInternalApprovalFromToken(admin, token, delegateEmail)
-  if (!result.ok) {
+  if (!result.success) {
     if (result.reason === 'invalid_email') {
       return { success: false, error: 'Bitte eine gültige E-Mail-Adresse eingeben.' }
     }

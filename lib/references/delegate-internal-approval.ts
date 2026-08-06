@@ -10,8 +10,8 @@ import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-appro
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
 export type DelegateInternalApprovalResult =
-  | { ok: true; delegatedToEmail: string; emailSent: boolean }
-  | { ok: false; reason: 'invalid' | 'not_pending' | 'invalid_email' }
+  | { success: true; delegatedToEmail: string; emailSent: boolean }
+  | { success: false; reason: 'invalid' | 'not_pending' | 'invalid_email' }
 
 export async function delegateInternalApprovalFromToken(
   admin: SupabaseClient<Database>,
@@ -20,8 +20,8 @@ export async function delegateInternalApprovalFromToken(
 ): Promise<DelegateInternalApprovalResult> {
   const trimmedToken = token.trim()
   const email = delegateEmail.trim().toLowerCase()
-  if (!trimmedToken) return { ok: false, reason: 'invalid' }
-  if (!isApprovalRecipientEmail(email)) return { ok: false, reason: 'invalid_email' }
+  if (!trimmedToken) return { success: false, reason: 'invalid' }
+  if (!isApprovalRecipientEmail(email)) return { success: false, reason: 'invalid_email' }
 
   const { data: row, error } = await admin
     .from('references')
@@ -41,10 +41,10 @@ export async function delegateInternalApprovalFromToken(
     .eq('approval_internal_review_token', trimmedToken)
     .maybeSingle()
 
-  if (error || !row?.id) return { ok: false, reason: 'invalid' }
+  if (error || !row?.id) return { success: false, reason: 'invalid' }
 
   const internal = String(row.approval_internal_status ?? '').toLowerCase()
-  if (internal !== 'pending_internal') return { ok: false, reason: 'not_pending' }
+  if (internal !== 'pending_internal') return { success: false, reason: 'not_pending' }
 
   const newToken = randomUUID()
   const accountCompanyName = companyNameFromReferenceRow(row.companies, 'Account')
@@ -61,7 +61,7 @@ export async function delegateInternalApprovalFromToken(
     .eq('id', row.id)
     .eq('approval_internal_status', 'pending_internal')
 
-  if (updateError) return { ok: false, reason: 'invalid' }
+  if (updateError) return { success: false, reason: 'invalid' }
 
   const orgId = row.organization_id
   if (orgId) {
@@ -94,5 +94,5 @@ export async function delegateInternalApprovalFromToken(
     referenceId: row.id,
   })
 
-  return { ok: true, delegatedToEmail: email, emailSent }
+  return { success: true, delegatedToEmail: email, emailSent }
 }
