@@ -18,8 +18,8 @@ import {
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { withdrawRestoredReferenceStatus } from '@/lib/references/library/approvals-helpers'
-import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 export async function getApprovalLinkImpl(referenceId: string): Promise<string | null> {
   const supabase = await createServerSupabaseClient()
@@ -28,17 +28,12 @@ export async function getApprovalLinkImpl(referenceId: string): Promise<string |
     .select('approval_token, customer_approval_status, status')
     .eq('id', referenceId)
     .maybeSingle()
-  const row = data as {
-    approval_token?: string | null
-    customer_approval_status?: string | null
-    status?: string | null
-  } | null
-  const token = row?.approval_token
+  const token = data?.approval_token
   if (!token) return null
 
   const effective = effectiveCustomerApprovalStatus(
-    row?.customer_approval_status,
-    row?.status,
+    data.customer_approval_status,
+    data.status,
   )
   if (effective !== 'pending' && effective !== 'approved') return null
 
@@ -49,7 +44,7 @@ export async function withdrawApprovalRequestImpl(
   referenceId: string,
 ): Promise<{ success: true }> {
   const supabase = await createServerSupabaseClient()
-  const { data: refRow } = await supabase
+  const { data: ref } = await supabase
     .from('references')
     .select(
       `
@@ -65,25 +60,11 @@ export async function withdrawApprovalRequestImpl(
     .eq('id', referenceId)
     .maybeSingle()
 
-  const ref = refRow as {
-    title?: string | null
-    company_id?: string
-    organization_id?: string | null
-    approval_reference_status_snapshot?: string | null
-    approval_requested_by?: string | null
-    approval_coordinator_email?: string | null
-    companies?: { name?: string } | { name?: string }[] | null
-  } | null
-
   const restoredStatus = withdrawRestoredReferenceStatus(
     ref?.approval_reference_status_snapshot,
   )
 
-  const company =
-    Array.isArray(ref?.companies) && ref.companies.length > 0
-      ? ref.companies[0]
-      : (ref?.companies as { name?: string } | null)
-  const companyName = company?.name?.trim() || 'Referenz'
+  const companyName = accountFromJoin(ref?.companies)?.name?.trim() || 'Referenz'
 
   if (ref?.company_id) {
     void notifyInternalTeamApprovalWithdrawn({
@@ -169,11 +150,11 @@ export async function delegateClientApprovalImpl(params: {
       approval_delegated_to_name: params.delegateName?.trim() || null,
       approval_delegated_to_email: email,
     })
-    .eq('id', (ref as { id: string }).id)
+    .eq('id', ref.id)
   const resend = getApprovalResendClient()
   if (resend) {
     const approvalUrl = `${getAppOrigin()}/approval/${token}`
-    const refTitle = String((ref as { title?: string }).title ?? 'Referenz')
+    const refTitle = String(ref.title ?? 'Referenz')
     const html = buildRefstackEmailHtml({
       audience: 'external',
       badge: 'Delegierte Freigabe',
@@ -206,9 +187,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     .single()
   const { systemRole, functionRole } = parseProfileRoles(profile)
   const resenderName =
-    typeof (profile as { full_name?: string } | null)?.full_name === 'string'
-      ? (profile as { full_name: string }).full_name.trim()
-      : ''
+    typeof profile?.full_name === 'string' ? profile.full_name.trim() : ''
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
@@ -233,9 +212,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   if (fetchError || !row) throw new Error('Referenz nicht gefunden')
 
-  const ref = row as unknown as ReferenceApprovalRow & {
-    approval_requested_at?: string | null
-  }
+  const ref = row
 
   if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
     throw new Error('Es liegt keine aktive Kunden-Freigabe vor.')

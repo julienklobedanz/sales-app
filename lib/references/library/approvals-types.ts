@@ -1,5 +1,6 @@
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 
+/** Common approval-flow fields selected from `references` (+ optional companies join). */
 export type ReferenceApprovalRow = {
   id?: string
   title: string
@@ -10,10 +11,15 @@ export type ReferenceApprovalRow = {
   approval_contact_id?: string | null
   approval_external_contact_id?: string | null
   customer_approval_status: string | null
+  approval_internal_status?: string | null
   approval_reference_status_snapshot: string | null
   approval_requested_by?: string | null
+  approval_requested_at?: string | null
   approval_owner_name?: string | null
   approval_expires_at?: string | null
+  approval_customer_facing_name?: string | null
+  approval_coordinator_name?: string | null
+  approval_coordinator_email?: string | null
   approval_scope_named_mention?: boolean | null
   approval_scope_anonymous_mention?: boolean | null
   approval_scope_reference_call?: boolean | null
@@ -23,7 +29,8 @@ export type ReferenceApprovalRow = {
   approval_reference_giver_title?: string | null
   approval_competitor_blacklist?: string[] | null
   approval_quote_proposed?: string | null
-  companies: { name?: string } | { name?: string }[] | null
+  organization_id?: string | null
+  companies?: unknown
 }
 
 export type ResolvedApprovalRecipient = {

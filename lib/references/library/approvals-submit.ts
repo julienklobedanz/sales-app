@@ -18,7 +18,6 @@ import {
 import { computeApprovalStatusSnapshot } from '@/lib/references/library/approvals-snapshot'
 import { notifyInternalReferenceCoordinatorAboutPendingReview } from '@/lib/references/library/approvals-internal-notify'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
-import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 export async function submitForApprovalImpl(
   id: string,
@@ -64,9 +63,7 @@ export async function submitForApprovalImpl(
 
   if (fetchError || !row) throw new Error('Referenz nicht gefunden')
 
-  const ref = row as unknown as ReferenceApprovalRow & {
-    approval_internal_status?: string | null
-  }
+  const ref = row
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -87,8 +84,7 @@ export async function submitForApprovalImpl(
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
     referenceStatus: refStatus,
-    approvalRequestedAt:
-      (ref as { approval_requested_at?: string | null }).approval_requested_at ?? null,
+    approvalRequestedAt: ref.approval_requested_at ?? null,
   })
 
   if (
@@ -98,8 +94,7 @@ export async function submitForApprovalImpl(
       referenceStatus: refStatus,
       internalApprovalStatus: internalApproval,
       customerApprovalStatus: ref.customer_approval_status,
-      approvalRequestedAt:
-        (ref as { approval_requested_at?: string | null }).approval_requested_at ?? null,
+      approvalRequestedAt: ref.approval_requested_at ?? null,
       staleInternalPending,
       isApprovalGranted,
     })
@@ -108,15 +103,9 @@ export async function submitForApprovalImpl(
       'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Freigabestatus), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).',
     )
   }
-  const organizationId =
-    typeof (profile as { organization_id?: string | null } | null)?.organization_id ===
-    'string'
-      ? (profile as { organization_id: string }).organization_id
-      : null
+  const organizationId = profile?.organization_id ?? null
   const requesterName =
-    typeof (profile as { full_name?: string } | null)?.full_name === 'string'
-      ? (profile as { full_name: string }).full_name.trim()
-      : ''
+    typeof profile?.full_name === 'string' ? profile.full_name.trim() : ''
 
   const accountManagerEmail = options?.accountManagerEmail?.trim() ?? ''
   if (!accountManagerEmail || !isApprovalRecipientEmail(accountManagerEmail)) {
