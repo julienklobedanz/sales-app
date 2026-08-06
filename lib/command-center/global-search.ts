@@ -308,11 +308,14 @@ export async function searchCommandCenter(
   const accountCandidates: Extract<CommandSearchResult, { kind: 'account' }>[] = []
   const partnerCandidates: Extract<CommandSearchResult, { kind: 'partner' }>[] = []
   for (const row of accountsRes.data ?? []) {
-    const entityKind = String((row as { entity_kind?: string }).entity_kind ?? 'account')
+    const entityKind =
+      'entity_kind' in row && typeof row.entity_kind === 'string'
+        ? row.entity_kind
+        : 'account'
     const base = {
-      id: String(row.id),
+      id: row.id,
       title: String(row.name ?? ''),
-      logoUrl: (row.logo_url as string | null) ?? null,
+      logoUrl: row.logo_url ?? null,
     }
     if (entityKind === 'partner') {
       partnerCandidates.push({ kind: 'partner', ...base })

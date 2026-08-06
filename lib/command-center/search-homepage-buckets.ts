@@ -32,9 +32,10 @@ function referenceFromJoin(
 ): { title: string; companyName: string | null } | null {
   const ref = Array.isArray(raw) ? raw[0] : raw
   if (!ref || typeof ref !== 'object') return null
-  const title = String((ref as { title?: string }).title ?? '').trim()
+  const row = ref as { title?: unknown; companies?: unknown }
+  const title = String(row.title ?? '').trim()
   if (!title) return null
-  const co = accountFromJoin((ref as { companies?: unknown }).companies)
+  const co = accountFromJoin(row.companies)
   return { title, companyName: co?.name ?? null }
 }
 

@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { OnboardingWizard } from './onboarding-wizard'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
+import { parseInviteRpcJson } from '@/lib/invites/parse-invite-rpc'
 
 type Props = {
   searchParams: Promise<{
@@ -32,7 +33,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
     const { data } = await supabase.rpc('get_invite_by_token', {
       invite_token: inviteToken,
     })
-    const parsed = data as { organization_name?: string } | null
+    const parsed = parseInviteRpcJson(data)
     if (parsed?.organization_name) {
       inviteOrganizationName = parsed.organization_name
     }
@@ -44,8 +45,11 @@ export default async function OnboardingPage({ searchParams }: Props) {
     .eq('id', user.id)
     .maybeSingle()
 
-  const meta = (user.user_metadata ?? {}) as { full_name?: string }
-  const initialFullName = typeof meta.full_name === 'string' ? meta.full_name.trim() : ''
+  const meta = user.user_metadata
+  const initialFullName =
+    meta && typeof meta === 'object' && typeof meta.full_name === 'string'
+      ? meta.full_name.trim()
+      : ''
 
   return (
     <Suspense fallback={<div className="min-h-screen animate-pulse bg-zinc-100/50" />}>

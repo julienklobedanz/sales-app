@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
+import { parseInviteRpcJson } from '@/lib/invites/parse-invite-rpc'
 import {
   buildRefstackEmailHtml,
   escapeRefstackEmailHtml,
@@ -136,11 +137,7 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
         },
       )
 
-      const parsed = inviteData as {
-        organization_id?: string
-        system_role?: string
-        function_role?: string
-      } | null
+      const parsed = parseInviteRpcJson(inviteData)
       const organizationId = parsed?.organization_id ?? null
       if (!inviteError && organizationId && data.user?.id) {
         const inviteRoles = parseInviteRoleDimensions(parsed ?? {})

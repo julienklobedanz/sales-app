@@ -20,6 +20,7 @@ import {
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
+import { parseInviteRpcJson } from '@/lib/invites/parse-invite-rpc'
 
 export type FinalizeWorkspaceResult =
   | { success: true }
@@ -52,11 +53,7 @@ export async function finalizeWorkspaceAndProfile(params: {
     const { data } = await supabase.rpc('get_invite_by_token', {
       invite_token: inviteToken,
     })
-    const parsed = data as {
-      organization_id?: string
-      system_role?: string | null
-      function_role?: string | null
-    } | null
+    const parsed = parseInviteRpcJson(data)
     if (parsed?.organization_id) {
       organizationId = parsed.organization_id
       joinedViaInvite = true
