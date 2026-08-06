@@ -11,7 +11,7 @@ import { logEvent } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { getAppOrigin } from '@/lib/env/app-origin'
-import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import { sendCustomerControlLinkEmail } from '@/lib/references/customer-control-link-email'
 import { log } from '@/lib/observability/logger'
 import {
   buildCustomerManageUrl,
@@ -292,7 +292,7 @@ export async function createSharedPortfolioImpl(
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
 }
 
-async function notifyCustomerOfSperrlink(
+async function notifyCustomerOfControlLink(
   supabase: SupabaseClient,
   referenceId: string,
   manageUrl: string,
@@ -324,7 +324,7 @@ async function notifyCustomerOfSperrlink(
 
   const companyName = accountFromJoin(ref.companies)?.name?.trim() || 'Referenz'
 
-  return sendCustomerSperrlinkEmail({
+  return sendCustomerControlLinkEmail({
     admin: supabase,
     organizationId: ref.organization_id,
     refTitle: String(ref.title ?? 'Referenz'),
@@ -478,7 +478,7 @@ export async function resetSharedPortfolioManageTokenImpl(
     const previewUrl = await getPublicPreviewUrlForReference(supabase, referenceId)
     if (previewUrl) {
       const manageUrl = buildCustomerManageUrl(previewUrl, payload.token)
-      customerEmailSent = await notifyCustomerOfSperrlink(
+      customerEmailSent = await notifyCustomerOfControlLink(
         supabase,
         referenceId,
         manageUrl,

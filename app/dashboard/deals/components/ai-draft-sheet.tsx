@@ -22,16 +22,16 @@ import {
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { AppIcon } from '@/lib/icons'
-import type { KiEntwurfOutputFormat, KiEntwurfTone } from '@/lib/ki-entwurf-prompt'
-import { recordKiEntwurfGenerated } from '@/app/dashboard/actions'
+import type { AiDraftOutputFormat, AiDraftTone } from '@/lib/ai-draft-prompt'
+import { recordAiDraftGenerated } from '@/app/dashboard/actions'
 
-const FORMAT_OPTIONS: Array<{ value: KiEntwurfOutputFormat; label: string }> = [
+const FORMAT_OPTIONS: Array<{ value: AiDraftOutputFormat; label: string }> = [
   { value: 'email_snippet', label: 'E-Mail-Snippet' },
   { value: 'proposal_passage', label: 'Angebots-Passage' },
   { value: 'elevator_pitch', label: 'Elevator Pitch (3 Sätze)' },
 ]
 
-const TONE_OPTIONS: Array<{ value: KiEntwurfTone; label: string }> = [
+const TONE_OPTIONS: Array<{ value: AiDraftTone; label: string }> = [
   { value: 'professional', label: 'Professionell' },
   { value: 'casual', label: 'Locker' },
   { value: 'formal', label: 'Formell' },
@@ -51,7 +51,7 @@ type Props = {
 /**
  * Epic 5 / Wireframe §15: Sheet mit Format, Tonalität, Kontext, Streaming (GPT-4o), Editor, Kopieren, Neu generieren.
  */
-export function KiEntwurfSheet({
+export function AiDraftSheet({
   open,
   onOpenChange,
   referenceId,
@@ -60,8 +60,8 @@ export function KiEntwurfSheet({
   dealId,
   dealContext,
 }: Props) {
-  const [outputFormat, setOutputFormat] = useState<KiEntwurfOutputFormat>('email_snippet')
-  const [tone, setTone] = useState<KiEntwurfTone>('professional')
+  const [outputFormat, setOutputFormat] = useState<AiDraftOutputFormat>('email_snippet')
+  const [tone, setTone] = useState<AiDraftTone>('professional')
   const [additionalContext, setAdditionalContext] = useState('')
   const [output, setOutput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -81,7 +81,7 @@ export function KiEntwurfSheet({
     setStreaming(true)
     setOutput('')
     try {
-      const res = await fetch('/api/ki-entwurf/stream', {
+      const res = await fetch('/api/ai-draft/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: ac.signal,
@@ -117,7 +117,7 @@ export function KiEntwurfSheet({
       }
 
       if (!acc.includes('[Fehler:')) {
-        void recordKiEntwurfGenerated({
+        void recordAiDraftGenerated({
           referenceId,
           dealId: dealId ?? null,
           outputFormat,
@@ -182,7 +182,7 @@ export function KiEntwurfSheet({
                 >
                   <input
                     type="radio"
-                    name="ki-entwurf-format"
+                    name="ai-draft-format"
                     value={opt.value}
                     checked={outputFormat === opt.value}
                     onChange={() => setOutputFormat(opt.value)}
@@ -195,9 +195,9 @@ export function KiEntwurfSheet({
           </fieldset>
 
           <div className="space-y-2">
-            <Label htmlFor="ki-entwurf-tone">Tonalität</Label>
-            <Select value={tone} onValueChange={(v) => setTone(v as KiEntwurfTone)}>
-              <SelectTrigger id="ki-entwurf-tone" className="max-w-xs">
+            <Label htmlFor="ai-draft-tone">Tonalität</Label>
+            <Select value={tone} onValueChange={(v) => setTone(v as AiDraftTone)}>
+              <SelectTrigger id="ai-draft-tone" className="max-w-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -211,9 +211,9 @@ export function KiEntwurfSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="ki-entwurf-context">Zusätzlicher Kontext (optional)</Label>
+            <Label htmlFor="ai-draft-context">Zusätzlicher Kontext (optional)</Label>
             <Textarea
-              id="ki-entwurf-context"
+              id="ai-draft-context"
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
               rows={3}
@@ -242,10 +242,10 @@ export function KiEntwurfSheet({
           </Button>
 
           <div className="space-y-2">
-            <Label htmlFor="ki-entwurf-result">Ergebnis</Label>
+            <Label htmlFor="ai-draft-result">Ergebnis</Label>
             <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
               <Textarea
-                id="ki-entwurf-result"
+                id="ai-draft-result"
                 value={output}
                 onChange={(e) => setOutput(e.target.value)}
                 readOnly={streaming}

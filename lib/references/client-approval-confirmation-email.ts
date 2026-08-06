@@ -6,7 +6,7 @@ import {
   resolveCustomerApprovalRecipient,
   type CustomerApprovalRecipientRow,
 } from '@/lib/references/customer-approval-recipient'
-import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import { sendCustomerControlLinkEmail } from '@/lib/references/customer-control-link-email'
 import { log } from '@/lib/observability/logger'
 
 export async function sendClientApprovalConfirmationEmail(args: {
@@ -42,7 +42,7 @@ export async function sendClientApprovalConfirmationEmail(args: {
     return false
   }
 
-  return sendCustomerSperrlinkEmail({
+  return sendCustomerControlLinkEmail({
     admin: args.admin,
     organizationId: args.organizationId,
     refTitle: args.refTitle,

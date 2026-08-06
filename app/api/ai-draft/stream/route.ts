@@ -4,10 +4,10 @@ import { z } from 'zod'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
-  buildKiEntwurfUserPrompt,
-  type KiEntwurfOutputFormat,
-  type KiEntwurfTone,
-} from '@/lib/ki-entwurf-prompt'
+  buildAiDraftUserPrompt,
+  type AiDraftOutputFormat,
+  type AiDraftTone,
+} from '@/lib/ai-draft-prompt'
 
 export const runtime = 'nodejs'
 
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const userPrompt = buildKiEntwurfUserPrompt({
+  const userPrompt = buildAiDraftUserPrompt({
     reference: {
       title: (ref.title as string) ?? '',
       summary: (ref.summary as string | null) ?? null,
@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
       companyName: company?.name?.trim() ? (company.name as string) : null,
     },
     matchScore,
-    outputFormat: outputFormat as KiEntwurfOutputFormat,
-    tone: tone as KiEntwurfTone,
+    outputFormat: outputFormat as AiDraftOutputFormat,
+    tone: tone as AiDraftTone,
     additionalContext: additionalContext ?? undefined,
     dealContext: dealContext ?? undefined,
   })

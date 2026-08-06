@@ -43,7 +43,7 @@ export function buildCustomerControlLoopEmailHtml(args: {
   })
 }
 
-export async function sendCustomerSperrlinkEmail(args: {
+export async function sendCustomerControlLinkEmail(args: {
   admin: SupabaseClient
   organizationId: string | null | undefined
   refTitle: string
@@ -80,7 +80,7 @@ export async function sendCustomerSperrlinkEmail(args: {
     })
     return true
   } catch (e) {
-    log.error('send failed', { action: 'sendCustomerSperrlinkEmail.send' }, e)
+    log.error('send failed', { action: 'sendCustomerControlLinkEmail.send' }, e)
     return false
   }
 }

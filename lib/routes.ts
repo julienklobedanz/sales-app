@@ -110,4 +110,10 @@ export const LEGACY_REDIRECTS = [
     destination: ROUTES.marketSignalsManage,
     permanent: true,
   },
+  // P3-3: alte KI-Entwurf-API → ai-draft
+  {
+    source: '/api/ki-entwurf/stream',
+    destination: '/api/ai-draft/stream',
+    permanent: false,
+  },
 ] as const

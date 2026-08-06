@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCustomerControlLoopEmailHtml } from './customer-sperrlink-email'
+import { buildCustomerControlLoopEmailHtml } from './customer-control-link-email'
 
 describe('buildCustomerControlLoopEmailHtml', () => {
   it('includes vendor org and control copy with CTA', () => {
