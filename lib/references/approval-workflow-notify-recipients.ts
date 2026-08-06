@@ -1,10 +1,13 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database, Json } from '@/lib/database.types'
 
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
+
+type AdminClient = SupabaseClient<Database>
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
@@ -14,15 +17,14 @@ function isValidEmail(email: string): boolean {
   return normalizeEmail(email).includes('@')
 }
 
-function wantsApprovalUpdateEmails(notificationSettings: unknown): boolean {
+function wantsApprovalUpdateEmails(notificationSettings: Json | null | undefined): boolean {
   if (!notificationSettings || typeof notificationSettings !== 'object') return true
-  const flag = (notificationSettings as { email_on_approval_update?: unknown })
-    .email_on_approval_update
-  return flag !== false
+  if (Array.isArray(notificationSettings)) return true
+  return notificationSettings.email_on_approval_update !== false
 }
 
 async function resolveCoordinatorEmail(
-  admin: SupabaseClient,
+  admin: AdminClient,
   companyId: string,
   organizationId: string,
   coordinatorEmail?: string | null,
@@ -37,9 +39,7 @@ async function resolveCoordinatorEmail(
     .eq('organization_id', organizationId)
     .maybeSingle()
 
-  const contactId = (
-    companyRow as { internal_reference_approval_contact_id?: string | null } | null
-  )?.internal_reference_approval_contact_id
+  const contactId = companyRow?.internal_reference_approval_contact_id
   if (!contactId) return null
 
   const { data: person } = await admin
@@ -54,7 +54,7 @@ async function resolveCoordinatorEmail(
 }
 
 async function resolveRequesterEmail(
-  admin: SupabaseClient,
+  admin: AdminClient,
   requesterId: string | null,
   organizationId: string,
 ): Promise<string | null> {
@@ -70,11 +70,7 @@ async function resolveRequesterEmail(
 
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (!profileCanManageOrgData(systemRole, functionRole)) return null
-  if (
-    !wantsApprovalUpdateEmails(
-      (profile as { notification_settings?: unknown } | null)?.notification_settings,
-    )
-  ) {
+  if (!wantsApprovalUpdateEmails(profile?.notification_settings)) {
     return null
   }
 
@@ -92,7 +88,7 @@ async function resolveRequesterEmail(
 
 /** Anfragender (nur Admin/AM, keine Sales) + Accountverantwortlicher der Freigabe. */
 export async function resolveApprovalWorkflowNotifyEmails(
-  admin: SupabaseClient,
+  admin: AdminClient,
   args: {
     companyId: string
     /** Pflicht — ohne Org kein Bypass-Lookup (E4). */

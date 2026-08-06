@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 import { notifyInternalTeamInternalApproved } from '@/lib/references/approval-workflow-internal-notifications'
 
@@ -14,7 +15,7 @@ export type ConfirmInternalApprovalResult =
   | { ok: false; reason: 'invalid' | 'not_pending' }
 
 export async function confirmInternalApprovalFromToken(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
   token: string,
 ): Promise<ConfirmInternalApprovalResult> {
   const trimmed = token.trim()
@@ -34,7 +35,7 @@ export async function confirmInternalApprovalFromToken(
   if (internal === 'approved_internal') {
     return {
       ok: true,
-      referenceId: row.id as string,
+      referenceId: row.id,
       referenceTitle: String(row.title ?? 'Referenz'),
       alreadyApproved: true,
     }
@@ -56,7 +57,7 @@ export async function confirmInternalApprovalFromToken(
 
   if (updateError) return { ok: false, reason: 'invalid' }
 
-  const orgId = (row as { organization_id?: string | null }).organization_id
+  const orgId = row.organization_id
   if (orgId) {
     try {
       await admin.from('evidence_events').insert({
@@ -72,12 +73,12 @@ export async function confirmInternalApprovalFromToken(
 
   void notifyInternalTeamInternalApproved({
     admin,
-    referenceId: row.id as string,
+    referenceId: row.id,
   })
 
   return {
     ok: true,
-    referenceId: row.id as string,
+    referenceId: row.id,
     referenceTitle: String(row.title ?? 'Referenz'),
     alreadyApproved: false,
   }

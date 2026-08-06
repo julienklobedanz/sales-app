@@ -1,5 +1,6 @@
 'use server'
 
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
@@ -57,36 +58,19 @@ export async function getPendingClientApprovalsImpl(): Promise<
 
   const out: PendingClientApprovalRow[] = []
 
-  for (const row of data as Record<string, unknown>[]) {
-    const requesterId = row.requester_id as string | undefined
-    if (salesRestricted && requesterId !== user.id) continue
+  for (const row of data) {
+    if (salesRestricted && row.requester_id !== user.id) continue
 
-    const refRaw = row.reference as
-      | {
-          id?: string
-          title?: string
-          customer_approval_status?: string | null
-          approval_token?: string | null
-          companies?: { name?: string } | { name?: string }[] | null
-        }
-      | null
-      | undefined
-
+    const refRaw = Array.isArray(row.reference) ? row.reference[0] : row.reference
     if (!refRaw?.id) continue
     if (refRaw.customer_approval_status !== 'pending' || !refRaw.approval_token) continue
 
-    const companies = refRaw.companies
-    const companyName =
-      Array.isArray(companies) && companies.length > 0
-        ? (companies[0] as { name?: string }).name
-        : (companies as { name?: string } | null)?.name
-
     out.push({
-      approvalId: row.id as string,
+      approvalId: row.id,
       referenceId: refRaw.id,
       title: refRaw.title ?? '—',
-      companyName: companyName ?? '—',
-      requestedAt: row.created_at as string,
+      companyName: accountFromJoin(refRaw.companies)?.name ?? '—',
+      requestedAt: row.created_at ?? '',
     })
   }
 

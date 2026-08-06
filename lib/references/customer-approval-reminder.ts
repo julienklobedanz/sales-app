@@ -1,7 +1,9 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
+import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
 import { notifyInternalTeamCustomerApprovalPendingReminder } from '@/lib/references/approval-workflow-internal-notifications'
 import { log } from '@/lib/observability/logger'
 
@@ -35,21 +37,8 @@ export function isCustomerApprovalReminderDue(args: {
   return true
 }
 
-type PendingReminderRow = {
-  id: string
-  title: string | null
-  company_id: string
-  organization_id: string | null
-  approval_requested_by: string | null
-  approval_coordinator_email: string | null
-  approval_customer_last_sent_at: string | null
-  approval_requested_at: string | null
-  approval_customer_reminder_sent_at: string | null
-  companies?: { name?: string } | { name?: string }[] | null
-}
-
 export async function markCustomerApprovalEmailSent(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   referenceId: string,
   sentAt?: string,
 ): Promise<void> {
@@ -71,7 +60,7 @@ export async function markCustomerApprovalEmailSent(
 }
 
 export async function processCustomerApprovalReminders(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
 ): Promise<{ scanned: number; sent: number; skipped: number }> {
   const cutoff = customerApprovalReminderCutoffIso()
 
@@ -109,7 +98,7 @@ export async function processCustomerApprovalReminders(
   let sent = 0
   let skipped = 0
 
-  for (const row of (rows ?? []) as PendingReminderRow[]) {
+  for (const row of rows ?? []) {
     if (
       !isCustomerApprovalReminderDue({
         lastSentAt: row.approval_customer_last_sent_at,
@@ -121,11 +110,7 @@ export async function processCustomerApprovalReminders(
       continue
     }
 
-    const company =
-      Array.isArray(row.companies) && row.companies.length > 0
-        ? row.companies[0]
-        : (row.companies as { name?: string } | null)
-    const companyName = company?.name?.trim() || 'Referenz'
+    const companyName = companyNameFromReferenceRow(row.companies)
     const daysWaiting = CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS
 
     const emailSent = await notifyInternalTeamCustomerApprovalPendingReminder({

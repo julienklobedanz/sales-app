@@ -10,8 +10,8 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase **Accounts** + **Deals** + References **Slice 1–4** (Dashboard/Sharing/Approvals/Cache/Complete/Requests) |
-| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — References-Rest + weitere Domänen |
+| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase **Accounts** + **Deals** + References **Slice 1–5** (Dashboard/Sharing/Approvals/Cache/Complete/Requests/Follow-up/Notify/Form) |
+| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — weitere Domänen (Settings/Match/…) |
 | **Offen (Queue)** | #3 Rest · #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #8 `references`/`evidence` Rename · #9 Invite-SQL-Kosmetik (optional) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames; produktweite `evidence`↔`references`-Entscheidung |
 
@@ -26,7 +26,7 @@
 | **0** | Inventar-Hygiene | ✅ | — | — | — |
 | **1** | E4 Service-Role | ✅ Audit + Hotspots | Boy-Scout: Kommentar an neuen Service-Role-Callern | XS ongoing | bei Touch |
 | **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
-| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | References Follow-up/Notify/Form + andere Domänen; zuletzt **T4** CI-Gate | L | Slice 5: Follow-up / Notify / Form |
+| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | Nächste Domäne (Settings/Match/DealDesk/Shared); zuletzt **T4** CI-Gate | L | Settings oder Match nach Cast-Count |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
@@ -46,15 +46,15 @@
 |--------|-------|------------------------|
 | Accounts | ✅ Slices 1–4 | wenig: CRM-JSON, External-Contacts-Fallback, Error-Shapes |
 | Deals | ✅ Slices 1–2 | wenig: Eligibility/JSON-API-Responses (bewusst) |
-| References | 🟡 Slice 1–4 ✅ | Follow-up / Notify / Form |
+| References | ✅ Slice 1–5 | Rest-Hotspots vereinzelt (Dashboard-Fallback, trash RPC, Quote/JSON-APIs) |
 | Andere | offen | Settings, Match, DealDesk, Command-Center, Notifications, … |
 | **T4 CI** | offen | `typecheck` in CI **scharf**, wenn Domänen-Casts weitgehend weg / typecheck stabil 0 |
 
 **Empfohlene nächsten PRs (klein halten):**
 
-1. References Slice 5 — Follow-up / Notify / Form (Boy-Scout mit Feature ok)  
-2. Nächste Domäne nach Cast-Count (Settings oder Match)  
-3. Typed-Supabase **T4** — CI-`typecheck`-Gate
+1. Nächste Domäne nach Cast-Count (Settings oder Match)  
+2. Typed-Supabase **T4** — CI-`typecheck`-Gate  
+3. Optional: References-Rest (Dashboard-Fallback / trash / Quote) nur Boy-Scout
 
 ---
 
@@ -97,7 +97,7 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 | P1-6 | ✅ App/Lib; DB `companies` bleibt |
 | E4 / E7 | ✅ |
 | E6 Logger | ✅ App/Lib; Sink/Scripts bewusst |
-| Typed-Supabase T3 | 🟡 aktiv (Accounts/Deals ✅, References teilweise) |
+| Typed-Supabase T3 | 🟡 aktiv (Accounts/Deals/References ✅; andere Domänen offen) |
 | Typed-Supabase T4 | offen (nach T3-Ruhe) |
 | Welle 5 T3 Paths | → Queue #8 |
 | Welle 5 T4 `workspace_state` | vor Start erneut `grep`en |

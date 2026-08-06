@@ -1,10 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
 
 /** Benachrichtigt den am Account hinterlegten internen Referenzfreigabe-Kontakt (Metadaten → konkreter Mail-Hinweis). */
 export async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
-  supabase: SupabaseClient
+  supabase: SupabaseClient<Database>
   referenceId: string
   referenceTitle: string
   accountCompanyId: string
@@ -24,9 +25,7 @@ export async function notifyInternalReferenceCoordinatorAboutPendingReview(args:
       .eq('id', args.accountCompanyId)
       .maybeSingle()
 
-    const contactId = (
-      companyRow as { internal_reference_approval_contact_id?: string | null } | null
-    )?.internal_reference_approval_contact_id
+    const contactId = companyRow?.internal_reference_approval_contact_id
     if (!contactId) return
 
     const { data: person } = await args.supabase
@@ -49,9 +48,7 @@ export async function notifyInternalReferenceCoordinatorAboutPendingReview(args:
     .select('approval_internal_review_token')
     .eq('id', args.referenceId)
     .maybeSingle()
-  const internalToken = (
-    refTokenRow as { approval_internal_review_token?: string | null } | null
-  )?.approval_internal_review_token
+  const internalToken = refTokenRow?.approval_internal_review_token
   if (!internalToken) return
 
   await sendInternalApprovalReviewEmail({
