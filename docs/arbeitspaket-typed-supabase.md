@@ -9,7 +9,7 @@
 ## Vorab lesen (für die Coding-Session)
 
 - **Konventionen:** `docs/ai-coding-agent-guide.md`.
-- Aktueller Stand `[verifiziert]`: `tsconfig` `strict: true`; **0** `any`/`@ts-ignore`; aber **273** `as { … }`-Casts auf DB-Rows; **kein** `database.types.ts`, **kein** gen-Script, **kein** `typecheck`-Script; CI = lint/test/build. Die drei Clients (`lib/supabase/{client,server,service-role}.ts`) nutzen **keinen** `Database`-Generic.
+- Aktueller Stand `[verifiziert 2026-08-06]`: `tsconfig` `strict: true`; `lib/database.types.ts` + `db:types`/`typecheck`; Clients mit `Database`-Generic; Domänen-Casts weitgehend abgebaut (T3); **T4** CI-Gate scharf (`npm run typecheck` vor Test/Build in `.github/workflows/ci.yml`).
 - **Code vor Edit lesen**; **Vault nicht** heranziehen.
 
 ---
@@ -69,10 +69,12 @@ createClient<Database>(url, serviceKey, { … })
 
 ---
 
-## T4 — CI-Gate aktivieren
+## T4 — CI-Gate aktivieren ✅
 
 **Soll:** In `.github/workflows/ci.yml` einen `typecheck`-Schritt **vor** dem Build ergänzen — erst **scharf schalten**, wenn T3 org-weit 0 Fehler erreicht hat (sonst rot). Optional: separater CI-Job, der Migrationen gegen eine Wegwerf-/lokale DB anwendet (fängt SQL-/Schema-Fehler vor Prod).
-**Akzeptanz:** CI bricht künftig bei Spalten-/Schema-Drift ab (`tsc --noEmit`); grüner Lauf auf `main`.
+
+**Erledigt (2026-08-06):** `lint-and-build` führt `npm run typecheck` **scharf** (kein `continue-on-error`) **vor** Test/Build aus; Migrations-Job existiert separat (`db-migrations`, E7).  
+**Akzeptanz:** CI bricht bei Spalten-/Schema-Drift ab (`tsc --noEmit`); grüner Lauf auf `main`.
 
 ---
 
