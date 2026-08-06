@@ -6,7 +6,7 @@ import {
   enrichReferencedCompaniesMissingBrandfetch,
   upgradeAllOrganizationBrandfetchLogosToDark,
 } from '@/lib/references/library/sync-company-brandfetch'
-import { resetCompanyBrandfetchRetryCache } from '@/lib/accounts/company-brandfetch-retry-client'
+import { resetAccountBrandfetchRetryCache } from '@/lib/accounts/account-brandfetch-retry-client'
 
 const LOGO_DARK_UPGRADE_SESSION_KEY = 'refstack:org-logo-dark-upgrade-v2'
 
@@ -28,7 +28,7 @@ export function ReferencesOverviewBrandfetchSync({
     if (started.current) return
     started.current = true
 
-    resetCompanyBrandfetchRetryCache()
+    resetAccountBrandfetchRetryCache()
 
     void (async () => {
       let shouldRefresh = false

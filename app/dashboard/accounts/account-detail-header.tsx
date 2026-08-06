@@ -17,7 +17,7 @@ import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { AccountDetailNdaPopover } from './components/account-detail-nda-popover'
 import { AccountStatusPicker } from './components/account-status-picker'
-import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
+import { normalizeAccountStatus } from '@/lib/accounts/account-status'
 import type { NdaAgreementRow } from './nda-actions'
 
 export function AccountDetailHeader({
@@ -38,7 +38,7 @@ export function AccountDetailHeader({
       ? formatEmployeeCountDeDisplay(company.employee_count)
       : null
 
-  const accountStatus = normalizeCompanyAccountStatus(company.account_status)
+  const accountStatus = normalizeAccountStatus(company.account_status)
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

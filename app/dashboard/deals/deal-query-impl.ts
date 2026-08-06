@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile } from '@/lib/auth/request-user'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import type { DealRow, DealWithReferences } from './types'
 import type { MatchSuggestion } from './deal-action-types'
 
@@ -82,7 +82,7 @@ export async function getDealsImpl(): Promise<DealRow[]> {
         { id: string; title: string; company_name: string; logo_url?: string | null }
       > = {}
       for (const r of refs ?? []) {
-        const company = companyFromJoin(r.companies)
+        const company = accountFromJoin(r.companies)
         refMap[r.id] = {
           id: r.id,
           title: r.title ?? '',
@@ -117,7 +117,7 @@ export async function getDealsImpl(): Promise<DealRow[]> {
   }
 
   return (rows ?? []).map((r) => {
-    const company = companyFromJoin(r.companies)
+    const company = accountFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',
@@ -222,7 +222,7 @@ export async function getDealWithReferencesImpl(
       .select('id, title, summary, tags, companies(name, logo_url)')
       .in('id', refIds)
     for (const r of refs ?? []) {
-      const company = companyFromJoin(r.companies)
+      const company = accountFromJoin(r.companies)
       references.push({
         id: r.id,
         title: r.title ?? '',
@@ -254,7 +254,7 @@ export async function getDealWithReferencesImpl(
       ).data?.full_name ?? null)
     : null
 
-  const company = companyFromJoin(deal.companies)
+  const company = accountFromJoin(deal.companies)
 
   const best_match_score = references.reduce<number | null>((max, ref) => {
     const s = ref.similarity_score
@@ -346,7 +346,7 @@ export async function getMatchingReferencesForDealsImpl(
   if (!refs?.length) return result
 
   const refList = refs.map((r) => {
-    const company = companyFromJoin(r.companies)
+    const company = accountFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',
@@ -386,7 +386,7 @@ export async function getReferencesForOrgImpl(): Promise<
   if (!rows) return []
 
   return rows.map((r) => {
-    const company = companyFromJoin(r.companies)
+    const company = accountFromJoin(r.companies)
     return {
       id: r.id,
       title: r.title ?? '',

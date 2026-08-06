@@ -19,7 +19,7 @@ import {
   syncAccountsListViewFromUrl,
   useAccountsListView,
 } from '@/lib/accounts/accounts-list-view-store'
-import { type CompanyEntityKind } from '@/lib/accounts/company-entity'
+import { type AccountEntityKind } from '@/lib/accounts/account-entity'
 import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { toast } from 'sonner'
@@ -87,7 +87,7 @@ export function AccountsGrid({
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
   }, [searchParams])
 
-  const entityKind: CompanyEntityKind = listView
+  const entityKind: AccountEntityKind = listView
 
   function setListView(next: AccountsListView) {
     setAccountsListViewOptimistic(next)

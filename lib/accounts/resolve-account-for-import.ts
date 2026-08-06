@@ -5,7 +5,7 @@ import {
   companyNamesEquivalent,
   displayCompanyNameForImport,
   normalizeCompanyNameForMatch,
-} from '@/lib/accounts/company-name-match'
+} from '@/lib/accounts/account-name-match'
 import {
   fetchBrandfetchCompany,
   inputToDomain,
@@ -99,7 +99,7 @@ export async function resolveDomainForCompanyName(name: string): Promise<string 
   return null
 }
 
-export type ResolvedCompanyForImport = {
+export type ResolvedAccountForImport = {
   companyId: string
   companyName: string
   website_url: string | null
@@ -109,8 +109,8 @@ export type ResolvedCompanyForImport = {
   employee_count: number | null
 }
 
-export type ResolveCompanyForImportResult =
-  | { success: true; company: ResolvedCompanyForImport }
+export type ResolveAccountForImportResult =
+  | { success: true; company: ResolvedAccountForImport }
   | { success: false; error: string }
 
 type BrandfetchLookup = {
@@ -218,7 +218,7 @@ function toResolved(
     headquarters: string | null
     employee_count: number | null
   },
-): ResolvedCompanyForImport {
+): ResolvedAccountForImport {
   return {
     companyId,
     companyName: row.name ?? '',
@@ -295,7 +295,7 @@ async function syncCompanyWithBrandfetch(
   companyId: string,
   rawName: string,
   brandfetch: BrandfetchLookup,
-): Promise<ResolvedCompanyForImport> {
+): Promise<ResolvedAccountForImport> {
   const { data: row } = await supabase
     .from('companies')
     .select('id, name, website_url, logo_url, industry, headquarters, employee_count')
@@ -348,11 +348,11 @@ async function syncCompanyWithBrandfetch(
 /**
  * Import: Brandfetch zuerst, dann bestehenden Account per Kernname/Domain finden oder anlegen.
  */
-export async function resolveOrCreateCompanyForImport(
+export async function resolveOrCreateAccountForImport(
   supabase: SupabaseClient,
   organizationId: string,
   rawName: string,
-): Promise<ResolveCompanyForImportResult> {
+): Promise<ResolveAccountForImportResult> {
   const parsedName = String(rawName ?? '').trim()
   if (!parsedName) {
     return { success: false, error: 'Kein Unternehmensname erkannt.' }
@@ -425,12 +425,12 @@ export async function resolveOrCreateCompanyForImport(
 }
 
 /** Bearbeiten: bestehenden Account per Brandfetch aktualisieren. */
-export async function syncExistingCompanyBrandfetch(
+export async function syncExistingAccountBrandfetch(
   supabase: SupabaseClient,
   organizationId: string,
   companyId: string,
   options?: { excludeLogoUrl?: string | null; upgradeLogoForLightUi?: boolean },
-): Promise<ResolveCompanyForImportResult> {
+): Promise<ResolveAccountForImportResult> {
   const { data: row } = await supabase
     .from('companies')
     .select('id, name, website_url, logo_url')

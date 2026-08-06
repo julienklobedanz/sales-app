@@ -34,7 +34,7 @@ import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-h
 import {
   PARTNER_CATEGORY_OPTIONS,
   type PartnerCategory,
-} from '@/lib/accounts/company-entity'
+} from '@/lib/accounts/account-entity'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 

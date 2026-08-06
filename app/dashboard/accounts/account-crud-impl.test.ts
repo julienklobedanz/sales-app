@@ -10,7 +10,7 @@ vi.mock('@/lib/market-signals/discover-company-newsroom', () => ({
   discoverAndSaveCompanyNewsrooms: vi.fn(),
 }))
 
-vi.mock('@/lib/accounts/resolve-company-for-import', () => ({
+vi.mock('@/lib/accounts/resolve-account-for-import', () => ({
   enrichBulkImportRowFromBrandfetch: vi.fn(
     async (row: {
       name: string

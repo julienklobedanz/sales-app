@@ -5,7 +5,7 @@ import {
   isMissingNdaTitleColumn,
 } from '@/lib/accounts/nda-schema'
 import { formatNdaExpiryDateDe, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import {
   complianceSearchTitle,
   formatComplianceValidUntilLine,
@@ -335,7 +335,7 @@ export async function searchCommandCenter(
   }
 
   for (const row of ndaRes) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const docTitle = String(row.title ?? '').trim() || 'NDA'
     groups.ndas.push({
       kind: 'nda',
@@ -352,7 +352,7 @@ export async function searchCommandCenter(
     groups.references.push(...(options!.referenceHits ?? []))
   } else {
     for (const row of refsRes.data ?? []) {
-      const co = companyFromJoin(row.companies)
+      const co = accountFromJoin(row.companies)
       groups.references.push({
         kind: 'reference',
         id: String(row.id),
@@ -364,7 +364,7 @@ export async function searchCommandCenter(
   }
 
   for (const row of execRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const person = String(row.person_name ?? '').trim()
     const summary = String(row.change_summary ?? '').trim()
     groups.marketSignals.push({
@@ -380,7 +380,7 @@ export async function searchCommandCenter(
   }
 
   for (const row of newsRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const body = String(row.body ?? '').trim()
     groups.marketSignals.push({
       kind: 'market_signal',
@@ -393,7 +393,7 @@ export async function searchCommandCenter(
   }
 
   for (const row of contactsRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const name =
       [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Kontakt'
     groups.contacts.push({

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 
 import { buildCompaniesImportTemplateXlsx } from '@/lib/accounts/companies-import-template'
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
-function parseEntityKind(raw: string | null): CompanyEntityKind | null {
+function parseEntityKind(raw: string | null): AccountEntityKind | null {
   if (raw === 'account' || raw === 'partner') return raw
   return null
 }

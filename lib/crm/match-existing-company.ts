@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   companyNameSearchToken,
   companyNamesEquivalent,
-} from '@/lib/accounts/company-name-match'
+} from '@/lib/accounts/account-name-match'
 import type { CrmProvider } from '@/lib/crm/types'
 
 function normalizeDomain(raw: string | null | undefined): string | null {

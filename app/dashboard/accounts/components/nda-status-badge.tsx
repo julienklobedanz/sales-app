@@ -1,4 +1,4 @@
-import type { NdaDisplayStatus } from '@/lib/accounts/company-entity'
+import type { NdaDisplayStatus } from '@/lib/accounts/account-entity'
 
 export function NdaStatusBadge({
   status,

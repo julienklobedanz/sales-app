@@ -1,6 +1,6 @@
-import type { CompanyAccountStatusValue } from './company-account-status'
+import type { AccountStatusValue } from './account-status'
 
-const STATUS_SORT_RANK: Record<CompanyAccountStatusValue, number> = {
+const STATUS_SORT_RANK: Record<AccountStatusValue, number> = {
   at_risk: 0,
   active_customer: 1,
   target: 2,
@@ -8,7 +8,7 @@ const STATUS_SORT_RANK: Record<CompanyAccountStatusValue, number> = {
 }
 
 export function accountStatusSortRank(
-  status: CompanyAccountStatusValue | null | undefined,
+  status: AccountStatusValue | null | undefined,
 ): number {
   if (!status) return 99
   return STATUS_SORT_RANK[status] ?? 99

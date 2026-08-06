@@ -1,4 +1,4 @@
-export type CompanyEntityKind = 'account' | 'partner'
+export type AccountEntityKind = 'account' | 'partner'
 
 export type PartnerCategory = 'sub' | 'tech' | 'legal' | 'other'
 

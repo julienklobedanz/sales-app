@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { CompanyAccountStatusValue } from './company-account-status'
+import type { AccountStatusValue } from './account-status'
 import {
   computeAccountStatusFromSignals,
   dealClosedOnForStatus,
@@ -40,7 +40,7 @@ export async function syncComputedAccountStatuses(
   companies: CompanyStatusSyncRow[],
   deals: DealRow[],
   references: ReferenceRow[],
-): Promise<Record<string, CompanyAccountStatusValue | null>> {
+): Promise<Record<string, AccountStatusValue | null>> {
   const dealsByCompany = new Map<string, DealRow[]>()
   for (const deal of deals) {
     if (!deal.company_id) continue
@@ -57,7 +57,7 @@ export async function syncComputedAccountStatuses(
     refsByCompany.set(ref.company_id, list)
   }
 
-  const effectiveStatus: Record<string, CompanyAccountStatusValue | null> = {}
+  const effectiveStatus: Record<string, AccountStatusValue | null> = {}
 
   for (const company of companies) {
     if ((company.entity_kind ?? 'account') === 'partner') continue
@@ -89,7 +89,7 @@ export async function syncComputedAccountStatuses(
         }
       } else {
         effectiveStatus[company.id] =
-          company.account_status as CompanyAccountStatusValue | null
+          company.account_status as AccountStatusValue | null
       }
       continue
     }

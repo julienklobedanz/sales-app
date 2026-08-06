@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
+import { resolveOrCreateAccountForImport } from '@/lib/accounts/resolve-account-for-import'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { extractDataFromBuffer } from '@/lib/document-text'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
@@ -107,7 +107,7 @@ export async function applyBulkImportExtractionFromBuffer(
 
   const companyHint = d.company_name?.trim() || String(company.name ?? '').trim()
   if (companyHint) {
-    const resolved = await resolveOrCreateCompanyForImport(
+    const resolved = await resolveOrCreateAccountForImport(
       supabase,
       organizationId,
       companyHint,

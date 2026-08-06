@@ -1,6 +1,6 @@
 'use client'
 
-import type { ResolvedCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
+import type { ResolvedAccountForImport } from '@/lib/accounts/resolve-account-for-import'
 
 type RetryState = 'idle' | 'loading' | 'done'
 
@@ -8,7 +8,7 @@ const retryByKey = new Map<string, RetryState>()
 const inFlight = new Map<string, Promise<BrandfetchLogoRetryResult | null>>()
 
 /** Neuer Seitenaufruf: erneuter Brandfetch-Versuch erlauben. */
-export function resetCompanyBrandfetchRetryCache(): void {
+export function resetAccountBrandfetchRetryCache(): void {
   retryByKey.clear()
   inFlight.clear()
 }
@@ -26,7 +26,7 @@ export type BrandfetchLogoRetryResult = {
   companyName: string
 }
 
-export function requestCompanyBrandfetchRetry(
+export function requestAccountBrandfetchRetry(
   companyId: string,
   failedLogoUrl: string | null | undefined,
   fetcher: (
@@ -34,7 +34,7 @@ export function requestCompanyBrandfetchRetry(
     failedLogoUrl: string | null,
   ) => Promise<{
     success: boolean
-    company?: ResolvedCompanyForImport
+    company?: ResolvedAccountForImport
   }>,
 ): Promise<BrandfetchLogoRetryResult | null> {
   const id = companyId.trim()

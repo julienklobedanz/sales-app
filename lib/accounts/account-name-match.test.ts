@@ -6,7 +6,7 @@ import {
   displayCompanyNameForImport,
   normalizeCompanyNameForMatch,
   stripLegalSuffixFromCompanyName,
-} from './company-name-match'
+} from './account-name-match'
 
 describe('companyNamesEquivalent', () => {
   it('gleicht Aurubis und Aurubis AG ab', () => {

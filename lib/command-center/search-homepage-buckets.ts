@@ -11,7 +11,7 @@ import {
   sanitizeIlikeUserInput,
   type CommandSearchResult,
 } from '@/lib/command-center/global-search'
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import {
   emptyHomepageSearchGroups,
   type HomepageSearchGroups,
@@ -34,7 +34,7 @@ function referenceFromJoin(
   if (!ref || typeof ref !== 'object') return null
   const title = String((ref as { title?: string }).title ?? '').trim()
   if (!title) return null
-  const co = companyFromJoin((ref as { companies?: unknown }).companies)
+  const co = accountFromJoin((ref as { companies?: unknown }).companies)
   return { title, companyName: co?.name ?? null }
 }
 
@@ -105,7 +105,7 @@ export async function searchHomepageBuckets(
   const groups = emptyHomepageSearchGroups()
 
   for (const row of execRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const person = String(row.person_name ?? '').trim()
     const summary = String(row.change_summary ?? '').trim()
     groups.marketSignals.push({
@@ -121,7 +121,7 @@ export async function searchHomepageBuckets(
   }
 
   for (const row of newsRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const body = String(row.body ?? '').trim()
     groups.marketSignals.push({
       kind: 'market_signal',
@@ -153,7 +153,7 @@ export async function searchHomepageBuckets(
   }
 
   for (const row of ndaRows) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     const docTitle = String(row.title ?? '').trim() || 'NDA'
     groups.documents.push({
       kind: 'nda',

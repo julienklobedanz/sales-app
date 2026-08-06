@@ -1,6 +1,6 @@
 import type { AccountCardPrimaryAction } from '@/lib/accounts/account-card-primary-action'
-import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
-import type { CompanyEntityKind, NdaDisplayStatus } from '@/lib/accounts/company-entity'
+import type { AccountStatusValue } from '@/lib/accounts/account-status'
+import type { AccountEntityKind, NdaDisplayStatus } from '@/lib/accounts/account-entity'
 
 export type CompanyCard = {
   id: string
@@ -11,12 +11,12 @@ export type CompanyCard = {
   industry: string | null
   employee_count?: number | null
   is_favorite?: boolean | null
-  entity_kind?: CompanyEntityKind
+  entity_kind?: AccountEntityKind
   partner_category?: string | null
   linked_account_id?: string | null
   linked_account_name?: string | null
   nda_status?: NdaDisplayStatus
-  account_status?: CompanyAccountStatusValue | null
+  account_status?: AccountStatusValue | null
   open_deals_count?: number | null
   contacts_count?: number | null
   reference_count?: number | null

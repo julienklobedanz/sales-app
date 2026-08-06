@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import { companiesImportTemplateFilename } from '@/lib/accounts/companies-import-shared'
 
 const ACCOUNT_HEADERS = ['Name', 'Website', 'Branche', 'Standort', 'Mitarbeiter'] as const
@@ -17,7 +17,7 @@ const PARTNER_HEADERS = [
 const ACCOUNT_EXAMPLE = ['Beispiel GmbH', '', '', '', ''] as const
 const PARTNER_EXAMPLE = ['Beispiel Partner AG', '', '', '', '', 'sub'] as const
 
-function buildImportTemplateWorkbook(entityKind: CompanyEntityKind): XLSX.WorkBook {
+function buildImportTemplateWorkbook(entityKind: AccountEntityKind): XLSX.WorkBook {
   const headers = entityKind === 'partner' ? [...PARTNER_HEADERS] : [...ACCOUNT_HEADERS]
   const example = entityKind === 'partner' ? [...PARTNER_EXAMPLE] : [...ACCOUNT_EXAMPLE]
 
@@ -35,7 +35,7 @@ function buildImportTemplateWorkbook(entityKind: CompanyEntityKind): XLSX.WorkBo
   return workbook
 }
 
-export function buildCompaniesImportTemplateXlsx(entityKind: CompanyEntityKind): {
+export function buildCompaniesImportTemplateXlsx(entityKind: AccountEntityKind): {
   buffer: Buffer
   filename: string
 } {

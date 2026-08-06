@@ -1,24 +1,24 @@
 /** DB-Werte für `companies.account_status` (snake_case). */
-export const COMPANY_ACCOUNT_STATUS_VALUES = [
+export const ACCOUNT_STATUS_VALUES = [
   'target',
   'active_customer',
   'former_customer',
   'at_risk',
 ] as const
 
-export type CompanyAccountStatusValue = (typeof COMPANY_ACCOUNT_STATUS_VALUES)[number]
+export type AccountStatusValue = (typeof ACCOUNT_STATUS_VALUES)[number]
 
-export function normalizeCompanyAccountStatus(
+export function normalizeAccountStatus(
   raw: string | null | undefined,
-): CompanyAccountStatusValue | null {
+): AccountStatusValue | null {
   const s = raw?.trim() ?? ''
   if (!s) return null
-  return COMPANY_ACCOUNT_STATUS_VALUES.includes(s as CompanyAccountStatusValue)
-    ? (s as CompanyAccountStatusValue)
+  return ACCOUNT_STATUS_VALUES.includes(s as AccountStatusValue)
+    ? (s as AccountStatusValue)
     : null
 }
 
-export type AccountStatusFormValue = '__none__' | CompanyAccountStatusValue
+export type AccountStatusFormValue = '__none__' | AccountStatusValue
 
 export const ACCOUNT_STATUS_FORM_OPTIONS: {
   value: AccountStatusFormValue
@@ -54,6 +54,6 @@ export const ACCOUNT_STATUS_FORM_OPTIONS: {
 export function accountStatusFromDb(raw: string | null): AccountStatusFormValue {
   if (raw === 'warmup') return 'target'
   if (raw === 'expansion') return 'active_customer'
-  const n = normalizeCompanyAccountStatus(raw)
+  const n = normalizeAccountStatus(raw)
   return n ?? '__none__'
 }

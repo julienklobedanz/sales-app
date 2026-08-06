@@ -1,4 +1,4 @@
-import type { CompanyAccountStatusValue } from './company-account-status'
+import type { AccountStatusValue } from './account-status'
 import { isContractEndWithinWarningWindow } from './contract-end'
 import { NDA_EXPIRY_WARNING_DAYS } from './nda-expiry'
 
@@ -75,7 +75,7 @@ function latestWonDate(deals: DealStatusInput[]): Date | null {
  */
 export function computeAccountStatusFromSignals(
   input: ComputeAccountStatusInput,
-): CompanyAccountStatusValue | null {
+): AccountStatusValue | null {
   const now = input.now ?? new Date()
 
   const hasExpiringReference = input.references.some((r) => referenceExpiresSoon(r, now))

@@ -1,4 +1,4 @@
-export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
+export type { AccountStatusValue } from '@/lib/accounts/account-status'
 
 export type CompanyStrategyRow = {
   id: string

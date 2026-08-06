@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 
 export type MatchHitCompanyFields = {
   companyId: string | null
@@ -26,7 +26,7 @@ export async function fetchCompanyFieldsForReferenceIds(
   if (error) return map
 
   for (const row of data ?? []) {
-    const co = companyFromJoin(row.companies)
+    const co = accountFromJoin(row.companies)
     map.set(String(row.id), {
       companyId: co?.id ?? (row.company_id ? String(row.company_id) : null),
       companyName: co?.name || null,

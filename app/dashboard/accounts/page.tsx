@@ -5,9 +5,9 @@ import { AccountsGrid } from './accounts-grid'
 import {
   resolveNdaDisplayStatus,
   type NdaDisplayStatus,
-} from '@/lib/accounts/company-entity'
-import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
-import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
+} from '@/lib/accounts/account-entity'
+import type { AccountStatusValue } from '@/lib/accounts/account-status'
+import { normalizeAccountStatus } from '@/lib/accounts/account-status'
 import {
   buildAccountCardSecondaryMeta,
   resolveAccountCardPrimaryAction,
@@ -372,7 +372,7 @@ export default async function AccountsPage() {
   }
   const refsData = (refRows.data ?? []) as RefEnrichRow[]
 
-  let effectiveStatusByCompany: Record<string, CompanyAccountStatusValue | null> = {}
+  let effectiveStatusByCompany: Record<string, AccountStatusValue | null> = {}
   try {
     effectiveStatusByCompany = await syncComputedAccountStatuses(
       supabase,
@@ -388,7 +388,7 @@ export default async function AccountsPage() {
     )
   } catch {
     for (const c of companies ?? []) {
-      effectiveStatusByCompany[c.id] = normalizeCompanyAccountStatus(c.account_status)
+      effectiveStatusByCompany[c.id] = normalizeAccountStatus(c.account_status)
     }
   }
 
@@ -501,7 +501,7 @@ export default async function AccountsPage() {
   const enrichedCompanies =
     (companies ?? []).map((c) => {
       const accountStatus =
-        effectiveStatusByCompany[c.id] ?? normalizeCompanyAccountStatus(c.account_status)
+        effectiveStatusByCompany[c.id] ?? normalizeAccountStatus(c.account_status)
       const openDealsCount = dealCountByCompany[c.id] ?? 0
       const referenceCount = refCountByCompany[c.id] ?? 0
       const ndaStatus = ndaStatusByCompany[c.id] ?? 'none'

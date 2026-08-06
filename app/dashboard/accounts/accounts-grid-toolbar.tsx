@@ -15,7 +15,7 @@ import { Filter, Loader, Plus, StarIcon, UploadIcon } from '@hugeicons/core-free
 import { AppIcon } from '@/lib/icons'
 import { MASTER_INDUSTRIES } from '@/lib/constants/industries'
 import { COPY } from '@/lib/copy'
-import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import type { AccountsListView } from '@/lib/accounts/accounts-list-view'
 import { CreateAccountDialog } from './create-account-dialog'
 import { CreatePartnerDialog } from './create-partner-dialog'
@@ -66,7 +66,7 @@ export function AccountsGridToolbar({
   importing: boolean
   importDialogOpen: boolean
   setImportDialogOpen: (open: boolean) => void
-  entityKind: CompanyEntityKind
+  entityKind: AccountEntityKind
   onImport: (file: File) => Promise<boolean>
   filterOpen: boolean
   setFilterOpen: (open: boolean) => void
@@ -77,7 +77,7 @@ export function AccountsGridToolbar({
   setFilterEmployeeBand: (value: EmployeeBand) => void
   filterReferences: ReferencesFilter
   setFilterReferences: (value: ReferencesFilter) => void
-  entityKindValue: CompanyEntityKind
+  entityKindValue: AccountEntityKind
   onEntityKindChange: (next: AccountsListView) => void
   sortMode: SortMode
   setSortMode: (mode: SortMode) => void

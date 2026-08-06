@@ -1,17 +1,17 @@
 /**
  * Unwraps a Supabase `companies (...)` join (object or single-element array).
  */
-export type ParsedCompanyJoin = {
+export type ParsedAccountJoin = {
   id: string | null
   name: string
   logoUrl: string | null
   isFavorite: boolean
 }
 
-export function companyFromJoin(
+export function accountFromJoin(
   raw: unknown,
   opts?: { fallbackName?: string },
-): ParsedCompanyJoin | null {
+): ParsedAccountJoin | null {
   const c = Array.isArray(raw) ? raw[0] : raw
   if (!c || typeof c !== 'object') {
     if (opts?.fallbackName) {
