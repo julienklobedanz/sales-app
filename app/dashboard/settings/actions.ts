@@ -90,9 +90,7 @@ export async function updateProfile(formData: FormData) {
     .single()
 
   const parsedRoles = parseProfileRoles(profileRow ?? {})
-  const existingPhone = String(
-    (profileRow as { phone?: string | null })?.phone ?? '',
-  ).trim()
+  const existingPhone = String(profileRow?.phone ?? '').trim()
 
   const firstName = formData.get('firstName')?.toString()?.trim()
   const lastName = formData.get('lastName')?.toString()?.trim()

@@ -5,26 +5,6 @@ import { resolveChampionPersonTitle } from '@/lib/market-signals/champion-displa
 import { MarketSignalsManageClient } from './watchlist-manage-client'
 import type { NewsroomSummary } from './newsrooms-card'
 
-type CompanyRow = {
-  id: string
-  name: string
-  logo_url: string | null
-  is_favorite: boolean | null
-  account_status: string | null
-  website_url: string | null
-  newsroom_urls: string[] | null
-  newsroom_discovered_at: string | null
-}
-
-type ChampionWatchRow = {
-  person_key: string
-  person_name: string
-  company_name: string | null
-  person_title: string | null
-  created_at: string
-  is_active: boolean | null
-}
-
 export default async function MarketSignalsManagePage() {
   const supabase = await createServerSupabaseClient()
   const {
@@ -45,7 +25,7 @@ export default async function MarketSignalsManagePage() {
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) {
     return (
       <MarketSignalsManageClient
@@ -76,16 +56,17 @@ export default async function MarketSignalsManagePage() {
     .order('published_on', { ascending: false })
     .limit(500)
 
-  const initialFollowingCount = ((data ?? []) as CompanyRow[]).filter((row) =>
-    Boolean(row.is_favorite),
-  ).length
+  const companyRows = [...(data ?? [])]
+  const initialFollowingCount = companyRows.filter((row) => Boolean(row.is_favorite)).length
   if (initialFollowingCount === 0) {
-    const knownCompanyIds = new Set(((data ?? []) as CompanyRow[]).map((row) => row.id))
+    const knownCompanyIds = new Set(companyRows.map((row) => row.id))
     const bootstrapCompanyIds = Array.from(
       new Set(
         [...(execRows ?? []), ...(newsRows ?? [])]
-          .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
-          .filter((companyId) => companyId && knownCompanyIds.has(companyId)),
+          .map((row) => row.company_id)
+          .filter((companyId): companyId is string =>
+            Boolean(companyId && knownCompanyIds.has(companyId)),
+          ),
       ),
     ).slice(0, 8)
     if (bootstrapCompanyIds.length > 0) {
@@ -94,7 +75,7 @@ export default async function MarketSignalsManagePage() {
         .update({ is_favorite: true })
         .eq('organization_id', orgId)
         .in('id', bootstrapCompanyIds)
-      for (const row of (data ?? []) as CompanyRow[]) {
+      for (const row of companyRows) {
         if (bootstrapCompanyIds.includes(row.id)) row.is_favorite = true
       }
     }
@@ -107,7 +88,7 @@ export default async function MarketSignalsManagePage() {
     .order('created_at', { ascending: false })
     .limit(500)
 
-  const companies = ((data ?? []) as CompanyRow[]).map((row) => ({
+  const companies = companyRows.map((row) => ({
     id: row.id,
     name: row.name ?? 'Unbekannt',
     logoUrl: row.logo_url ?? null,
@@ -115,7 +96,6 @@ export default async function MarketSignalsManagePage() {
     accountStatus: row.account_status ?? null,
   }))
 
-  const companyRows = (data ?? []) as CompanyRow[]
   const withWebsite = companyRows.filter((row) =>
     Boolean(String(row.website_url ?? '').trim()),
   ).length
@@ -144,9 +124,8 @@ export default async function MarketSignalsManagePage() {
       }),
   }
 
-  const championRows = (championWatchRows ?? []) as ChampionWatchRow[]
   const watchedStakeholders = await Promise.all(
-    championRows.map(async (row) => {
+    (championWatchRows ?? []).map(async (row) => {
       let title = row.person_title?.trim() || null
       if (!title) {
         title = await resolveChampionPersonTitle(

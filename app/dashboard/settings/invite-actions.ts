@@ -14,6 +14,7 @@ import {
   type InviteRoleDimensions,
 } from '@/lib/roles/invite-roles'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import type { Json } from '@/lib/database.types'
 import { log } from '@/lib/observability/logger'
 
 const INVITE_VALID_DAYS = 7
@@ -24,6 +25,44 @@ function formatInviteExpiresAt(expiresAt: Date): string {
     month: '2-digit',
     year: 'numeric',
   })
+}
+
+type InviteRpcFields = {
+  id?: string
+  email?: string | null
+  token?: string | null
+  system_role?: string | null
+  function_role?: string | null
+}
+
+/** RPC `get_organization_invite_for_resend` / pending-invite rows sind `Json`. */
+function parseInviteRpcObject(data: Json | null | undefined): InviteRpcFields | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null
+  const obj = data as Record<string, unknown>
+  return {
+    id: typeof obj.id === 'string' ? obj.id : undefined,
+    email: typeof obj.email === 'string' ? obj.email : obj.email === null ? null : undefined,
+    token: typeof obj.token === 'string' ? obj.token : obj.token === null ? null : undefined,
+    system_role:
+      typeof obj.system_role === 'string'
+        ? obj.system_role
+        : obj.system_role === null
+          ? null
+          : undefined,
+    function_role:
+      typeof obj.function_role === 'string'
+        ? obj.function_role
+        : obj.function_role === null
+          ? null
+          : undefined,
+  }
+}
+
+function parsePendingInviteRows(data: Json | null | undefined): InviteRpcFields[] {
+  if (!Array.isArray(data)) return []
+  return data
+    .map((row) => parseInviteRpcObject(row))
+    .filter((row): row is InviteRpcFields => Boolean(row?.id))
 }
 
 export type CreateInviteResult =
@@ -261,16 +300,7 @@ export async function resendInviteEmail(params: {
 
   if (inviteErr) return { success: false, error: inviteErr.message }
 
-  const parsed = inviteDataRaw as unknown
-  const invite =
-    parsed && typeof parsed === 'object'
-      ? (parsed as {
-          email?: string | null
-          token?: string | null
-          system_role?: string | null
-          function_role?: string | null
-        })
-      : null
+  const invite = parseInviteRpcObject(inviteDataRaw)
 
   const email = invite?.email?.trim().toLowerCase() || ''
   const token = invite?.token?.trim() || ''
@@ -378,29 +408,22 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
     )
   }
 
-  const rawPending = invitesRpc.data as unknown
-  const pendingRows = Array.isArray(rawPending) ? rawPending : []
-
-  const pending: TeamMemberRow[] = pendingRows.flatMap((row) => {
-    const i = row as {
-      id?: string
-      email?: string | null
-      system_role?: string | null
-      function_role?: string | null
-    }
-    if (!i?.id) return []
-    const roles = parseInviteRoleDimensions(i)
-    return [
-      {
-        id: i.id,
-        email: i.email ?? '',
-        name: null,
-        status: 'pending' as const,
-        systemRole: roles.systemRole,
-        functionRole: roles.functionRole,
-      },
-    ]
-  })
+  const pending: TeamMemberRow[] = parsePendingInviteRows(invitesRpc.data).flatMap(
+    (i) => {
+      if (!i.id) return []
+      const roles = parseInviteRoleDimensions(i)
+      return [
+        {
+          id: i.id,
+          email: i.email ?? '',
+          name: null,
+          status: 'pending' as const,
+          systemRole: roles.systemRole,
+          functionRole: roles.functionRole,
+        },
+      ]
+    },
+  )
 
   return [...active, ...pending]
 }
