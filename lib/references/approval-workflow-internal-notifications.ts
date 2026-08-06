@@ -3,6 +3,8 @@ import 'server-only'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { Database } from '@/lib/database.types'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import {
   buildRefstackEmailHtml,
   buildReferenceMetaRows,
@@ -63,7 +65,7 @@ type ReferenceNotifyContext = {
 }
 
 export async function loadReferenceNotifyContext(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
   referenceId: string,
 ): Promise<ReferenceNotifyContext | null> {
   const { data: row, error } = await admin
@@ -84,27 +86,14 @@ export async function loadReferenceNotifyContext(
 
   if (error || !row?.id) return null
 
-  const company =
-    Array.isArray(row.companies) && row.companies.length > 0
-      ? row.companies[0]
-      : (row.companies as { name?: string } | null)
-
   return {
-    referenceId: row.id as string,
+    referenceId: row.id,
     referenceTitle: String(row.title ?? 'Referenz').trim() || 'Referenz',
     companyId: String(row.company_id),
-    companyName: String(company?.name ?? '').trim() || 'Referenz',
-    organizationId:
-      typeof (row as { organization_id?: string | null }).organization_id === 'string'
-        ? (row as { organization_id: string }).organization_id
-        : null,
-    requesterId:
-      (row as { approval_requested_by?: string | null }).approval_requested_by ?? null,
-    coordinatorEmail:
-      typeof (row as { approval_coordinator_email?: string | null })
-        .approval_coordinator_email === 'string'
-        ? (row as { approval_coordinator_email: string }).approval_coordinator_email
-        : null,
+    companyName: accountFromJoin(row.companies)?.name?.trim() || 'Referenz',
+    organizationId: row.organization_id ?? null,
+    requesterId: row.approval_requested_by ?? null,
+    coordinatorEmail: row.approval_coordinator_email ?? null,
   }
 }
 

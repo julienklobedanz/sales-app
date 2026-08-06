@@ -1,14 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
-import type {
-  ReferenceApprovalRow,
-  ResolvedApprovalRecipient,
-} from '@/lib/references/library/approvals-types'
+import type { ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
 
 export async function resolveContactForApproval(
   supabase: SupabaseClient,
-  row: ReferenceApprovalRow,
+  row: {
+    contact_id: string | null
+    customer_contact_id: string | null
+    approval_contact_id?: string | null
+    approval_external_contact_id?: string | null
+  },
   companyId: string,
   options?: SubmitForApprovalOptions,
   resolveOpts?: { requireRecipientEmail?: boolean },

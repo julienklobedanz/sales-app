@@ -3,7 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { buildClientApprovalEmailHtml } from '@/lib/references/library/approvals-email-templates'
-import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/references/library/sharing'
 import {
   escapeRefstackEmailHtml,
@@ -21,7 +20,7 @@ export function getApprovalResendClient(): Resend | null {
 export async function sendClientApprovalEmail(args: {
   supabase: SupabaseClient
   referenceId: string
-  ref: ReferenceApprovalRow
+  ref: { title: string }
   /** AM-Name für Kundenkommunikation (nicht der interne Anfragende). */
   customerFacingName: string
   vendorOrgName: string

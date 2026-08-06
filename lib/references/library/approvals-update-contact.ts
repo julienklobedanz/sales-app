@@ -15,11 +15,13 @@ import {
 } from '@/lib/references/pre-customer-approval-edit'
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
-import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import {
+  companyNameFromReferenceRow,
+  referenceGiverNameFromRecipientEmail,
+} from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type {
   ApproveInternalRecipientOptions,
-  ReferenceApprovalRow,
   ResolvedApprovalRecipient,
 } from '@/lib/references/library/approvals-types'
 import { log } from '@/lib/observability/logger'
@@ -68,13 +70,7 @@ export async function updateApprovalRecipientImpl(
 
   if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
 
-  const ref = row as unknown as ReferenceApprovalRow & {
-    approval_requested_by?: string | null
-    approval_requested_at?: string | null
-    approval_internal_status?: string | null
-    approval_customer_facing_name?: string | null
-    approval_coordinator_name?: string | null
-  }
+  const ref = row
 
   const internalStatus = String(ref.approval_internal_status ?? '').toLowerCase()
   const preCustomerEdit = canEditPreCustomerApprovalRecipient({
@@ -154,15 +150,9 @@ export async function updateApprovalRecipientImpl(
 
   let customerEmailSent = false
   if (shouldSendCustomerEmail) {
-    const company =
-      Array.isArray(ref.companies) && ref.companies.length > 0
-        ? (ref.companies[0] as { name?: string })
-        : (ref.companies as { name?: string } | null)
-    const companyName = company?.name ?? 'Referenz'
+    const companyName = companyNameFromReferenceRow(ref.companies)
 
-    const orgId = String(
-      (profile as { organization_id?: string | null }).organization_id ?? '',
-    ).trim()
+    const orgId = String(profile?.organization_id ?? '').trim()
     let vendorOrgName = companyName
     if (orgId) {
       const { data: orgRow } = await supabase
@@ -177,8 +167,8 @@ export async function updateApprovalRecipientImpl(
       typeof ref.approval_customer_facing_name === 'string' &&
       ref.approval_customer_facing_name.trim()
         ? ref.approval_customer_facing_name.trim()
-        : typeof (profile as { full_name?: string }).full_name === 'string'
-          ? (profile as { full_name: string }).full_name.trim()
+        : typeof profile?.full_name === 'string'
+          ? profile.full_name.trim()
           : ''
 
     try {
@@ -248,16 +238,7 @@ export async function updateApprovalCoordinatorImpl(
 
   if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
 
-  const ref = row as {
-    id: string
-    title?: string | null
-    approval_internal_status?: string | null
-    approval_requested_at?: string | null
-    approval_requested_by?: string | null
-    approval_requester_name?: string | null
-    approval_message?: string | null
-    companies?: { name?: string } | { name?: string }[] | null
-  }
+  const ref = row
 
   if (
     !canEditInternalApprovalCoordinator({
@@ -282,11 +263,7 @@ export async function updateApprovalCoordinatorImpl(
   }
 
   const internalReviewToken = crypto.randomUUID()
-  const company =
-    Array.isArray(ref.companies) && ref.companies.length > 0
-      ? ref.companies[0]
-      : (ref.companies as { name?: string } | null)
-  const accountCompanyName = company?.name?.trim() || 'Account'
+  const accountCompanyName = companyNameFromReferenceRow(ref.companies, 'Account')
   const coordinatorName = referenceGiverNameFromRecipientEmail(email)
 
   const { error: updateError } = await supabase

@@ -41,7 +41,6 @@ import {
   anonymizeText,
   buildDetailFileRows,
   splitTags,
-  type ReferenceDetailRow,
 } from './reference-detail-helpers'
 import { ReferenceDetailHeader } from './reference-detail-header'
 import { ReferenceDetailMain } from './reference-detail-main'
@@ -75,8 +74,7 @@ export default async function ReferenceDetailPage({
   const parsedRoles = parseProfileRoles(profile)
   const { systemRole, functionRole, capabilities } = parsedRoles
   const isSalesView = isSalesAppView(systemRole, functionRole)
-  const organizationId =
-    (profile as { organization_id?: string | null }).organization_id ?? null
+  const organizationId = profile.organization_id ?? null
 
   let orgDateFmt = normalizeOrgDateDisplayFormat('de-DE')
   let orgRolesPermissions = null
@@ -86,9 +84,7 @@ export default async function ReferenceDetailPage({
       .select('date_display_format, api_settings')
       .eq('id', organizationId)
       .maybeSingle()
-    orgDateFmt = normalizeOrgDateDisplayFormat(
-      (orgRow as { date_display_format?: string | null } | null)?.date_display_format,
-    )
+    orgDateFmt = normalizeOrgDateDisplayFormat(orgRow?.date_display_format)
     if (orgRow?.api_settings && typeof orgRow.api_settings === 'object') {
       orgRolesPermissions = parseRolesPermissionsSettings(
         (orgRow.api_settings as Record<string, unknown>).roles_permissions,
@@ -159,7 +155,7 @@ export default async function ReferenceDetailPage({
 
   if (error || !row) notFound()
 
-  const ref = row as unknown as ReferenceDetailRow
+  const ref = row
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
   const visibilityScope = resolveReferenceVisibilityScope({
@@ -190,11 +186,8 @@ export default async function ReferenceDetailPage({
       .select('internal_reference_approval_contact_id')
       .eq('id', company.id)
       .maybeSingle()
-    const internalApprovalContactId = (
-      companyApprovalRow as {
-        internal_reference_approval_contact_id?: string | null
-      } | null
-    )?.internal_reference_approval_contact_id
+    const internalApprovalContactId =
+      companyApprovalRow?.internal_reference_approval_contact_id
     if (internalApprovalContactId) {
       const { data: approvalContactPerson } = await supabase
         .from('contact_persons')
@@ -202,9 +195,7 @@ export default async function ReferenceDetailPage({
         .eq('id', internalApprovalContactId)
         .eq('company_id', company.id)
         .maybeSingle()
-      const email = String(
-        (approvalContactPerson as { email?: string | null } | null)?.email ?? '',
-      ).trim()
+      const email = String(approvalContactPerson?.email ?? '').trim()
       if (email.includes('@')) defaultAccountManagerEmail = email
     }
   }

@@ -10,12 +10,14 @@ import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
-import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import {
+  companyNameFromReferenceRow,
+  referenceGiverNameFromRecipientEmail,
+} from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type {
   ApproveInternalAndSendResult,
   ApproveInternalRecipientOptions,
-  ReferenceApprovalRow,
 } from '@/lib/references/library/approvals-types'
 
 export async function approveInternalAndSendImpl(
@@ -55,9 +57,7 @@ export async function approveInternalAndSendImpl(
     .eq('id', referenceId)
     .single()
   if (error || !row) return { success: false, error: 'Referenz nicht gefunden.' }
-  const ref = row as unknown as ReferenceApprovalRow & {
-    approval_internal_status?: string | null
-  }
+  const ref = row
 
   const internalStatus = String(ref.approval_internal_status ?? '').toLowerCase()
   if (internalStatus !== 'approved_internal') {
@@ -67,11 +67,7 @@ export async function approveInternalAndSendImpl(
         'Bitte zuerst die interne Freigabe über den Link in der E-Mail bestätigen, bevor die Kundenfreigabe vorbereitet werden kann.',
     }
   }
-  const company =
-    Array.isArray(ref.companies) && ref.companies.length > 0
-      ? (ref.companies[0] as { name?: string })
-      : (ref.companies as { name?: string } | null)
-  const company_name = company?.name ?? 'Referenz'
+  const company_name = companyNameFromReferenceRow(ref.companies)
 
   let contactEmail: string
   let firstName: string
@@ -126,9 +122,7 @@ export async function approveInternalAndSendImpl(
   }
 
   const customerFacingName =
-    typeof (profile as { full_name?: string }).full_name === 'string'
-      ? (profile as { full_name: string }).full_name.trim()
-      : ''
+    typeof profile.full_name === 'string' ? profile.full_name.trim() : ''
 
   if (!contactEmail?.includes('@')) {
     return {
@@ -137,9 +131,7 @@ export async function approveInternalAndSendImpl(
     }
   }
 
-  const orgId = String(
-    (profile as { organization_id?: string | null }).organization_id ?? '',
-  ).trim()
+  const orgId = String(profile.organization_id ?? '').trim()
   let vendorOrgName = company_name
   if (orgId) {
     const { data: orgRow } = await supabase
