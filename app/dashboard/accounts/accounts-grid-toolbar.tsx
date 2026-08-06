@@ -23,9 +23,9 @@ import { CompaniesImportDialog } from './components/companies-import-dialog'
 import { EntityKindSwitch } from './components/entity-kind-switch'
 import { AccountSortSwitch } from './components/account-sort-switch'
 import { AccountsToolbarTooltip } from './components/accounts-toolbar-tooltip'
-import type { EmployeeBand, ReferencesFilter, SortMode } from './companies-grid-types'
+import type { EmployeeBand, ReferencesFilter, SortMode } from './accounts-grid-types'
 
-export function CompaniesGridToolbar({
+export function AccountsGridToolbar({
   search,
   setSearch,
   searchPlaceholder,

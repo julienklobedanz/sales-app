@@ -270,7 +270,7 @@ Gesetzt (Stand Prüfung): Supabase (URL, Anon, Service Role), Resend, **OpenAI**
   - Companies laden
   - Fallback: Wenn Spalte `is_favorite` fehlt → Query ohne Spalte und im UI `is_favorite=false`
   - Enrichment über Counts (Deals/References/Stakeholders/Strategies + Market Signals)
-  - Rendert `CompaniesGrid`
+  - Rendert `AccountsGrid`
 - **Kann technisch nicht funktionieren, wenn**
   - Tabellen fehlen oder RLS blockt (u. a. `companies`, `deals`, `references`, `stakeholders`, `company_strategies`, market-signal Tabellen).
 - **Hardcodiert / Demo**

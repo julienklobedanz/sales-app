@@ -15,9 +15,9 @@ import { log } from '@/lib/observability/logger'
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { deleteCompanyWithData } from './actions'
-import type { CompanyCard } from './companies-grid-types'
+import type { CompanyCard } from './accounts-grid-types'
 
-export function CompaniesGridDeleteDialog({
+export function AccountsGridDeleteDialog({
   deleteTarget,
   deleting,
   setDeleteTarget,

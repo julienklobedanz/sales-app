@@ -27,8 +27,8 @@ import { NdaStatusBadge } from './components/nda-status-badge'
 import { AccountStatusPicker } from './components/account-status-picker'
 import type { AccountCardPrimaryAction } from '@/lib/accounts/account-card-primary-action'
 import { AccountsToolbarTooltip } from './components/accounts-toolbar-tooltip'
-import { companyHref, employeeLabel } from './companies-grid-filters'
-import type { CompanyCard } from './companies-grid-types'
+import { companyHref, employeeLabel } from './accounts-grid-filters'
+import type { CompanyCard } from './accounts-grid-types'
 
 function primaryLineClass(primary: AccountCardPrimaryAction): string {
   // Fallback/Signal = Meta-Stil wie Secondary (AT&T); Risk-Zeilen etwas größer, aber nicht fett.
@@ -253,7 +253,7 @@ function PartnerCardBody({ company }: { company: CompanyCard }) {
   )
 }
 
-export function CompanyGridCard({
+export function AccountGridCard({
   company,
   isPartnerView,
   canManage,

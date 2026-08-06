@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { CompaniesGrid } from './companies-grid'
+import { AccountsGrid } from './accounts-grid'
 import {
   resolveNdaDisplayStatus,
   type NdaDisplayStatus,
@@ -546,7 +546,7 @@ export default async function AccountsPage() {
 
   return (
     <div className="flex flex-col space-y-6">
-      <CompaniesGrid
+      <AccountsGrid
         companies={enrichedCompanies}
         hubspotConfigured={hubspotConfigured}
         hubspotConnected={hubspotStatus.connected}

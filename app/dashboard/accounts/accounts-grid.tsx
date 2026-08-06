@@ -23,24 +23,24 @@ import { type CompanyEntityKind } from '@/lib/accounts/company-entity'
 import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { toast } from 'sonner'
-import { CompanyGridCard } from './companies-grid-cards'
-import { CompaniesGridDeleteDialog } from './companies-grid-delete-dialog'
+import { AccountGridCard } from './accounts-grid-cards'
+import { AccountsGridDeleteDialog } from './accounts-grid-delete-dialog'
 import {
   companyHref,
   filterAndSortCompanies,
   filtersAreActive,
-} from './companies-grid-filters'
-import { CompaniesGridToolbar } from './companies-grid-toolbar'
+} from './accounts-grid-filters'
+import { AccountsGridToolbar } from './accounts-grid-toolbar'
 import type {
   CompanyCard,
   EmployeeBand,
   ReferencesFilter,
   SortMode,
-} from './companies-grid-types'
+} from './accounts-grid-types'
 
-export type { CompanyCard } from './companies-grid-types'
+export type { CompanyCard } from './accounts-grid-types'
 
-export function CompaniesGrid({
+export function AccountsGrid({
   companies,
   hubspotConfigured = false,
   hubspotConnected = false,
@@ -236,7 +236,7 @@ export function CompaniesGrid({
         </>
       ) : (
         <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
-          <CompaniesGridToolbar
+          <AccountsGridToolbar
             search={search}
             setSearch={setSearch}
             searchPlaceholder={searchPlaceholder}
@@ -287,7 +287,7 @@ export function CompaniesGrid({
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filtered.map((company) => (
-                <CompanyGridCard
+                <AccountGridCard
                   key={company.id}
                   company={company}
                   isPartnerView={isPartnerView}
@@ -307,7 +307,7 @@ export function CompaniesGrid({
         </div>
       )}
 
-      <CompaniesGridDeleteDialog
+      <AccountsGridDeleteDialog
         deleteTarget={deleteTarget}
         deleting={deleting}
         setDeleteTarget={setDeleteTarget}
