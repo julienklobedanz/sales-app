@@ -2,7 +2,42 @@ import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asJson, asTableInsert } from '@/lib/supabase/db-types'
+import type { Json } from '@/lib/database.types'
 import type { CompanyStrategyRow, RoadmapProjectRow } from './account-action-types'
+
+function mhAssessmentFromJson(value: Json | null | undefined): Record<string, unknown> | null {
+  if (value == null) return null
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return null
+}
+
+function toCompanyStrategyRow(row: {
+  id: string
+  company_id: string | null
+  company_goals: string | null
+  red_flags: string | null
+  competition: string | null
+  next_steps: string | null
+  value_proposition?: string | null
+  metrics_pain?: string | null
+  mh_assessment?: Json | null
+  updated_at: string | null
+}): CompanyStrategyRow {
+  return {
+    id: row.id,
+    company_id: row.company_id ?? '',
+    company_goals: row.company_goals,
+    red_flags: row.red_flags,
+    competition: row.competition,
+    next_steps: row.next_steps,
+    value_proposition: row.value_proposition ?? null,
+    metrics_pain: row.metrics_pain ?? null,
+    mh_assessment: mhAssessmentFromJson(row.mh_assessment),
+    updated_at: row.updated_at,
+  }
+}
 
 export async function getCompanyStrategyImpl(
   companyId: string,
@@ -16,7 +51,8 @@ export async function getCompanyStrategyImpl(
     )
     .eq('company_id', companyId)
     .maybeSingle()
-  if (!full.error) return full.data as CompanyStrategyRow | null
+  if (!full.error && full.data) return toCompanyStrategyRow(full.data)
+  if (!full.error) return null
 
   const msg = (full.error.message ?? '').toLowerCase()
   const missingOptionalColumns =
@@ -33,12 +69,12 @@ export async function getCompanyStrategyImpl(
     .eq('company_id', companyId)
     .maybeSingle()
   if (fallback.error || !fallback.data) return null
-  return {
-    ...(fallback.data as CompanyStrategyRow),
+  return toCompanyStrategyRow({
+    ...fallback.data,
     value_proposition: null,
     metrics_pain: null,
     mh_assessment: null,
-  }
+  })
 }
 
 export async function upsertCompanyStrategyImpl(

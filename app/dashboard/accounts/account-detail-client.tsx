@@ -72,12 +72,9 @@ export function AccountDetailClient({
   const [redFlags, setRedFlags] = useState(initialStrategy?.red_flags ?? '')
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
-  const [metricsPain, setMetricsPain] = useState(
-    (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
-  )
+  const [metricsPain, setMetricsPain] = useState(initialStrategy?.metrics_pain ?? '')
   const [mhAssessment] = useState<Record<string, unknown>>(
-    ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)
-      ?.mh_assessment as Record<string, unknown> | null) ?? {},
+    initialStrategy?.mh_assessment ?? {},
   )
   const [strategySaving, setStrategySaving] = useState(false)
 
@@ -87,11 +84,8 @@ export function AccountDetailClient({
     redFlags: initialStrategy?.red_flags ?? '',
     competition: initialStrategy?.competition ?? '',
     nextSteps: initialStrategy?.next_steps ?? '',
-    metricsPain:
-      (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
-    mhAssessment:
-      ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)
-        ?.mh_assessment as Record<string, unknown> | null) ?? {},
+    metricsPain: initialStrategy?.metrics_pain ?? '',
+    mhAssessment: initialStrategy?.mh_assessment ?? {},
   })
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
@@ -221,21 +215,14 @@ export function AccountDetailClient({
     setShName(s?.name ?? '')
     setShTitle(s?.title ?? '')
     setShRole(s?.role ?? 'champion')
-    setShInfluence(
-      (s as unknown as { influence_level?: string | null })?.influence_level ?? '',
-    )
-    setShAttitude((s as unknown as { attitude?: string | null })?.attitude ?? '')
-    setShNotes((s as unknown as { notes?: string | null })?.notes ?? '')
-    setShLinkedIn((s as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
-    setShPriorities(
-      (s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '',
-    )
-    const lastI = ((s as unknown as { last_interaction_at?: string | null })
-      ?.last_interaction_at ??
-      (s as unknown as { last_contact_at?: string | null })?.last_contact_at ??
-      '') as string
-    setShLastContact((lastI ?? '').slice(0, 10))
-    setShSentiment((s as unknown as { sentiment?: string | null })?.sentiment ?? '')
+    setShInfluence(s?.influence_level ?? '')
+    setShAttitude(s?.attitude ?? '')
+    setShNotes(s?.notes ?? '')
+    setShLinkedIn(s?.linkedin_url ?? '')
+    setShPriorities(s?.priorities_topics ?? '')
+    const lastI = s?.last_interaction_at ?? s?.last_contact_at ?? ''
+    setShLastContact(lastI.slice(0, 10))
+    setShSentiment(s?.sentiment ?? '')
     setStakeholderOpen(true)
   }
 
@@ -264,7 +251,13 @@ export function AccountDetailClient({
         setStakeholderOpen(false)
         setStakeholders((prev) =>
           prev.map((p) =>
-            p.id === editingStakeholder.id ? ({ ...p, ...payload } as StakeholderRow) : p,
+            p.id === editingStakeholder.id
+              ? {
+                  ...p,
+                  ...payload,
+                  role: payload.role,
+                }
+              : p,
           ),
         )
       } else {
@@ -295,11 +288,9 @@ export function AccountDetailClient({
     setCLast(c?.last_name ?? '')
     setCEmail(c?.email ?? '')
     setCPhone(c?.phone ?? '')
-    const legacyPosition = (
-      c as unknown as { position?: string | null }
-    )?.position?.trim()
+    const legacyPosition = c?.position?.trim()
     setCRole(c?.role?.trim() || legacyPosition || '')
-    setCLinkedIn((c as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
+    setCLinkedIn(c?.linkedin_url ?? '')
     setContactOpen(true)
   }
 

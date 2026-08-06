@@ -320,6 +320,7 @@ export type Database = {
           next_steps: string | null
           red_flags: string | null
           updated_at: string | null
+          value_proposition: string | null
         }
         Insert: {
           company_id?: string | null
@@ -331,6 +332,7 @@ export type Database = {
           next_steps?: string | null
           red_flags?: string | null
           updated_at?: string | null
+          value_proposition?: string | null
         }
         Update: {
           company_id?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           next_steps?: string | null
           red_flags?: string | null
           updated_at?: string | null
+          value_proposition?: string | null
         }
         Relationships: [
           {

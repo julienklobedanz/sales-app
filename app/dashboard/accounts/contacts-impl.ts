@@ -1,10 +1,28 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { asTableInsert, asTableUpdate } from '@/lib/supabase/db-types'
+import { asTableInsert, asTableUpdate, type Tables } from '@/lib/supabase/db-types'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 import type { ContactPersonRow, StakeholderRole } from './account-action-types'
+
+function toContactPersonRow(row: Tables<'contact_persons'>): ContactPersonRow {
+  return {
+    id: row.id,
+    company_id: row.company_id ?? '',
+    first_name: row.first_name,
+    last_name: row.last_name,
+    email: row.email,
+    phone: row.phone,
+    linkedin_url: row.linkedin_url,
+    role: row.role,
+    position: row.position,
+    avatar_url: row.avatar_url,
+    last_interaction_at: row.last_interaction_at,
+    created_at: row.created_at ?? '',
+    updated_at: row.updated_at,
+  }
+}
 
 export async function updateExternalContactBuyingCenterRoleImpl(
   id: string,
@@ -51,7 +69,7 @@ export async function getContactsByCompanyIdImpl(
     // DB noch ohne company_id-Spalte → keine Kontakte im Account-Detail anzeigen
     return []
   }
-  return (data ?? []) as ContactPersonRow[]
+  return (data ?? []).map(toContactPersonRow)
 }
 
 /** Ein interner Kontakt pro Account als Ansprechpartner für Koordination der Referenzfreigabe (Kunde). */
@@ -175,7 +193,7 @@ export async function createContactPersonImpl(
     return { success: false, error: error.message }
   }
   revalidatePath(ROUTES.accountsDetail(companyId))
-  return { success: true, contact: data as ContactPersonRow }
+  return { success: true, contact: data ? toContactPersonRow(data) : undefined }
 }
 
 export async function updateContactPersonImpl(

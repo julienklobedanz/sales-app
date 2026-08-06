@@ -1,8 +1,29 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { asTableUpdate } from '@/lib/supabase/db-types'
+import { asTableUpdate, type Tables } from '@/lib/supabase/db-types'
+import { parseStakeholderRole } from '@/lib/accounts/stakeholder-role'
 import type { StakeholderRole, StakeholderRow } from './account-action-types'
+
+function toStakeholderRow(row: Tables<'stakeholders'>): StakeholderRow {
+  return {
+    id: row.id,
+    company_id: row.company_id ?? '',
+    name: row.name,
+    title: row.title,
+    role: parseStakeholderRole(row.role),
+    influence_level: row.influence_level,
+    attitude: row.attitude,
+    notes: row.notes,
+    linkedin_url: row.linkedin_url,
+    priorities_topics: row.priorities_topics,
+    last_contact_at: row.last_contact_at,
+    last_interaction_at: row.last_interaction_at,
+    sentiment: row.sentiment,
+    created_at: row.created_at ?? '',
+    updated_at: row.updated_at,
+  }
+}
 
 export async function getStakeholdersImpl(companyId: string): Promise<StakeholderRow[]> {
   const supabase = await createServerSupabaseClient()
@@ -11,7 +32,7 @@ export async function getStakeholdersImpl(companyId: string): Promise<Stakeholde
     .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: true })
-  return (data ?? []) as StakeholderRow[]
+  return (data ?? []).map(toStakeholderRow)
 }
 
 export async function createStakeholderImpl(
@@ -51,7 +72,7 @@ export async function createStakeholderImpl(
     .single()
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.accountsDetail(companyId))
-  return { success: true, stakeholder: data as StakeholderRow }
+  return { success: true, stakeholder: data ? toStakeholderRow(data) : undefined }
 }
 
 export async function updateStakeholderImpl(
