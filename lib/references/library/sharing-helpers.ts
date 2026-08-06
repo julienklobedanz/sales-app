@@ -1,5 +1,3 @@
-'use server'
-
 import { createHash, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Json } from '@/lib/database.types'
@@ -10,6 +8,13 @@ import { log } from '@/lib/observability/logger'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
+
+export type CreateSharedPortfolioRecipient = {
+  label: string
+  visitorEmail?: string | null
+  externalContactId?: string | null
+  companyId?: string | null
+}
 
 export function generateCustomerManageToken(): string {
   return randomBytes(32).toString('hex')
