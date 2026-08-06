@@ -140,7 +140,7 @@ Konvention dokumentiert in **`docs/design-system.md`** (Mapping `default` / `sec
 Siehe **`docs/refactoring-welle-2-plan.md`**. Kurz umgesetzt:
 
 - **Reference-Form:** `reference-form-fields.tsx` entlastet die Hauptdatei (Dropzones, Firmen-Combobox).
-- **Account / Company-Detail:** `account-detail-client.tsx` in Header, Tab-Inhalte und Dialoge aufgeteilt (`account-detail-*.tsx`, `company-stakeholder-*`, `company-contact-dialog`).
+- **Account / Company-Detail:** `account-detail-client.tsx` in Header, Tab-Inhalte und Dialoge aufgeteilt (`account-detail-*.tsx`, `company-stakeholder-*`, `account-contact-dialog`).
 - **COPY:** Zentrale Begriffe für Tabellen (inkl. Pagination), Evidence-Kontextmenü, Dashboard-Suche/Spalten, Command Palette (`COPY.commandPalette.*`); gemeinsame `DataTablePagination`.
 - **DataTable:** `AppDataTable` (`components/ui/app-data-table.tsx`) als gemeinsame Basis für Referenzen (`EvidenceDataTable` → `tableVariant="evidence"`) und Deals (`tableVariant="default"`); Pagination und Spalten-Optionen geteilt.
 - **Farben:** Verbleibende Raw-Paletten in `app/` schrittweise durch semantische Tokens ersetzt (z. B. Register, Freigabe-Buttons); Regeln in `docs/design-system.md` §7.

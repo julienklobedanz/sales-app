@@ -25,7 +25,7 @@
 | **1** | E4 Service-Role-Audit | Alle `service-role`-Nutzungen rechtfertigen + fehlende Org/Token-Grenzen schließen | M | Cross-Tenant-Risiko; unabhängig von Naming; vor Pilot | [`arbeitspaket-service-role-audit-e4.md`](./arbeitspaket-service-role-audit-e4.md) — **Audit + Hotspot-Härtung ✅**; Rest Boy-Scout Kommentare |
 | **2** | E7 Schema-Sync / Drift-Gate | Remote vs. Repo-Migrationen; `looseSelect`-Löcher; CI-Migrations-Gate festziehen | M | Schützt das schon vorhandene `database.types.ts`-Fundament | [`arbeitspaket-schema-sync-e7.md`](./arbeitspaket-schema-sync-e7.md) — **✅ T1–T4** (2026-08-06 verifiziert) |
 | **3** | Typed-Supabase Cast-Abbau | `as { … }`-Row-Casts schrumpfen; Clients/`from()` stärker an `Database` koppeln | L (scheibenweise) | Verhindert die Fehlerklasse der role-Spalten-Drift; hoher Hebel nach E7 | [`arbeitspaket-typed-supabase.md`](./arbeitspaket-typed-supabase.md) |
-| **4** | **P1-6** Accounts Naming | App/Lib: `company*` → `account*` wo Domäne „Account“; **DB `companies` bleibt** | L (3–5 PRs) | Letzter klarer Inventar-Welle-5-Block; rein mechanisch → nach Security/Typen, bevor noch größere Renames | Inventar P1-6 — Slice 1–2 ✅ (detail + grid); Rest: CRUD → Lib |
+| **4** | **P1-6** Accounts Naming | App/Lib: `company*` → `account*` wo Domäne „Account“; **DB `companies` bleibt** | L (3–5 PRs) | Letzter klarer Inventar-Welle-5-Block; rein mechanisch → nach Security/Typen, bevor noch größere Renames | Inventar P1-6 — Slice 1–3 ✅ (detail + grid + crud/dialogs); Rest: Lib |
 | **5** | God-File-Nacharbeit | Overview (~719), Share-Link (~420), MS-Feed (~429) weiter slicen **nur bei Feature-Touch** | M (ongoing) | Kein eigener Big-Bang; Effizienz = bei Feature-PRs mitnehmen | Inventar God-Files / E5 |
 | **6** | Result `{ ok }` → `{ success }` | ~27 Dateien / ~136 Matches in Libs/Cron | S–M Boy-Scout | Kein Massen-PR; bei jeder Lib-Berührung | Inventar Result-Konvention; Guide §3.1 |
 | **7** | P3-3 DE/EN-Dateinamen | `ki-entwurf`, `sperrlink`, … | XS bei Touch | Nur umbenennen, wenn die Datei sowieso angefasst wird | Inventar P3-3 |
@@ -41,7 +41,7 @@ Nicht ein PR. Reihenfolge minimiert Konflikte und hält Reviews lesbar:
 
 1. **Detail-UI-Dateien** umbenennen (`account-detail-*` → `account-detail-*`) + Imports — kein API-Rename.  
 2. **Grid** (`accounts-grid*` → `accounts-grid*`).  
-3. **Impl/CRUD** (`company-crud-impl`, Maintenance-Helfer) — Parameternamen `companyId` → `accountId` **nur in App-Signaturen**; SQL/`companies.id` unverändert.  
+3. **Impl/CRUD** (`account-crud-impl`, Maintenance-Helfer) — Parameternamen `companyId` → `accountId` **nur in App-Signaturen**; SQL/`companies.id` unverändert.  
 4. **Lib** (`company-from-join`, `company-name-match`, Brandfetch-Helfer) — zuletzt, weil viele Cross-Imports.  
 5. Inventar P1-6 auf ✅ setzen.
 

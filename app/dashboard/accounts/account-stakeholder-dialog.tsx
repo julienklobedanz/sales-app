@@ -49,7 +49,7 @@ type Props = {
   onSave: () => void
 }
 
-export function CompanyStakeholderDialog({
+export function AccountStakeholderDialog({
   open,
   onOpenChange,
   editing,

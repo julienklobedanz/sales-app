@@ -19,11 +19,11 @@ import {
   updateStakeholder,
   upsertCompanyStrategy,
 } from './actions'
-import { CompanyContactDialog } from './company-contact-dialog'
+import { AccountContactDialog } from './account-contact-dialog'
 import type { AccountDetailClientProps } from './account-detail-types'
 import { AccountDetailHeader } from './account-detail-header'
 import { AccountDetailStrategyTab } from './account-detail-strategy-tab'
-import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
+import { AccountStakeholderDialog } from './account-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
 import { AccountDetailPipelineTab } from './account-detail-pipeline-tab'
 import { AccountDetailProofPointsTab } from './account-detail-proof-points-tab'
@@ -530,7 +530,7 @@ export function AccountDetailClient({
         </TabsContent>
       </Tabs>
 
-      <CompanyStakeholderDialog
+      <AccountStakeholderDialog
         open={stakeholderOpen}
         onOpenChange={setStakeholderOpen}
         editing={!!editingStakeholder}
@@ -558,7 +558,7 @@ export function AccountDetailClient({
         onSave={saveStakeholder}
       />
 
-      <CompanyContactDialog
+      <AccountContactDialog
         open={contactOpen}
         onOpenChange={setContactOpen}
         editing={!!editingContact}

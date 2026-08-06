@@ -36,7 +36,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createServerSupabaseClient: (...args: unknown[]) => createServerSupabaseClient(...args),
 }))
 
-import { bulkCreateCompaniesFromSheetImpl } from './company-crud-impl'
+import { bulkCreateCompaniesFromSheetImpl } from './account-crud-impl'
 
 function authClient(opts: {
   userId: string | null
