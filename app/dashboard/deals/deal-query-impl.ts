@@ -62,7 +62,7 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       .in('deal_id', dealIds)
 
     for (const dr of drRows ?? []) {
-      const sc = (dr as { similarity_score?: number | null }).similarity_score
+      const sc = dr.similarity_score
       if (typeof sc === 'number' && !Number.isNaN(sc)) {
         const prev = bestScoreMap[dr.deal_id]
         if (prev == null || sc > prev) bestScoreMap[dr.deal_id] = sc
@@ -126,10 +126,8 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       company_logo_url: company?.logoUrl ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
-      requirements_text:
-        (r as { requirements_text?: string | null }).requirements_text ?? null,
-      incumbent_provider:
-        (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
+      requirements_text: r.requirements_text ?? null,
+      incumbent_provider: r.incumbent_provider ?? null,
       is_public: r.is_public ?? true,
       account_manager_id: r.account_manager_id ?? null,
       account_manager_name: r.account_manager_id
@@ -138,7 +136,7 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       sales_manager_id: r.sales_manager_id ?? null,
       sales_manager_name: r.sales_manager_id ? (names[r.sales_manager_id] ?? null) : null,
       status: normalizeDealStatus(r.status),
-      is_rfp_mode: Boolean((r as { is_rfp_mode?: boolean }).is_rfp_mode),
+      is_rfp_mode: Boolean(r.is_rfp_mode),
       expiry_date: r.expiry_date ?? null,
       created_at: r.created_at ?? '',
       updated_at: r.updated_at ?? null,
@@ -210,9 +208,7 @@ export async function getDealWithReferencesImpl(
   ;(drRows ?? []).forEach((r) => {
     if (!r.reference_id) return
     scoreByRefId[r.reference_id] =
-      typeof (r as { similarity_score?: unknown }).similarity_score === 'number'
-        ? ((r as { similarity_score: number }).similarity_score as number)
-        : null
+      typeof r.similarity_score === 'number' ? r.similarity_score : null
   })
 
   const references: DealWithReferences['references'] = []
@@ -228,8 +224,8 @@ export async function getDealWithReferencesImpl(
         title: r.title ?? '',
         company_name: company?.name ?? '—',
         logo_url: company?.logoUrl ?? null,
-        summary: (r as { summary?: string | null }).summary ?? null,
-        tags: (r as { tags?: string | null }).tags ?? null,
+        summary: r.summary ?? null,
+        tags: r.tags ?? null,
         similarity_score: scoreByRefId[r.id] ?? null,
       })
     }
@@ -277,24 +273,19 @@ export async function getDealWithReferencesImpl(
     company_name: company?.name ?? null,
     industry: deal.industry ?? null,
     volume: deal.volume ?? null,
-    requirements_text:
-      (deal as { requirements_text?: string | null }).requirements_text ?? null,
-    incumbent_provider:
-      (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
+    requirements_text: deal.requirements_text ?? null,
+    incumbent_provider: deal.incumbent_provider ?? null,
     is_public: deal.is_public ?? true,
     account_manager_id: deal.account_manager_id ?? null,
     account_manager_name: accountManagerName,
     sales_manager_id: deal.sales_manager_id ?? null,
     sales_manager_name: salesManagerName,
     status: normalizeDealStatus(deal.status),
-    is_rfp_mode: Boolean((deal as { is_rfp_mode?: boolean }).is_rfp_mode),
+    is_rfp_mode: Boolean(deal.is_rfp_mode),
     expiry_date: deal.expiry_date ?? null,
-    salesforce_opportunity_id:
-      (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ??
-      null,
-    crm_opportunity_id:
-      (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
-    crm_source: (deal as { crm_source?: string | null }).crm_source ?? null,
+    salesforce_opportunity_id: deal.salesforce_opportunity_id ?? null,
+    crm_opportunity_id: deal.crm_opportunity_id ?? null,
+    crm_source: deal.crm_source ?? null,
     crm_stage: deal.crm_stage ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
