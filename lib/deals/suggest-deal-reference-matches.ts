@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { matchReferencesImpl } from '@/lib/references/library/match'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -26,10 +27,7 @@ export async function suggestDealReferenceMatches(
 
   if (!deal) return { suggestions: [] }
 
-  const company = Array.isArray(deal.companies)
-    ? (deal.companies[0] as { name?: string } | undefined)
-    : (deal.companies as { name?: string } | null)
-  const companyName = company?.name?.trim() ?? ''
+  const companyName = accountFromJoin(deal.companies)?.name?.trim() ?? ''
 
   const parts = [
     options?.queryOverride?.trim(),
@@ -46,7 +44,7 @@ export async function suggestDealReferenceMatches(
     .from('deal_references')
     .select('reference_id')
     .eq('deal_id', dealId)
-  const linkedIds = new Set((linked ?? []).map((r) => String(r.reference_id)))
+  const linkedIds = new Set((linked ?? []).map((r) => r.reference_id))
 
   const result = await matchReferencesImpl(query, dealId, {
     matchCount: limit + linkedIds.size,

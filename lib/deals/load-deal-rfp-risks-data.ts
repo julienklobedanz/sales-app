@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { Database } from '@/lib/database.types'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import type { DealDeskRedFlag, DealDeskSmeTask } from '@/lib/deal-desk/mock-analysis'
 import { groupSmeTasksByTopic, type SmeTopicGroup } from '@/lib/deals/group-sme-by-topic'
@@ -32,7 +33,7 @@ function mapDbRedFlag(row: {
 }
 
 export async function loadDealRfpRisksData(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   organizationId: string,
   projectId: string,
   snapshotFallback: PersistedDealDeskAnalysisSnapshot | null,
@@ -53,26 +54,13 @@ export async function loadDealRfpRisksData(
 
   let redFlags: DealDeskRedFlag[] = []
   if (flagsRes.data?.length) {
-    redFlags = flagsRes.data.map((row) =>
-      mapDbRedFlag(
-        row as {
-          id: string
-          flag_key: string | null
-          label: string
-          severity: string | null
-        },
-      ),
-    )
+    redFlags = flagsRes.data.map((row) => mapDbRedFlag(row))
   } else if (snapshotFallback?.redFlags?.length) {
     redFlags = snapshotFallback.redFlags.map((f) => ({ ...f, markedForLegal: undefined }))
   }
 
   const snapshotTasks: DealDeskSmeTask[] = snapshotFallback?.smeTasks ?? []
-  const dbKeys = new Set(
-    (smeRes.data ?? []).map((r) =>
-      String((r as { requirement_key: string }).requirement_key),
-    ),
-  )
+  const dbKeys = new Set((smeRes.data ?? []).map((r) => r.requirement_key))
 
   let smeTasks = snapshotTasks
   if (dbKeys.size > 0) {
