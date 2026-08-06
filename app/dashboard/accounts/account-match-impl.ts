@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { resolveIndustryId } from '@/lib/constants/industries'
+import type { Tables } from '@/lib/supabase/db-types'
 import type { CompanyRefRow, RecommendedReference } from './account-action-types'
 
 function normalizeTags(tags: string | null | undefined): Set<string> {
@@ -33,6 +35,94 @@ function sizeRegionMatch(
   return hq.includes(country) || country.includes(hq) || hq === country
 }
 
+type RefMatchRow = Pick<
+  Tables<'references'>,
+  'id' | 'title' | 'industry' | 'tags' | 'country' | 'created_at'
+> & {
+  companies: unknown
+}
+
+function companyNameFromJoin(companies: unknown): string | null {
+  return accountFromJoin(companies)?.name || null
+}
+
+function toCompanyRefRow(
+  row: Pick<
+    Tables<'references'>,
+    'id' | 'title' | 'status' | 'project_status' | 'industry' | 'country' | 'created_at'
+  >,
+): CompanyRefRow {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    project_status: row.project_status,
+    industry: row.industry,
+    country: row.country,
+    created_at: row.created_at ?? '',
+  }
+}
+
+function scoreReferenceMatches(
+  refRows: RefMatchRow[],
+  opts: {
+    companyIndustry: string
+    companyHeadquarters: string | null
+    projectTagSet: Set<string>
+    limit: number
+  },
+): RecommendedReference[] {
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+
+  const scored: {
+    ref: RefMatchRow
+    matchType: RecommendedReference['matchType']
+    score: number
+    matchReasons: RecommendedReference['matchReasons']
+  }[] = []
+
+  for (const r of refRows) {
+    const refIndustry = normalizeIndustry(r.industry)
+    const refTagSet = normalizeTags(r.tags)
+    const industryMatch = !!opts.companyIndustry && opts.companyIndustry === refIndustry
+    const tagMatch =
+      opts.projectTagSet.size > 0 &&
+      refTagSet.size > 0 &&
+      [...opts.projectTagSet].some((t: string) => refTagSet.has(t))
+    const sizeRegion = sizeRegionMatch(opts.companyHeadquarters, r.country)
+
+    let points = (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
+    if (points === 0) continue
+
+    if (r.created_at && new Date(r.created_at) >= twelveMonthsAgo) {
+      points = Math.min(100, points + 10)
+    }
+
+    let matchType: RecommendedReference['matchType'] = 'industry_only'
+    if (industryMatch && tagMatch) matchType = 'industry_and_tags'
+    else if (tagMatch) matchType = 'tags_only'
+    else if (industryMatch) matchType = 'industry_only'
+
+    scored.push({
+      ref: r,
+      matchType,
+      score: points,
+      matchReasons: { industry: industryMatch, tags: tagMatch, sizeRegion },
+    })
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, opts.limit).map(({ ref, matchType, score, matchReasons }) => ({
+    id: ref.id,
+    title: ref.title ?? '',
+    company_name: companyNameFromJoin(ref.companies),
+    matchType,
+    score,
+    matchReasons,
+  }))
+}
+
 /** Smart-Matching: Top 3 Referenzen nach Score 0–100 (Branche 50, Themen 30, Größe/Region 20) */
 export async function getRecommendedReferencesImpl(
   projectId: string,
@@ -62,65 +152,12 @@ export async function getRecommendedReferencesImpl(
 
   if (!refRows?.length) return []
 
-  const twelveMonthsAgo = new Date()
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-
-  const refCountry = (r: (typeof refRows)[0]) => (r.country as string | null) ?? null
-  const companyName = (r: (typeof refRows)[0]) => {
-    const c = r.companies
-    if (Array.isArray(c) && c.length > 0) return (c[0] as { name?: string }).name ?? null
-    return (c as { name?: string } | null)?.name ?? null
-  }
-
-  const scored: {
-    ref: (typeof refRows)[0]
-    matchType: RecommendedReference['matchType']
-    score: number
-    matchReasons: RecommendedReference['matchReasons']
-  }[] = []
-
-  for (const r of refRows) {
-    const refIndustry = normalizeIndustry(r.industry as string | null)
-    const refTagSet = normalizeTags(r.tags as string | null)
-    const industryMatch = !!companyIndustry && companyIndustry === refIndustry
-    const tagMatch =
-      projectTagSet.size > 0 &&
-      refTagSet.size > 0 &&
-      [...projectTagSet].some((t: string) => refTagSet.has(t))
-    const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
-
-    let points = (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
-    if (points === 0) continue
-
-    const createdAt = r.created_at as string | null | undefined
-    if (createdAt && new Date(createdAt) >= twelveMonthsAgo) {
-      points = Math.min(100, points + 10)
-    }
-
-    let matchType: RecommendedReference['matchType'] = 'industry_only'
-    if (industryMatch && tagMatch) matchType = 'industry_and_tags'
-    else if (tagMatch) matchType = 'tags_only'
-    else if (industryMatch) matchType = 'industry_only'
-
-    scored.push({
-      ref: r,
-      matchType,
-      score: points,
-      matchReasons: { industry: industryMatch, tags: tagMatch, sizeRegion },
-    })
-  }
-
-  scored.sort((a, b) => b.score - a.score)
-  const top = scored.slice(0, 3)
-
-  return top.map(({ ref, matchType, score, matchReasons }) => ({
-    id: ref.id,
-    title: (ref.title as string) ?? '',
-    company_name: companyName(ref),
-    matchType,
-    score,
-    matchReasons,
-  }))
+  return scoreReferenceMatches(refRows, {
+    companyIndustry,
+    companyHeadquarters,
+    projectTagSet,
+    limit: 3,
+  })
 }
 
 /** Alle Referenzen der Org für Fallback "alle Referenzen anzeigen" (z. B. Top 10) */
@@ -135,15 +172,10 @@ export async function getReferencesForOrgImpl(
     .order('created_at', { ascending: false })
     .limit(limit)
   if (!data?.length) return []
-  const companyName = (r: (typeof data)[0]) => {
-    const c = r.companies
-    if (Array.isArray(c) && c.length > 0) return (c[0] as { name?: string }).name ?? null
-    return (c as { name?: string } | null)?.name ?? null
-  }
   return data.map((r) => ({
     id: r.id,
-    title: (r.title as string) ?? '',
-    company_name: companyName(r),
+    title: r.title ?? '',
+    company_name: companyNameFromJoin(r.companies),
     matchType: 'industry_only' as const,
     score: 0,
     matchReasons: { industry: false, tags: false, sizeRegion: false },
@@ -160,7 +192,7 @@ export async function getReferencesByCompanyIdImpl(
     .eq('company_id', companyId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-  return (data ?? []) as CompanyRefRow[]
+  return (data ?? []).map(toCompanyRefRow)
 }
 
 /** Smart Match für Account: Referenzen aus der Org, die zu diesem Kunden passen (Branche/Herausforderungen). */
@@ -194,51 +226,11 @@ export async function getRecommendedReferencesForAccountImpl(
     .neq('company_id', companyId)
 
   if (!refRows?.length) return []
-  const twelveMonthsAgo = new Date()
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-  const refCountry = (r: (typeof refRows)[0]) => (r.country as string | null) ?? null
-  const companyName = (r: (typeof refRows)[0]) => {
-    const c = r.companies
-    if (Array.isArray(c) && c.length > 0) return (c[0] as { name?: string }).name ?? null
-    return (c as { name?: string } | null)?.name ?? null
-  }
-  const scored: {
-    ref: (typeof refRows)[0]
-    matchType: RecommendedReference['matchType']
-    score: number
-    matchReasons: RecommendedReference['matchReasons']
-  }[] = []
-  for (const r of refRows) {
-    const refIndustry = normalizeIndustry(r.industry as string | null)
-    const refTagSet = normalizeTags(r.tags as string | null)
-    const industryMatch = !!companyIndustry && companyIndustry === refIndustry
-    const tagMatch =
-      projectTagSet.size > 0 &&
-      refTagSet.size > 0 &&
-      [...projectTagSet].some((t: string) => refTagSet.has(t))
-    const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
-    let points = (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
-    if (points === 0) continue
-    const createdAt = r.created_at as string | null | undefined
-    if (createdAt && new Date(createdAt) >= twelveMonthsAgo)
-      points = Math.min(100, points + 10)
-    let matchType: RecommendedReference['matchType'] = 'industry_only'
-    if (industryMatch && tagMatch) matchType = 'industry_and_tags'
-    else if (tagMatch) matchType = 'tags_only'
-    scored.push({
-      ref: r,
-      matchType,
-      score: points,
-      matchReasons: { industry: industryMatch, tags: tagMatch, sizeRegion },
-    })
-  }
-  scored.sort((a, b) => b.score - a.score)
-  return scored.slice(0, 5).map(({ ref, matchType, score, matchReasons }) => ({
-    id: ref.id,
-    title: (ref.title as string) ?? '',
-    company_name: companyName(ref),
-    matchType,
-    score,
-    matchReasons,
-  }))
+
+  return scoreReferenceMatches(refRows, {
+    companyIndustry,
+    companyHeadquarters,
+    projectTagSet,
+    limit: 5,
+  })
 }

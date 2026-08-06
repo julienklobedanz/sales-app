@@ -19,10 +19,11 @@ export async function generateOnePagerHtmlImpl(
   const [{ data: company }, { data: strategy }, { data: stakeholders }, refs] =
     await Promise.all([
       supabase.from('companies').select('name, industry').eq('id', companyId).single(),
-      // main_goals -> company_goals; value_proposition existiert evtl. nicht in allen Deployments, daher hier nicht selektieren
       supabase
         .from('company_strategies')
-        .select('company_goals:main_goals, red_flags, next_steps')
+        .select(
+          'company_goals:main_goals, red_flags, next_steps, value_proposition',
+        )
         .eq('company_id', companyId)
         .maybeSingle(),
       supabase
@@ -34,8 +35,7 @@ export async function generateOnePagerHtmlImpl(
   if (!company) return { success: false, error: 'Unternehmen nicht gefunden.' }
   const goals = strategy?.company_goals ?? ''
   const challenges = strategy?.red_flags ?? ''
-  const valueProp =
-    (strategy as { value_proposition?: string | null } | null)?.value_proposition ?? ''
+  const valueProp = strategy?.value_proposition ?? ''
   const nextSteps = strategy?.next_steps ?? ''
   type StakeholderData = {
     name: string
