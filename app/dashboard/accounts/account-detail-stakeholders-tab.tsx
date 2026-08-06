@@ -136,15 +136,11 @@ export function AccountDetailStakeholdersTab({
                 const liHref = buildInternalContactLinkedInHref({
                   firstName: c.first_name,
                   lastName: c.last_name,
-                  linkedinUrl: (c as unknown as { linkedin_url?: string | null })
-                    .linkedin_url,
+                  linkedinUrl: null,
                   organizationName: companyName,
                   email: c.email,
                 })
-                const last = formatLastInteraction(
-                  (c as unknown as { last_interaction_at?: string | null })
-                    .last_interaction_at,
-                )
+                const last = formatLastInteraction(c.last_interaction_at ?? null)
                 const jobTitle = externalContactJobTitle(c)
 
                 return (

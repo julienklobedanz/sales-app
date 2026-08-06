@@ -101,7 +101,7 @@ export type ExternalContactRow = {
   /** Jobtitel (z. B. CIO), nicht Miller-Heiman-Rolle */
   role: string | null
   buying_center_role?: StakeholderRole | null
-  last_interaction_at?: string | null
+  last_interaction_at: string | null
   created_at: string
   updated_at: string | null
 }

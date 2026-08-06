@@ -9,10 +9,10 @@ import {
   NDA_AGREEMENT_SELECT_LEGACY_WITH_TITLE,
   NDA_AGREEMENT_SELECT_WITH_TITLE,
   NDA_TITLE_MIGRATION_HINT,
-  withNdaFileFieldsNull,
 } from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import type { Tables } from '@/lib/supabase/db-types'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 
@@ -29,6 +29,44 @@ export type NdaAgreementRow = {
   signed_at: string | null
   created_at: string
   updated_at: string
+}
+
+function parseNdaStatus(value: string | null | undefined): NdaAgreementRow['status'] {
+  if (value === 'active' || value === 'expired' || value === 'pending') return value
+  return 'pending'
+}
+
+function toNdaAgreementRow(
+  row: Pick<
+    Tables<'nda_agreements'>,
+    | 'id'
+    | 'company_id'
+    | 'title'
+    | 'status'
+    | 'valid_until'
+    | 'notes'
+    | 'file_storage_path'
+    | 'file_name'
+    | 'document_version'
+    | 'signed_at'
+    | 'created_at'
+    | 'updated_at'
+  >,
+): NdaAgreementRow {
+  return {
+    id: row.id,
+    company_id: row.company_id,
+    title: row.title ?? null,
+    status: parseNdaStatus(row.status),
+    valid_until: row.valid_until,
+    notes: row.notes,
+    file_storage_path: row.file_storage_path,
+    file_name: row.file_name,
+    document_version: row.document_version,
+    signed_at: row.signed_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }
 }
 
 const NDA_BUCKET = 'nda-documents'
@@ -109,11 +147,10 @@ export async function getNdaAgreementsByCompanyId(
     if (fallback.error) {
       error = fallback.error
     } else {
-      const rows = (fallback.data ?? []).map((row) => ({
-        ...(row as Omit<NdaAgreementRow, 'title'>),
-        title: null,
-      }))
-      return { success: true, rows: rows as NdaAgreementRow[] }
+      const rows = (fallback.data ?? []).map((row) =>
+        toNdaAgreementRow({ ...row, title: null }),
+      )
+      return { success: true, rows }
     }
   }
 
@@ -138,13 +175,27 @@ export async function getNdaAgreementsByCompanyId(
     if (legacyRes.error) {
       error = legacyRes.error
     } else {
-      const rows = (legacyRes.data ?? []).map((row) =>
-        withNdaFileFieldsNull({
-          ...(row as Record<string, unknown>),
-          title: (row as { title?: string | null }).title ?? null,
-        }),
-      )
-      return { success: true, rows: rows as NdaAgreementRow[] }
+      const rows = (legacyRes.data ?? []).map((row) => {
+        const title =
+          'title' in row && (typeof row.title === 'string' || row.title === null)
+            ? row.title
+            : null
+        return toNdaAgreementRow({
+          id: row.id,
+          company_id: row.company_id,
+          title,
+          status: row.status,
+          valid_until: row.valid_until,
+          notes: row.notes,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          file_storage_path: null,
+          file_name: null,
+          document_version: null,
+          signed_at: null,
+        })
+      })
+      return { success: true, rows }
     }
   }
 
@@ -155,12 +206,7 @@ export async function getNdaAgreementsByCompanyId(
     return { success: false, error: error.message }
   }
 
-  const rows = (data ?? []).map((row) => ({
-    ...(row as Omit<NdaAgreementRow, 'title'>),
-    title: (row as { title?: string | null }).title ?? null,
-  }))
-
-  return { success: true, rows: rows as NdaAgreementRow[] }
+  return { success: true, rows: (data ?? []).map(toNdaAgreementRow) }
 }
 
 export async function createNdaAgreement(payload: {

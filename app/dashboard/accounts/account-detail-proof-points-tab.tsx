@@ -81,10 +81,8 @@ export function AccountDetailProofPointsTab({
                   const score = matchScore({
                     companyIndustry: company.industry,
                     companyHq: company.headquarters,
-                    refIndustry:
-                      (r as unknown as { industry?: string | null }).industry ?? null,
-                    refCountry:
-                      (r as unknown as { country?: string | null }).country ?? null,
+                    refIndustry: r.industry ?? null,
+                    refCountry: r.country ?? null,
                   })
                   const readiness = referenceStatusLabel(r.status)
                   const readinessVariant =
