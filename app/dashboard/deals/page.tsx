@@ -53,10 +53,8 @@ async function DealsPageContent() {
     <div className="space-y-6">
       <DealsClientContent
         deals={deals}
-        companies={(companiesRes.data ?? []) as { id: string; name: string }[]}
-        orgProfiles={
-          (orgProfilesRes.data ?? []) as { id: string; full_name: string | null }[]
-        }
+        companies={companiesRes.data ?? []}
+        orgProfiles={orgProfilesRes.data ?? []}
         hubspotConfigured={hubspotConfigured}
         hubspotConnected={hubspotStatus.connected}
         canConnectCrm={isAdmin && hubspotConfigured}

@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { Database } from '@/lib/database.types'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
@@ -71,7 +72,7 @@ export type DealRfpCockpitData = {
 }
 
 export async function loadDealRfpCockpitData(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   organizationId: string,
   dealId: string,
   dealContext?: {
