@@ -1,5 +1,9 @@
 export type { AccountStatusValue } from '@/lib/accounts/account-status'
 
+/**
+ * App-DTO für Strategies (Aliases: company_goals←main_goals, competition←competitive_situation).
+ * `value_proposition` existiert in der DB, fehlt ggf. noch in `database.types.ts`.
+ */
 export type CompanyStrategyRow = {
   id: string
   company_id: string
@@ -7,29 +11,30 @@ export type CompanyStrategyRow = {
   red_flags: string | null
   competition: string | null
   next_steps: string | null
-  value_proposition?: string | null
-  metrics_pain?: string | null
-  mh_assessment?: Record<string, unknown> | null
+  value_proposition: string | null
+  metrics_pain: string | null
+  mh_assessment: Record<string, unknown> | null
   updated_at: string | null
 }
 
 export type { StakeholderRole } from '@/lib/accounts/stakeholder-role'
 import type { StakeholderRole } from '@/lib/accounts/stakeholder-role'
 
+/** An `Tables<'stakeholders'>` angeglichen; `role` auf App-Enum eingeengt. */
 export type StakeholderRow = {
   id: string
   company_id: string
   name: string
   title: string | null
   role: StakeholderRole
-  influence_level?: string | null
-  attitude?: string | null
-  notes?: string | null
-  linkedin_url?: string | null
-  priorities_topics?: string | null
-  last_contact_at?: string | null
-  last_interaction_at?: string | null
-  sentiment?: string | null
+  influence_level: string | null
+  attitude: string | null
+  notes: string | null
+  linkedin_url: string | null
+  priorities_topics: string | null
+  last_contact_at: string | null
+  last_interaction_at: string | null
+  sentiment: string | null
   created_at: string
   updated_at: string | null
 }
@@ -69,18 +74,19 @@ export type RecommendedReference = {
   matchReasons: { industry: boolean; tags: boolean; sizeRegion: boolean }
 }
 
+/** An `Tables<'contact_persons'>` angeglichen (ohne organization_id). */
 export type ContactPersonRow = {
   id: string
   company_id: string
   first_name: string | null
   last_name: string | null
   email: string | null
-  phone?: string | null
-  linkedin_url?: string | null
-  role?: string | null
-  position?: string | null
-  avatar_url?: string | null
-  last_interaction_at?: string | null
+  phone: string | null
+  linkedin_url: string | null
+  role: string | null
+  position: string | null
+  avatar_url: string | null
+  last_interaction_at: string | null
   created_at: string
   updated_at: string | null
 }
