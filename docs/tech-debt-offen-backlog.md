@@ -10,12 +10,12 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade (Produktname = DB) |
+| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip (SQL-intern behalten) |
 | **In Arbeit** | — |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #9 Invite-SQL-Kosmetik (optional) |
+| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
-**Hebel jetzt:** Boy-Scout #5–7 bei Feature-Touch; optional #9 Invite-SQL wenn Caller = 0.
+**Hebel jetzt:** Boy-Scout #5–7 bei Feature-Touch. Big-Bang-Queue leer.
 
 ---
 
@@ -32,7 +32,7 @@
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
 | **7** | P3-3 DE/EN-Dateinamen | offen (Boy-Scout) | z. B. `ki-entwurf-sheet`, `customer-sperrlink-email` | XS | nur bei Datei-Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
-| **9** | DB-Legacy Invite-Helfer | optional | `legacy_role_from_dimensions` / `resolve_invite_roles` wenn App-Caller = 0 | S | `grep` vor Start |
+| **9** | DB-Legacy Invite-Helfer | ✅ skip | App-`.rpc`-Caller = 0, aber **SQL-intern** weiter von Invite-RPCs genutzt → nicht droppen | — | behalten |
 | **10** | Rest-`console.*` | erledigt (App/Lib) | Logger-Sink + Scripts behalten; später Sentry/Logflare | — | kein Ticket |
 
 ---
@@ -72,6 +72,11 @@ Welle-5 T3 („Module nach `evidence`“) ist **obsolet** — gegenläufig und n
 
 ---
 
+## Queue #9 — Invite-SQL-Helfer (skip)
+
+**Check 2026-08-06:** Keine App-Aufrufe von `resolve_invite_roles` / `legacy_role_from_dimensions` via `.rpc`.
+Die Funktionen bleiben **DB-intern** (Invite create/accept/list RPCs in Migrationen) — Drop wäre kein Kosmetik-PR.
+
 ## Boy-Scout (kein eigener Sprint)
 
 Bei Feature-PRs mitnehmen, **kein** Massen-PR:
@@ -95,8 +100,8 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 ## Session-Start (kurz)
 
-1. Dieses Dokument lesen — Default: Boy-Scout #5–7 oder optional #9.  
-2. Feature-Arbeit: #5–7 mitnehmen.  
+1. Dieses Dokument lesen — Default: Boy-Scout #5–7 bei Feature-Touch.  
+2. Kein weiterer Big-Bang in der offenen Queue.  
 3. Nach Abschluss: Status hier + Inventar anpassen.
 
 ---
