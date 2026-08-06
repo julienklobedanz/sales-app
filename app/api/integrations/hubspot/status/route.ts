@@ -8,7 +8,7 @@ import { log } from '@/lib/observability/logger'
 export async function GET() {
   try {
     const guard = await requireCrmAdmin()
-    if (!guard.ok) {
+    if (!guard.success) {
       return NextResponse.json({ error: guard.error }, { status: guard.status })
     }
 

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   try {
     const guard = await requireCrmAdmin()
-    if (!guard.ok) {
+    if (!guard.success) {
       return redirectWithStatus('error', returnTo)
     }
 

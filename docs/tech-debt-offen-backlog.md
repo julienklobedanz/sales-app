@@ -11,8 +11,8 @@
 | Status | Themen |
 |--------|--------|
 | **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip; **#7** DE/EN-Dateinamen (ki-entwurf/sperrlink) |
-| **In Arbeit** | — |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) |
+| **In Arbeit** | #6 `{ ok }` → `{ success }` (Slice 1 Auth/CRM) |
+| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 Rest (Extract/Approvals/Cron) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
 **Hebel jetzt:** Boy-Scout #5–6 bei Feature-Touch. Big-Bang-Queue leer.
@@ -29,7 +29,7 @@
 | **3** | Typed-Supabase Cast-Abbau | ✅ T1–T4 | Rest-Casts nur Boundaries (HTTP/RPC/Json); Boy-Scout bei Touch | — | CI: `typecheck` vor Build |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
-| **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
+| **6** | `{ ok }` → `{ success }` | Slice 1 ✅ | Auth/CRM: password-policy, magic-link, requireCrmAdmin, hubSpotApiFetch | S remaining | nächster: Extract / Internal-Approval; Cron-JSON bewusst später |
 | **7** | P3-3 DE/EN-Dateinamen | ✅ Slice | `ai-draft-*`, `customer-control-link-email`; API `/api/ai-draft` + Redirect; UI-Copy „Sperrlink“/Event `ki_entwurf_generated` bleiben | — | Rest nur bei Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
 | **9** | DB-Legacy Invite-Helfer | ✅ skip | App-`.rpc`-Caller = 0, aber **SQL-intern** weiter von Invite-RPCs genutzt → nicht droppen | — | behalten |
@@ -76,6 +76,17 @@ Welle-5 T3 („Module nach `evidence`“) ist **obsolet** — gegenläufig und n
 
 **Check 2026-08-06:** Keine App-Aufrufe von `resolve_invite_roles` / `legacy_role_from_dimensions` via `.rpc`.
 Die Funktionen bleiben **DB-intern** (Invite create/accept/list RPCs in Migrationen) — Drop wäre kein Kosmetik-PR.
+
+## Queue #6 — `{ ok }` → `{ success }`
+
+| Slice | Stand |
+|-------|-------|
+| 1 Auth/CRM | ✅ password-policy (`Result`), magic-link, `requireCrmAdmin`, `hubSpotApiFetch` + HubSpot-Caller |
+| Rest | offen: Document-Extract, Internal-Approval, Bulk-Import, Cron/Push-JSON (`ok` als HTTP-Body) |
+
+Cron-/Push-Responses mit `{ ok: true }` sind **HTTP-Vertrags**-ähnlich — separat entscheiden, nicht blind umbiegen.
+
+---
 
 ## Boy-Scout (kein eigener Sprint)
 

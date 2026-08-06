@@ -10,8 +10,8 @@ export type CrmAdminContext = {
 }
 
 export type CrmAdminGuardResult =
-  | { ok: true; ctx: CrmAdminContext }
-  | { ok: false; error: string; status: number }
+  | { success: true; ctx: CrmAdminContext }
+  | { success: false; error: string; status: number }
 
 /** Nur Workspace-Admins dürfen CRM-Verbindungen verwalten und importieren. */
 export async function requireCrmAdmin(): Promise<CrmAdminGuardResult> {
@@ -21,7 +21,7 @@ export async function requireCrmAdmin(): Promise<CrmAdminGuardResult> {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return { ok: false, error: 'Nicht angemeldet.', status: 401 }
+    return { success: false, error: 'Nicht angemeldet.', status: 401 }
   }
 
   const { data: profile } = await supabase
@@ -31,20 +31,20 @@ export async function requireCrmAdmin(): Promise<CrmAdminGuardResult> {
     .single()
 
   if (!profile?.organization_id) {
-    return { ok: false, error: 'Onboarding unvollständig.', status: 403 }
+    return { success: false, error: 'Onboarding unvollständig.', status: 403 }
   }
 
   const { systemRole } = parseProfileRoles(profile)
   if (!isSystemAdmin(systemRole)) {
     return {
-      ok: false,
+      success: false,
       error: 'Nur Administratoren können CRM-Verbindungen verwalten.',
       status: 403,
     }
   }
 
   return {
-    ok: true,
+    success: true,
     ctx: {
       supabase,
       user,

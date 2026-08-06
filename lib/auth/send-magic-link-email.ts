@@ -14,9 +14,9 @@ import { log } from '@/lib/observability/logger'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 
 export type SendMagicLinkEmailResult =
-  | { ok: true; delivery: 'resend' }
+  | { success: true; delivery: 'resend' }
   | {
-      ok: false
+      success: false
       reason: 'not_configured' | 'user_not_found' | 'generate_failed' | 'send_failed'
       message?: string
     }
@@ -31,7 +31,7 @@ export async function sendMagicLinkEmailViaResend(params: {
   // Grenze: nur Auth-Operation für die angegebene E-Mail-Adresse.
   const admin = createServiceRoleSupabaseClient()
   if (!admin || !resendKey) {
-    return { ok: false, reason: 'not_configured' }
+    return { success: false, reason: 'not_configured' }
   }
 
   const { data, error } = await admin.auth.admin.generateLink({
@@ -46,19 +46,19 @@ export async function sendMagicLinkEmailViaResend(params: {
   if (error || !actionLink) {
     const message = error?.message ?? ''
     if (/user not found/i.test(message) || /not found/i.test(message)) {
-      return { ok: false, reason: 'user_not_found', message }
+      return { success: false, reason: 'user_not_found', message }
     }
     log.error(
       'generateLink failed',
       { action: 'sendMagicLinkEmailViaResend.generateLink' },
       error,
     )
-    return { ok: false, reason: 'generate_failed', message }
+    return { success: false, reason: 'generate_failed', message }
   }
 
   if (shouldMockResendSend()) {
     log.info('RESEND_MOCK_SUCCESS', { action: 'sendMagicLinkEmailViaResend.mock' })
-    return { ok: true, delivery: 'resend' }
+    return { success: true, delivery: 'resend' }
   }
 
   const recipient = resolveResendRecipient(params.email)
@@ -92,7 +92,7 @@ export async function sendMagicLinkEmailViaResend(params: {
     if (sendError) {
       if (isResendSandboxRecipientError(sendError.message)) {
         return {
-          ok: false,
+          success: false,
           reason: 'send_failed',
           message:
             'E-Mail konnte nicht gesendet werden. In Resend sind nur verifizierte Test-Empfänger erlaubt – RESEND_DEV_OVERRIDE_TO setzen oder Domain verifizieren.',
@@ -103,12 +103,12 @@ export async function sendMagicLinkEmailViaResend(params: {
         { action: 'sendMagicLinkEmailViaResend.send' },
         sendError,
       )
-      return { ok: false, reason: 'send_failed', message: sendError.message }
+      return { success: false, reason: 'send_failed', message: sendError.message }
     }
 
-    return { ok: true, delivery: 'resend' }
+    return { success: true, delivery: 'resend' }
   } catch (e) {
     log.error('Resend exception', { action: 'sendMagicLinkEmailViaResend.send' }, e)
-    return { ok: false, reason: 'send_failed' }
+    return { success: false, reason: 'send_failed' }
   }
 }

@@ -16,7 +16,7 @@ type ImportBody = {
 export async function POST(request: Request) {
   try {
     const guard = await requireCrmAdmin()
-    if (!guard.ok) {
+    if (!guard.success) {
       return NextResponse.json({ error: guard.error }, { status: guard.status })
     }
 
