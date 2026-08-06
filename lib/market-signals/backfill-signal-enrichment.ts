@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 import { isMissingEnrichmentColumnsError } from './enrichment-db'
 import { enrichSignal } from './enrich-signal-with-llm'
@@ -29,12 +30,15 @@ type CompanyJoin = { name?: string | null; organization_id?: string | null }
 
 function companyFromRow(row: Record<string, unknown>): CompanyJoin | null {
   const raw = row.companies
-  if (Array.isArray(raw)) return (raw[0] as CompanyJoin) ?? null
-  return (raw as CompanyJoin | null) ?? null
+  if (Array.isArray(raw)) {
+    const first = raw[0]
+    return first && typeof first === 'object' ? (first as CompanyJoin) : null
+  }
+  return raw && typeof raw === 'object' ? (raw as CompanyJoin) : null
 }
 
 async function resolveCompanyIds(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   organizationId?: string,
 ): Promise<string[] | null> {
   if (!organizationId) return null
@@ -44,9 +48,7 @@ async function resolveCompanyIds(
     .eq('organization_id', organizationId)
     .limit(10_000)
   if (error) throw new Error(`companies: ${error.message}`)
-  return (data ?? [])
-    .map((row) => String((row as { id?: string }).id ?? ''))
-    .filter(Boolean)
+  return (data ?? []).map((row) => row.id).filter(Boolean)
 }
 
 function needsEnrichment(row: Record<string, unknown>): boolean {
@@ -60,7 +62,7 @@ async function pause(ms: number) {
 }
 
 export async function runMarketSignalEnrichmentBackfill(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   options?: BackfillSignalEnrichmentOptions,
 ): Promise<BackfillSignalEnrichmentResult> {
   const maxNews = Math.min(500, Math.max(1, options?.maxNews ?? 80))

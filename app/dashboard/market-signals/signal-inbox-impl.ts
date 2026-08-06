@@ -20,9 +20,7 @@ async function upsertNotificationKeys(keys: string[]) {
   if (existingError) return { success: false as const, error: existingError.message }
 
   const existingKeys = new Set(
-    (existingRows ?? []).map((row) =>
-      String((row as { notification_key?: string | null }).notification_key ?? ''),
-    ),
+    (existingRows ?? []).map((row) => String(row.notification_key ?? '')),
   )
   const toInsert = uniqueKeys
     .filter((key) => !existingKeys.has(key))
@@ -122,10 +120,7 @@ export async function addMarketSignalToDealImpl(args: {
       .order('updated_at', { ascending: false })
       .limit(2)
     if (refErr) return { success: false, error: refErr.message }
-    referenceIds = (refRows ?? [])
-      .map((r) => String((r as { id?: string | null }).id ?? ''))
-      .filter(Boolean)
-      .slice(0, 2)
+    referenceIds = (refRows ?? []).map((r) => r.id).filter(Boolean).slice(0, 2)
   }
 
   if (!referenceIds.length) {
@@ -141,11 +136,7 @@ export async function addMarketSignalToDealImpl(args: {
     .in('id', referenceIds)
     .eq('company_id', companyId)
   if (validErr) return { success: false, error: validErr.message }
-  const validRefIds = new Set(
-    (validRefs ?? [])
-      .map((r) => String((r as { id?: string | null }).id ?? ''))
-      .filter(Boolean),
-  )
+  const validRefIds = new Set((validRefs ?? []).map((r) => r.id).filter(Boolean))
   const safeRefIds = referenceIds.filter((id) => validRefIds.has(id))
 
   let added = 0

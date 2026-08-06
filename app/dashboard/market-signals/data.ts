@@ -226,9 +226,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   const championWatchlist = Array.from(
     new Set(
       (championRows ?? [])
-        .map((row) =>
-          normalizeChampionKey((row as { person_key?: string | null }).person_key ?? ''),
-        )
+        .map((row) => normalizeChampionKey(row.person_key ?? ''))
         .filter(Boolean),
     ),
   )
@@ -242,8 +240,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   const activeDealCompanyIds = Array.from(
     new Set(
       (dealRows ?? [])
-        .filter((row) => isActiveDealStatus((row as { status?: unknown }).status))
-        .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
+        .filter((row) => isActiveDealStatus(row.status))
+        .map((row) => row.company_id ?? '')
         .filter(Boolean),
     ),
   )
@@ -255,11 +253,11 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     .not('company_id', 'is', null)
     .limit(500)
   const activeDeals = (activeDealRows ?? [])
-    .filter((row) => isActiveDealStatus((row as { status?: unknown }).status))
+    .filter((row) => isActiveDealStatus(row.status))
     .map((row) => ({
-      id: String((row as { id?: string | null }).id ?? ''),
-      title: String((row as { title?: string | null }).title ?? 'Deal'),
-      companyId: String((row as { company_id?: string | null }).company_id ?? ''),
+      id: row.id,
+      title: row.title ?? 'Deal',
+      companyId: row.company_id ?? '',
     }))
     .filter((d) => d.id && d.companyId)
 
@@ -315,7 +313,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     const bootstrapCompanyIds = Array.from(
       new Set(
         [...(execRows ?? []), ...(newsRows ?? [])]
-          .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
+          .map((row) => String(row.company_id ?? ''))
           .filter((companyId) => companyId && companyMetaById.has(companyId)),
       ),
     ).slice(0, 8)
