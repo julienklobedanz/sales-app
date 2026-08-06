@@ -49,7 +49,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | --------------------------- | ----------------- | -------------------------------------------------------------------- |
 | Logger + Result             | E6                | T1/T2 ✅; T3 App/Lib ✅ (Sink/Scripts behalten `console`)             |
 | Legacy-Routen               | Welle 4c          | Leere Dirs + tote APIs ✅; Docs teils veraltet                       |
-| Legacy-`role` / Naming      | Welle 5           | Rollen-Mapping ✅; **P1-6** `company*` Naming offen                   |
+| Legacy-`role` / Naming      | Welle 5           | Rollen-Mapping ✅; P1-6 App/Lib-Naming ✅ (DB `companies` bleibt)     |
 | God-Files / Modularisierung | E5, QC-Struktur   | Welle ✅; Rest Boy-Scout bei Feature-Touch                           |
 | Rollen/Capabilities         | Welle 1–2 Cleanup | Accounts/Deals Auth meist `system_role`/`function_role`              |
 | Service-Role / Schema       | E4, E7            | Offen — siehe [`tech-debt-offen-backlog.md`](./tech-debt-offen-backlog.md) |
@@ -77,7 +77,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-3  | God-Files                                                   | große Actions/UI-Dateien                                                        | Sliceweise splitten                                                            | L       | E5 — **✅ Welle 2026-08-04** (Overview ~719, Share-Link ~420, Feed ~429, Match ~270)     |
 | P1-4  | `companyFromJoin` 3× + inline in Deals                      | Duplikat                                                                        | Eine Shared-Helper-Funktion                                                    | S       | neu — ✅ `lib/accounts/company-from-join.ts`                                             |
 | P1-5  | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko                                                                    | Eine Funktion in `lib/deals/`                                                  | S       | neu — ✅ `lib/deals/normalize-deal-status.ts`                                            |
-| P1-6  | Accounts Naming                                             | Route `accounts/`, Code `company*` (~18 Dateien)                                | Schrittweise Rename (DB `companies` ok)                                        | L       | Welle 5 — Slice 1–4 ✅ (UI + Lib-Kern); Rest: Import-Helfer/`accounts-import*` Boy-Scout |
+| P1-6  | Accounts Naming                                             | Route `accounts/`, Code `company*` (~18 Dateien)                                | Schrittweise Rename (DB `companies` ok)                                        | L       | Welle 5 — **✅** UI/Lib/Import; DB `companies` + Firmennamen-Helfer bleiben |
 | P1-7  | PDF/Extract 5 Module, 2 Einstiege                           | `document-extraction` vs `extract-rfp-plain-text` → …                           | Facade(s) dokumentieren/konsolidieren                                          | M       | neu — ✅ siehe Abschnitt unten                                                           |
 | P1-8  | Match Lib-Split                                             | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren                           | M       | E5 — ✅ top-level → `lib/match/`; Orchestrator ~270                                      |
 | P1-9  | Dual Form-Schicht References                                | Re-export New → `lib/references/reference-form/*`; Fields noch unter dashboard  | Lib von Dashboard entkoppeln                                                   | M       | E5 — ✅ Typen + Fields in lib; CreateContactDialog bleibt in app                         |
@@ -145,7 +145,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
 3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facade ✅ `lib/document-text.ts`.
 4. **God-File-Slices:** Accounts/Overview/Smart-Match/MS/Deals/Form/Columns ✅; plus References-new-actions, Companies-Grid, Reference-Detail-Page, Column-Header; Share-Link/Feed/Match; Form-Fields → lib (P1-9); Overview-Dialogs.
-5. **P1-Architektur:** P1-3/7/8/9/10 ✅; P1-6 Naming bleibt **Welle 5** (bewusst groß).
+5. **P1-Architektur:** P1-3/6/7/8/9/10 ✅ (DB `companies` bewusst behalten).
 6. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` nach Format-Welle ✅ 2026-08-04.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
