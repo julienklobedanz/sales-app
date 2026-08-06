@@ -24,7 +24,7 @@
 | `app/dashboard/deal-desk/deal-desk-client.tsx`              | 1.135       | UI-Client      | Boy-Scout                                        |
 | `app/dashboard/overview/reference-table-column-renders.tsx` | 1.106       | UI             | Boy-Scout                                        |
 
-(weitere > 800 Z.: `evidence/new/actions.ts`, `evidence/[id]/page.tsx`, `market-signals/actions.ts`, `deals/actions.ts`, `companies-grid.tsx`, `deal-desk/actions.ts`)
+(weitere > 800 Z.: `evidence/new/actions.ts`, `evidence/[id]/page.tsx`, `market-signals/actions.ts`, `deals/actions.ts`, `accounts-grid.tsx`, `deal-desk/actions.ts`)
 
 **E5 Pflicht-Scope abgeschlossen** (Top-3 Monolithen). Weitere große Dateien nur noch opportunistisch beim Anfassen (Boy-Scout).
 

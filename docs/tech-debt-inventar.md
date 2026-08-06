@@ -77,7 +77,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-3  | God-Files                                                   | große Actions/UI-Dateien                                                        | Sliceweise splitten                                                            | L       | E5 — **✅ Welle 2026-08-04** (Overview ~719, Share-Link ~420, Feed ~429, Match ~270)     |
 | P1-4  | `companyFromJoin` 3× + inline in Deals                      | Duplikat                                                                        | Eine Shared-Helper-Funktion                                                    | S       | neu — ✅ `lib/accounts/company-from-join.ts`                                             |
 | P1-5  | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko                                                                    | Eine Funktion in `lib/deals/`                                                  | S       | neu — ✅ `lib/deals/normalize-deal-status.ts`                                            |
-| P1-6  | Accounts Naming                                             | Route `accounts/`, Code `company*` (~18 Dateien)                                | Schrittweise Rename (DB `companies` ok)                                        | L       | Welle 5 — Slice 1: `company-detail-*` → `account-detail-*` (2026-08-06) |
+| P1-6  | Accounts Naming                                             | Route `accounts/`, Code `company*` (~18 Dateien)                                | Schrittweise Rename (DB `companies` ok)                                        | L       | Welle 5 — Slice 1 ✅ detail; Slice 2: `companies-grid*` → `accounts-grid*` |
 | P1-7  | PDF/Extract 5 Module, 2 Einstiege                           | `document-extraction` vs `extract-rfp-plain-text` → …                           | Facade(s) dokumentieren/konsolidieren                                          | M       | neu — ✅ siehe Abschnitt unten                                                           |
 | P1-8  | Match Lib-Split                                             | `lib/match/*` + top-level `lib/match-*.ts` + Orchestrator in `library/match.ts` | Klare Schicht; Typen nicht aus Dashboard importieren                           | M       | E5 — ✅ top-level → `lib/match/`; Orchestrator ~270                                      |
 | P1-9  | Dual Form-Schicht References                                | Re-export New → `lib/references/reference-form/*`; Fields noch unter dashboard  | Lib von Dashboard entkoppeln                                                   | M       | E5 — ✅ Typen + Fields in lib; CreateContactDialog bleibt in app                         |
@@ -133,7 +133,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | `components/market-signals/market-signals-feed.tsx`   |                               ~429 |
 | `lib/references/library/match.ts`                     |                               ~270 |
 | `app/dashboard/references/[id]/page.tsx`              |                     ~457 (war 937) |
-| `app/dashboard/accounts/companies-grid.tsx`           |                     ~315 (war 960) |
+| `app/dashboard/accounts/accounts-grid.tsx`           |                     ~315 (war 960) |
 | `app/dashboard/references/new/actions.ts`             |                      ~96 (war 994) |
 | `app/dashboard/smart-match/smart-match-shell.tsx`     |                               ~258 |
 
@@ -167,7 +167,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | P1-3 Overview      | Spalten/Filter/Table/Bulk-Helpers + Dialog-Cluster; `dashboard-overview` ~719 Z.                                                                                      |
 | P1-3 Smart-Match   | Filters/Search/Results/Helpers; `smart-match-shell` ~258 Z.                                                                                                           |
 | P1-3 MS/Deals/UI   | MS-actions ~196; Deals-actions ~152; column-renders barrel; form-content ~126 + Sections                                                                              |
-| P1-3 Welle 2       | Ref-new-actions ~96; companies-grid ~315; ref-detail-page ~457; column-header ~53                                                                                     |
+| P1-3 Welle 2       | Ref-new-actions ~96; accounts-grid ~315; ref-detail-page ~457; column-header ~53                                                                                     |
 | P1-3 Welle 3       | Share-Link ~420 + Panel; Market-Signals-Feed ~429; Match-Orchestrator ~270                                                                                            |
 | P1-7               | Facade `lib/document-text.ts` — zwei Einstiege dokumentiert; Re-Exports; Call-Sites migriert; Extract-Typen in Lib                                                    |
 | P1-8               | Top-level `match-*.ts` → `lib/match/`; Orchestrator gesliced (browse/lexical/enrich)                                                                                  |

@@ -10,7 +10,7 @@ import type {
   EmployeeBand,
   ReferencesFilter,
   SortMode,
-} from './companies-grid-types'
+} from './accounts-grid-types'
 
 export function employeeLabel(value: number | null | undefined): string | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
