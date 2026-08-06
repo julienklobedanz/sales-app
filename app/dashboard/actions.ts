@@ -66,7 +66,7 @@ import { updateReferenceImpl } from '@/lib/references/library/update'
 import { updateReferenceDetailFieldsImpl } from '@/lib/references/library/detail-fields'
 import { bulkCreateReferencesFromFilesImpl } from '@/lib/references/library/bulk-import'
 import { generateSummaryFromStoryImpl } from '@/lib/references/library/summary'
-import { recordKiEntwurfGenerated as recordKiEntwurfGeneratedImpl } from '@/lib/references/library/ki-entwurf-log'
+import { recordAiDraftGenerated as recordAiDraftGeneratedImpl } from '@/lib/references/library/ai-draft-log'
 
 export type ReferenceRow = {
   id: string
@@ -414,10 +414,10 @@ export async function generateSummaryFromStory(
 }
 
 /** Epic 5: Telemetrie nach KI-Entwurf (Sheet). */
-export async function recordKiEntwurfGenerated(
-  args: Parameters<typeof recordKiEntwurfGeneratedImpl>[0],
+export async function recordAiDraftGenerated(
+  args: Parameters<typeof recordAiDraftGeneratedImpl>[0],
 ): Promise<void> {
-  return recordKiEntwurfGeneratedImpl(args)
+  return recordAiDraftGeneratedImpl(args)
 }
 
 export type {

@@ -10,12 +10,12 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip (SQL-intern behalten) |
+| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip; **#7** DE/EN-Dateinamen (ki-entwurf/sperrlink) |
 | **In Arbeit** | — |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) |
+| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
-**Hebel jetzt:** Boy-Scout #5–7 bei Feature-Touch. Big-Bang-Queue leer.
+**Hebel jetzt:** Boy-Scout #5–6 bei Feature-Touch. Big-Bang-Queue leer.
 
 ---
 
@@ -30,7 +30,7 @@
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
-| **7** | P3-3 DE/EN-Dateinamen | offen (Boy-Scout) | z. B. `ki-entwurf-sheet`, `customer-sperrlink-email` | XS | nur bei Datei-Touch |
+| **7** | P3-3 DE/EN-Dateinamen | ✅ Slice | `ai-draft-*`, `customer-control-link-email`; API `/api/ai-draft` + Redirect; UI-Copy „Sperrlink“/Event `ki_entwurf_generated` bleiben | — | Rest nur bei Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
 | **9** | DB-Legacy Invite-Helfer | ✅ skip | App-`.rpc`-Caller = 0, aber **SQL-intern** weiter von Invite-RPCs genutzt → nicht droppen | — | behalten |
 | **10** | Rest-`console.*` | erledigt (App/Lib) | Logger-Sink + Scripts behalten; später Sentry/Logflare | — | kein Ticket |
@@ -83,7 +83,6 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 - God-Files weiter splitten (#5)  
 - `{ ok }` → `{ success }` (#6)  
-- DE/EN-Dateinamen (#7)  
 - Service-Role-Caller mit Org/Token-Kommentar (#1 Rest)
 
 ---
@@ -100,7 +99,7 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 ## Session-Start (kurz)
 
-1. Dieses Dokument lesen — Default: Boy-Scout #5–7 bei Feature-Touch.  
+1. Dieses Dokument lesen — Default: Boy-Scout #5–6 bei Feature-Touch.  
 2. Kein weiterer Big-Bang in der offenen Queue.  
 3. Nach Abschluss: Status hier + Inventar anpassen.
 

@@ -18,13 +18,13 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
-import { KiEntwurfSheet } from '@/app/dashboard/deals/components/ki-entwurf-sheet'
+import { AiDraftSheet } from '@/app/dashboard/deals/components/ai-draft-sheet'
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
-import { buildDealContextForKiEntwurf } from '@/lib/deals/build-deal-context-for-ki-entwurf'
+import { buildDealContextForAiDraft } from '@/lib/deals/build-deal-context-for-ai-draft'
 import {
   draftRowStatus,
   sortDraftRowsByCriticality,
@@ -95,7 +95,7 @@ export function DealRfpDraftsSection({
 
   if (!showSection) return null
 
-  const dealContext = buildDealContextForKiEntwurf(deal)
+  const dealContext = buildDealContextForAiDraft(deal)
   const covered = rows.filter((d) => Boolean(d.reference)).length
   const gaps = rows.length - covered
 
@@ -144,7 +144,7 @@ export function DealRfpDraftsSection({
     }
   }
 
-  function openKiEntwurf(row: DealDeskDraftRow) {
+  function openAiDraft(row: DealDeskDraftRow) {
     const ref = row.reference
     if (!ref?.id) return
     setActiveKi({
@@ -298,7 +298,7 @@ export function DealRfpDraftsSection({
                                   size="sm"
                                   variant="outline"
                                   className="h-8"
-                                  onClick={() => openKiEntwurf(row)}
+                                  onClick={() => openAiDraft(row)}
                                 >
                                   {COPY.deals.cockpit.draftsGenerateCta}
                                 </Button>
@@ -384,7 +384,7 @@ export function DealRfpDraftsSection({
       </Card>
 
       {activeKi ? (
-        <KiEntwurfSheet
+        <AiDraftSheet
           open={kiOpen}
           onOpenChange={setKiOpen}
           referenceId={activeKi.referenceId}

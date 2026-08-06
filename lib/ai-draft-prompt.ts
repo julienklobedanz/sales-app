@@ -1,14 +1,14 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 
 /** Epic 5: Ausgabeformate für KI-Entwurf (Wireframe §15). */
-export type KiEntwurfOutputFormat =
+export type AiDraftOutputFormat =
   | 'email_snippet'
   | 'proposal_passage'
   | 'elevator_pitch'
 
-export type KiEntwurfTone = 'professional' | 'casual' | 'formal'
+export type AiDraftTone = 'professional' | 'casual' | 'formal'
 
-export type KiEntwurfReferencePayload = {
+export type AiDraftReferencePayload = {
   title: string
   summary: string | null
   customerChallenge: string | null
@@ -17,7 +17,7 @@ export type KiEntwurfReferencePayload = {
   companyName: string | null
 }
 
-const FORMAT_INSTRUCTIONS: Record<KiEntwurfOutputFormat, string> = {
+const FORMAT_INSTRUCTIONS: Record<AiDraftOutputFormat, string> = {
   email_snippet:
     'Format: **E-Mail-Snippet** (Anschreiben-Charakter). Anrede optional, 1 kurzer Absatz Fließtext, professioneller Abschluss. Keine Bullet-Listen, keine Betreff-Zeile erzwingen.',
   proposal_passage:
@@ -26,7 +26,7 @@ const FORMAT_INSTRUCTIONS: Record<KiEntwurfOutputFormat, string> = {
     'Format: **Elevator Pitch** – **genau drei Sätze**, nacheinander nummeriert implizit nur durch Zeilenumbruch (keine „1.“-Liste), maximal prägnant.',
 }
 
-const TONE_INSTRUCTIONS: Record<KiEntwurfTone, string> = {
+const TONE_INSTRUCTIONS: Record<AiDraftTone, string> = {
   professional:
     'Tonalität: **Professionell** – Siezen, sachlich, vertrauenswürdig, typisch B2B-Vertrieb.',
   casual:
@@ -38,11 +38,11 @@ const TONE_INSTRUCTIONS: Record<KiEntwurfTone, string> = {
 /**
  * Baut den Nutzer-Prompt für GPT-4o (Deutsch, nur Fließtext-Ausgabe).
  */
-export function buildKiEntwurfUserPrompt(params: {
-  reference: KiEntwurfReferencePayload
+export function buildAiDraftUserPrompt(params: {
+  reference: AiDraftReferencePayload
   matchScore: number
-  outputFormat: KiEntwurfOutputFormat
-  tone: KiEntwurfTone
+  outputFormat: AiDraftOutputFormat
+  tone: AiDraftTone
   additionalContext?: string | null
   dealContext?: string | null
 }): string {

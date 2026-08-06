@@ -2,14 +2,14 @@
 
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 
-import type { KiEntwurfOutputFormat, KiEntwurfTone } from '@/lib/ki-entwurf-prompt'
+import type { AiDraftOutputFormat, AiDraftTone } from '@/lib/ai-draft-prompt'
 
 /** Nach erfolgreicher Stream-Generierung (Client ruft nach Abschluss auf). */
-export async function recordKiEntwurfGenerated(args: {
+export async function recordAiDraftGenerated(args: {
   referenceId: string
   dealId?: string | null
-  outputFormat: KiEntwurfOutputFormat
-  tone: KiEntwurfTone
+  outputFormat: AiDraftOutputFormat
+  tone: AiDraftTone
 }): Promise<void> {
   await logEventForCurrentOrg({
     eventType: 'ki_entwurf_generated',
@@ -18,7 +18,7 @@ export async function recordKiEntwurfGenerated(args: {
     payload: {
       output_format: args.outputFormat,
       tone: args.tone,
-      source: 'ki_entwurf_sheet',
+      source: 'ai_draft_sheet',
     },
   })
 }

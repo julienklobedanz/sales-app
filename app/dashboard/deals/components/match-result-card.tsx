@@ -24,7 +24,7 @@ import type { MatchReferenceHit } from '@/lib/match/match-types'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore, removeReferenceFromDeal } from '../actions'
 import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
-import { KiEntwurfSheet } from './ki-entwurf-sheet'
+import { AiDraftSheet } from './ai-draft-sheet'
 
 export function MatchResultCard({
   hit,
@@ -299,7 +299,7 @@ export function MatchResultCard({
         showTriggerButton={false}
       />
 
-      <KiEntwurfSheet
+      <AiDraftSheet
         open={kiOpen}
         onOpenChange={setKiOpen}
         referenceId={hit.id}

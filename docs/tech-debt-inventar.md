@@ -119,7 +119,7 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | ---- | ------------------------ | -------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
 | P3-1 | `components/dashboard/*` | 4× PascalCase (`DashboardMfaGate`, …)        | kebab-case           | S — ✅ `dashboard-mfa-gate`, `settings-totp-mfa-card`, `support-ticket-modal`, `support-channels-dialog` |
 | P3-2 | Quote-Mix                | `components/ui/` oft `"`, Rest `'`           | Prettier/`format`    | S — ✅ Format-Welle 2026-08-04                                                                           |
-| P3-3 | DE/EN Dateinamen         | `ki-entwurf`, `sperrlink` vs engl. Domains   | Bei Touch angleichen | —                                                                                                        |
+| P3-3 | DE/EN Dateinamen         | `ki-entwurf`, `sperrlink` vs engl. Domains   | Bei Touch angleichen | ✅ 2026-08-06 Slice: `ai-draft-*`, `customer-control-link-email` (UI-Copy/DB-Enum bewusst DE)            |
 | P3-4 | Hardcoded Farben         | Accounts/Deals Status (`red-*`, `emerald-*`) | Design-Tokens        | M — ✅ `--status-*` + `lib/ui/status-tone.ts` (Accounts/Deals/Approval-Badges)                           |
 | P3-5 | EN-Copy Reste            | Strategy-Tab Buying-Center, „Company Update“ | `COPY` / DE          | S — ✅ Account-UI auf `COPY` verdrahtet                                                                  |
 
