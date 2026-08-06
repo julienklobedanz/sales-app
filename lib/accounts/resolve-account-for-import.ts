@@ -413,9 +413,7 @@ export async function resolveOrCreateAccountForImport(
   scheduleCompanyNewsroomDiscovery(
     supabase,
     inserted.id,
-    (inserted as { website_url?: string | null }).website_url ??
-      insertPayload.website_url ??
-      null,
+    inserted.website_url ?? insertPayload.website_url ?? null,
   )
 
   return {

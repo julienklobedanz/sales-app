@@ -84,7 +84,7 @@ export async function syncComputedAccountStatuses(
             .update({
               account_status: 'at_risk',
               account_status_source: 'crm',
-            } as { account_status: string | null; account_status_source: string })
+            })
             .eq('id', company.id)
         }
       } else {
@@ -102,7 +102,7 @@ export async function syncComputedAccountStatuses(
         .update({
           account_status: computed,
           account_status_source: 'crm',
-        } as { account_status: string | null; account_status_source: string })
+        })
         .eq('id', company.id)
     }
   }
