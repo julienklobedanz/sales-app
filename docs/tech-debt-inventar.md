@@ -52,7 +52,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | Legacy-`role` / Naming      | Welle 5           | Rollen-Mapping ✅; P1-6 App/Lib-Naming ✅ (DB `companies` bleibt)     |
 | God-Files / Modularisierung | E5, QC-Struktur   | Welle ✅; Rest Boy-Scout bei Feature-Touch                           |
 | Rollen/Capabilities         | Welle 1–2 Cleanup | Accounts/Deals Auth meist `system_role`/`function_role`              |
-| Service-Role / Schema       | E4, E7            | Offen — siehe [`tech-debt-offen-backlog.md`](./tech-debt-offen-backlog.md) |
+| Service-Role / Schema       | E4, E7            | ✅ Hotspots/Sync — Rest siehe [`tech-debt-offen-backlog.md`](./tech-debt-offen-backlog.md) #1–3 |
 
 ---
 

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
@@ -9,6 +10,7 @@ import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { log } from '@/lib/observability/logger'
+
 export type RequestItem = {
   id: string
   reference_id: string
@@ -17,6 +19,11 @@ export type RequestItem = {
   requester_name?: string
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
+}
+
+function asRequestStatus(value: string): RequestItem['status'] {
+  if (value === 'pending' || value === 'approved' || value === 'rejected') return value
+  return 'pending'
 }
 
 export async function getRequestsImpl(): Promise<RequestItem[]> {
@@ -62,28 +69,18 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
     return []
   }
 
-  return (data ?? []).map((row: Record<string, unknown>) => {
-    const reference = row.reference as {
-      id?: string
-      title?: string
-      companies?: { name?: string } | { name?: string }[]
-    } | null
-    const companies = reference?.companies
-    const companyName =
-      Array.isArray(companies) && companies.length > 0
-        ? (companies[0] as { name?: string }).name
-        : (companies as { name?: string } | null)?.name
-
-    const requester = row.requester as { full_name?: string } | null
+  return (data ?? []).map((row) => {
+    const reference = Array.isArray(row.reference) ? row.reference[0] : row.reference
+    const requester = Array.isArray(row.requester) ? row.requester[0] : row.requester
 
     return {
-      id: row.id as string,
-      reference_id: reference?.id as string,
+      id: row.id,
+      reference_id: reference?.id ?? '',
       reference_title: reference?.title ?? 'Unbekannt',
-      company_name: companyName ?? '—',
+      company_name: accountFromJoin(reference?.companies)?.name ?? '—',
       requester_name: requester?.full_name ?? 'Unbekannt',
-      status: row.status as RequestItem['status'],
-      created_at: row.created_at as string,
+      status: asRequestStatus(row.status),
+      created_at: row.created_at ?? '',
     }
   })
 }

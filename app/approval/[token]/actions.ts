@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { completeClientApprovalWithAdmin } from '@/lib/references/complete-client-approval'
 import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
 import { formatApprovalGiverLine } from '@/lib/references/approval-workflow-display'
@@ -62,32 +63,16 @@ export async function delegateClientApproval(params: {
 
   if (!ref) return { success: false, error: 'Link ungültig.' }
 
-  const refRow = ref as {
-    id?: string
-    title?: string | null
-    organization_id?: string | null
-    approval_token?: string | null
-    approval_reference_giver_name?: string | null
-    approval_reference_giver_title?: string | null
-    approval_customer_facing_name?: string | null
-    approval_coordinator_name?: string | null
-    companies?: { name?: string } | { name?: string }[] | null
-  }
-
   const previousContactName =
     formatApprovalGiverLine(
-      refRow.approval_reference_giver_name,
-      refRow.approval_reference_giver_title,
+      ref.approval_reference_giver_name,
+      ref.approval_reference_giver_title,
     ) ?? 'Ihrem bisherigen Ansprechpartner'
 
-  const company =
-    Array.isArray(refRow.companies) && refRow.companies.length > 0
-      ? refRow.companies[0]
-      : (refRow.companies as { name?: string } | null)
-  const companyName = company?.name?.trim() || 'Referenz'
+  const companyName = accountFromJoin(ref.companies)?.name?.trim() || 'Referenz'
 
   let vendorOrgName = companyName
-  const orgId = String(refRow.organization_id ?? '').trim()
+  const orgId = String(ref.organization_id ?? '').trim()
   if (orgId) {
     const { data: orgRow } = await supabase
       .from('organizations')
@@ -106,14 +91,14 @@ export async function delegateClientApproval(params: {
     .eq('approval_token', token)
   if (error) return { success: false, error: error.message }
 
-  if (refRow.id && refRow.organization_id) {
+  if (ref.id && ref.organization_id) {
     // Service-Role weil: evidence_events-Insert ohne User-Session (delegierter Kunde).
     // Grenze: organization_id + reference_id aus token-validierter Referenzzeile.
     const admin = createServiceRoleSupabaseClient()
     if (admin) {
       const { error: eventError } = await admin.from('evidence_events').insert({
-        organization_id: refRow.organization_id,
-        reference_id: refRow.id,
+        organization_id: ref.organization_id,
+        reference_id: ref.id,
         event_type: 'approval_delegated',
         payload: {
           delegate_name: params.delegateName?.trim() || null,
@@ -125,7 +110,7 @@ export async function delegateClientApproval(params: {
       if (eventError)
         log.error(
           'delegateClientApproval.eventLogFailed',
-          { referenceId: refRow.id },
+          { referenceId: ref.id },
           eventError,
         )
     }
@@ -136,10 +121,10 @@ export async function delegateClientApproval(params: {
     delegateFirstName: params.delegateName,
     previousContactName,
     companyName,
-    referenceTitle: String(refRow.title ?? 'Referenz'),
+    referenceTitle: String(ref.title ?? 'Referenz'),
     approvalToken: token,
-    customerFacingName: refRow.approval_customer_facing_name,
-    coordinatorName: refRow.approval_coordinator_name,
+    customerFacingName: ref.approval_customer_facing_name,
+    coordinatorName: ref.approval_coordinator_name,
     vendorOrgName,
   })
 

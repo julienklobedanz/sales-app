@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
+import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
 import {
   customerApprovalScopeToDbPatch,
   type CustomerApprovalScopeSelection,
@@ -27,35 +29,8 @@ export type CompleteClientApprovalResult =
   | { success: true; confirmationEmailSent?: boolean }
   | { success: false; error: string }
 
-type ReferenceApprovalRow = {
-  id: string
-  title: string
-  company_id: string
-  organization_id: string | null
-  customer_approval_status: string | null
-  status: string
-  approval_token: string | null
-  approval_reference_status_snapshot: string | null
-  approval_requested_by: string | null
-  approval_contact_id: string | null
-  approval_external_contact_id: string | null
-  approval_delegated_to_email: string | null
-  approval_delegated_to_name: string | null
-  approval_reference_giver_name?: string | null
-  companies?: { name?: string } | { name?: string }[] | null
-}
-
-function companyNameFromRow(row: ReferenceApprovalRow): string {
-  const companyRaw = row.companies
-  const company =
-    Array.isArray(companyRaw) && companyRaw.length > 0
-      ? (companyRaw[0] as { name?: string })
-      : (companyRaw as { name?: string } | null)
-  return company?.name?.trim() || 'Referenz'
-}
-
 export async function completeClientApprovalWithAdmin(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
   params: CompleteClientApprovalParams,
 ): Promise<CompleteClientApprovalResult> {
   const token = params.token.trim()
@@ -91,7 +66,7 @@ export async function completeClientApprovalWithAdmin(
     return { success: false, error: 'invalid_token' }
   }
 
-  const ref = row as ReferenceApprovalRow
+  const ref = row
   if (!ref.approval_token) {
     return { success: false, error: 'invalid_token' }
   }
@@ -124,8 +99,7 @@ export async function completeClientApprovalWithAdmin(
       .select('organization_id')
       .eq('id', ref.company_id)
       .maybeSingle()
-    orgId =
-      (company as { organization_id?: string | null } | null)?.organization_id ?? null
+    orgId = company?.organization_id ?? null
   }
   if (!orgId) {
     return { success: false, error: 'org_missing' }
@@ -268,9 +242,9 @@ export async function completeClientApprovalWithAdmin(
     confirmationEmailSent = await sendClientApprovalConfirmationEmail({
       admin,
       referenceId: ref.id,
-      organizationId: (ref as { organization_id?: string | null }).organization_id,
+      organizationId: ref.organization_id,
       refTitle: ref.title,
-      companyName: companyNameFromRow(ref),
+      companyName: companyNameFromReferenceRow(ref.companies),
       isUpdate,
       recipient: {
         approval_contact_id: ref.approval_contact_id,
