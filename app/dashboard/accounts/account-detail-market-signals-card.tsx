@@ -6,18 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatReferenceDate } from '@/lib/format'
 import { COPY } from '@/lib/copy'
-import type { CompanyDetailClientProps } from './company-detail-types'
+import type { AccountDetailClientProps } from './account-detail-types'
 
 type Props = {
-  marketSignals: CompanyDetailClientProps['marketSignals']
+  marketSignals: AccountDetailClientProps['marketSignals']
 }
 
-export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
+export function AccountDetailMarketSignalsCard({ marketSignals }: Props) {
   const [visibleChampionCount, setVisibleChampionCount] = useState(3)
   const [visibleNewsCount, setVisibleNewsCount] = useState(3)
 
   function newsSourceHref(
-    row: CompanyDetailClientProps['marketSignals']['accountNews'][number],
+    row: AccountDetailClientProps['marketSignals']['accountNews'][number],
   ) {
     const url = String(row.sourceUrl ?? '').trim()
     if (url && /^https?:\/\//i.test(url)) return url
@@ -28,7 +28,7 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
   }
 
   function championHref(
-    row: CompanyDetailClientProps['marketSignals']['championMoves'][number],
+    row: AccountDetailClientProps['marketSignals']['championMoves'][number],
   ) {
     const url = String(row.sourceUrl ?? '').trim()
     if (row.eventKind === 'news_mention' && url && /^https?:\/\//i.test(url)) return url

@@ -8,7 +8,7 @@ import type {
 } from './actions'
 import type { NdaAgreementRow } from './nda-actions'
 
-export type CompanyDetailCompany = {
+export type AccountDetailCompany = {
   id: string
   name: string
   entity_kind?: 'account' | 'partner' | null
@@ -23,8 +23,8 @@ export type CompanyDetailCompany = {
   internal_reference_approval_contact_id: string | null
 }
 
-export type CompanyDetailClientProps = {
-  company: CompanyDetailCompany
+export type AccountDetailClientProps = {
+  company: AccountDetailCompany
   /** Eigenes Mandanten-Label für LinkedIn-Suche bei internen Kontakten */
   organizationName: string | null
   strategy: CompanyStrategyRow | null

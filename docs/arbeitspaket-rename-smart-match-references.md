@@ -48,7 +48,7 @@
    }
    ```
    `permanent: false` (307), bis der Rename stabil ist; später auf `true` (308) heben.
-6. **Restweite Display-Strings** prüfen: `rg -n "Finden"` (außer `docs/`) — z. B. das `Match`-Inline-Link-Label im Proof-Points-Tab (`app/dashboard/.../company-detail-proof-points-tab.tsx`, „für semantische Treffer die Suche unter **Match**") auf „Smart Match" ziehen.
+6. **Restweite Display-Strings** prüfen: `rg -n "Finden"` (außer `docs/`) — z. B. das `Match`-Inline-Link-Label im Proof-Points-Tab (`app/dashboard/.../account-detail-proof-points-tab.tsx`, „für semantische Treffer die Suche unter **Match**") auf „Smart Match" ziehen.
 
 ## T2 — Interne Identifier (mechanische Nacharbeit, optional aber „global")
 

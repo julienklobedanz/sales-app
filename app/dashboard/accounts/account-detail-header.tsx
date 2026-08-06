@@ -9,25 +9,25 @@ import {
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import type { CompanyDetailCompany } from './company-detail-types'
+import type { AccountDetailCompany } from './account-detail-types'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import { CompanyDetailNdaPopover } from './components/company-detail-nda-popover'
+import { AccountDetailNdaPopover } from './components/account-detail-nda-popover'
 import { AccountStatusPicker } from './components/account-status-picker'
 import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
 import type { NdaAgreementRow } from './nda-actions'
 
-export function CompanyDetailHeader({
+export function AccountDetailHeader({
   company,
   canEdit,
   onEditClick,
   ndaAgreements,
   openNdaOnMount = false,
 }: {
-  company: CompanyDetailCompany
+  company: AccountDetailCompany
   canEdit?: boolean
   onEditClick?: () => void
   ndaAgreements: NdaAgreementRow[]
@@ -91,7 +91,7 @@ export function CompanyDetailHeader({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <CompanyDetailNdaPopover
+        <AccountDetailNdaPopover
           companyId={company.id}
           companyName={company.name}
           initialAgreements={ndaAgreements}

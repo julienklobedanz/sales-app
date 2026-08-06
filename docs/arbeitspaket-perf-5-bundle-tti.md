@@ -14,7 +14,7 @@
 
 - **170** `'use client'`-Dateien, **0** `next/dynamic` (kein Code-Splitting), **kein** Bundle-Analyzer.
 - **Schwere Libs — korrigiert:** `recharts` ist **nicht** im Projekt (meine frühere Angabe war falsch). `@react-pdf/renderer` ist **bereits server-only** (`app/api/pdf/*`, `lib/evidence/pdf/*`) — kein Client-Leak. `framer-motion` ist in `package.json`, hat aber **keine Imports** → Entfernungs-Kandidat. **Echter Client-Leak: nur `xlsx`** via `lib/accounts/companies-import-template.ts` (`import * as XLSX`), gezogen über `companies-import-dialog.tsx`.
-- 12 Client-Komponenten > 500 Z. (u. a. `dashboard-overview` 1457, `deal-desk-client` 1135, `companies-grid` 830, `reference-detail-sheet` 636, `company-detail-nda-popover` 623); **34** Dialog/Sheet/Modal-Komponenten.
+- 12 Client-Komponenten > 500 Z. (u. a. `dashboard-overview` 1457, `deal-desk-client` 1135, `companies-grid` 830, `reference-detail-sheet` 636, `account-detail-nda-popover` 623); **34** Dialog/Sheet/Modal-Komponenten.
 - **T1 (Analyzer) ist die Wahrheit** — die obigen Verdächtigen sind Hypothesen; der Build-Report priorisiert verbindlich.
 
 > **Nach T1: klare Gewinne nehmen, dann stoppen.** Sichere Wins: `xlsx` → Server/API, `framer-motion` entfernen, die schwersten 2–3 Dialoge der Hot-Routen lazy. **Nicht** reflexartig alle 34 Dialoge umstellen, wenn der T1-Report nur marginalen Rest-Gewinn zeigt — Diminishing Returns.
@@ -33,7 +33,7 @@
 
 ## T3 — Dialoge/Modals/Sheets lazy laden
 
-**Soll:** Die 34 Dialog/Sheet/Drawer-Komponenten erst beim Öffnen laden (`dynamic(() => import(...))` im Trigger). Priorität: die schweren (`reference-detail-sheet`, `company-detail-nda-popover`, `share-link-button`, große Dialoge).
+**Soll:** Die 34 Dialog/Sheet/Drawer-Komponenten erst beim Öffnen laden (`dynamic(() => import(...))` im Trigger). Priorität: die schweren (`reference-detail-sheet`, `account-detail-nda-popover`, `share-link-button`, große Dialoge).
 **Akzeptanz:** Modal-Code ist aus dem initialen Route-Bundle ausgelagert; Öffnen funktioniert unverändert (kleiner Lade-Spinner ok).
 
 ## T4 — `'use client'`-Fläche reduzieren + Suspense

@@ -91,7 +91,7 @@ Neue interne Dashboard-Seite (z. B. `/dashboard/ui-kit`, Admin/Settings-Link), d
 
 ### T1 Shell
 
-- 4→3 Tabs in [`company-detail-client.tsx`](../app/dashboard/accounts/company-detail-client.tsx): Überblick / Deals und Beweis / Referenzen
+- 4→3 Tabs in [`account-detail-client.tsx`](../app/dashboard/accounts/account-detail-client.tsx): Überblick / Deals und Beweis / Referenzen
 - Legacy `?tab=` Remap
 - Signal-Strip (neuestes News + CTA Smart Match)
 - Buying Center einmal im Überblick (Duplikat entfernen)

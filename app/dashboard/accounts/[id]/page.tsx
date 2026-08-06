@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect, notFound } from 'next/navigation'
-import { CompanyDetailClient } from '../company-detail-client'
+import { AccountDetailClient } from '../account-detail-client'
 import {
   getCompanyStrategy,
   getStakeholders,
@@ -14,7 +14,7 @@ import { getNdaAgreementsByCompanyId } from '../nda-actions'
 import { fetchExternalContactsForCompany } from '@/lib/accounts/external-contacts-fetch'
 import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 
-export default async function CompanyDetailPage({
+export default async function AccountDetailPage({
   params,
   searchParams,
 }: {
@@ -138,7 +138,7 @@ export default async function CompanyDetailPage({
   return (
     <div className="px-6 py-6 md:px-10 lg:px-16 xl:px-24">
       <div className="w-full max-w-6xl mx-auto">
-        <CompanyDetailClient
+        <AccountDetailClient
           company={{
             ...company,
             entity_kind:

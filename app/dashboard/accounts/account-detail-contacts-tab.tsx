@@ -32,7 +32,7 @@ type Props = {
   onRemove: (id: string) => void
 }
 
-export function CompanyDetailContactsTab({
+export function AccountDetailContactsTab({
   internalContacts,
   organizationName,
   internalReferenceApprovalContactId,

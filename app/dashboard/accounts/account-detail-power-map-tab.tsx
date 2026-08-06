@@ -1,10 +1,10 @@
-import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
-import { CompanyDetailMarketSignalsCard } from './company-detail-market-signals-card'
-import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
+import { AccountDetailContactsTab } from './account-detail-contacts-tab'
+import { AccountDetailMarketSignalsCard } from './account-detail-market-signals-card'
+import { AccountDetailStakeholdersTab } from './account-detail-stakeholders-tab'
 import type { ContactPersonRow, ExternalContactRow, StakeholderRow } from './actions'
-import type { CompanyDetailClientProps } from './company-detail-types'
+import type { AccountDetailClientProps } from './account-detail-types'
 
-export function CompanyDetailPowerMapTab({
+export function AccountDetailPowerMapTab({
   stakeholders,
   marketSignals,
   internalContacts,
@@ -21,7 +21,7 @@ export function CompanyDetailPowerMapTab({
   onRemoveInternalContact,
 }: {
   stakeholders: StakeholderRow[]
-  marketSignals: CompanyDetailClientProps['marketSignals']
+  marketSignals: AccountDetailClientProps['marketSignals']
   internalContacts: ContactPersonRow[]
   externalContacts: ExternalContactRow[]
   companyName: string
@@ -37,7 +37,7 @@ export function CompanyDetailPowerMapTab({
 }) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <CompanyDetailStakeholdersTab
+      <AccountDetailStakeholdersTab
         stakeholders={stakeholders}
         externalContacts={externalContacts}
         companyName={companyName}
@@ -46,7 +46,7 @@ export function CompanyDetailPowerMapTab({
         onEdit={onEditStakeholder}
         onRemove={onRemoveStakeholder}
       />
-      <CompanyDetailContactsTab
+      <AccountDetailContactsTab
         internalContacts={internalContacts}
         organizationName={organizationName}
         internalReferenceApprovalContactId={internalReferenceApprovalContactId}
@@ -55,7 +55,7 @@ export function CompanyDetailPowerMapTab({
         onEdit={onEditInternalContact}
         onRemove={onRemoveInternalContact}
       />
-      <CompanyDetailMarketSignalsCard marketSignals={marketSignals} />
+      <AccountDetailMarketSignalsCard marketSignals={marketSignals} />
     </div>
   )
 }
