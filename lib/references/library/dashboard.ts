@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCachedOrgReferenceRows } from '@/lib/cache/cached-org-reads'
@@ -34,6 +35,20 @@ function normalizeStatus(raw: unknown): ReferenceStatus {
   )
 }
 
+function contactPersonFromJoin(raw: unknown): {
+  email?: string | null
+  first_name?: string | null
+  last_name?: string | null
+} | null {
+  const c = Array.isArray(raw) ? raw[0] : raw
+  if (!c || typeof c !== 'object') return null
+  return c as {
+    email?: string | null
+    first_name?: string | null
+    last_name?: string | null
+  }
+}
+
 const DEAL_REF_IN_CHUNK = 150
 
 /** deal_references hat keine organization_id — auf Org-Referenz-IDs scopen (RLS-Session-Client). */
@@ -48,7 +63,7 @@ async function fetchDealReferenceRowsForRefs(
       .from('deal_references')
       .select('reference_id')
       .in('reference_id', chunk)
-    if (data?.length) rows.push(...(data as { reference_id: string }[]))
+    if (data?.length) rows.push(...data)
   }
   return { data: rows }
 }
@@ -102,21 +117,12 @@ export async function getDashboardDataImpl(
   const favoriteIds = new Set<string>()
   const favs = favResult.data
   if (favs) {
-    favs.forEach((f: { reference_id: string }) => favoriteIds.add(f.reference_id))
+    favs.forEach((f) => favoriteIds.add(f.reference_id))
   }
 
   let references = (rows ?? []).map((r: Record<string, unknown>) => {
-    const raw = r.companies
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
-    const contactRaw = r.contact_persons
-    const contact = contactRaw
-      ? Array.isArray(contactRaw) && contactRaw.length > 0
-        ? (contactRaw[0] as { email?: string; first_name?: string; last_name?: string })
-        : (contactRaw as { email?: string; first_name?: string; last_name?: string })
-      : null
+    const company = accountFromJoin(r.companies)
+    const contact = contactPersonFromJoin(r.contact_persons)
     const contactDisplay = contact
       ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') ||
         contact.email ||
@@ -171,7 +177,7 @@ export async function getDashboardDataImpl(
       updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,
       company_name: company?.name ?? '—',
-      company_logo_url: company?.logo_url ?? null,
+      company_logo_url: company?.logoUrl ?? null,
       contact_id: (r.contact_id as string | null) ?? null,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
@@ -197,8 +203,8 @@ export async function getDashboardDataImpl(
   const portfolioRows = portfolioResult.data
   if (portfolioRows?.length) {
     for (const row of portfolioRows) {
-      const ids = (row.reference_ids as string[] | null) ?? []
-      const v = (row.view_count as number) ?? 0
+      const ids = row.reference_ids ?? []
+      const v = row.view_count ?? 0
       for (const id of ids) {
         viewsByRefId.set(id, (viewsByRefId.get(id) ?? 0) + v)
         shareCountByRefId.set(id, (shareCountByRefId.get(id) ?? 0) + 1)
@@ -210,8 +216,10 @@ export async function getDashboardDataImpl(
   const dealRefRows = dealRefResult.data
   if (dealRefRows?.length) {
     for (const row of dealRefRows) {
-      const id = (row as { reference_id?: string }).reference_id
-      if (id) dealLinkCountByRefId.set(id, (dealLinkCountByRefId.get(id) ?? 0) + 1)
+      dealLinkCountByRefId.set(
+        row.reference_id,
+        (dealLinkCountByRefId.get(row.reference_id) ?? 0) + 1,
+      )
     }
   }
 
@@ -265,15 +273,11 @@ export async function getDeletedReferencesImpl() {
 
   if (error || !data) return []
 
-  return (data as unknown as Array<Record<string, unknown>>).map((r) => {
-    const raw = r.companies as unknown
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
+  return data.map((r) => {
+    const company = accountFromJoin(r.companies)
     return {
-      id: r.id as string,
-      title: (r.title as string) ?? '',
+      id: r.id,
+      title: r.title ?? '',
       company_name: company?.name ?? '—',
     }
   })
