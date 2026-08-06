@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx'
 
 import type { AccountEntityKind } from '@/lib/accounts/account-entity'
-import { companiesImportTemplateFilename } from '@/lib/accounts/companies-import-shared'
+import { accountsImportTemplateFilename } from '@/lib/accounts/accounts-import-shared'
 
 const ACCOUNT_HEADERS = ['Name', 'Website', 'Branche', 'Standort', 'Mitarbeiter'] as const
 const PARTNER_HEADERS = [
@@ -35,12 +35,12 @@ function buildImportTemplateWorkbook(entityKind: AccountEntityKind): XLSX.WorkBo
   return workbook
 }
 
-export function buildCompaniesImportTemplateXlsx(entityKind: AccountEntityKind): {
+export function buildAccountsImportTemplateXlsx(entityKind: AccountEntityKind): {
   buffer: Buffer
   filename: string
 } {
   const workbook = buildImportTemplateWorkbook(entityKind)
-  const filename = companiesImportTemplateFilename(entityKind)
+  const filename = accountsImportTemplateFilename(entityKind)
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer
   return { buffer, filename }
 }

@@ -19,7 +19,7 @@ import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import type { AccountsListView } from '@/lib/accounts/accounts-list-view'
 import { CreateAccountDialog } from './create-account-dialog'
 import { CreatePartnerDialog } from './create-partner-dialog'
-import { CompaniesImportDialog } from './components/companies-import-dialog'
+import { AccountsImportDialog } from './components/accounts-import-dialog'
 import { EntityKindSwitch } from './components/entity-kind-switch'
 import { AccountSortSwitch } from './components/account-sort-switch'
 import { AccountsToolbarTooltip } from './components/accounts-toolbar-tooltip'
@@ -152,7 +152,7 @@ export function AccountsGridToolbar({
                   />
                 </Button>
               </AccountsToolbarTooltip>
-              <CompaniesImportDialog
+              <AccountsImportDialog
                 open={importDialogOpen}
                 onOpenChange={setImportDialogOpen}
                 entityKind={entityKind}
