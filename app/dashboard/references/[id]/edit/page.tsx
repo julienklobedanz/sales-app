@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { ReferenceForm } from '../../new/reference-form'
@@ -90,9 +91,7 @@ export default async function EditReferencePage({
 
   // Ownership-Gating: AM darf nur eigene Referenzen bearbeiten, Admin alle.
   if (roles.functionRole === 'account_manager') {
-    const createdBy =
-      (row as unknown as { created_by?: string | null }).created_by ?? null
-    if (!createdBy || createdBy !== user.id) {
+    if (!row.created_by || row.created_by !== user.id) {
       redirect(ROUTES.references.detail(id))
     }
   }
@@ -106,18 +105,13 @@ export default async function EditReferencePage({
     .from('contact_persons')
     .select('*')
     .order('last_name')
-  const profile = me as { organization_id?: string | null }
   const { data: externalContacts } = await supabase
     .from('external_contacts')
     .select('id, company_id, first_name, last_name, email, role, phone')
-    .eq('organization_id', profile?.organization_id ?? '')
+    .eq('organization_id', me.organization_id ?? '')
     .order('last_name')
 
-  const company =
-    Array.isArray(row.companies) && row.companies.length > 0
-      ? (row.companies[0] as { name?: string })
-      : (row.companies as { name?: string } | null)
-  const company_name = company?.name ?? ''
+  const company_name = accountFromJoin(row.companies)?.name ?? ''
 
   const companyLogoUrl =
     companies?.find((c: { id: string }) => c.id === row.company_id)?.logo_url ?? null
@@ -150,12 +144,12 @@ export default async function EditReferencePage({
     project_end: row.project_end ?? null,
   }
 
-  if (fromDeskId && profile?.organization_id) {
+  if (fromDeskId && me.organization_id) {
     const { data: deskRow } = await supabase
       .from('deal_desk_projects')
       .select('project_name, analysis_snapshot')
       .eq('id', fromDeskId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', me.organization_id)
       .maybeSingle()
 
     if (deskRow?.analysis_snapshot && typeof deskRow.analysis_snapshot === 'object') {

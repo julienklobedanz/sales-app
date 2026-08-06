@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
@@ -9,7 +10,7 @@ function hashManageToken(plain: string): string {
 }
 
 async function verifyManageTokenForReference(
-  admin: SupabaseClient,
+  admin: SupabaseClient<Database>,
   slug: string,
   manageToken: string,
   referenceId: string,
@@ -20,13 +21,12 @@ async function verifyManageTokenForReference(
     .eq('slug', slug)
     .maybeSingle()
 
-  if (!row || !(row as { is_active?: boolean }).is_active) return false
+  if (!row?.is_active) return false
 
-  const referenceIds = (row as { reference_ids?: string[] }).reference_ids ?? []
+  const referenceIds = row.reference_ids ?? []
   if (!referenceIds.includes(referenceId)) return false
 
-  const storedHash = (row as { customer_manage_token_hash?: string | null })
-    .customer_manage_token_hash
+  const storedHash = row.customer_manage_token_hash
   if (!storedHash) return false
 
   return storedHash === hashManageToken(manageToken.trim())
@@ -77,19 +77,13 @@ export async function resolveApprovalEditUrlForManageView(
   const verified = await verifyManageTokenForReference(admin, slugTrim, tokenTrim, refId)
   if (!verified) return null
 
-  const { data: row, error } = await admin
+  const { data: ref, error } = await admin
     .from('references')
     .select('approval_token, customer_approval_status, status')
     .eq('id', refId)
     .maybeSingle()
 
-  if (error || !row) return null
-
-  const ref = row as {
-    approval_token?: string | null
-    customer_approval_status?: string | null
-    status?: string | null
-  }
+  if (error || !ref) return null
 
   const existing = typeof ref.approval_token === 'string' ? ref.approval_token.trim() : ''
   if (existing) return `/approval/${existing}`
