@@ -138,11 +138,11 @@ async function attachUploaderNames(
 function assertCanManageDeal(
   auth: Extract<DocumentAuth, { userId: string }>,
   deal: DealAccessRow,
-): { ok: true } | { error: string } {
+): { success: true } | { error: string } {
   if (!canManageDealDocuments(deal, auth.userId, auth.systemRole, auth.functionRole)) {
     return { error: 'Keine Berechtigung, Dokumente an diesem Deal zu verwalten.' }
   }
-  return { ok: true }
+  return { success: true }
 }
 
 function revalidateDealPage(dealId: string) {
@@ -201,7 +201,7 @@ export async function uploadDealDocument(
   }
 
   const validation = validateDealDocumentUpload(file, kind)
-  if (!validation.ok) {
+  if (!validation.success) {
     return { success: false, error: validation.error }
   }
 
@@ -304,7 +304,7 @@ export async function setDealDocumentKind(
       size: Number(docRes.row.size_bytes),
     }
     const validation = validateDealDocumentUpload(pseudoFile, kind)
-    if (!validation.ok) {
+    if (!validation.success) {
       return { success: false, error: validation.error }
     }
   }

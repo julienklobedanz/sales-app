@@ -55,7 +55,7 @@ describe('deal-document-upload', () => {
       type: 'application/pdf',
       size: DEAL_DOCUMENT_STORAGE_MAX_BYTES,
     }
-    expect(validateDealDocumentUpload(file, 'sonstiges').ok).toBe(true)
+    expect(validateDealDocumentUpload(file, 'sonstiges').success).toBe(true)
   })
 
   it('rejects oversized ablage file', () => {
@@ -64,7 +64,7 @@ describe('deal-document-upload', () => {
       type: 'application/pdf',
       size: DEAL_DOCUMENT_STORAGE_MAX_BYTES + 1,
     }
-    expect(validateDealDocumentUpload(file, 'vertrag').ok).toBe(false)
+    expect(validateDealDocumentUpload(file, 'vertrag').success).toBe(false)
   })
 
   it('enforces analyzable limit for ausschreibung', () => {
@@ -73,7 +73,7 @@ describe('deal-document-upload', () => {
       type: 'application/pdf',
       size: DEAL_DOCUMENT_ANALYZABLE_MAX_BYTES + 1,
     }
-    expect(validateDealDocumentUpload(file, 'ausschreibung').ok).toBe(false)
+    expect(validateDealDocumentUpload(file, 'ausschreibung').success).toBe(false)
   })
 
   it('requires analyzable mime for ausschreibung', () => {
@@ -82,6 +82,6 @@ describe('deal-document-upload', () => {
       type: 'image/png',
       size: 1024,
     }
-    expect(validateDealDocumentUpload(file, 'ausschreibung').ok).toBe(false)
+    expect(validateDealDocumentUpload(file, 'ausschreibung').success).toBe(false)
   })
 })

@@ -27,7 +27,7 @@ async function extractMetadataFromFile(file: File) {
   if (!(file instanceof File) || file.size === 0) return null
   const buffer = Buffer.from(await file.arrayBuffer())
   const plain = await extractPlainTextFromBuffer(buffer, file.name, file.type)
-  if (!plain.ok) return null
+  if (!plain.success) return null
   return parseReferenceHeuristicsFromText(plain.text, { fileName: file.name })
 }
 

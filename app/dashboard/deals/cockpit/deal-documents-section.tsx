@@ -138,7 +138,7 @@ function DocumentDropzone({
   function acceptFile(next: File | undefined) {
     if (!next) return
     const validation = validateDealDocumentUpload(next, kind)
-    if (!validation.ok) {
+    if (!validation.success) {
       toast.error(validation.error)
       return
     }
@@ -284,7 +284,7 @@ export function DealDocumentsSection({
     setAnalyzingId(doc.id)
     try {
       const result = await runDealRfpAnalyze(dealId, doc)
-      if (!result.ok) {
+      if (!result.success) {
         toast.error(result.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
         return
       }
@@ -558,7 +558,7 @@ export function DealDocumentsSection({
                   setUploadKind(kind)
                   if (uploadFile) {
                     const validation = validateDealDocumentUpload(uploadFile, kind)
-                    if (!validation.ok) {
+                    if (!validation.success) {
                       toast.error(validation.error)
                       setUploadFile(null)
                     }

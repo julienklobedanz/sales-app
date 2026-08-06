@@ -66,18 +66,18 @@ function isAnalyzableUpload(file: Pick<File, 'name' | 'type'>): boolean {
   return ANALYZABLE_EXTENSIONS.test(file.name)
 }
 
-export type ValidateDealDocumentUploadResult = { ok: true } | { ok: false; error: string }
+export type ValidateDealDocumentUploadResult = { success: true } | { success: false; error: string }
 
 export function validateDealDocumentUpload(
   file: Pick<File, 'name' | 'type' | 'size'>,
   kind: DealDocumentKind,
 ): ValidateDealDocumentUploadResult {
   if (!file.size) {
-    return { ok: false, error: 'Keine gültige Datei.' }
+    return { success: false, error: 'Keine gültige Datei.' }
   }
 
   if (!fileMatchesAllowedMime(file)) {
-    return { ok: false, error: 'Dateityp wird nicht unterstützt.' }
+    return { success: false, error: 'Dateityp wird nicht unterstützt.' }
   }
 
   const maxBytes =
@@ -89,17 +89,17 @@ export function validateDealDocumentUpload(
     const maxMb = (maxBytes / 1024 / 1024).toFixed(1)
     const actualMb = (file.size / 1024 / 1024).toFixed(1)
     return {
-      ok: false,
+      success: false,
       error: `Datei zu groß (max. ${maxMb} MB). Aktuell: ${actualMb} MB.`,
     }
   }
 
   if (kind === 'ausschreibung' && !isAnalyzableUpload(file)) {
     return {
-      ok: false,
+      success: false,
       error: 'Ausschreibungen müssen PDF, DOCX oder PPTX sein (für Analyse).',
     }
   }
 
-  return { ok: true }
+  return { success: true }
 }

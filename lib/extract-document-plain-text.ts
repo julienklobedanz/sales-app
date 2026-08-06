@@ -22,13 +22,13 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
 
 export type ExtractPlainTextResult =
   | {
-      ok: true
+      success: true
       text: string
       extractionMethod?: 'native' | 'ocr'
       ocrTruncated?: boolean
       ocrPagesProcessed?: number
     }
-  | { ok: false; error: string; isScanLikely?: boolean; isQuotaError?: boolean }
+  | { success: false; error: string; isScanLikely?: boolean; isQuotaError?: boolean }
 
 /**
  * PDF oder DOCX → Klartext (Ausschnitt für RFP reicht oft mit Limit).
@@ -39,11 +39,11 @@ export async function extractPlainTextFromFile(
 ): Promise<ExtractPlainTextResult> {
   const maxChars = options?.maxChars ?? 120_000
   if (!file?.size) {
-    return { ok: false, error: 'Keine Datei übergeben.' }
+    return { success: false, error: 'Keine Datei übergeben.' }
   }
   if (file.size > MAX_BYTES) {
     return {
-      ok: false,
+      success: false,
       error: `Datei zu groß (max. 4,5 MB). Aktuell: ${(file.size / 1024 / 1024).toFixed(1)} MB.`,
     }
   }
@@ -57,7 +57,7 @@ export async function extractPlainTextFromFile(
     /\.docx$/i.test(fileName)
 
   if (!isPdf && !isDocx) {
-    return { ok: false, error: 'Nur PDF oder DOCX werden unterstützt.' }
+    return { success: false, error: 'Nur PDF oder DOCX werden unterstützt.' }
   }
 
   try {
@@ -67,10 +67,10 @@ export async function extractPlainTextFromFile(
       const pdf = await extractPdfPlainTextWithOcrFallback(buffer, { maxOcrPages: 40 })
       const t = pdf.text.trim()
       if (t.length < 40) {
-        return { ok: false, error: RFP_LOW_TEXT_ERROR, isScanLikely: true }
+        return { success: false, error: RFP_LOW_TEXT_ERROR, isScanLikely: true }
       }
       return {
-        ok: true,
+        success: true,
         text: t.slice(0, maxChars),
         extractionMethod: pdf.method,
         ocrTruncated: pdf.ocrTruncated,
@@ -81,16 +81,16 @@ export async function extractPlainTextFromFile(
     const text = await extractTextFromDocx(buffer)
     const t = text.trim()
     if (t.length < 40) {
-      return { ok: false, error: RFP_LOW_TEXT_ERROR, isScanLikely: true }
+      return { success: false, error: RFP_LOW_TEXT_ERROR, isScanLikely: true }
     }
-    return { ok: true, text: t.slice(0, maxChars), extractionMethod: 'native' }
+    return { success: true, text: t.slice(0, maxChars), extractionMethod: 'native' }
   } catch (e) {
     const msg = e instanceof Error ? e.message : ''
     if (isOpenAiQuotaErrorMessage(msg)) {
-      return { ok: false, error: msg, isQuotaError: true }
+      return { success: false, error: msg, isQuotaError: true }
     }
     return {
-      ok: false,
+      success: false,
       error: 'Text konnte aus der Datei nicht gelesen werden.',
     }
   }

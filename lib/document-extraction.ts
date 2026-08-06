@@ -268,12 +268,12 @@ export async function extractPlainTextFromBuffer(
   buffer: Buffer,
   fileName: string,
   mimeType?: string | null,
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+): Promise<{ success: true; text: string } | { success: false; error: string }> {
   const name = fileName || 'unbenannt'
   const size = buffer.length
   if (size > MAX_FILE_BYTES) {
     return {
-      ok: false,
+      success: false,
       error: `Datei zu groß (max. 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
     }
   }
@@ -291,7 +291,7 @@ export async function extractPlainTextFromBuffer(
 
   if (!isPdf && !isPptx && !isDocx && !isDoc && !isImage) {
     return {
-      ok: false,
+      success: false,
       error:
         'Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.',
     }
@@ -320,15 +320,15 @@ export async function extractPlainTextFromBuffer(
     } else throw new Error('DOC_FORMAT_UNSUPPORTED')
     if (!documentText?.trim() || documentText.trim().length < 50) {
       return {
-        ok: false,
+        success: false,
         error:
           'Zu wenig erkennbarer Text (evtl. Scan/Bildqualität). Bitte Felder manuell ausfüllen.',
       }
     }
-    return { ok: true, text: documentText }
+    return { success: true, text: documentText }
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
-    return { ok: false, error: mapDocumentExtractError(err, format) }
+    return { success: false, error: mapDocumentExtractError(err, format) }
   }
 }
 
@@ -342,7 +342,7 @@ export async function extractDataFromBuffer(
   options?: ExtractFromBufferOptions,
 ): Promise<ExtractDataFromDocumentResult> {
   const plain = await extractPlainTextFromBuffer(buffer, fileName, mimeType)
-  if (!plain.ok) return { success: false, error: plain.error }
+  if (!plain.success) return { success: false, error: plain.error }
 
   const documentText = plain.text
   const heuristicData = parseReferenceHeuristicsFromText(documentText, {
