@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -37,6 +38,29 @@ function generateSharePassword(): string {
     out += alphabet[bytes[i]! % alphabet.length]
   }
   return out
+}
+
+/** RPC-Returns sind `Json` — schmaler Guard statt Row-Cast. */
+function parsePortfolioRpcJson(data: Json | null | undefined): {
+  success?: boolean
+  token?: string
+  error?: string
+} | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null
+  const obj = data as Record<string, unknown>
+  return {
+    success: typeof obj.success === 'boolean' ? obj.success : undefined,
+    token: typeof obj.token === 'string' ? obj.token : undefined,
+    error: typeof obj.error === 'string' ? obj.error : undefined,
+  }
+}
+
+function linkExpiryDaysFromWorkflow(wf: unknown, fallback = 14): number {
+  if (typeof wf !== 'object' || wf === null || !('link_expiry_days' in wf)) {
+    return fallback
+  }
+  const n = Number((wf as Record<string, unknown>).link_expiry_days)
+  return Number.isFinite(n) ? n : fallback
 }
 
 async function fetchOrgWorkflowJson(
@@ -155,7 +179,7 @@ export async function createSharedPortfolioImpl(
     .select('organization_id')
     .eq('id', user.id)
     .single()
-  const orgId = profile?.organization_id as string | undefined
+  const orgId = profile?.organization_id ?? undefined
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generatePortfolioSlug()
@@ -173,10 +197,7 @@ export async function createSharedPortfolioImpl(
       let initialPassword: string | null = null
       if (orgId) {
         const wf = await fetchOrgWorkflowJson(supabase, orgId)
-        const linkFallback =
-          typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
-            ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
-            : 14
+        const linkFallback = linkExpiryDaysFromWorkflow(wf, 14)
         const policy = parseOrgPublicLinkPolicy(
           wf,
           Number.isFinite(linkFallback) ? linkFallback : 14,
@@ -222,7 +243,7 @@ export async function createSharedPortfolioImpl(
           .select('id')
           .eq('slug', slug)
           .single()
-        const spId = spRow?.id as string | undefined
+        const spId = spRow?.id ?? undefined
         if (spId) {
           const token = generatePortfolioRecipientToken()
           const { error: recErr } = await supabase
@@ -255,7 +276,7 @@ export async function createSharedPortfolioImpl(
         manageToken,
       }
     }
-    const code = (error as { code?: string }).code
+    const code = error.code
     if (code === '23505') continue // unique violation, retry
     if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
       log.error('createSharedPortfolio.tableMissing', { referenceIds }, error)
@@ -356,7 +377,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
       )
       return null
     }
-    const payload = rpc as { success?: boolean; token?: string; error?: string } | null
+    const payload = parsePortfolioRpcJson(rpc)
     if (!payload?.success || !payload.token) {
       log.error('getPortfolioManageAndPreviewUrls.rpcFailed', {
         referenceId: id,
@@ -393,7 +414,7 @@ export async function getExistingShareForReferenceImpl(referenceId: string): Pro
     .contains('reference_ids', [referenceId])
     .limit(1)
   if (error) {
-    const code = (error as { code?: string }).code
+    const code = error.code
     if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
       log.error('getExistingShareForReference.tableMissing', { referenceId }, error)
       // Kein harter Fehler im UI – einfach so tun, als gäbe es keinen bestehenden Link
@@ -444,7 +465,7 @@ export async function resetSharedPortfolioManageTokenImpl(
     p_reference_id: referenceId,
   })
   if (error) return { success: false, error: error.message }
-  const payload = data as { success?: boolean; token?: string; error?: string } | null
+  const payload = parsePortfolioRpcJson(data)
   if (!payload?.success || !payload.token) {
     return {
       success: false,
@@ -490,7 +511,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
     .select('organization_id')
     .eq('id', user.id)
     .single()
-  const orgId = profile?.organization_id as string | undefined
+  const orgId = profile?.organization_id ?? undefined
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
   const { data: rows, error: findErr } = await supabase
@@ -500,15 +521,12 @@ export async function updateShareLinkSecurityByReferenceImpl(
     .contains('reference_ids', [referenceId])
     .limit(1)
   if (findErr) return { success: false, error: findErr.message }
-  const slug = rows?.[0]?.slug as string | undefined
+  const slug = rows?.[0]?.slug ?? undefined
   if (!slug)
     return { success: false, error: 'Kein aktiver Share-Link für diese Referenz.' }
 
   const wf = await fetchOrgWorkflowJson(supabase, orgId)
-  const linkFallback =
-    typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
-      ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
-      : 14
+  const linkFallback = linkExpiryDaysFromWorkflow(wf, 14)
   const policy = parseOrgPublicLinkPolicy(
     wf,
     Number.isFinite(linkFallback) ? linkFallback : 14,
@@ -536,7 +554,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
     },
   )
   if (rpcErr) return { success: false, error: rpcErr.message }
-  const payload = rpcData as { success?: boolean; error?: string } | null
+  const payload = parsePortfolioRpcJson(rpcData)
   if (!payload?.success) {
     return {
       success: false,
@@ -583,7 +601,7 @@ export async function getPortfolioViewSessionsForReferenceImpl(
     .limit(1)
   if (findErr || !rows?.[0]?.id) return []
 
-  const spId = rows[0].id as string
+  const spId = rows[0].id
   const { data: sessions, error } = await supabase
     .from('portfolio_view_sessions')
     .select(
@@ -596,14 +614,16 @@ export async function getPortfolioViewSessionsForReferenceImpl(
   if (error || !sessions?.length) return []
 
   return sessions.map((s) => {
-    const rec = s.shared_portfolio_recipients as { label?: string } | null
+    const rec = Array.isArray(s.shared_portfolio_recipients)
+      ? s.shared_portfolio_recipients[0]
+      : s.shared_portfolio_recipients
     return {
-      id: String(s.id),
-      startedAt: String(s.started_at),
-      countryCode: (s.country_code as string | null) ?? null,
+      id: s.id,
+      startedAt: s.started_at,
+      countryCode: s.country_code ?? null,
       activeSeconds: Number(s.active_seconds) || 0,
       recipientLabel: rec?.label?.trim() || null,
-      visitorName: (s.visitor_name as string | null) ?? null,
+      visitorName: s.visitor_name ?? null,
     }
   })
 }

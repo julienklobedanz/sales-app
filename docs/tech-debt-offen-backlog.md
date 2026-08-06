@@ -1,81 +1,103 @@
 # Tech-Debt — Offene Punkte & empfohlene Reihenfolge
 
-**Stand:** 2026-08-05  
-**Zweck:** Einzige **aktionsfähige** Liste dessen, was nach dem Inventar-Abbau (Quick Wins + Welle 5 Rollen) noch offen ist — plus eine Reihenfolge, die Risiko, Merge-Konflikte und „wert pro Diff“ maximiert.  
-**Quelle / Detail:** [`tech-debt-inventar.md`](./tech-debt-inventar.md) und verlinkte Arbeitspakete. Dieses Dokument **ersetzt das Inventar nicht**; es filtert Erledigtes und priorisiert den Rest.
+**Stand:** 2026-08-06  
+**Zweck:** Aktionsfähige Übersicht der **noch offenen** Tech-Debt-Abbauarbeit — plus Reihenfolge.  
+**Detail/Historie:** [`tech-debt-inventar.md`](./tech-debt-inventar.md) und verlinkte Arbeitspakete.
 
 ---
 
-## Prinzip der Reihenfolge
+## Status auf einen Blick (2026-08-06)
 
-1. **Klarheit zuerst** — Inventar/Docs syncen, sonst arbeitet man gegen veraltete P0/P2-Zeilen.  
-2. **Risiko vor Kosmetik** — Security-/Schema-Gates vor großen Renames.  
-3. **Kleine, isolierte PRs** — mechanische Renames in Scheiben; nie mit Verhaltensänderung mischen.  
-4. **Boy-Scout statt Big-Bang** — `{ ok }` / Dateinamen / Rest-`console` nur bei Touch.  
-5. **Große Domänen-Renames zuletzt** — hoher Diff, niedriger Laufzeitnutzen; erst wenn die Fläche ruhig ist.  
-6. **Pilot-Themen geparkt** — nicht in diese Queue mischen.
+| Status | Themen |
+|--------|--------|
+| **Erledigt** | Inventar-Hygiene (#0); E4 Hotspot-Audit (#1); E7 Schema-Sync (#2); **P1-6** Accounts Naming App/Lib (#4); Welle-5 Rollen (Invite/`AppRole`/Mapping); Typed-Supabase **Accounts** + **Deals** + References **Slice 1–4** (Dashboard/Sharing/Approvals/Cache/Complete/Requests) |
+| **In Arbeit** | Typed-Supabase Cast-Abbau (#3) — References-Rest + weitere Domänen |
+| **Offen (Queue)** | #3 Rest · #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #8 `references`/`evidence` Rename · #9 Invite-SQL-Kosmetik (optional) |
+| **Geparkt** | Pilot (H3/E1/G2); Massen-Renames; produktweite `evidence`↔`references`-Entscheidung |
 
----
-
-## Empfohlene Queue (effizient)
-
-| # | ID / Thema | Was | Aufwand | Warum jetzt / so | Verweis |
-|---|------------|-----|---------|------------------|---------|
-| **0** | Inventar-Hygiene | P0/P2/Mapping-Zeilen auf Ist-Stand bringen (viele ✅ fehlen in den Tabellen); Header-Datum | XS | Verhindert Doppelarbeit und falsche Prioritäten | [`tech-debt-inventar.md`](./tech-debt-inventar.md) — **✅ 2026-08-06** |
-| **1** | E4 Service-Role-Audit | Alle `service-role`-Nutzungen rechtfertigen + fehlende Org/Token-Grenzen schließen | M | Cross-Tenant-Risiko; unabhängig von Naming; vor Pilot | [`arbeitspaket-service-role-audit-e4.md`](./arbeitspaket-service-role-audit-e4.md) — **Audit + Hotspot-Härtung ✅**; Rest Boy-Scout Kommentare |
-| **2** | E7 Schema-Sync / Drift-Gate | Remote vs. Repo-Migrationen; `looseSelect`-Löcher; CI-Migrations-Gate festziehen | M | Schützt das schon vorhandene `database.types.ts`-Fundament | [`arbeitspaket-schema-sync-e7.md`](./arbeitspaket-schema-sync-e7.md) — **✅ T1–T4** (2026-08-06 verifiziert) |
-| **3** | Typed-Supabase Cast-Abbau | `as { … }`-Row-Casts schrumpfen; Clients/`from()` stärker an `Database` koppeln | L (scheibenweise) | Verhindert die Fehlerklasse der role-Spalten-Drift; hoher Hebel nach E7 | [`arbeitspaket-typed-supabase.md`](./arbeitspaket-typed-supabase.md) — Accounts/Deals ✅; References Slice 1–3 (Cache typed) |
-| **4** | **P1-6** Accounts Naming | App/Lib: `company*` → `account*` wo Domäne „Account“; **DB `companies` bleibt** | L (3–5 PRs) | Letzter klarer Inventar-Welle-5-Block; rein mechanisch → nach Security/Typen, bevor noch größere Renames | Inventar P1-6 — **✅** Slices 1–5; DB/`company_id`/Firmennamen bewusst offen |
-| **5** | God-File-Nacharbeit | Overview (~719), Share-Link (~420), MS-Feed (~429) weiter slicen **nur bei Feature-Touch** | M (ongoing) | Kein eigener Big-Bang; Effizienz = bei Feature-PRs mitnehmen | Inventar God-Files / E5 |
-| **6** | Result `{ ok }` → `{ success }` | ~27 Dateien / ~136 Matches in Libs/Cron | S–M Boy-Scout | Kein Massen-PR; bei jeder Lib-Berührung | Inventar Result-Konvention; Guide §3.1 |
-| **7** | P3-3 DE/EN-Dateinamen | `ki-entwurf`, `sperrlink`, … | XS bei Touch | Nur umbenennen, wenn die Datei sowieso angefasst wird | Inventar P3-3 |
-| **8** | Welle-5 T3 `references`/`evidence` | Modulpfade an einen Domänennamen angleichen (Route vs. Ordner) | L | Bewusst Big-Bang; **nach** P1-6 (sonst Doppel-Konflikte in Accounts/Refs) | [`arbeitspaket-legacy-abbau-welle-5.md`](./arbeitspaket-legacy-abbau-welle-5.md) T3 |
-| **9** | DB-Legacy Invite-Helfer (optional) | `legacy_role_from_dimensions` / `resolve_invite_roles` aufräumen, wenn App-Callers = 0 | S | Nur Kosmetik in SQL; App braucht das nicht mehr | Migrationen Invite-RPCs |
-| **10** | Rest-`console.*` | App/Lib praktisch leer; Logger-Sink + Scripts bewusst behalten | — | Kein eigenes Ticket; Sink später an Sentry/Logflare | E6 / Inventar P1-2 |
+**Hebel jetzt:** Queue **#3** zu Ende führen (References-Rest → andere Domänen → Typed-Supabase **T4** CI-`typecheck`-Gate), danach erst Big-Bang **#8**.
 
 ---
 
-## P1-6 — empfohlenes Schnittmuster (max. Effizienz)
+## Empfohlene Queue (Rest)
 
-Nicht ein PR. Reihenfolge minimiert Konflikte und hält Reviews lesbar:
-
-1. **Detail-UI-Dateien** umbenennen (`account-detail-*` → `account-detail-*`) + Imports — kein API-Rename.  
-2. **Grid** (`accounts-grid*` → `accounts-grid*`).  
-3. **Impl/CRUD** (`account-crud-impl`, Maintenance-Helfer) — Parameternamen `companyId` → `accountId` **nur in App-Signaturen**; SQL/`companies.id` unverändert.  
-4. **Lib** (`company-from-join`, `company-name-match`, Brandfetch-Helfer) — zuletzt, weil viele Cross-Imports.  
-5. Inventar P1-6 auf ✅ setzen.
-
-**Nicht umbenennen:** Tabelle `companies`, Storage-Pfade, CRM-Feldnamen, Copy „Firma/Company“ als Firmenlabel.
+| # | Thema | Status | Was noch | Aufwand | Nächster Schnitt |
+|---|-------|--------|----------|---------|------------------|
+| **0** | Inventar-Hygiene | ✅ | — | — | — |
+| **1** | E4 Service-Role | ✅ Audit + Hotspots | Boy-Scout: Kommentar an neuen Service-Role-Callern | XS ongoing | bei Touch |
+| **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
+| **3** | Typed-Supabase Cast-Abbau | **🟡 aktiv** | References Follow-up/Notify/Form + andere Domänen; zuletzt **T4** CI-Gate | L | Slice 5: Follow-up / Notify / Form |
+| **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
+| **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
+| **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
+| **7** | P3-3 DE/EN-Dateinamen | offen (Boy-Scout) | z. B. `ki-entwurf-sheet`, `customer-sperrlink-email` | XS | nur bei Datei-Touch |
+| **8** | Welle-5 T3 `references`/`evidence` | offen | Modulpfade an einen Domänennamen | L | **nach** #3-Ruhe; eigener Branch |
+| **9** | DB-Legacy Invite-Helfer | optional | `legacy_role_from_dimensions` / `resolve_invite_roles` wenn App-Caller = 0 | S | `grep` vor Start |
+| **10** | Rest-`console.*` | erledigt (App/Lib) | Logger-Sink + Scripts behalten; später Sentry/Logflare | — | kein Ticket |
 
 ---
 
-## Geparkt (nicht in die Queue ziehen)
+## Queue #3 — Typed-Supabase (Detail Rest)
 
-| Thema | Warum geparkt |
-|-------|----------------|
-| Repo-weites `evidence`↔`references` (Produktnamen) | Überlappt mit T3; Produktentscheidung + großer Diff |
-| Massen-Migration aller Results / aller Dateinamen | Boy-Scout reicht; Big-Bang blockiert Features |
-| Schema/RLS-Security-Big-Bang ohne E4/E7 | Reihenfolge: Audit → Sync → dann gezielte Härtung |
-| H3 Background-Jobs, E1 Pre-Pilot-Daten, G2 Pilotstart | Erst wenn Pilot terminiert ist |
+**Ziel:** Row-Casts nur noch an echten Boundaries (RPC-JSON, externe APIs, Schema-Fallbacks).  
+**Arbeitspaket:** [`arbeitspaket-typed-supabase.md`](./arbeitspaket-typed-supabase.md)
+
+| Domäne | Stand | Noch typische Hotspots |
+|--------|-------|------------------------|
+| Accounts | ✅ Slices 1–4 | wenig: CRM-JSON, External-Contacts-Fallback, Error-Shapes |
+| Deals | ✅ Slices 1–2 | wenig: Eligibility/JSON-API-Responses (bewusst) |
+| References | 🟡 Slice 1–4 ✅ | Follow-up / Notify / Form |
+| Andere | offen | Settings, Match, DealDesk, Command-Center, Notifications, … |
+| **T4 CI** | offen | `typecheck` in CI **scharf**, wenn Domänen-Casts weitgehend weg / typecheck stabil 0 |
+
+**Empfohlene nächsten PRs (klein halten):**
+
+1. References Slice 5 — Follow-up / Notify / Form (Boy-Scout mit Feature ok)  
+2. Nächste Domäne nach Cast-Count (Settings oder Match)  
+3. Typed-Supabase **T4** — CI-`typecheck`-Gate
+
+---
+
+## Boy-Scout (kein eigener Sprint)
+
+Bei Feature-PRs mitnehmen, **kein** Massen-PR:
+
+- God-Files weiter splitten (#5)  
+- `{ ok }` → `{ success }` (#6)  
+- DE/EN-Dateinamen (#7)  
+- Service-Role-Caller mit Org/Token-Kommentar (#1 Rest)
+
+---
+
+## Geparkt
+
+| Thema | Warum |
+|-------|--------|
+| Repo-weites `evidence`↔`references` (Produktname) | Überlappt #8; Produktentscheidung nötig |
+| Massen-Migration Results / Dateinamen | Boy-Scout reicht |
+| H3 Background-Jobs, E1 Pre-Pilot, G2 Pilotstart | Erst wenn Pilot terminiert |
 | Blindes Knip-Export-Löschen | False Positives bei Server Actions |
 
 ---
 
 ## Session-Start (kurz)
 
-1. Dieses Dokument lesen (Queue #0–4 als Default).  
-2. Bei Feature-Arbeit: #5–7 Boy-Scout.  
-3. Große Renames (#4, #8) nur als eigene Branches/PRs, CI grün, kein Verhaltens-Diff.  
-4. Nach Abschluss eines Punkts: hier und im Inventar Status anpassen.
+1. Dieses Dokument lesen — Default: **#3** weiter.  
+2. Feature-Arbeit: #5–7 Boy-Scout.  
+3. **#8** nur als eigener Branch, CI grün, kein Verhaltens-Diff.  
+4. Nach Abschluss: Status hier + Inventar anpassen.
 
 ---
 
-## Abgleich mit Inventar (Ist 2026-08-05)
+## Abgleich mit Inventar
 
 | Inventar | Status hier |
 |----------|-------------|
-| P0 Quick Wins, P1-1…5/7–10, P2 Quick Wins, P3-1/2/4/5 | **erledigt** — nicht erneut anfassen |
-| P1-6 | **✅** App/Lib (Slices 1–5); DB `companies` bleibt |
-| E6 Logger heiße Pfade | **erledigt**; Rest Boy-Scout |
-| E4 / E7 / Typed-Supabase Vertiefung | E4/E7 ✅; Typed-Supabase → Queue #3 (Slice 1 Accounts) |
-| Welle 5 T3/T4 | T1/T2 Rollen weitgehend erledigt; T3 → Queue #8; T4 `workspace_state` vor Start erneut `grep`en (kann schon weg sein) |
+| P0 / P1-1…5/7–10 / P2 Quick Wins / P3-1/2/4/5 | erledigt |
+| P1-6 | ✅ App/Lib; DB `companies` bleibt |
+| E4 / E7 | ✅ |
+| E6 Logger | ✅ App/Lib; Sink/Scripts bewusst |
+| Typed-Supabase T3 | 🟡 aktiv (Accounts/Deals ✅, References teilweise) |
+| Typed-Supabase T4 | offen (nach T3-Ruhe) |
+| Welle 5 T3 Paths | → Queue #8 |
+| Welle 5 T4 `workspace_state` | vor Start erneut `grep`en |
