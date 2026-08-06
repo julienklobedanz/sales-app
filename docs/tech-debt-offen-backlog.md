@@ -12,7 +12,7 @@
 |--------|--------|
 | **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip; **#7** DE/EN-Dateinamen; **#6** Lib-Results (Cron/Push-JSON geparkt) |
 | **In Arbeit** | — |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 Cron/Push-JSON (bewusst geparkt) |
+| **Offen (Queue)** | #5 God-Files (weiter slicen) · #6 Cron/Push-JSON (bewusst geparkt) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
 **Hebel jetzt:** Boy-Scout #5 bei Feature-Touch; #6 Cron/Push nur mit bewusstem API-Change.
@@ -28,7 +28,7 @@
 | **2** | E7 Schema-Sync | ✅ T1–T4 | Types bei Migrationen regenerieren (`db:types`) | XS ongoing | bei Schema-Change |
 | **3** | Typed-Supabase Cast-Abbau | ✅ T1–T4 | Rest-Casts nur Boundaries (HTTP/RPC/Json); Boy-Scout bei Touch | — | CI: `typecheck` vor Build |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
-| **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
+| **5** | God-File-Nacharbeit | Slice 1 ✅ | `reference-detail-sheet` → Story/Project/Files-Cards (~783→~250 Orchestrierung) | M ongoing | nächster: readiness-actions oder overview |
 | **6** | `{ ok }` → `{ success }` | Lib ✅ | Slices 1–4; Rest nur Cron/Push-HTTP-Body | XS | Cron/Push separat wenn Monitoring-Clients ok |
 | **7** | P3-3 DE/EN-Dateinamen | ✅ Slice | `ai-draft-*`, `customer-control-link-email`; API `/api/ai-draft` + Redirect; UI-Copy „Sperrlink“/Event `ki_entwurf_generated` bleiben | — | Rest nur bei Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
