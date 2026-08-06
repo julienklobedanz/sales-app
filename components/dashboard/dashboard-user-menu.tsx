@@ -67,7 +67,7 @@ export function DashboardUserMenu({
   function selectDevRole(preview: DevRolePreview) {
     startRoleSwitch(async () => {
       const res = await setDevPreviewRole(preview)
-      if (!res.ok) {
+      if (!res.success) {
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
         return
       }
@@ -79,7 +79,7 @@ export function DashboardUserMenu({
   function resetDevRole() {
     startRoleSwitch(async () => {
       const res = await clearDevPreviewRole()
-      if (!res.ok) {
+      if (!res.success) {
         toast.error(res.error ?? 'Anzeige konnte nicht zurückgesetzt werden.')
         return
       }

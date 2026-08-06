@@ -16,30 +16,30 @@ function revalidateDashboardRole() {
   revalidatePath(ROUTES.home, 'layout')
 }
 
-export type SetDevPreviewRoleResult = { ok: true } | { ok: false; error: string }
+export type SetDevPreviewRoleResult = { success: true } | { success: false; error: string }
 
 async function assertDevRolePreviewAllowed(): Promise<
-  SetDevPreviewRoleResult | { ok: true }
+  SetDevPreviewRoleResult | { success: true }
 > {
   const profile = await getRequestProfile()
   if (!profile) {
-    return { ok: false, error: 'Profil nicht gefunden.' }
+    return { success: false, error: 'Profil nicht gefunden.' }
   }
   const { systemRole } = parseProfileRoles(profile)
   if (!canUseDevRolePreview(systemRole)) {
     return {
-      ok: false,
+      success: false,
       error: 'Rollen-Vorschau ist in dieser Umgebung nicht verfügbar.',
     }
   }
-  return { ok: true }
+  return { success: true }
 }
 
 export async function setDevPreviewRole(
   preview: DevRolePreview,
 ): Promise<SetDevPreviewRoleResult> {
   const allowed = await assertDevRolePreviewAllowed()
-  if (!allowed.ok) return allowed
+  if (!allowed.success) return allowed
 
   try {
     const jar = await cookies()
@@ -50,10 +50,10 @@ export async function setDevPreviewRole(
       httpOnly: true,
     })
     revalidateDashboardRole()
-    return { ok: true }
+    return { success: true }
   } catch (e) {
     return {
-      ok: false,
+      success: false,
       error: e instanceof Error ? e.message : 'Rolle konnte nicht gesetzt werden.',
     }
   }
@@ -61,11 +61,11 @@ export async function setDevPreviewRole(
 
 export async function clearDevPreviewRole() {
   const allowed = await assertDevRolePreviewAllowed()
-  if (!allowed.ok) {
+  if (!allowed.success) {
     return allowed
   }
   const jar = await cookies()
   jar.set(DEV_ROLE_COOKIE, '', { path: '/', maxAge: 0 })
   revalidateDashboardRole()
-  return { ok: true as const }
+  return { success: true as const }
 }

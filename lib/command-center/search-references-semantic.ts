@@ -88,10 +88,10 @@ async function runSemanticMatch(
 export async function searchHomepageReferencesSemantic(
   params: SemanticSearchParams,
 ): Promise<
-  { ok: true; hits: HomepageSemanticReferenceHit[] } | { ok: false; error: string }
+  { success: true; hits: HomepageSemanticReferenceHit[] } | { success: false; error: string }
 > {
   const trimmed = params.query.trim()
-  if (!trimmed) return { ok: true, hits: [] }
+  if (!trimmed) return { success: true, hits: [] }
 
   const volumeConstraint = parseVolumeConstraintFromQuery(trimmed)
   const matchCount = params.matchCount ?? HOME_SEMANTIC_MATCH_COUNT
@@ -104,7 +104,7 @@ export async function searchHomepageReferencesSemantic(
     source: 'homepage',
   })
 
-  if (error) return { ok: false, error }
+  if (error) return { success: false, error }
 
   const matchedRows = volumeConstraint
     ? rows.filter((r) => referenceVolumeMatchesConstraint(r.volume_eur, volumeConstraint))
@@ -155,18 +155,18 @@ export async function searchHomepageReferencesSemantic(
     durationMs,
   })
 
-  return { ok: true, hits }
+  return { success: true, hits }
 }
 
 /** Legacy-Fallback für gemischte Command-Search. */
 export async function searchReferencesSemanticLegacy(
   params: SemanticSearchParams,
 ): Promise<
-  | { ok: true; hits: Extract<CommandSearchResult, { kind: 'reference' }>[] }
-  | { ok: false; error: string }
+  | { success: true; hits: Extract<CommandSearchResult, { kind: 'reference' }>[] }
+  | { success: false; error: string }
 > {
   const trimmed = params.query.trim()
-  if (!trimmed) return { ok: true, hits: [] }
+  if (!trimmed) return { success: true, hits: [] }
 
   const { rows, error, durationMs } = await runSemanticMatch({
     ...params,
@@ -176,7 +176,7 @@ export async function searchReferencesSemanticLegacy(
     source: 'command',
   })
 
-  if (error) return { ok: false, error }
+  if (error) return { success: false, error }
 
   const hits = rows.map((r) => ({
     kind: 'reference' as const,
@@ -195,5 +195,5 @@ export async function searchReferencesSemanticLegacy(
     durationMs,
   })
 
-  return { ok: true, hits }
+  return { success: true, hits }
 }

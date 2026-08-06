@@ -10,12 +10,12 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip; **#7** DE/EN-Dateinamen (ki-entwurf/sperrlink) |
-| **In Arbeit** | #6 `{ ok }` → `{ success }` (Slice 3 Internal-Approval) |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 Rest (Bulk/CC/Cron) |
+| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade; **#9** Invite-SQL skip; **#7** DE/EN-Dateinamen; **#6** Lib-Results (Cron/Push-JSON geparkt) |
+| **In Arbeit** | — |
+| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 Cron/Push-JSON (bewusst geparkt) |
 | **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
-**Hebel jetzt:** Boy-Scout #5–6 bei Feature-Touch. Big-Bang-Queue leer.
+**Hebel jetzt:** Boy-Scout #5 bei Feature-Touch; #6 Cron/Push nur mit bewusstem API-Change.
 
 ---
 
@@ -29,7 +29,7 @@
 | **3** | Typed-Supabase Cast-Abbau | ✅ T1–T4 | Rest-Casts nur Boundaries (HTTP/RPC/Json); Boy-Scout bei Touch | — | CI: `typecheck` vor Build |
 | **4** | P1-6 Accounts Naming | ✅ App/Lib | DB-Tabelle `companies` / `company_id` / Firmennamen-Helfer **bewusst offen** | — | nicht anfassen ohne Produktentscheid |
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
-| **6** | `{ ok }` → `{ success }` | Slice 1–3 ✅ | Auth/CRM + Extract + Internal-Approval | XS–S remaining | nächster: Bulk-Upload / Semantic-Search; Cron-JSON bewusst später |
+| **6** | `{ ok }` → `{ success }` | Lib ✅ | Slices 1–4; Rest nur Cron/Push-HTTP-Body | XS | Cron/Push separat wenn Monitoring-Clients ok |
 | **7** | P3-3 DE/EN-Dateinamen | ✅ Slice | `ai-draft-*`, `customer-control-link-email`; API `/api/ai-draft` + Redirect; UI-Copy „Sperrlink“/Event `ki_entwurf_generated` bleiben | — | Rest nur bei Touch |
 | **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
 | **9** | DB-Legacy Invite-Helfer | ✅ skip | App-`.rpc`-Caller = 0, aber **SQL-intern** weiter von Invite-RPCs genutzt → nicht droppen | — | behalten |
@@ -84,7 +84,8 @@ Die Funktionen bleiben **DB-intern** (Invite create/accept/list RPCs in Migratio
 | 1 Auth/CRM | ✅ password-policy (`Result`), magic-link, `requireCrmAdmin`, `hubSpotApiFetch` + HubSpot-Caller |
 | 2 Document-Extract | ✅ `extractPlainText*`, RFP-Extract, `extractPlainTextFromBuffer`, Deal-Upload-Validate, `loadDealDocumentAsFile`, `runDealRfpAnalyze` |
 | 3 Internal-Approval | ✅ context / complete / delegate + Token-Page/Actions |
-| Rest | offen: Bulk-Import-Upload, Semantic-Search, Dev-Preview, NDA-Checks, Cron/Push-JSON |
+| 4 Bulk / Search / Misc | ✅ bulk-import-upload, semantic search, NDA `assertCompanyInOrg`, Dev-Preview-Role, Workspace-Subdomain-Status (`available`) |
+| Geparkt | Cron/Push `NextResponse.json({ ok })` — HTTP-Vertrag; nicht blind umbiegen |
 
 Cron-/Push-Responses mit `{ ok: true }` sind **HTTP-Vertrags**-ähnlich — separat entscheiden, nicht blind umbiegen.
 
@@ -112,8 +113,8 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 ## Session-Start (kurz)
 
-1. Dieses Dokument lesen — Default: Boy-Scout #5–6 bei Feature-Touch.  
-2. Kein weiterer Big-Bang in der offenen Queue.  
+1. Dieses Dokument lesen — Default: Boy-Scout #5 bei Feature-Touch.  
+2. Kein weiterer Big-Bang in der offenen Queue (#6 Lib erledigt; Cron/Push geparkt).  
 3. Nach Abschluss: Status hier + Inventar anpassen.
 
 ---

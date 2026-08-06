@@ -253,7 +253,7 @@ export function BulkImportDialog({
               refId,
               group.files,
             )
-            if (!upload.ok) {
+            if (!upload.success) {
               uploadFailed = true
               toast.error(
                 upload.error ??
