@@ -119,7 +119,7 @@ async function notify(args: {
 }): Promise<boolean> {
   const recipients = await resolveApprovalWorkflowNotifyEmails(args.admin, {
     companyId: args.context.companyId,
-    organizationId: args.context.organizationId,
+    organizationId: args.context.organizationId ?? '',
     requesterId: args.context.requesterId,
     coordinatorEmail: args.context.coordinatorEmail,
   })

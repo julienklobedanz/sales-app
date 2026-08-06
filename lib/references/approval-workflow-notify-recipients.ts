@@ -24,20 +24,18 @@ function wantsApprovalUpdateEmails(notificationSettings: unknown): boolean {
 async function resolveCoordinatorEmail(
   admin: SupabaseClient,
   companyId: string,
-  organizationId: string | null | undefined,
+  organizationId: string,
   coordinatorEmail?: string | null,
 ): Promise<string | null> {
   const direct = String(coordinatorEmail ?? '').trim()
   if (isValidEmail(direct)) return direct
 
-  let companyQuery = admin
+  const { data: companyRow } = await admin
     .from('companies')
     .select('internal_reference_approval_contact_id')
     .eq('id', companyId)
-  if (organizationId) {
-    companyQuery = companyQuery.eq('organization_id', organizationId)
-  }
-  const { data: companyRow } = await companyQuery.maybeSingle()
+    .eq('organization_id', organizationId)
+    .maybeSingle()
 
   const contactId = (
     companyRow as { internal_reference_approval_contact_id?: string | null } | null
@@ -58,19 +56,17 @@ async function resolveCoordinatorEmail(
 async function resolveRequesterEmail(
   admin: SupabaseClient,
   requesterId: string | null,
-  organizationId?: string | null,
+  organizationId: string,
 ): Promise<string | null> {
   const id = String(requesterId ?? '').trim()
   if (!id) return null
 
-  let profileQuery = admin
+  const { data: profile } = await admin
     .from('profiles')
     .select('system_role, function_role, notification_settings')
     .eq('id', id)
-  if (organizationId) {
-    profileQuery = profileQuery.eq('organization_id', organizationId)
-  }
-  const { data: profile } = await profileQuery.maybeSingle()
+    .eq('organization_id', organizationId)
+    .maybeSingle()
 
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (!profileCanManageOrgData(systemRole, functionRole)) return null
@@ -83,7 +79,7 @@ async function resolveRequesterEmail(
   }
 
   // Service-Role weil: auth.users-E-Mail (profiles hat keine email-Spalte).
-  // Grenze: nur für die bereits geprüfte requesterId (optional + organizationId).
+  // Grenze: requesterId + organization_id zuvor gegen profiles geprüft.
   const serviceAdmin = createServiceRoleSupabaseClient()
   if (!serviceAdmin) return null
 
@@ -99,24 +95,28 @@ export async function resolveApprovalWorkflowNotifyEmails(
   admin: SupabaseClient,
   args: {
     companyId: string
-    organizationId?: string | null
+    /** Pflicht — ohne Org kein Bypass-Lookup (E4). */
+    organizationId: string
     requesterId: string | null
     coordinatorEmail?: string | null
   },
 ): Promise<string[]> {
+  const organizationId = args.organizationId.trim()
+  if (!organizationId) return []
+
   const emails: string[] = []
 
   const requesterEmail = await resolveRequesterEmail(
     admin,
     args.requesterId,
-    args.organizationId,
+    organizationId,
   )
   if (requesterEmail) emails.push(requesterEmail)
 
   const coordinatorEmail = await resolveCoordinatorEmail(
     admin,
     args.companyId,
-    args.organizationId,
+    organizationId,
     args.coordinatorEmail,
   )
   if (coordinatorEmail) emails.push(coordinatorEmail)

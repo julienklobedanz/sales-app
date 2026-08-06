@@ -41,7 +41,7 @@ export async function resetReferencesAfterCustomerAccessRevoke(
 
   const internalReviewToken = randomUUID()
 
-  const { error: updateError } = await admin
+  let updateQuery = admin
     .from('references')
     .update({
       customer_approval_status: 'revoked_by_customer',
@@ -59,6 +59,18 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     })
     .in('id', referenceIds)
 
+  // E4: Org-Grenze zusätzlich zu Token/Slug-abgeleiteten IDs.
+  if (organizationId) {
+    updateQuery = updateQuery.eq('organization_id', organizationId)
+  } else {
+    log.error('missing organization_id for revoke reset', {
+      action: 'resetReferencesAfterCustomerAccessRevoke.missingOrg',
+      slug: params.slug,
+    })
+    return { referenceIds: [] }
+  }
+
+  const { error: updateError } = await updateQuery
   if (updateError) {
     log.error(
       'update failed',
