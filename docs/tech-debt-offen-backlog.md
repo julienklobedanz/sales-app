@@ -10,12 +10,12 @@
 
 | Status | Themen |
 |--------|--------|
-| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3 Domänen + CI-`typecheck`-Gate) |
+| **Erledigt** | Inventar-Hygiene (#0); E4 (#1); E7 (#2); **P1-6** (#4); Welle-5 Rollen; Typed-Supabase **T1–T4** (#3); **#8** `references`-Pfade (Produktname = DB) |
 | **In Arbeit** | — |
-| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #8 `references`/`evidence` Rename · #9 Invite-SQL-Kosmetik (optional) |
-| **Geparkt** | Pilot (H3/E1/G2); Massen-Renames; produktweite `evidence`↔`references`-Entscheidung |
+| **Offen (Queue)** | #5 God-Files (Boy-Scout) · #6 `{ ok }` → `{ success }` (Boy-Scout) · #7 DE/EN-Dateinamen (Boy-Scout) · #9 Invite-SQL-Kosmetik (optional) |
+| **Geparkt** | Pilot (H3/E1/G2); Massen-Renames |
 
-**Hebel jetzt:** Nach #3-Ruhe erst Big-Bang **#8** (`references`/`evidence` Pfade); sonst Boy-Scout #5–7 bei Feature-Touch.
+**Hebel jetzt:** Boy-Scout #5–7 bei Feature-Touch; optional #9 Invite-SQL wenn Caller = 0.
 
 ---
 
@@ -31,7 +31,7 @@
 | **5** | God-File-Nacharbeit | offen (Boy-Scout) | Overview / Share-Link / MS-Feed weiter slicen **nur bei Feature-Touch** | M ongoing | kein eigener Big-Bang-PR |
 | **6** | `{ ok }` → `{ success }` | offen (Boy-Scout) | ~130 Matches in Libs/Cron | S–M | bei Lib-Berührung mitziehen |
 | **7** | P3-3 DE/EN-Dateinamen | offen (Boy-Scout) | z. B. `ki-entwurf-sheet`, `customer-sperrlink-email` | XS | nur bei Datei-Touch |
-| **8** | Welle-5 T3 `references`/`evidence` | offen | Modulpfade an einen Domänennamen | L | **nächster Big-Bang** nach #3 |
+| **8** | `references`/`evidence` Pfade | ✅ | App = `references` (Routen/Ordner/`ROUTES`); Redirects `/dashboard/evidence` bleiben; `evidence_events` bleibt | — | Rest-`evidence` nur Domänenbegriff (RFP-Belege) |
 | **9** | DB-Legacy Invite-Helfer | optional | `legacy_role_from_dimensions` / `resolve_invite_roles` wenn App-Caller = 0 | S | `grep` vor Start |
 | **10** | Rest-`console.*` | erledigt (App/Lib) | Logger-Sink + Scripts behalten; später Sentry/Logflare | — | kein Ticket |
 
@@ -54,6 +54,24 @@
 
 ---
 
+## Queue #8 — `references`/`evidence` (abgeschlossen)
+
+**Produktentscheid:** Domänenname = DB = **`references`** ([`arbeitspaket-rename-smart-match-references.md`](./arbeitspaket-rename-smart-match-references.md)).  
+Welle-5 T3 („Module nach `evidence`“) ist **obsolet** — gegenläufig und nicht mehr umsetzen.
+
+| Teil | Stand |
+|------|-------|
+| Routen `/dashboard/references`, `ROUTES.references`, Ordner `app/…/references`, `lib/references` | ✅ |
+| Smart Match Pfade | ✅ |
+| Legacy-Redirects `/dashboard/evidence` → `/dashboard/references` | ✅ behalten |
+| COPY/`ROUTES.evidence`-Keys | ✅ entfernt |
+| localStorage-Keys (`reference-*-v1`, Legacy-Fallback) | ✅ |
+| DB `evidence_events` | bewusst **nicht** umbenannt |
+
+**Nicht umbenennen:** Feld `evidence` in RFP/Deal-Desk (Beleg/Zitat aus Ausschreibungstext) — anderer Begriff.
+
+---
+
 ## Boy-Scout (kein eigener Sprint)
 
 Bei Feature-PRs mitnehmen, **kein** Massen-PR:
@@ -69,7 +87,6 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 | Thema | Warum |
 |-------|--------|
-| Repo-weites `evidence`↔`references` (Produktname) | Überlappt #8; Produktentscheidung nötig |
 | Massen-Migration Results / Dateinamen | Boy-Scout reicht |
 | H3 Background-Jobs, E1 Pre-Pilot, G2 Pilotstart | Erst wenn Pilot terminiert |
 | Blindes Knip-Export-Löschen | False Positives bei Server Actions |
@@ -78,10 +95,9 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 
 ## Session-Start (kurz)
 
-1. Dieses Dokument lesen — Default: **#8** planen oder Boy-Scout #5–7.  
+1. Dieses Dokument lesen — Default: Boy-Scout #5–7 oder optional #9.  
 2. Feature-Arbeit: #5–7 mitnehmen.  
-3. **#8** nur als eigener Branch, CI grün, kein Verhaltens-Diff.  
-4. Nach Abschluss: Status hier + Inventar anpassen.
+3. Nach Abschluss: Status hier + Inventar anpassen.
 
 ---
 
@@ -95,5 +111,5 @@ Bei Feature-PRs mitnehmen, **kein** Massen-PR:
 | E6 Logger | ✅ App/Lib; Sink/Scripts bewusst |
 | Typed-Supabase T3 | ✅ Domänen weitgehend |
 | Typed-Supabase T4 | ✅ CI-`typecheck`-Gate scharf |
-| Welle 5 T3 Paths | → Queue #8 |
-| Welle 5 T4 `workspace_state` | vor Start erneut `grep`en |
+| Welle 5 T3 Paths | ✅ als `references` (nicht evidence); siehe Queue #8 |
+| Welle 5 T4 `workspace_state` | Spalte gedroppt (Migration); App-Code ohne Treffer |

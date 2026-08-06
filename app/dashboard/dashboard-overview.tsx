@@ -40,6 +40,7 @@ import {
   STATUS_LABELS,
   loadColumnOrderFromStorage,
   loadReferenceColumnWidthsFromStorage,
+  loadShowExpiredCertificatesFromStorage,
   loadVisibleColumnsFromStorage,
 } from './overview/reference-overview-columns'
 import {
@@ -204,13 +205,7 @@ export function DashboardOverview({
 
   useLayoutEffect(() => {
     syncReferenceLibraryModeFromStorage()
-    try {
-      setShowExpiredCertificates(
-        localStorage.getItem(REFERENCE_SHOW_EXPIRED_CERTS_KEY) === '1',
-      )
-    } catch {
-      /* ignore */
-    }
+    setShowExpiredCertificates(loadShowExpiredCertificatesFromStorage())
   }, [])
 
   const handleLibraryModeChange = useCallback((mode: ReferenceLibraryMode) => {
