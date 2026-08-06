@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 function normalizeKey(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -6,7 +7,7 @@ function normalizeKey(raw: string): string {
 
 /** Resolves a person title from org stakeholders and executive signal events. */
 export async function resolveChampionPersonTitle(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   orgId: string,
   personName: string,
   companyName?: string | null,
@@ -22,18 +23,15 @@ export async function resolveChampionPersonTitle(
     .select('id, name')
     .eq('organization_id', orgId)
     .limit(2000)
-  const companyIds = (companies ?? [])
-    .map((c) => String((c as { id?: string }).id ?? ''))
-    .filter(Boolean)
+  const companyIds = (companies ?? []).map((c) => c.id).filter(Boolean)
   if (companyIds.length === 0) return null
 
   const nameToCompanyId = new Map<string, string>()
   for (const c of companies ?? []) {
-    const id = String((c as { id?: string }).id ?? '')
-    const name = String((c as { name?: string | null }).name ?? '')
+    const name = String(c.name ?? '')
       .trim()
       .toLowerCase()
-    if (id && name) nameToCompanyId.set(name, id)
+    if (c.id && name) nameToCompanyId.set(name, c.id)
   }
 
   let preferredCompanyId: string | null = null
@@ -57,11 +55,9 @@ export async function resolveChampionPersonTitle(
     .limit(2000)
 
   const stakeholderMatches = (stakeholders ?? []).filter((row) => {
-    const nameKey = normalizeKey(String((row as { name?: string }).name ?? ''))
-    return (
-      nameKey === key && String((row as { title?: string | null }).title ?? '').trim()
-    )
-  }) as Array<{ name: string; title: string | null; company_id: string | null }>
+    const nameKey = normalizeKey(String(row.name ?? ''))
+    return nameKey === key && Boolean(String(row.title ?? '').trim())
+  })
 
   if (preferredCompanyId) {
     const atCompany = stakeholderMatches.find(
@@ -81,12 +77,7 @@ export async function resolveChampionPersonTitle(
     .order('detected_at', { ascending: false })
     .limit(20)
 
-  const eventRows = (events ?? []) as Array<{
-    person_name: string
-    person_title_after: string | null
-    person_title_before: string | null
-    company_id: string
-  }>
+  const eventRows = events ?? []
 
   const preferredEvent = preferredCompanyId
     ? eventRows.find((row) => row.company_id === preferredCompanyId)

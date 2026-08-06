@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database, Json } from '@/lib/database.types'
 import { Resend } from 'resend'
 import webpush from 'web-push'
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { ROUTES } from '@/lib/routes'
 import {
   buildRefstackEmailHtml,
@@ -13,6 +15,8 @@ import {
   type MarketSignalsDigestExecutive,
   type MarketSignalsDigestNews,
 } from '@/lib/market-signals/market-signals-digest'
+
+type AdminClient = SupabaseClient<Database>
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY?.trim()
@@ -36,31 +40,29 @@ function ensureWebPushConfigured(): boolean {
   return true
 }
 
-function companyNameFromRow(row: unknown): string {
-  const r = row as { companies?: { name?: string } | { name?: string }[] | null }
-  const c = r.companies
-  const one = Array.isArray(c) ? c[0] : c
-  return String(one?.name ?? 'Account')
+function orgIdFromCompaniesJoin(companies: unknown): string {
+  const c = Array.isArray(companies) ? companies[0] : companies
+  if (!c || typeof c !== 'object') return ''
+  const oid = (c as { organization_id?: string | null }).organization_id
+  return typeof oid === 'string' ? oid : ''
 }
 
-function orgIdFromRow(row: unknown): string {
-  const r = row as {
-    companies?: { organization_id?: string } | { organization_id?: string }[] | null
-  }
-  const c = r.companies
-  const one = Array.isArray(c) ? c[0] : c
-  return String(one?.organization_id ?? '')
+function notificationSettingsRecord(
+  ns: Json | null | undefined,
+): Record<string, unknown> {
+  if (!ns || typeof ns !== 'object' || Array.isArray(ns)) return {}
+  return ns as Record<string, unknown>
 }
 
 async function companyIdsForOrganization(
-  admin: SupabaseClient,
+  admin: AdminClient,
   organizationId: string,
 ): Promise<string[]> {
   const { data } = await admin
     .from('companies')
     .select('id')
     .eq('organization_id', organizationId)
-  return (data ?? []).map((c) => String((c as { id?: string }).id ?? '')).filter(Boolean)
+  return (data ?? []).map((c) => c.id).filter(Boolean)
 }
 
 type OrgBucket = {
@@ -123,7 +125,7 @@ function buildInstantEmailHtml(input: {
  * Nach Ingest: gebündelte Sofort-E-Mail und/oder Web Push pro Nutzer (nur priorisierte Companies).
  */
 export async function notifyInstantMarketSignalsAfterIngest(
-  admin: SupabaseClient,
+  admin: AdminClient,
   opts: { sinceIso: string; organizationId?: string | null },
 ): Promise<{ emailed: number; pushed: number; skipped: boolean; errors: string[] }> {
   const { sinceIso, organizationId } = opts
@@ -168,30 +170,28 @@ export async function notifyInstantMarketSignalsAfterIngest(
   }
 
   for (const row of newsRows ?? []) {
-    const oid = orgIdFromRow(row)
+    const oid = orgIdFromCompaniesJoin(row.companies)
     if (!oid) continue
     bucket(oid).news.push({
-      id: String((row as { id?: string }).id ?? ''),
-      body: String((row as { body?: string }).body ?? '').trim(),
-      companyId: String((row as { company_id?: string }).company_id ?? ''),
-      companyName: companyNameFromRow(row),
-      publishedOn: String((row as { published_on?: string }).published_on ?? ''),
-      sourceLabel: ((row as { source_label?: string | null }).source_label ?? null) as
-        | string
-        | null,
+      id: row.id,
+      body: String(row.body ?? '').trim(),
+      companyId: row.company_id,
+      companyName: accountFromJoin(row.companies)?.name ?? 'Account',
+      publishedOn: row.published_on ?? '',
+      sourceLabel: row.source_label ?? null,
     })
   }
 
   for (const row of execRows ?? []) {
-    const oid = orgIdFromRow(row)
+    const oid = orgIdFromCompaniesJoin(row.companies)
     if (!oid) continue
     bucket(oid).executives.push({
-      id: String((row as { id?: string }).id ?? ''),
-      personName: String((row as { person_name?: string }).person_name ?? '').trim(),
-      summary: String((row as { change_summary?: string }).change_summary ?? '').trim(),
-      companyId: String((row as { company_id?: string }).company_id ?? ''),
-      companyName: companyNameFromRow(row),
-      detectedAt: String((row as { detected_at?: string }).detected_at ?? ''),
+      id: row.id,
+      personName: String(row.person_name ?? '').trim(),
+      summary: String(row.change_summary ?? '').trim(),
+      companyId: row.company_id,
+      companyName: accountFromJoin(row.companies)?.name ?? 'Account',
+      detectedAt: row.detected_at ?? '',
     })
   }
 
@@ -212,9 +212,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
       .select('id, system_role, function_role, notification_settings, full_name')
       .eq('organization_id', orgIdKey)
 
-    const userIds = (profiles ?? [])
-      .map((p) => String((p as { id?: string }).id ?? ''))
-      .filter(Boolean)
+    const userIds = (profiles ?? []).map((p) => p.id).filter(Boolean)
     if (!userIds.length) continue
 
     const { data: subs } = await admin
@@ -227,21 +225,19 @@ export async function notifyInstantMarketSignalsAfterIngest(
       { endpoint: string; p256dh: string; auth: string }[]
     >()
     for (const s of subs ?? []) {
-      const uid = String((s as { user_id?: string }).user_id ?? '')
-      if (!uid) continue
-      if (!subsByUser.has(uid)) subsByUser.set(uid, [])
-      subsByUser.get(uid)!.push({
-        endpoint: String((s as { endpoint?: string }).endpoint ?? ''),
-        p256dh: String((s as { p256dh?: string }).p256dh ?? ''),
-        auth: String((s as { auth?: string }).auth ?? ''),
+      if (!s.user_id) continue
+      if (!subsByUser.has(s.user_id)) subsByUser.set(s.user_id, [])
+      subsByUser.get(s.user_id)!.push({
+        endpoint: s.endpoint,
+        p256dh: s.p256dh,
+        auth: s.auth,
       })
     }
 
     for (const prof of profiles ?? []) {
-      const userId = String((prof as { id?: string }).id ?? '')
+      const userId = prof.id
       if (!userId) continue
-      const ns = (prof as { notification_settings?: unknown }).notification_settings
-      const settings = ns && typeof ns === 'object' ? (ns as Record<string, unknown>) : {}
+      const settings = notificationSettingsRecord(prof.notification_settings)
 
       const wantEmail = settings.email_instant_market_signals === true
       const wantPushPref = settings.browser_push_market_signals === true
@@ -260,9 +256,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
       if (!newsF.length && !execF.length) continue
 
       const total = newsF.length + execF.length
-      const recipientName = String(
-        (prof as { full_name?: string | null }).full_name ?? '',
-      ).trim()
+      const recipientName = String(prof.full_name ?? '').trim()
 
       if (wantEmail && resend) {
         const { data: userData } = await admin.auth.admin.getUserById(userId)
@@ -300,7 +294,10 @@ export async function notifyInstantMarketSignalsAfterIngest(
             pushed += 1
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
-            const status = (e as { statusCode?: number }).statusCode
+            const status =
+              e && typeof e === 'object' && 'statusCode' in e
+                ? Number((e as { statusCode?: unknown }).statusCode)
+                : NaN
             if (status === 404 || status === 410) {
               await admin
                 .from('push_subscriptions')

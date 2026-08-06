@@ -53,7 +53,7 @@ async function getAuthedOrgContext() {
     supabase,
     user,
     orgId:
-      (profile as { organization_id?: string | null } | null)?.organization_id ?? null,
+      profile?.organization_id ?? null,
   }
 }
 
@@ -97,7 +97,7 @@ export async function addMarketSignalToDealImpl(args: {
     .select('organization_id')
     .eq('id', user.id)
     .single()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
 
   const { count: dealCount, error: dealErr } = await supabase

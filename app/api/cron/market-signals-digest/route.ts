@@ -124,22 +124,20 @@ export async function GET(request: Request) {
   const errors: string[] = []
 
   for (const row of subscribers) {
-    const userId = String((row as { id?: string }).id ?? '')
-    const orgId = String(
-      (row as { organization_id?: string | null }).organization_id ?? '',
-    )
+    const userId = row.id
+    const orgId = row.organization_id ?? ''
     if (!userId || !orgId) continue
 
-    const nsRaw = (row as { notification_settings?: unknown }).notification_settings
+    const nsRaw = row.notification_settings
 
     if (!skipDigestTimeWindow) {
       const tz = parseDigestTimezone(
-        nsRaw && typeof nsRaw === 'object'
+        nsRaw && typeof nsRaw === 'object' && !Array.isArray(nsRaw)
           ? (nsRaw as Record<string, unknown>).digest_timezone
           : undefined,
       )
       const { hours: dh, minutes: dm } = parseDigestLocalTime(
-        nsRaw && typeof nsRaw === 'object'
+        nsRaw && typeof nsRaw === 'object' && !Array.isArray(nsRaw)
           ? (nsRaw as Record<string, unknown>).digest_local_time
           : undefined,
       )
@@ -154,7 +152,7 @@ export async function GET(request: Request) {
       : getLocalYmdAndMinutesFromMidnight(
           now,
           parseDigestTimezone(
-            nsRaw && typeof nsRaw === 'object'
+            nsRaw && typeof nsRaw === 'object' && !Array.isArray(nsRaw)
               ? (nsRaw as Record<string, unknown>).digest_timezone
               : undefined,
           ),
@@ -187,9 +185,7 @@ export async function GET(request: Request) {
       continue
     }
 
-    const recipientName = String(
-      (row as { full_name?: string | null }).full_name ?? '',
-    ).trim()
+    const recipientName = String(row.full_name ?? '').trim()
     const hasContent = news.length > 0 || executives.length > 0
 
     const html = hasContent

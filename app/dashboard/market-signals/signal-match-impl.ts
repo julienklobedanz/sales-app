@@ -211,7 +211,7 @@ export async function getDecisionMakerCandidatesImpl(args: {
     .select('organization_id')
     .eq('id', user.id)
     .single()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
 
   const { data: company } = await supabase
@@ -222,7 +222,7 @@ export async function getDecisionMakerCandidatesImpl(args: {
     .maybeSingle()
   if (!company) return { success: false, error: 'Account nicht gefunden' }
 
-  const companyName = String((company as { name?: string | null }).name ?? '').trim()
+  const companyName = String(company?.name ?? '').trim()
   if (!companyName) return { success: true, candidates: [] }
 
   const allRaw = await Promise.all(
@@ -303,7 +303,7 @@ export async function requestReferenceApprovalForSignalImpl(args: {
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
 
   void writeAuditLog({

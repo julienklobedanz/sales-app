@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { log } from '@/lib/observability/logger'
 
 const PROBE_TIMEOUT_MS = 2_500
@@ -122,7 +123,7 @@ export async function discoverCompanyNewsroomUrls(
 }
 
 export async function discoverAndSaveCompanyNewsrooms(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   companyId: string,
   opts?: { websiteUrl?: string | null; force?: boolean },
 ): Promise<{ urls: string[]; error?: string }> {
@@ -137,16 +138,9 @@ export async function discoverAndSaveCompanyNewsrooms(
       .eq('id', id)
       .maybeSingle()
     if (error) return { urls: [], error: error.message }
-    websiteUrl =
-      websiteUrl ?? (data as { website_url?: string | null } | null)?.website_url ?? null
-    if (
-      !opts?.force &&
-      data &&
-      (data as { newsroom_discovered_at?: string | null }).newsroom_discovered_at
-    ) {
-      const existing = (
-        (data as { newsroom_urls?: string[] | null }).newsroom_urls ?? []
-      ).filter(Boolean)
+    websiteUrl = websiteUrl ?? data?.website_url ?? null
+    if (!opts?.force && data?.newsroom_discovered_at) {
+      const existing = (data.newsroom_urls ?? []).filter(Boolean)
       return { urls: existing }
     }
   }
@@ -234,7 +228,7 @@ export function isStoredNewsroomHost(
 
 /** Fire-and-forget wrapper for create/import hooks. */
 export function scheduleCompanyNewsroomDiscovery(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   companyId: string,
   websiteUrl?: string | null,
 ): void {

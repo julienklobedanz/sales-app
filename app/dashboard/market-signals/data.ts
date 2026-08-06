@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { isMissingEnrichmentColumnsError } from '@/lib/market-signals/enrichment-db'
 import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -334,16 +335,14 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
 
   const executives: ExecutiveTrackingRow[] = (execRows ?? []).map(
     (row: Record<string, unknown>) => {
-      const co = Array.isArray(row.companies)
-        ? (row.companies as { name?: string; logo_url?: string | null }[])[0]
-        : (row.companies as { name?: string; logo_url?: string | null } | null)
+      const co = accountFromJoin(row.companies)
       const ek = String(row.event_kind ?? 'role_change')
       return {
         id: String(row.id),
         companyId: String(row.company_id),
-        companyName: co?.name?.trim() ? String(co.name) : '—',
+        companyName: co?.name?.trim() ? co.name : '—',
         companyLogoUrl:
-          (co?.logo_url as string | undefined) ??
+          co?.logoUrl ??
           companyMetaById.get(String(row.company_id))?.logoUrl ??
           null,
         personName: String(row.person_name ?? ''),
@@ -361,16 +360,14 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   )
 
   const news: AccountNewsRow[] = (newsRows ?? []).map((row: Record<string, unknown>) => {
-    const co = Array.isArray(row.companies)
-      ? (row.companies as { name?: string; logo_url?: string | null }[])[0]
-      : (row.companies as { name?: string; logo_url?: string | null } | null)
+    const co = accountFromJoin(row.companies)
     const seg = String(row.segment ?? 'customer')
     return {
       id: String(row.id),
       companyId: String(row.company_id),
-      companyName: co?.name?.trim() ? String(co.name) : '—',
+      companyName: co?.name?.trim() ? co.name : '—',
       companyLogoUrl:
-        (co?.logo_url as string | undefined) ??
+        co?.logoUrl ??
         companyMetaById.get(String(row.company_id))?.logoUrl ??
         null,
       body: String(row.body ?? ''),

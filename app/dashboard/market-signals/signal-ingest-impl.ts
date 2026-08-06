@@ -33,7 +33,7 @@ export async function triggerMarketSignalsIngestForMyOrgImpl(args?: {
     .eq('id', user.id)
     .maybeSingle()
 
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
   const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
   const refreshFeeds = args?.refreshFeeds === true
@@ -147,7 +147,7 @@ export async function backfillMarketSignalEnrichmentForMyOrgImpl(args?: {
     .eq('id', user.id)
     .maybeSingle()
 
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
 
   // Service-Role weil: LLM-Backfill liest/schreibt Signale org-weit.
@@ -205,7 +205,7 @@ export async function backfillCompanyNewsroomsForMyOrgImpl(args?: {
     .eq('id', user.id)
     .maybeSingle()
 
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
 
   const force = Boolean(args?.force)
@@ -296,7 +296,7 @@ export async function updateCompanyNewsroomUrlsImpl(
     .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
 
   const cleaned: string[] = []
