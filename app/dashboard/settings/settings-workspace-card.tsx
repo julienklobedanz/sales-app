@@ -94,8 +94,8 @@ export function SettingsWorkspaceCard({
   const [subdomainStatus, setSubdomainStatus] = useState<{
     checking: boolean
     message: string | null
-    ok: boolean | null
-  }>({ checking: false, message: null, ok: null })
+    available: boolean | null
+  }>({ checking: false, message: null, available: null })
 
   const subdomainDirty =
     normalizeSubdomainInput(subdomain ?? '') !== normalizeSubdomainInput(savedSubdomain)
@@ -139,31 +139,31 @@ export function SettingsWorkspaceCard({
     if (!organizationId || onSubdomainChange == null) return
     const value = normalizeSubdomainInput(subdomain ?? '')
     if (!value) {
-      setSubdomainStatus({ checking: false, message: null, ok: null })
+      setSubdomainStatus({ checking: false, message: null, available: null })
       return
     }
     if (value === normalizeSubdomainInput(savedSubdomain)) {
-      setSubdomainStatus({ checking: false, message: 'Aktuelle Subdomain', ok: true })
+      setSubdomainStatus({ checking: false, message: 'Aktuelle Subdomain', available: true })
       return
     }
     const formatError = validateSubdomainFormat(value)
     if (formatError) {
-      setSubdomainStatus({ checking: false, message: formatError, ok: false })
+      setSubdomainStatus({ checking: false, message: formatError, available: false })
       return
     }
 
     let cancelled = false
-    setSubdomainStatus({ checking: true, message: 'Prüfe Verfügbarkeit …', ok: null })
+    setSubdomainStatus({ checking: true, message: 'Prüfe Verfügbarkeit …', available: null })
     const timer = window.setTimeout(() => {
       void checkSubdomainAvailability(value, organizationId).then((result) => {
         if (cancelled) return
         if (result.available) {
-          setSubdomainStatus({ checking: false, message: 'Verfügbar', ok: true })
+          setSubdomainStatus({ checking: false, message: 'Verfügbar', available: true })
         } else {
           setSubdomainStatus({
             checking: false,
             message: result.error ?? 'Nicht verfügbar',
-            ok: false,
+            available: false,
           })
         }
       })
@@ -377,9 +377,9 @@ export function SettingsWorkspaceCard({
                 {subdomainStatus.message ? (
                   <p
                     className={`text-[11px] ${
-                      subdomainStatus.ok === false
+                      subdomainStatus.available === false
                         ? 'text-destructive'
-                        : subdomainStatus.ok === true
+                        : subdomainStatus.available === true
                           ? 'text-emerald-700'
                           : 'text-muted-foreground'
                     }`}

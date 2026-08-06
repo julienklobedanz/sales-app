@@ -10,16 +10,16 @@ export async function uploadBulkImportFilesForReference(
   organizationId: string,
   referenceId: string,
   files: File[],
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
   if (!organizationId?.trim() || !referenceId?.trim() || files.length === 0) {
-    return { ok: false, error: 'Upload-Parameter unvollständig.' }
+    return { success: false, error: 'Upload-Parameter unvollständig.' }
   }
 
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'Nicht angemeldet.' }
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
   let firstPath: string | null = null
 
@@ -36,7 +36,7 @@ export async function uploadBulkImportFilesForReference(
       const error = /bucket not found/i.test(raw)
         ? 'Storage-Bucket „references“ ist nicht angelegt. Bitte Supabase-Migrationen ausführen (20260510220000_references_storage_bucket.sql).'
         : raw
-      return { ok: false, error }
+      return { success: false, error }
     }
 
     const { data: publicUrlData } = supabase.storage
@@ -55,7 +55,7 @@ export async function uploadBulkImportFilesForReference(
     })
 
     if (!attach.success) {
-      return { ok: false, error: attach.error }
+      return { success: false, error: attach.error }
     }
 
     if (!firstPath) {
@@ -64,8 +64,8 @@ export async function uploadBulkImportFilesForReference(
   }
 
   if (!firstPath) {
-    return { ok: false, error: 'Keine Datei konnte gespeichert werden.' }
+    return { success: false, error: 'Keine Datei konnte gespeichert werden.' }
   }
 
-  return { ok: true }
+  return { success: true }
 }

@@ -106,15 +106,15 @@ async function assertCompanyInOrg(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   companyId: string,
   orgId: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ success: true } | { success: false; error: string }> {
   const { data } = await supabase
     .from('companies')
     .select('id')
     .eq('id', companyId)
     .eq('organization_id', orgId)
     .maybeSingle()
-  if (!data) return { ok: false, error: 'Firma nicht gefunden.' }
-  return { ok: true }
+  if (!data) return { success: false, error: 'Firma nicht gefunden.' }
+  return { success: true }
 }
 
 export async function getNdaAgreementsByCompanyId(
@@ -126,7 +126,7 @@ export async function getNdaAgreementsByCompanyId(
   if ('error' in auth) return { success: false, error: auth.error }
 
   const companyCheck = await assertCompanyInOrg(auth.supabase, companyId, auth.orgId)
-  if (!companyCheck.ok) return { success: false, error: companyCheck.error }
+  if (!companyCheck.success) return { success: false, error: companyCheck.error }
 
   const { data, error: initialError } = await auth.supabase
     .from('nda_agreements')
@@ -229,7 +229,7 @@ export async function createNdaAgreement(payload: {
     payload.companyId,
     auth.orgId,
   )
-  if (!companyCheck.ok) return { success: false, error: companyCheck.error }
+  if (!companyCheck.success) return { success: false, error: companyCheck.error }
 
   const baseRow = {
     organization_id: auth.orgId,

@@ -61,7 +61,7 @@ export async function searchHomepageSemanticAction(
     salesVisibleOnly: auth.salesVisibleOnly,
   })
 
-  if (!semantic.ok) {
+  if (!semantic.success) {
     return { success: false, query: q, error: semantic.error }
   }
 
@@ -99,14 +99,14 @@ export async function searchHomepageUniversalAction(
           organizationId: auth.orgId,
           salesVisibleOnly: auth.salesVisibleOnly,
         })
-      : Promise.resolve({ ok: false as const, error: 'OPENAI_API_KEY fehlt' }),
+      : Promise.resolve({ success: false as const, error: 'OPENAI_API_KEY fehlt' }),
     searchHomepageBuckets(auth.supabase, q),
   ])
 
-  const referenceHits = semanticResult.ok ? semanticResult.hits : []
+  const referenceHits = semanticResult.success ? semanticResult.hits : []
   const semanticWarning = !apiKey
     ? 'Semantische Referenzsuche ist deaktiviert (OPENAI_API_KEY fehlt).'
-    : !semanticResult.ok
+    : !semanticResult.success
       ? semanticResult.error
       : undefined
 
