@@ -1,5 +1,26 @@
 import type { StakeholderRole } from './actions'
 
+export const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
+  'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
+
+export type AccountDetailTab =
+  | 'mission_control'
+  | 'buying_center'
+  | 'pipeline'
+  | 'proof_points'
+
+export function parseAccountDetailTab(value: string | null): AccountDetailTab {
+  if (
+    value === 'mission_control' ||
+    value === 'buying_center' ||
+    value === 'pipeline' ||
+    value === 'proof_points'
+  ) {
+    return value
+  }
+  return 'mission_control'
+}
+
 export const STAKEHOLDER_ROLE_BADGES: Record<
   StakeholderRole,
   { label: string; className: string }
