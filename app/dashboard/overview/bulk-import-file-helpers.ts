@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { autoGroupBulkImportByFileName } from '@/lib/references/bulk-import-grouping'
-import type { BulkImportGroupItem } from './bulk-import-dialog'
+import type { BulkImportGroupItem } from './bulk-import-types'
 import type { Dispatch, SetStateAction } from 'react'
 
 export async function previewBulkImportFile(file: File) {

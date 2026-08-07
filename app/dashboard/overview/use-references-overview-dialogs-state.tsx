@@ -11,7 +11,7 @@ import {
   setBulkImportCompanyName as setBulkImportCompanyNameHelper,
   setBulkImportGroupName as setBulkImportGroupNameHelper,
 } from '@/app/dashboard/overview/bulk-import-file-helpers'
-import type { BulkImportGroupItem } from '@/app/dashboard/overview/bulk-import-dialog'
+import type { BulkImportGroupItem } from '@/app/dashboard/overview/bulk-import-types'
 import {
   ReferencesOverviewDialogs,
   type ReferencesOverviewDialogsProps,
