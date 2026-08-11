@@ -146,7 +146,7 @@ export function DealProofSection({
             ) : (
               <div className="space-y-2">
                 {deal.references.map((ref) => (
-                  <div key={ref.id} className="rounded-lg border p-3">
+                  <div key={ref.id} className="group/proof rounded-lg border p-3">
                     <div className="flex items-start gap-3">
                       {ref.logo_url ? (
                         <img
@@ -175,7 +175,13 @@ export function DealProofSection({
                                 : ''}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              'flex items-center gap-2',
+                              'opacity-0 transition-opacity',
+                              'group-hover/proof:opacity-100 group-focus-within/proof:opacity-100',
+                            )}
+                          >
                             <ReferenceHelpedDialog
                               onSubmit={(helped, comment) =>
                                 handleReferenceHelped(ref.id, helped, comment)
@@ -185,6 +191,8 @@ export function DealProofSection({
                               variant="ghost"
                               size="sm"
                               className="h-7"
+                              aria-label={COPY.deals.cockpit.proofRemoveAria}
+                              title={COPY.deals.cockpit.proofRemoveAria}
                               onClick={() => handleRemoveReference(ref.id)}
                             >
                               <AppIcon icon={Trash2} size={16} />

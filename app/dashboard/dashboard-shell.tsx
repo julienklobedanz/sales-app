@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { PanelLeft } from 'lucide-react'
 import type { DashboardNotificationItem } from './actions'
 import type { Profile } from './dashboard-types'
+import type { SidebarDealNavItem } from '@/lib/deals/list-my-sidebar-deals'
 
 export type { Profile } from './dashboard-types'
 
@@ -72,6 +73,7 @@ export function DashboardShell({
   profile,
   initialNotifications = [],
   workspaceBranding = null,
+  mySidebarDeals = [],
   devRolePreviewEnabled = false,
   devRolePreviewActive = false,
 }: {
@@ -80,6 +82,7 @@ export function DashboardShell({
   profile: Profile
   initialNotifications?: DashboardNotificationItem[]
   workspaceBranding?: { enabled: boolean; primary: string; secondary: string } | null
+  mySidebarDeals?: SidebarDealNavItem[]
   devRolePreviewEnabled?: boolean
   devRolePreviewActive?: boolean
 }) {
@@ -165,6 +168,7 @@ export function DashboardShell({
     userEmail,
     userInitials,
     initialNotifications,
+    mySidebarDeals,
     devRolePreviewEnabled,
     devRolePreviewActive,
     onSupportOpen: () => setSupportChannelsOpen(true),

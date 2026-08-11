@@ -229,7 +229,10 @@ export function DealRfpDraftsSection({
                   const refLabel = referenceHoverLabel(row)
 
                   return (
-                    <li key={row.id} className={cn(expanded && 'bg-muted/20')}>
+                    <li
+                      key={row.id}
+                      className={cn('group/draft', expanded && 'bg-muted/20')}
+                    >
                       <button
                         type="button"
                         onClick={() => toggleExpand(row.id)}
@@ -285,7 +288,10 @@ export function DealRfpDraftsSection({
                                   type="button"
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 px-2"
+                                  className={cn(
+                                    'h-8 px-2 opacity-0 transition-opacity',
+                                    'group-hover/draft:opacity-100 group-focus-within/draft:opacity-100',
+                                  )}
                                   onClick={() => startEdit(row)}
                                   aria-label={COPY.deals.cockpit.draftsEditAria}
                                 >

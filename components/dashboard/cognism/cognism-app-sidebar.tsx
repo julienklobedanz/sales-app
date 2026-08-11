@@ -1,9 +1,10 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Handshake, Radar } from 'lucide-react'
+import { ChevronDown, Handshake, Radar } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -29,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import type { DashboardNotificationItem } from '@/app/dashboard/actions'
 import type { Profile } from '@/app/dashboard/dashboard-types'
+import type { SidebarDealNavItem } from '@/lib/deals/list-my-sidebar-deals'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -109,6 +111,102 @@ function CognismCommandSearch({ collapsed }: { collapsed: boolean }) {
   )
 }
 
+function DealsNavSection({
+  collapsed,
+  pathname,
+  mySidebarDeals,
+}: {
+  collapsed: boolean
+  pathname: string | null
+  mySidebarDeals: SidebarDealNavItem[]
+}) {
+  const dealsActive = Boolean(pathname?.startsWith(ROUTES.deals.root))
+  const [open, setOpen] = useState(dealsActive)
+
+  useEffect(() => {
+    if (dealsActive) setOpen(true)
+  }, [dealsActive])
+
+  const dealsIcon = (
+    <Handshake className="size-4 shrink-0" strokeWidth={dealsActive ? 2.5 : 2} />
+  )
+
+  if (collapsed) {
+    return (
+      <Link
+        href={ROUTES.deals.root}
+        data-active={dealsActive}
+        title={COPY.nav.deals}
+        className={cn('cognism-nav-item', 'justify-center px-0')}
+      >
+        {dealsIcon}
+      </Link>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-0.5">
+        <Link
+          href={ROUTES.deals.root}
+          data-active={dealsActive}
+          className="cognism-nav-item min-w-0 flex-1"
+        >
+          {dealsIcon}
+          <span className="truncate">{COPY.nav.deals}</span>
+        </Link>
+        <button
+          type="button"
+          className={cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground',
+            'hover:bg-muted/70 hover:text-foreground',
+          )}
+          aria-expanded={open}
+          aria-label={open ? COPY.nav.dealsCollapseAria : COPY.nav.dealsExpandAria}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setOpen((v) => !v)
+          }}
+        >
+          <ChevronDown
+            className={cn('size-4 transition-transform duration-150', open && 'rotate-180')}
+          />
+        </button>
+      </div>
+
+      {open ? (
+        <ul className="ml-3 space-y-0.5 border-l border-border/60 py-0.5 pl-2">
+          {mySidebarDeals.length === 0 ? (
+            <li className="px-2 py-1.5 text-xs text-muted-foreground">{COPY.nav.dealsMineEmpty}</li>
+          ) : (
+            mySidebarDeals.map((deal) => {
+              const active = pathname === deal.href
+              return (
+                <li key={deal.id}>
+                  <Link
+                    href={deal.href}
+                    data-active={active}
+                    className={cn(
+                      'cognism-nav-subitem',
+                      active && 'cognism-nav-subitem-active',
+                    )}
+                    title={
+                      deal.companyName ? `${deal.title} · ${deal.companyName}` : deal.title
+                    }
+                  >
+                    <span className="truncate">{deal.title}</span>
+                  </Link>
+                </li>
+              )
+            })
+          )}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
 export function CognismAppSidebar({
   profile,
   userId,
@@ -116,6 +214,7 @@ export function CognismAppSidebar({
   userEmail,
   userInitials,
   initialNotifications,
+  mySidebarDeals = [],
   devRolePreviewEnabled,
   devRolePreviewActive,
   onSupportOpen,
@@ -128,6 +227,7 @@ export function CognismAppSidebar({
   userEmail: string
   userInitials: string
   initialNotifications: DashboardNotificationItem[]
+  mySidebarDeals?: SidebarDealNavItem[]
   devRolePreviewEnabled: boolean
   devRolePreviewActive: boolean
   onSupportOpen: () => void
@@ -138,7 +238,7 @@ export function CognismAppSidebar({
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const collapsed = forceExpanded ? false : state === 'collapsed'
 
-  const navItems: NavItem[] = [
+  const navItemsBeforeDeals: NavItem[] = [
     {
       href: ROUTES.home,
       label: COPY.pages.dashboard,
@@ -186,30 +286,20 @@ export function CognismAppSidebar({
         />
       ),
     },
-    {
-      href: ROUTES.deals.root,
-      label: COPY.nav.deals,
-      isActive: (p) => Boolean(p?.startsWith(ROUTES.deals.root)),
-      icon: (
-        <Handshake
-          className="size-4 shrink-0"
-          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
-        />
-      ),
-    },
-    {
-      href: ROUTES.accounts,
-      label: COPY.nav.accounts,
-      isActive: (p) => Boolean(p?.startsWith(ROUTES.accounts)),
-      icon: (
-        <AppIcon
-          icon={Building2}
-          size={16}
-          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
-        />
-      ),
-    },
   ]
+
+  const accountsItem: NavItem = {
+    href: ROUTES.accounts,
+    label: COPY.nav.accounts,
+    isActive: (p) => Boolean(p?.startsWith(ROUTES.accounts)),
+    icon: (
+      <AppIcon
+        icon={Building2}
+        size={16}
+        strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
+      />
+    ),
+  }
 
   return (
     <aside
@@ -279,8 +369,8 @@ export function CognismAppSidebar({
           </div>
         )}
 
-        <nav className="flex shrink-0 flex-col gap-0.5">
-          {navItems.map((item) => {
+        <nav className="flex min-h-0 shrink-0 flex-col gap-0.5 overflow-y-auto">
+          {navItemsBeforeDeals.map((item) => {
             const active = item.isActive(pathname)
             return (
               <Link
@@ -295,6 +385,22 @@ export function CognismAppSidebar({
               </Link>
             )
           })}
+
+          <DealsNavSection
+            collapsed={collapsed}
+            pathname={pathname}
+            mySidebarDeals={mySidebarDeals}
+          />
+
+          <Link
+            href={accountsItem.href}
+            data-active={accountsItem.isActive(pathname)}
+            title={collapsed ? accountsItem.label : undefined}
+            className={cn('cognism-nav-item', collapsed && 'justify-center px-0')}
+          >
+            {accountsItem.icon}
+            {!collapsed ? <span className="truncate">{accountsItem.label}</span> : null}
+          </Link>
         </nav>
       </div>
 

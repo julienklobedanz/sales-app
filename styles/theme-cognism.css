@@ -94,6 +94,33 @@
   padding: 0.5rem;
 }
 
+.theme-cognism .cognism-nav-subitem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 450;
+  color: var(--muted-foreground);
+  transition:
+    color 150ms,
+    background-color 150ms;
+}
+
+.theme-cognism .cognism-nav-subitem:hover {
+  background: oklch(0.98 0.003 285);
+  color: var(--foreground);
+}
+
+.theme-cognism .cognism-nav-subitem-active,
+.theme-cognism .cognism-nav-subitem[data-active='true'] {
+  background: var(--cognism-nav-active-bg);
+  color: var(--cognism-nav-active-text);
+  font-weight: 500;
+}
+
 .theme-cognism .cognism-sidebar-icon-btn {
   position: relative;
   display: flex;

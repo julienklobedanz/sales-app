@@ -3,6 +3,9 @@ export const COPY = {
     accounts: 'Accounts',
     partners: 'Partner',
     deals: 'Deals',
+    dealsExpandAria: 'Deine Deals aufklappen',
+    dealsCollapseAria: 'Deine Deals zuklappen',
+    dealsMineEmpty: 'Keine eigenen aktiven Deals',
     references: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
@@ -172,6 +175,8 @@ export const COPY = {
     },
     cockpit: {
       factsTitle: 'Deal-Fakten',
+      factsEditAria: 'Deal-Fakten bearbeiten',
+      deleteDeadlineAria: 'Termin entfernen',
       stammdatenTitle: 'Stammdaten',
       stammdatenSubtitle:
         'Aus der Ausschreibung extrahiert — getrennt von den Deal-Fakten.',
@@ -207,6 +212,7 @@ export const COPY = {
       proofStatusEmpty: 'Noch kein Beweis am Deal',
       proofEmpty:
         'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
+      proofRemoveAria: 'Referenz aus Deal entfernen',
       findReference: 'Referenz finden',
       findReferenceTitle: 'Referenz finden',
       findReferenceDescription:

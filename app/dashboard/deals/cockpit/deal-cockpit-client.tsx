@@ -96,6 +96,9 @@ export function DealCockpitClient({
           <div className="min-w-0 lg:col-span-2">
             <DealFactsCard
               deal={deal}
+              companies={companies}
+              orgProfiles={orgProfiles}
+              canManage={canManageDocuments}
               hubspotPortalId={hubspotPortalId}
               orgDateDisplayFormat={orgDateDisplayFormat}
             />

@@ -12,6 +12,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { DashboardShell } from './dashboard-shell'
 import { DashboardMfaGate } from '@/components/dashboard/dashboard-mfa-gate'
 import { getInboxNotificationsForLayout } from './actions'
+import { listMySidebarDeals } from '@/lib/deals/list-my-sidebar-deals'
 
 function sanitizeHexColor(raw: unknown) {
   const s = String(raw ?? '').trim()
@@ -59,13 +60,18 @@ export default async function DashboardLayout({
   const orgId = profile.organization_id ?? null
   let workspaceBranding: { enabled: boolean; primary: string; secondary: string } | null =
     null
+  let mySidebarDeals: Awaited<ReturnType<typeof listMySidebarDeals>> = []
   if (orgId) {
     const supabase = await createServerSupabaseClient()
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('primary_color, secondary_color, api_settings')
-      .eq('id', orgId)
-      .maybeSingle()
+    const [{ data: org }, sidebarDeals] = await Promise.all([
+      supabase
+        .from('organizations')
+        .select('primary_color, secondary_color, api_settings')
+        .eq('id', orgId)
+        .maybeSingle(),
+      listMySidebarDeals(supabase, orgId, user.id),
+    ])
+    mySidebarDeals = sidebarDeals
 
     const apiSettings = (org as { api_settings?: unknown } | null)?.api_settings
     const useWorkspaceBranding =
@@ -92,6 +98,7 @@ export default async function DashboardLayout({
       }}
       initialNotifications={initialNotifications}
       workspaceBranding={workspaceBranding}
+      mySidebarDeals={mySidebarDeals}
       devRolePreviewEnabled={devRolePreviewEnabled}
       devRolePreviewActive={devRolePreviewActive}
     >

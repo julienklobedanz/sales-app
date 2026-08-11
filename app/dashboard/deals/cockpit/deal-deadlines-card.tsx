@@ -245,7 +245,7 @@ export function DealDeadlinesCard({
                   const isFirst = index === 0
                   const isLast = index === sorted.length - 1
                   return (
-                    <li key={d.id} className="flex gap-3">
+                    <li key={d.id} className="group/deadline flex gap-3">
                       <DeadlineTimelineMarker
                         isFirst={isFirst}
                         isLast={isLast}
@@ -254,26 +254,36 @@ export function DealDeadlinesCard({
                       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 border-b border-dashed border-border/80 py-3 last:border-b-0">
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium">{rowParts.labelDate}</div>
-                          {rowParts.countdown ? (
-                            <div className="text-xs tabular-nums text-muted-foreground">
-                              {rowParts.countdown}
-                            </div>
-                          ) : null}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" className="text-[10px]">
+                              {d.source === 'manual' ? 'Manuell' : 'RFP'}
+                            </Badge>
+                            {d.pinned ? (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Angepasst
+                              </Badge>
+                            ) : null}
+                            {rowParts.countdown ? (
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                {rowParts.countdown}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-[10px]">
-                          {d.source === 'manual' ? 'Manuell' : 'RFP'}
-                        </Badge>
-                        {d.pinned ? (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Angepasst
-                          </Badge>
-                        ) : null}
-                        <div className="ml-auto flex items-center gap-1">
+                        <div
+                          className={cn(
+                            'ml-auto flex items-center gap-1',
+                            'opacity-0 transition-opacity',
+                            'group-hover/deadline:opacity-100 group-focus-within/deadline:opacity-100',
+                          )}
+                        >
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2"
+                            aria-label={COPY.deals.cockpit.editDeadline}
+                            title={COPY.deals.cockpit.editDeadline}
                             onClick={() => setEditTarget(d)}
                           >
                             <AppIcon icon={PencilEdit01Icon} size={14} />
@@ -283,6 +293,8 @@ export function DealDeadlinesCard({
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2"
+                            aria-label={COPY.deals.cockpit.deleteDeadlineAria}
+                            title={COPY.deals.cockpit.deleteDeadlineAria}
                             onClick={async () => {
                               const res = await suppressDealDeadlineAction({
                                 dealId,
