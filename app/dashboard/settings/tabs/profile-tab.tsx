@@ -483,9 +483,11 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
         <div className={SETTINGS_DANGER_ZONE_CLASS_COMPACT}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-red-700">Danger Zone</p>
-              <p className="mt-0.5 text-xs text-red-600/90">
-                Konto dauerhaft entfernen. Dieser Vorgang ist irreversibel.
+              <p className="text-sm font-semibold text-destructive">
+                {COPY.settings.dangerZoneTitle}
+              </p>
+              <p className="mt-0.5 text-xs text-destructive/80">
+                {COPY.settings.deleteAccountBody}
               </p>
             </div>
             <AlertDialog
@@ -503,12 +505,12 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                   className="shrink-0"
                 >
                   <AppIcon icon={Trash2} size={16} />
-                  Account löschen
+                  {COPY.settings.deleteAccountButton}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Account wirklich löschen?</AlertDialogTitle>
+                  <AlertDialogTitle>{COPY.settings.deleteAccountTitle}</AlertDialogTitle>
                   <AlertDialogDescription>
                     Dein Login und Profildaten werden gelöscht. Workspace-Daten bleiben
                     erhalten, sofern andere Mitglieder existieren. Bist du der letzte

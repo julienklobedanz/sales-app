@@ -1,3 +1,4 @@
+import { COPY } from '@/lib/copy'
 import {
   DEAL_DEADLINE_KIND_LABELS,
   type DealDeadlineKind,
@@ -56,10 +57,16 @@ export type DeadlineMilestoneChip = {
   isNextFuture: boolean
 }
 
-function compactRelativeDays(days: number): string {
-  if (days < 0) return `−${Math.abs(days)} T`
-  if (days === 0) return 'heute'
-  return `in ${days} T`
+export function compactRelativeDays(days: number): string {
+  if (days < 0) {
+    const n = Math.abs(days)
+    return n === 1
+      ? COPY.deals.cockpit.deadlineOverdueOne
+      : COPY.deals.cockpit.deadlineOverdue.replace('{n}', String(n))
+  }
+  if (days === 0) return COPY.deals.cockpit.deadlineToday
+  if (days === 1) return COPY.deals.cockpit.deadlineInOneDay
+  return COPY.deals.cockpit.deadlineInDays.replace('{n}', String(days))
 }
 
 function isCanonicalKind(kind: string): kind is DealDeadlineKind {

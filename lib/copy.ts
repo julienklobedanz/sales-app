@@ -47,7 +47,7 @@ export const COPY = {
     profileMenuActiveSuffix: 'aktiv',
     roleMarketingAdmin: 'Marketing / Admin',
     roleAccountManager: 'Account Manager',
-    roleSalesRep: 'Sales Representative',
+    roleSalesRep: 'Sales Rep',
     switchSuccess: 'Oberflächen-Rolle aktualisiert.',
   },
   roles: {
@@ -63,7 +63,7 @@ export const COPY = {
       viewer: 'Betrachter',
     },
     functionRoles: {
-      sales_rep: 'Vertrieb',
+      sales_rep: 'Sales Rep',
       account_manager: 'Account Manager',
       sales_leader: 'Sales Lead',
     },
@@ -73,6 +73,10 @@ export const COPY = {
       'Kontolöschung entfernt deinen Login. Workspace-Daten bleiben für andere Mitglieder erhalten.',
     accountDeletionDisabledToast:
       'Kontolöschung ist fehlgeschlagen. Bitte versuche es erneut oder wende dich an den Support.',
+    dangerZoneTitle: 'Gefahrenzone',
+    deleteAccountButton: 'Konto löschen',
+    deleteAccountBody: 'Konto dauerhaft löschen.',
+    deleteAccountTitle: 'Konto wirklich löschen?',
     teamInviteEmailSent: 'Einladung wurde per E-Mail versendet.',
     teamInviteSavedEmailMissingKey:
       'Einladung ist gespeichert, aber E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY in der Server-Umgebung).',
@@ -102,9 +106,9 @@ export const COPY = {
       title: 'Rollen & Rechte',
       description:
         'Org-weite Vorgaben für Sichtbarkeit und Freigabe. Ohne Konfiguration gelten die Standardwerte aus dem Rollenmodell.',
-      salesSeesDraftsLabel: 'Vertrieb sieht Entwürfe',
+      salesSeesDraftsLabel: 'Sales Rep sieht Entwürfe',
       salesSeesDraftsHint:
-        'Wenn aktiv, dürfen Vertriebsmitglieder (sales_rep) Entwürfe in der Datenbank sehen — wirkt in RLS und Suche.',
+        'Wenn aktiv, dürfen Sales Reps Entwürfe in der Datenbank sehen — wirkt in RLS und Suche.',
       visibilityMatrixTitle: 'Sichtbarkeit nach Funktions-Rolle',
       approvalRoutingLabel: 'Freigabe-Routing',
       approvalRoutingHint:
@@ -242,6 +246,11 @@ export const COPY = {
       deadlinesEmptyHint:
         'Fristen erscheinen nach RFP-Analyse oder wenn du manuell Termine hinzufügst.',
       addDeadline: 'Termin',
+      deadlineToday: 'heute',
+      deadlineInOneDay: 'in 1 Tag',
+      deadlineInDays: 'in {n} Tagen',
+      deadlineOverdueOne: '1 Tag überfällig',
+      deadlineOverdue: '{n} Tage überfällig',
       editDeadline: 'Termin bearbeiten',
       downloadDeadlinesIcs: 'ICS',
       downloadDeadlinesIcsAria: 'Alle Termine als Kalenderdatei (.ics) herunterladen',
