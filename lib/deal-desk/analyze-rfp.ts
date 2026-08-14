@@ -22,6 +22,7 @@ import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
 import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
+import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 export type AnalyzeRfpDealContext = {
   title: string | null
@@ -46,6 +47,8 @@ export type AnalyzeRfpInput = {
   mergedText: string
   deal?: AnalyzeRfpDealContext | null
   projectDocuments?: AnalyzeRfpProjectDocument[]
+  /** `quick` = Timeline + Eignung; `full` = komplette Pipeline. */
+  stage?: 'quick' | 'full'
 }
 
 export type AnalyzeRfpResult = {
@@ -80,6 +83,7 @@ export async function analyzeRfp(
     mergedText,
     deal,
     projectDocuments = [],
+    stage = 'full',
   } = input
 
   const timelineRes = await extractTimelineFromRfpText(apiKey, mergedText)
@@ -92,11 +96,6 @@ export async function analyzeRfp(
     timelineItems = timelineRes.timelineItems
   }
 
-  const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
-  if ('error' in extracted) {
-    return { error: extracted.error, isQuotaError: quotaFromError(extracted.error) }
-  }
-
   const eligibilityRes = await extractEligibilityCriteriaFromRfpText(apiKey, mergedText)
   let eligibilityCriteria: EligibilityCriterion[] = []
   if ('error' in eligibilityRes) {
@@ -105,6 +104,24 @@ export async function analyzeRfp(
     }
   } else {
     eligibilityCriteria = eligibilityRes.criteria
+  }
+
+  if (stage === 'quick') {
+    const snapshot = buildEmptyDealDeskAnalysis(fileNames, deal?.title ?? projectName)
+    snapshot.timelineItems = timelineItems
+    return {
+      snapshot,
+      requirements: [],
+      coverage: [],
+      eligibilityCriteria,
+      rfpVerdicts: {},
+      tenderLots: [],
+    }
+  }
+
+  const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
+  if ('error' in extracted) {
+    return { error: extracted.error, isQuotaError: quotaFromError(extracted.error) }
   }
 
   const { coverage, verdicts: rfpVerdicts } = await buildRfpCoverageWithRelevance(

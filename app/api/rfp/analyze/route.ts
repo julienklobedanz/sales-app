@@ -18,6 +18,7 @@ type AnalyzeBody = {
   dealId?: string
   dealDocumentId?: string
   companyContextId?: string
+  stage?: 'quick' | 'full'
 }
 
 async function parseAnalyzeRequest(req: NextRequest): Promise<AnalyzeBody | null> {
@@ -45,6 +46,7 @@ async function parseAnalyzeRequest(req: NextRequest): Promise<AnalyzeBody | null
         typeof formData.get('companyContextId') === 'string'
           ? formData.get('companyContextId')!.toString()
           : undefined,
+      stage: formData.get('stage') === 'quick' ? 'quick' : 'full',
     }
   } catch {
     return null
@@ -249,6 +251,7 @@ export async function POST(req: NextRequest) {
         mime_type: dealDoc.mime_type,
       },
     ],
+    stage: body.stage === 'quick' ? 'quick' : 'full',
   })
 
   if ('error' in analyzed) {

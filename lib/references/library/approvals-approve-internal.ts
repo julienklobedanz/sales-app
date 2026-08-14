@@ -154,7 +154,7 @@ export async function approveInternalAndSendImpl(
       firstName,
       companyName: company_name,
       internalReviewerId: user.id,
-      sendResendToCustomer: true,
+      sendResendToCustomer: false,
     })
     customerEmailSent = sent.emailSent
   } catch (e) {

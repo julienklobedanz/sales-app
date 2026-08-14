@@ -65,12 +65,27 @@ export function DealProofSection({
   const router = useRouter()
   const [expanded, setExpanded] = useState(deal.references.length > 0)
   const title = `${COPY.deals.cockpit.proofTitle} · ${deal.references.length}`
+  const linkedSorted = [...deal.references].sort(
+    (a, b) => (b.similarity_score ?? -1) - (a.similarity_score ?? -1),
+  )
 
-  async function handleRemoveReference(referenceId: string) {
-    const result = await removeReferenceFromDeal(deal.id, referenceId)
+  async function handleRemoveReference(
+    ref: DealWithReferences['references'][number],
+  ) {
+    const result = await removeReferenceFromDeal(deal.id, ref.id)
     if (result.error) toast.error(result.error)
     else {
       toast.success('Verknüpfung entfernt.')
+      onReferenceSuggestionsChange?.([
+        {
+          id: ref.id,
+          title: ref.title,
+          companyName: ref.company_name,
+          similarity: typeof ref.similarity_score === 'number' ? ref.similarity_score : 0,
+          snippet: ref.summary ?? null,
+        },
+        ...referenceSuggestions.filter((s) => s.id !== ref.id),
+      ])
       router.refresh()
     }
   }
@@ -123,12 +138,7 @@ export function DealProofSection({
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0 pl-7">
-            <DealProofSuggestedReferences
-              dealId={deal.id}
-              suggestions={referenceSuggestions}
-              onSuggestionsChange={onReferenceSuggestionsChange}
-            />
-            {deal.references.length === 0 ? (
+            {linkedSorted.length === 0 ? (
               <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   {COPY.deals.cockpit.proofEmpty}
@@ -145,7 +155,7 @@ export function DealProofSection({
               </div>
             ) : (
               <div className="space-y-2">
-                {deal.references.map((ref) => (
+                {linkedSorted.map((ref) => (
                   <div key={ref.id} className="group/proof rounded-lg border p-3">
                     <div className="flex items-start gap-3">
                       {ref.logo_url ? (
@@ -193,7 +203,7 @@ export function DealProofSection({
                               className="h-7"
                               aria-label={COPY.deals.cockpit.proofRemoveAria}
                               title={COPY.deals.cockpit.proofRemoveAria}
-                              onClick={() => handleRemoveReference(ref.id)}
+                              onClick={() => handleRemoveReference(ref)}
                             >
                               <AppIcon icon={Trash2} size={16} />
                             </Button>
@@ -223,6 +233,11 @@ export function DealProofSection({
                 ))}
               </div>
             )}
+            <DealProofSuggestedReferences
+              dealId={deal.id}
+              suggestions={referenceSuggestions}
+              onSuggestionsChange={onReferenceSuggestionsChange}
+            />
           </CardContent>
         </CollapsibleContent>
       </Collapsible>

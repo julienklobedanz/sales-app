@@ -8,6 +8,7 @@ import type { RoleHomeDashboardPayload } from '@/components/dashboard/role-home-
 import { loadDashboardHomeForFunctionRole } from '@/app/dashboard/dashboard-home-data'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { isThinDashboardContext } from '@/lib/dashboard-home/thin-data'
+import { parseDemoSeed } from '@/lib/onboarding/seed-demo-workspace'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,7 @@ async function DashboardHomeContent() {
     orgCompanyIdsRes,
     dealsRes,
     events7dRes,
+    orgSettingsRes,
   ] = await Promise.all([
     supabase
       .from('companies')
@@ -93,6 +95,11 @@ async function DashboardHomeContent() {
       .select('id', { count: 'planned', head: true })
       .eq('organization_id', orgId)
       .gte('created_at', weekAgoIso),
+    supabase
+      .from('organizations')
+      .select('integration_settings')
+      .eq('id', orgId)
+      .maybeSingle(),
   ])
 
   const accountCount = accountsRes.count ?? 0
@@ -138,6 +145,7 @@ async function DashboardHomeContent() {
       dashboardPayload={dashboardPayload}
       functionRole={functionRole}
       thinDashboard={thinDashboard}
+      hasDemoSeed={Boolean(parseDemoSeed(orgSettingsRes.data?.integration_settings))}
     />
   )
 }

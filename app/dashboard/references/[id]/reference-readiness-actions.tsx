@@ -264,15 +264,9 @@ export function ReferenceReadinessActions({
         return
       }
       setDialogOpen(false)
-      if (result.customerEmailSent) {
-        toast.success(
-          `Freigabe-Anfrage mit Magic Link wurde an ${result.recipientEmail} gesendet.`,
-        )
-      } else {
-        toast.success(
-          'Kundenfreigabe vorbereitet. E-Mail-Versand nicht möglich — Freigabe-Link kopieren und manuell senden.',
-        )
-      }
+      toast.success(
+        'Interne Freigabe bestätigt. Die Kundenmail geht nicht automatisch raus — bitte den Link prüfen und bei Bedarf selbst senden.',
+      )
       router.refresh()
     })
   }

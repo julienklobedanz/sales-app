@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { cn } from '@/lib/utils'
 
 import type { DealDocumentRow } from '../document-actions'
 import { setDealDocumentKind } from '../document-actions'
@@ -29,6 +30,7 @@ async function ensureAusschreibungKind(doc: DealDocumentRow): Promise<boolean> {
 export async function runDealRfpAnalyze(
   dealId: string,
   doc: DealDocumentRow,
+  stage: 'quick' | 'full' = 'full',
 ): Promise<{ success: boolean; error?: string }> {
   const kindOk = await ensureAusschreibungKind(doc)
   if (!kindOk) return { success: false }
@@ -36,7 +38,7 @@ export async function runDealRfpAnalyze(
   const res = await fetch('/api/rfp/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dealId, dealDocumentId: doc.id }),
+    body: JSON.stringify({ dealId, dealDocumentId: doc.id, stage }),
   })
   const json = (await res.json()) as { success?: boolean; error?: string }
   if (!res.ok || !json.success) {
@@ -66,10 +68,10 @@ export function DealRfpAnalyzeButton({
   onAnalyzed?: () => void
 }) {
   const router = useRouter()
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState<'quick' | 'full' | null>(null)
   const targetDoc = pickAnalyzeDocument(documents)
 
-  async function handleClick() {
+  async function handleClick(stage: 'quick' | 'full') {
     if (!canManage || !targetDoc) {
       document
         .getElementById('dokumente')
@@ -77,24 +79,29 @@ export function DealRfpAnalyzeButton({
       return
     }
 
-    setPending(true)
+    setPending(stage)
     try {
-      const result = await runDealRfpAnalyze(dealId, targetDoc)
+      const result = await runDealRfpAnalyze(dealId, targetDoc, stage)
       if (!result.success) {
         toast.error(result.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
         return
       }
-      toast.success(COPY.deals.cockpit.documentsAnalyzeSuccess)
+      toast.success(
+        stage === 'quick'
+          ? COPY.deals.cockpit.documentsQuickscanSuccess
+          : COPY.deals.cockpit.documentsAnalyzeSuccess,
+      )
       onAnalyzed?.()
       router.refresh()
     } catch {
       toast.error(COPY.deals.cockpit.documentsAnalyzeFailed)
     } finally {
-      setPending(false)
+      setPending(null)
     }
   }
 
-  const label = pending
+  const busy = pending !== null
+  const label = busy
     ? COPY.deals.cockpit.documentsAnalyzePending
     : !targetDoc
       ? COPY.deals.cockpit.rfpAnalyzeCta
@@ -103,16 +110,33 @@ export function DealRfpAnalyzeButton({
         : COPY.deals.cockpit.documentsAnalyze
 
   return (
-    <div className={className}>
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="shrink-0"
+        disabled={busy}
+        onClick={() => void handleClick('quick')}
+      >
+        {pending === 'quick' ? (
+          <>
+            <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
+            {COPY.deals.cockpit.documentsAnalyzePending}
+          </>
+        ) : (
+          COPY.deals.cockpit.documentsQuickscan
+        )}
+      </Button>
       <Button
         type="button"
         size="sm"
         variant={variant}
         className="shrink-0"
-        disabled={pending}
-        onClick={() => void handleClick()}
+        disabled={busy}
+        onClick={() => void handleClick('full')}
       >
-        {pending ? (
+        {pending === 'full' ? (
           <>
             <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
             {label}
@@ -122,7 +146,7 @@ export function DealRfpAnalyzeButton({
         )}
       </Button>
       {showHintBelow ? (
-        <p className="mt-1 text-right text-xs font-medium text-muted-foreground">
+        <p className="mt-1 w-full text-right text-xs font-medium text-muted-foreground">
           {COPY.deals.cockpit.rfpReanalyzeHint}
         </p>
       ) : null}

@@ -254,3 +254,42 @@ export function buildExecutiveBriefingText(params: {
 
   return lines.join('\n')
 }
+
+export function parseExecutiveBriefingPdfSections(text: string): {
+  preamble: string
+  recommendation: string | null
+  sections: Array<{ heading: string; body: string }>
+} {
+  const lines = text.split('\n')
+  const preambleLines: string[] = []
+  const sections: Array<{ heading: string; lines: string[] }> = []
+  let current: { heading: string; lines: string[] } | null = null
+
+  for (const line of lines) {
+    const heading = line.match(/^— (.+) —$/)
+    if (heading) {
+      if (current) sections.push(current)
+      current = { heading: heading[1] ?? '', lines: [] }
+      continue
+    }
+    if (current) current.lines.push(line)
+    else preambleLines.push(line)
+  }
+  if (current) sections.push(current)
+
+  const mapped = sections
+    .map((s) => ({ heading: s.heading, body: s.lines.join('\n').trim() }))
+    .filter((s) => s.body.length > 0)
+  const decision = mapped.find((s) => /entscheidung/i.test(s.heading))
+  const recommendation =
+    decision?.body
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.length > 0) ?? null
+
+  return {
+    preamble: preambleLines.join('\n').trim(),
+    recommendation,
+    sections: mapped,
+  }
+}

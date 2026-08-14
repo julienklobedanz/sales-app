@@ -7,7 +7,7 @@ import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/acco
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
-export type ReferenceLayoutMode = 'table' | 'inbox'
+export type ReferenceLayoutMode = 'table' | 'inbox' | 'match'
 
 type Props = {
   value: ReferenceLayoutMode
@@ -15,7 +15,8 @@ type Props = {
 }
 
 export function ReferenceLayoutSwitch({ value, onChange }: Props) {
-  const isInbox = value === 'inbox'
+  const listValue: 'table' | 'inbox' = value === 'inbox' ? 'inbox' : 'table'
+  const isInbox = listValue === 'inbox'
   const label = isInbox ? 'Inbox-Ansicht' : 'Tabellenansicht'
 
   return (

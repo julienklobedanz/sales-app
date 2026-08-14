@@ -39,9 +39,9 @@ export async function sendInternalApprovalReviewEmail(
   const approveUrl = `${getAppOrigin()}${ROUTES.internalApproval(params.internalReviewToken)}`
   const detailUrl = `${getAppOrigin()}${ROUTES.references.detail(params.referenceId)}`
 
-  const who = params.requesterName.trim()
-    ? `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(params.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
-    : '<p style="margin:0 0 16px;">Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
+    const who = params.requesterName.trim()
+    ? `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(params.requesterName.trim())}</strong> bittet um eine kurze interne Rückfrage, bevor die Referenz an den Kunden geht.</p>`
+    : '<p style="margin:0 0 16px;">Bitte kurz intern prüfen, bevor die Kundenfreigabe ausgelöst wird.</p>'
 
   const messageBlock = params.message?.trim()
     ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:#334155;"><strong>Nachricht:</strong><br/>${escapeRefstackEmailHtml(params.message.trim()).replace(/\n/g, '<br/>')}</p>`

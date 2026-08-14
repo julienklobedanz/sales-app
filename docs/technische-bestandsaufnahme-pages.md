@@ -1,5 +1,7 @@
 # Technische Bestandsaufnahme (Pages) – Refstack
 
+> **Veraltet (Juni 2026).** Die hier genannten Pfade, Nav-Punkte und Page-Zählungen spiegeln den Stand vor der August-2026-Navigation (`Home · Deals · Referenzen · Accounts`) und dem Cognism→Shell-Rename. Für den aktuellen Stand Code und `lib/routes.ts` lesen, nicht diese Datei als Spec behandeln.
+
 **Stand:** Juni 2026 · **27 Pages** (`app/**/page.tsx`)
 
 Ziel: Pro Page/Routing-Screen eine **rein technische** Einschätzung, was **derzeit nicht funktionieren kann** (fehlende APIs/DB/RLS/Env/Platzhalter) und was **hardcodiert** bzw. bewusst „Demo“ ist.

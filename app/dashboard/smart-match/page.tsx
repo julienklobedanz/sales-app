@@ -27,5 +27,9 @@ export default async function SmartMatchPage({
   const wanted = params.deal?.trim()
   const initialDealId = wanted && deals.some((d) => d.id === wanted) ? wanted : null
 
+  if (!initialDealId) {
+    redirect(`${ROUTES.references.root}?view=match`)
+  }
+
   return <SmartMatchShell deals={deals} initialDealId={initialDealId} />
 }

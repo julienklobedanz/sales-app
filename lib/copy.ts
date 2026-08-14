@@ -240,6 +240,8 @@ export const COPY = {
       rfpAnalyzeCta: 'Zu Dokumenten',
       rfpReanalyzeHint: 'Neu analysieren empfohlen',
       documentsAnalyze: 'Analysieren',
+      documentsQuickscan: 'Schnellprüfung',
+      documentsQuickscanSuccess: 'Schnellprüfung fertig — Go/No-Bid steht.',
       documentsAnalyzeAsRfp: 'Als Ausschreibung analysieren',
       documentsReanalyze: 'Neu analysieren',
       documentsAnalyzePending: 'Analyse läuft …',
@@ -414,6 +416,7 @@ export const COPY = {
     tooltipColumns: 'Spalten',
     tooltipImport: 'Importieren',
     tooltipCreateReference: 'Referenz erstellen',
+    tooltipSmartMatch: 'Smart Match',
     home: {
       thinBanner:
         'Ehrliche Daten: Pre-Pilot — zu wenig Volumen für belastbare Zahlen. Arbeitsschlange bleibt, Kennzahlen erst mit echten Daten.',

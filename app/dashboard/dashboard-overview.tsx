@@ -11,6 +11,8 @@ import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { deleteReference, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-types'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
+import type { ReferenceLayoutMode } from './overview/reference-layout-switch'
+import { SmartMatchShell } from './smart-match/smart-match-shell'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
 import {
   REFERENCE_LIBRARY_MODE_STORAGE_KEY,
@@ -147,7 +149,9 @@ export function DashboardOverview({
   const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
-  const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
+  const [referenceLayout, setReferenceLayout] = useState<ReferenceLayoutMode>(() =>
+    searchParams.get('view') === 'match' ? 'match' : 'table',
+  )
   const libraryMode = useReferenceLibraryMode()
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
@@ -203,6 +207,27 @@ export function DashboardOverview({
   const handleLibraryModeChange = useCallback((mode: ReferenceLibraryMode) => {
     setReferenceLibraryModeOptimistic(mode)
   }, [])
+
+  const handleReferenceLayoutChange = useCallback(
+    (mode: ReferenceLayoutMode) => {
+      setReferenceLayout(mode)
+      const next = new URLSearchParams(searchParams.toString())
+      if (mode === 'match') next.set('view', 'match')
+      else next.delete('view')
+      const qs = next.toString()
+      router.replace(qs ? `?${qs}` : '?', { scroll: false })
+    },
+    [router, searchParams],
+  )
+
+  useEffect(() => {
+    const wantMatch = searchParams.get('view') === 'match'
+    setReferenceLayout((prev) => {
+      if (wantMatch) return 'match'
+      if (prev === 'match') return 'table'
+      return prev
+    })
+  }, [searchParams])
 
   useEffect(() => {
     if (!canViewComplianceSegment && libraryMode === 'certificates') {
@@ -458,7 +483,7 @@ export function DashboardOverview({
           onLibraryModeChange={handleLibraryModeChange}
           showProofSegmentSwitch={canViewComplianceSegment}
           referenceLayout={referenceLayout}
-          onReferenceLayoutChange={setReferenceLayout}
+          onReferenceLayoutChange={handleReferenceLayoutChange}
           searchValue={isReferencesLibrary ? search : certificateSearch}
           onSearchChange={isReferencesLibrary ? setSearch : setCertificateSearch}
           isAdmin={isSystemAdmin(profile.systemRole)}
@@ -490,7 +515,7 @@ export function DashboardOverview({
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
         />
 
-        {isReferencesLibrary ? (
+        {isReferencesLibrary && referenceLayout !== 'match' ? (
           <ReferencesBulkActionsBar
             selectedCount={selectedRefIds.size}
             showSalesActions={salesAppView}
@@ -528,6 +553,10 @@ export function DashboardOverview({
             isAdmin={isSystemAdmin(profile.systemRole)}
             onUploadClick={() => setComplianceUploadOpen(true)}
           />
+        ) : referenceLayout === 'match' ? (
+          <div className="min-h-[28rem]">
+            <SmartMatchShell deals={[]} initialDealId={null} variant="embedded" />
+          </div>
         ) : referenceLayout === 'table' ? (
           <ReferencesDataTable
             filteredReferences={filteredReferences}

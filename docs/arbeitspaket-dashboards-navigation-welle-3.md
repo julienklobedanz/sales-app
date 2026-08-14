@@ -58,7 +58,9 @@
 
 ## T4 (C1) — Sidebar neu ordnen
 
-**Soll-Reihenfolge:** **Home · Match · Evidence · Deals · Accounts · Insights · Settings.**
+> **Überholt (August 2026).** Die verbindliche Sidebar ist `Home · Deals · Referenzen · Accounts` (Settings/Support im Footer). **Kein** Match, **keine** Marktsignale, **keine** Insights in der Nav. Smart Match liegt in der Referenz-Bibliothek (`?view=match`); die Route `/dashboard/smart-match` bleibt für Deal-Deep-Links.
+
+**Historische Soll-Reihenfolge (Welle 3):** **Home · Match · Evidence · Deals · Accounts · Insights · Settings.**
 
 - Evidence **nach oben** (vor Deals/Accounts), Insights **neu** aufnehmen, **Market Signals aus der Nav entfernen** (→ T5).
   **Dateien:** `app/dashboard/dashboard-shell.tsx`, `lib/copy.ts`.
@@ -68,7 +70,9 @@
 
 ## T5 (C4) — Market Signals: Per-Account-Feed + Widgets (Option B)
 
-**Soll:** Market Signals ist **keine** eigene Destination mehr.
+> **Teilweise überholt (August 2026).** „Keine eigene Destination“ gilt **nur für die Nav**, nicht für die Route. `/dashboard/market-signals` bleibt erreichbar, weil Digest- und Alert-Mails/Push auf `ROUTES.marketSignals` zeigen. Account-Card und Deal-Karten-Badge bleiben gültig.
+
+**Soll (Welle 3):** Market Signals ist **keine** eigene Destination mehr.
 
 1. **Heimat = Per-Account-Feed:** Signal-Inhalt im Account-Detail (Tab/Sektion) anzeigen — die bestehende Logik aus `market-signals-client.tsx` **dorthin verlagern** (nicht zerlegen-um-des-Zerlegens-willen, sondern verschieben/zuschneiden auf Account-Kontext).
 2. **Dashboard-Widgets (handlungsauslösend, account-/pipeline-gebunden, kein Feed):**

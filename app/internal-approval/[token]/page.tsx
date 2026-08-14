@@ -73,7 +73,7 @@ export default async function InternalApprovalPage({
             <CardTitle className="text-xl">Interne Freigabe</CardTitle>
             <CardDescription className="text-sm leading-relaxed">
               Bitte bestätigen Sie die interne Freigabe oder delegieren Sie sie an eine
-              andere Person.
+              andere Person. Die Kundenmail geht danach nicht automatisch raus.
             </CardDescription>
           </div>
           <InternalApprovalForm

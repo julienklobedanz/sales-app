@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import {
   CirclePlus,
   Filter,
+  Sparkles,
   StarIcon,
   TrendingUp,
   UploadIcon,
@@ -116,26 +117,30 @@ export function ReferenceLibraryToolbar({
 
   return (
     <div className="flex min-h-10 w-full min-w-0 items-center gap-2.5 sm:gap-3">
-      <ToolbarSearchField
-        variant="dashboard"
-        wrapperClassName="min-w-0 flex-1"
-        className="bg-white"
-        placeholder={
-          isReferencesLibrary
-            ? COPY.dashboard.searchReferencesPlaceholder
-            : 'Zertifikate durchsuchen…'
-        }
-        value={searchValue}
-        onChange={onSearchChange}
-      />
+      {referenceLayout === 'match' ? (
+        <div className="min-w-0 flex-1" aria-hidden />
+      ) : (
+        <ToolbarSearchField
+          variant="dashboard"
+          wrapperClassName="min-w-0 flex-1"
+          className="bg-white"
+          placeholder={
+            isReferencesLibrary
+              ? COPY.dashboard.searchReferencesPlaceholder
+              : 'Zertifikate durchsuchen…'
+          }
+          value={searchValue}
+          onChange={onSearchChange}
+        />
+      )}
 
       <TooltipProvider delayDuration={300}>
         <div className="flex shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
           <div
             className={REFERENCE_FILTERS_SLOT_CLASS}
-            aria-hidden={!isReferencesLibrary}
+            aria-hidden={!isReferencesLibrary || referenceLayout === 'match'}
           >
-            {isReferencesLibrary ? (
+            {isReferencesLibrary && referenceLayout !== 'match' ? (
               <div key="reference-filters" className="flex h-10 items-center gap-2.5">
                 <AccountsToolbarTooltip label={COPY.dashboard.tooltipFavorites}>
                   <Button
@@ -286,6 +291,38 @@ export function ReferenceLibraryToolbar({
           </div>
 
           <div className="flex shrink-0 items-center gap-2.5">
+            {isReferencesLibrary ? (
+              <AccountsToolbarTooltip
+                label={
+                  referenceLayout === 'match'
+                    ? 'Zurück zur Bibliothek'
+                    : COPY.dashboard.tooltipSmartMatch
+                }
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  className={cn(
+                    'shrink-0 px-2.5 hover:bg-muted/70',
+                    referenceLayout === 'match' && 'bg-primary/10 text-primary',
+                  )}
+                  aria-pressed={referenceLayout === 'match'}
+                  aria-label={COPY.dashboard.tooltipSmartMatch}
+                  onClick={() =>
+                    onReferenceLayoutChange(
+                      referenceLayout === 'match' ? 'table' : 'match',
+                    )
+                  }
+                >
+                  <AppIcon icon={Sparkles} size={16} className={TOOLBAR_ICON_CLASS} />
+                  <span className="hidden max-w-[9rem] truncate sm:inline">
+                    {COPY.nav.match}
+                  </span>
+                </Button>
+              </AccountsToolbarTooltip>
+            ) : null}
+
             {isAdmin ? (
               <div
                 className={TOOLBAR_IMPORT_SLOT_CLASS}
@@ -330,7 +367,7 @@ export function ReferenceLibraryToolbar({
             ) : null}
 
             <div className={REFERENCE_TOOLS_SLOT_CLASS}>
-              {isReferencesLibrary ? (
+              {isReferencesLibrary && referenceLayout !== 'match' ? (
                 <ReferenceLayoutSwitch
                   value={referenceLayout}
                   onChange={onReferenceLayoutChange}

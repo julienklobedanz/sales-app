@@ -6,6 +6,10 @@ import {
 } from '@/lib/deal-desk/deal-desk-bid-enrichment'
 import { buildHeroKeyTakeaways } from '@/lib/deal-desk/hero-key-takeaways'
 import { formatDealDeadlineLabel } from '@/lib/deal-desk/timeline-display'
+import {
+  winProbabilityRecommendationLabel,
+  winProbabilityTone,
+} from '@/lib/deal-desk/win-probability'
 
 function formatDateDe(iso: string): string {
   if (/^\d{2}\.\d{2}\.\d{4}$/.test(iso.trim())) return iso.trim()
@@ -33,6 +37,8 @@ function dash(value: string | null | undefined): string {
 export type ExecutiveBriefingPptxData = {
   customerName: string
   classification: string
+  recommendation: string
+  winProbability: number
   strategicAssessment: string
   techFocus: string
   governance: string
@@ -125,6 +131,11 @@ export function resolveExecutiveBriefingPptxData(params: {
     riskBullets.push('Keine kritischen Risiken extrahiert.')
   }
 
+  const winProbability = analysis.winProbability ?? 0
+  const recommendation = winProbabilityRecommendationLabel(
+    winProbabilityTone(winProbability),
+  )
+
   const classification =
     domainTags.length > 0
       ? domainTags.join(' · ')
@@ -133,6 +144,8 @@ export function resolveExecutiveBriefingPptxData(params: {
   return {
     customerName: analysis.customerName?.trim() || params.projectName,
     classification,
+    recommendation,
+    winProbability,
     strategicAssessment,
     techFocus: dash(briefing?.techFocus),
     governance: dash(briefing?.governance),

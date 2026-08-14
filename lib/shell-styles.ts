@@ -1,8 +1,8 @@
 /** Gemeinsame Layout-Konstanten für die App-Dashboard-Shell. */
-export const SHELL_SIDEBAR_EXPANDED = '15rem'
+export const SHELL_SIDEBAR_EXPANDED = '18rem'
 export const SHELL_SIDEBAR_COLLAPSED = '3.5rem'
 
-/** Eine Lavendel-Fläche bis zum Viewport-Rand; Padding erzeugt den Inset wie bei Shell. */
+/** Eine Lavendel-Fläche bis zum Viewport-Rand; Padding erzeugt den Inset der App-Shell. */
 export const shellOuterClass =
   'flex h-svh w-full min-h-0 flex-col bg-[color:var(--shell-outer)] p-3'
 
@@ -14,7 +14,7 @@ export const shellFrameClass =
 export const shellPanelClass =
   'flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl bg-[color:var(--shell-inner)] shadow-sm'
 
-export const shellSidebarPanelClass = `${shellPanelClass} hidden h-full w-[var(--shell-sidebar-width,15rem)] shrink-0 transition-[width] duration-200 ease-linear md:flex`
+export const shellSidebarPanelClass = `${shellPanelClass} hidden h-full w-[var(--shell-sidebar-width,18rem)] shrink-0 transition-[width] duration-200 ease-linear md:flex`
 
 export const shellMainPanelClass = `${shellPanelClass} h-full min-h-0 min-w-0 flex-1 basis-0 grow`
 

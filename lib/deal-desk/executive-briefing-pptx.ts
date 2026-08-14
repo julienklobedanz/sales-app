@@ -108,6 +108,7 @@ export async function buildExecutiveBriefingPptxBuffer(
   addPptxPremiumHeaderBand(slide1, pptx, {
     title: clipPptxHeader(`${data.customerName} — Executive Briefing`, 72),
     subline: clipPptxHeader(data.classification, 120),
+    summary: `${data.recommendation} · Win-Probability ${data.winProbability}%`,
     titleW: contentW,
     contentW,
   })

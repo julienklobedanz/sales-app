@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2, Circle, HelpCircle, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 import {
   RoleHomeDashboard,
@@ -11,6 +12,7 @@ import {
 } from '@/components/dashboard/role-home-dashboard'
 import type { FunctionRole } from '@/lib/roles/capabilities'
 import { Button } from '@/components/ui/button'
+import { deleteDemoSeedAction } from '@/app/onboarding/delete-demo-seed-action'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
@@ -68,6 +70,7 @@ type DashboardHomeProps = {
   dashboardPayload: RoleHomeDashboardPayload
   functionRole: FunctionRole
   thinDashboard?: boolean
+  hasDemoSeed?: boolean
 }
 
 export function DashboardHome({
@@ -78,6 +81,7 @@ export function DashboardHome({
   dashboardPayload,
   functionRole,
   thinDashboard = false,
+  hasDemoSeed = false,
 }: DashboardHomeProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -86,6 +90,7 @@ export function DashboardHome({
   const [dismissed, setDismissed] = useState(false)
   const [helpExpanded, setHelpExpanded] = useState(false)
   const [welcomeDismissed, setWelcomeDismissed] = useState(false)
+  const [demoPending, startDemoTransition] = useTransition()
 
   const welcomeFromWizard = searchParams.get('welcome') === '1' && !welcomeDismissed
 
@@ -138,6 +143,34 @@ export function DashboardHome({
 
   return (
     <div className="relative">
+      {hasDemoSeed ? (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Das sind <strong>Beispieldaten</strong> zum Ausprobieren — keine echten
+            Kunden. Du kannst sie jederzeit mit einem Klick entfernen.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={demoPending}
+            onClick={() => {
+              startDemoTransition(async () => {
+                const result = await deleteDemoSeedAction()
+                if (!result.success) {
+                  toast.error(result.error ?? 'Beispieldaten konnten nicht gelöscht werden.')
+                  return
+                }
+                toast.success('Beispieldaten entfernt.')
+                router.refresh()
+              })
+            }}
+          >
+            Beispiel löschen
+          </Button>
+        </div>
+      ) : null}
+
       {showFullChecklist ? (
         <ChecklistCard progress={progress} onDismiss={dismissChecklist} />
       ) : null}

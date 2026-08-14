@@ -8,7 +8,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractDataFromDocument } from '@/lib/document-text'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
 import type { ExtractedReferenceData } from '@/lib/references/extract-types'
-import { log } from '@/lib/observability/logger'
+import { seedDemoWorkspaceIfEmpty } from '@/lib/onboarding/seed-demo-workspace'
 import {
   attachOriginalDocumentToReference,
   createReference,
@@ -21,6 +21,7 @@ import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 import { parseInviteRpcJson } from '@/lib/invites/parse-invite-rpc'
+import { log } from '@/lib/observability/logger'
 
 export type FinalizeWorkspaceResult =
   | { success: true }
@@ -155,6 +156,10 @@ export async function finalizeWorkspaceAndProfile(params: {
     .from('profiles')
     .upsert(asTableInsert<'profiles'>(upsertPayload))
   if (error) return { success: false, error: error.message }
+
+  if (!joinedViaInvite && organizationId) {
+    await seedDemoWorkspaceIfEmpty(supabase, organizationId, user.id)
+  }
 
   return { success: true }
 }
