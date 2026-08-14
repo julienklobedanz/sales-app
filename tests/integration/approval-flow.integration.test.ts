@@ -74,7 +74,7 @@ describeIntegration('approval flow', () => {
   it('bestätigt interne Freigabe per Review-Token', async () => {
     const result = await confirmInternalApprovalFromToken(admin, internalToken)
     expect(result).toMatchObject({
-      ok: true,
+      success: true,
       referenceId: internalRefId,
       alreadyApproved: false,
     })

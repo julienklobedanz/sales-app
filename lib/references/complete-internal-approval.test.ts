@@ -40,7 +40,7 @@ describe('confirmInternalApprovalFromToken', () => {
   it('rejects empty token', async () => {
     const admin = mockAdmin(null)
     const result = await confirmInternalApprovalFromToken(admin as never, '  ')
-    expect(result).toEqual({ ok: false, reason: 'invalid' })
+    expect(result).toEqual({ success: false, reason: 'invalid' })
   })
 
   it('approves pending internal reference', async () => {
@@ -53,7 +53,7 @@ describe('confirmInternalApprovalFromToken', () => {
     })
     const result = await confirmInternalApprovalFromToken(admin as never, 'tok-1')
     expect(result).toMatchObject({
-      ok: true,
+      success: true,
       referenceId: 'ref-1',
       referenceTitle: 'Test Ref',
       alreadyApproved: false,
@@ -71,7 +71,7 @@ describe('confirmInternalApprovalFromToken', () => {
       approval_internal_review_token: 'tok-1',
     })
     const result = await confirmInternalApprovalFromToken(admin as never, 'tok-1')
-    expect(result).toMatchObject({ ok: true, alreadyApproved: true })
+    expect(result).toMatchObject({ success: true, alreadyApproved: true })
     expect(admin.update).not.toHaveBeenCalled()
   })
 })
