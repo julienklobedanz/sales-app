@@ -1,4 +1,4 @@
-import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { RfpVerdict } from '@/lib/rfp-relevance'

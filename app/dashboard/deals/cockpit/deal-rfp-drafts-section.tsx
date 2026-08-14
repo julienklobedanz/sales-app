@@ -23,7 +23,7 @@ import type { DealWithReferences } from '@/app/dashboard/deals/types'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
-import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskDraftRow } from '@/lib/deal-desk/deal-analysis-types'
 import { buildDealContextForAiDraft } from '@/lib/deals/build-deal-context-for-ai-draft'
 import {
   draftRowStatus,

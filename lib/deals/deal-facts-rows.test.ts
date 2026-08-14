@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { formatCrmStageLabel } from '@/lib/crm/format-crm-stage-label'
 import { buildDealFactRows } from '@/lib/deals/deal-facts-rows'
+import { COPY } from '@/lib/copy'
 
 describe('formatCrmStageLabel', () => {
   it('maps known HubSpot stage ids', () => {
@@ -52,5 +53,17 @@ describe('buildDealFactRows', () => {
     expect(stage?.kind === 'text' ? stage.value : undefined).toBe('Qualifiziert')
     const link = rows.find((r) => r.kind === 'link')
     expect(link?.href).toContain('12345')
+  })
+
+  it('omits empty placeholder rows', () => {
+    const rows = buildDealFactRows({
+      company_name: 'Apple',
+      industry: null,
+      volume: null,
+      expiry_date: null,
+      account_manager_name: null,
+      sales_manager_name: 'Sam Sales',
+    })
+    expect(rows.map((r) => r.label)).toEqual(['Account', COPY.roles.salesManager])
   })
 })

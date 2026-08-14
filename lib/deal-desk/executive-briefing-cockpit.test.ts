@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildExecutiveBriefingText } from '@/lib/deal-desk/executive-briefing'
-import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 describe('executive briefing cockpit (Phase 7)', () => {
   it('buildExecutiveBriefingText produces non-empty briefing for minimal analysis', () => {

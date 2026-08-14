@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 import { normalizeDueTime } from '@/lib/deal-desk/timeline-display'
 
 const MODEL = 'gpt-4o-mini'

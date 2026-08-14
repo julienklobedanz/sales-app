@@ -1,5 +1,5 @@
-import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
-import { DEFAULT_BID_TEAM, type BidTeamAssignment } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
+import { DEFAULT_BID_TEAM, type BidTeamAssignment } from '@/lib/deal-desk/deal-analysis-types'
 import {
   DEMO_SME_PREVIEW_ASSIGNMENT,
   type DealDeskSmeAssignment,

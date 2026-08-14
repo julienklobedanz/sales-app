@@ -1,4 +1,4 @@
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 
 const MS_DAY = 24 * 60 * 60 * 1000
 

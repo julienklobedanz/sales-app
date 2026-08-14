@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { mergeWorkspaceWithNormalizedOverlay } from '@/lib/deal-desk/workspace-merge'
 import { loadNormalizedWorkspaceOverlay } from '@/lib/deal-desk/workspace-persistence'

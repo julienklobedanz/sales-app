@@ -4,7 +4,7 @@ import {
   extractDealRfpSectionData,
   toPersistedAnalysisSnapshot,
 } from '@/lib/deal-desk/analysis-snapshot'
-import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 describe('analysis-snapshot', () => {
   it('round-trips requirements and coverage for Deal RFP section', () => {

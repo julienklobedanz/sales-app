@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { buildExecutiveBriefingText } from '@/lib/deal-desk/executive-briefing'
-import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import { COPY } from '@/lib/copy'
 
 function parseFilenameFromContentDisposition(header: string | null): string | null {

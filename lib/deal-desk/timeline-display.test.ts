@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildBidTimelineIcsContent } from './bid-timeline-ics'
-import type { DealDeskTimelineItem } from './mock-analysis'
+import type { DealDeskTimelineItem } from './deal-analysis-types'
 import { formatDealDeadlineLabel, normalizeDueTime } from './timeline-display'
 
 describe('normalizeDueTime', () => {

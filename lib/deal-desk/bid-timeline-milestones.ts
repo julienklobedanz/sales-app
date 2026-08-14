@@ -1,4 +1,4 @@
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 import { daysUntil } from './timeline-display'
 import { getTimelineItemKind, type TimelineItemKind } from './timeline-item-visual'
 

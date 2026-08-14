@@ -1,4 +1,4 @@
-import type { DealDeskSmeTask } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskSmeTask } from '@/lib/deal-desk/deal-analysis-types'
 
 export type SmeTopicGroup = {
   topic: string

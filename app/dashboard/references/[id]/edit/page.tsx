@@ -7,7 +7,7 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
 import {

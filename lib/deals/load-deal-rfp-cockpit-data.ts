@@ -6,7 +6,7 @@ import type { Database } from '@/lib/database.types'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
-import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskDraftRow } from '@/lib/deal-desk/deal-analysis-types'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type {

@@ -27,8 +27,6 @@ export function ReferenceDetailProjectCard({
   projectEnd,
   projectStatus,
   orgDateFmt,
-  incumbentProvider,
-  competitors,
 }: ReferenceDetailProjectCardProps) {
   return (
     <Card className={isSalesView ? 'order-1' : 'order-1'}>
@@ -64,14 +62,6 @@ export function ReferenceDetailProjectCard({
                 })
               : ''}
           </span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Akt. Dienstleister</span>
-          <span className="font-medium">{incumbentProvider ?? ''}</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Wettbewerber</span>
-          <span className="font-medium">{competitors ?? ''}</span>
         </div>
       </CardContent>
     </Card>

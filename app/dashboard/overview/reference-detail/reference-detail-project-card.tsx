@@ -11,7 +11,6 @@ import {
   Phone,
   Timer,
   UserIcon,
-  Users,
 } from '@hugeicons/core-free-icons'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -123,26 +122,6 @@ export function ReferenceDetailProjectCard({
                   </p>
                 )
               })()}
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                <AppIcon icon={Building2} size={12} /> Aktueller Dienstleister
-              </span>
-              <p
-                className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {selectedRef.incumbent_provider || '—'}
-              </p>
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                <AppIcon icon={Users} size={12} /> Beteiligte Wettbewerber
-              </span>
-              <p
-                className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {selectedRef.competitors || '—'}
-              </p>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 
 import type { DealDeadlineRow } from './deadline-display'
 import { mapTimelineToRfpDeadlineRows } from './deadline-rfp-mapper'

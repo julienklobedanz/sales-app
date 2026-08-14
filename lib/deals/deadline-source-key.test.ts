@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 import { mapTimelineToRfpDeadlineRows } from '@/lib/deals/deadline-rfp-mapper'
 import {
   buildRfpDeadlineSourceKey,

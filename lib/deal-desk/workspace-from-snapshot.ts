@@ -1,4 +1,4 @@
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 import {
   defaultWorkspaceState,
   type DealDeskWorkspaceState,

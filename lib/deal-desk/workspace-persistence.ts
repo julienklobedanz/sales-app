@@ -3,7 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
-import type { BidTeamAssignment, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { BidTeamAssignment, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import type { DealDeskSmeAssignment } from '@/lib/deal-desk/sme-routing'
 import type { DealDeskWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import {

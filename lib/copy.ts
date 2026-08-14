@@ -201,7 +201,6 @@ export const COPY = {
       crmStage: 'CRM-Stage',
       crmOpportunity: 'Opportunity',
       openInCrm: (provider: string) => `In ${provider} öffnen`,
-      activityTitle: 'Aktivität',
       actionsMenu: 'Aktionen',
       generateBriefing: 'Briefing erzeugen',
       promoteToRfp: 'Als Ausschreibung bearbeiten',

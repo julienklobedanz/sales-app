@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 
 const MODEL = 'gpt-4o-mini'

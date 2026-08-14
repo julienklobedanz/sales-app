@@ -1,4 +1,4 @@
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 import { isTimelineItemExcludedFromIcsExport } from '@/lib/deal-desk/timeline-item-visual'
 
 function escapeIcsText(value: string): string {

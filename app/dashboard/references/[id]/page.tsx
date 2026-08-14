@@ -36,7 +36,6 @@ import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/lib/references/library/assets'
 import { ROUTES } from '@/lib/routes'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
-import { getReferenceDetailActivities } from './reference-detail-activities'
 import {
   anonymizeText,
   buildDetailFileRows,
@@ -365,10 +364,7 @@ export default async function ReferenceDetailPage({
     glossary: glossaryFromWorkflow,
   })
 
-  const [referenceActivities, assetRows] = await Promise.all([
-    getReferenceDetailActivities(id),
-    getReferenceAssetsImpl(id),
-  ])
+  const assetRows = await getReferenceAssetsImpl(id)
 
   const publicBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? ''
   const detailFileRows = buildDetailFileRows(assetRows, ref.file_path, publicBase)
@@ -403,7 +399,6 @@ export default async function ReferenceDetailPage({
             solutionText={solutionText}
             highlightPhrases={highlightPhrases}
             detailFileRows={detailFileRows}
-            referenceActivities={referenceActivities}
           />
         </div>
 

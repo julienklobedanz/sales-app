@@ -3,7 +3,7 @@ import { resolveProjectLocation } from '@/lib/deal-desk/deal-desk-bid-enrichment
 import type {
   DealDeskMockAnalysis,
   DealDeskTimelineItem,
-} from '@/lib/deal-desk/mock-analysis'
+} from '@/lib/deal-desk/deal-analysis-types'
 import { formatNumberDe, formatReferenceVolume, parseReferenceVolume } from '@/lib/format'
 import {
   daysUntil,

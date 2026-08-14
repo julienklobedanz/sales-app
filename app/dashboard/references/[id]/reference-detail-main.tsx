@@ -1,10 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, LinkIcon, TrendingUp, UploadIcon } from '@hugeicons/core-free-icons'
+import { LinkIcon, TrendingUp, UploadIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
-import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
-import type { ReferenceActivityItem } from './reference-detail-activities'
 import type { DetailFileRow } from './reference-detail-helpers'
 
 /** Herausforderung und Lösung untereinander (ruhiger Lesefluss). */
@@ -60,7 +58,6 @@ type ReferenceDetailMainProps = {
   solutionText: string | null
   highlightPhrases: string[]
   detailFileRows: DetailFileRow[]
-  referenceActivities: ReferenceActivityItem[]
 }
 
 export function ReferenceDetailMain({
@@ -71,7 +68,6 @@ export function ReferenceDetailMain({
   solutionText,
   highlightPhrases,
   detailFileRows,
-  referenceActivities,
 }: ReferenceDetailMainProps) {
   const filesCard = <ReferenceDetailFilesCard files={detailFileRows} />
 
@@ -131,34 +127,7 @@ export function ReferenceDetailMain({
         <div className="w-full min-w-0">{filesCard}</div>
       ) : null}
 
-      {isSalesView ? (
-        <Card className="border-border/70">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-              <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
-              Letzte Ereignisse
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ReferenceActivitiesTimeline items={referenceActivities} />
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {filesCard}
-          <Card className="border-border/70">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
-                Letzte Ereignisse
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ReferenceActivitiesTimeline items={referenceActivities} />
-            </CardContent>
-          </Card>
-        </>
-      )}
+      {!isSalesView ? filesCard : null}
     </div>
   )
 }

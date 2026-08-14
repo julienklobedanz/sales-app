@@ -9,7 +9,7 @@ import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-des
 import type {
   DealDeskMockAnalysis,
   DealDeskTimelineItem,
-} from '@/lib/deal-desk/mock-analysis'
+} from '@/lib/deal-desk/deal-analysis-types'
 import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
 import { buildRfpCoverageWithRelevance } from '@/lib/deals/rfp-coverage-pipeline'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'

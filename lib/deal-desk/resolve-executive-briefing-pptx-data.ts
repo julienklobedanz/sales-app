@@ -1,4 +1,4 @@
-import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import {
   hasSuitabilityContent,
   resolveDomainTags,

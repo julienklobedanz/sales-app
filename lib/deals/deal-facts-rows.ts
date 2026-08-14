@@ -34,7 +34,7 @@ export function buildDealFactRows(
     ? formatReferenceDate(deal.expiry_date, options?.dateDisplayFormat)
     : '—'
 
-  const rows: DealFactRow[] = [
+  const textRows: Array<Extract<DealFactRow, { kind: 'text' }>> = [
     { kind: 'text', label: 'Account', value: deal.company_name ?? '—' },
     { kind: 'text', label: 'Branche', value: industry },
     { kind: 'text', label: 'Volumen', value: formatDealVolume(deal.volume) },
@@ -50,6 +50,9 @@ export function buildDealFactRows(
       value: deal.sales_manager_name ?? '—',
     },
   ]
+  const rows: DealFactRow[] = textRows.filter(
+    (row) => row.value.trim() !== '' && row.value !== '—',
+  )
 
   if (!dealHasCrmSync(deal)) {
     return rows

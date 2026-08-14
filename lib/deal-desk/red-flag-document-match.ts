@@ -1,4 +1,4 @@
-import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 
 export type DealDeskDocumentRef = {
   id: string

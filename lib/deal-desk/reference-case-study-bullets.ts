@@ -1,5 +1,4 @@
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
-import { DEMO_CUSTOMER_CHALLENGE_BULLETS } from '@/lib/deal-desk/reference-incubator-mock'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 const MAX_CHALLENGE_BULLETS = 5
 
@@ -22,19 +21,8 @@ function splitToBullets(text: string, max = MAX_CHALLENGE_BULLETS): string[] {
   return [trimmed]
 }
 
-function isDemoAnalysis(analysis: DealDeskMockAnalysis): boolean {
-  return (
-    analysis.customerName?.trim() === 'Logistik AG Schweiz' ||
-    process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
-  )
-}
-
 /** Herausforderung = Kunden-Challenge aus RFP-Kontext (nicht Red Flags / Legal). */
 export function buildCustomerChallengeBullets(analysis: DealDeskMockAnalysis): string[] {
-  if (isDemoAnalysis(analysis)) {
-    return [...DEMO_CUSTOMER_CHALLENGE_BULLETS]
-  }
-
   const briefing = analysis.executiveBriefing
   const narrativeBullets: string[] = []
 

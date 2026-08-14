@@ -1,5 +1,5 @@
 import { normalizeDueTime } from '@/lib/deal-desk/timeline-display'
-import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
 
 import {
   buildRfpDeadlineSourceKey,

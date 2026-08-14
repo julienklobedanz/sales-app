@@ -1,5 +1,5 @@
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 export type DealDeskSuitabilityCriteria = {
   bidderRequirements: string[]

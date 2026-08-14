@@ -1,4 +1,4 @@
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 import { winProbabilityTone } from '@/lib/deal-desk/win-probability'
 
 export type HeroTakeawayIconKind = 'sparkles' | 'alert' | 'partnership'

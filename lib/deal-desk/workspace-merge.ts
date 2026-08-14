@@ -1,4 +1,4 @@
-import type { BidTeamAssignment, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { BidTeamAssignment, DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import {
   parseSmeAssignments,
   type DealDeskSmeAssignment,

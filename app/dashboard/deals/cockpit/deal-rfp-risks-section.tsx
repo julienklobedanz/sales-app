@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/collapsible'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { cn } from '@/lib/utils'
 

@@ -1,4 +1,4 @@
-import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskDraftRow } from '@/lib/deal-desk/deal-analysis-types'
 
 export type DraftRowStatus = 'ready' | 'draft' | 'gap'
 

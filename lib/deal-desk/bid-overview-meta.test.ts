@@ -10,7 +10,7 @@ import {
   resolveNextRfpDeadline,
   shortenPersonName,
 } from './bid-overview-meta'
-import type { DealDeskTimelineItem } from './mock-analysis'
+import type { DealDeskTimelineItem } from './deal-analysis-types'
 
 const timeline: DealDeskTimelineItem[] = [
   { id: '1', title: 'Q&A / Rückfragenfrist', dueDate: '2030-06-20', dueTime: '13:00' },

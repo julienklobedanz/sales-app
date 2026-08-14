@@ -7,7 +7,7 @@ import {
   isVergabeMilestone,
   resolveVergabeDate,
 } from './bid-timeline-milestones'
-import type { DealDeskTimelineItem } from './mock-analysis'
+import type { DealDeskTimelineItem } from './deal-analysis-types'
 
 const items: DealDeskTimelineItem[] = [
   { id: 'v', title: 'Bekanntmachung / Vergabe', dueDate: '2026-05-22' },

@@ -1,6 +1,19 @@
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 import { buildCustomerChallengeBullets } from '@/lib/deal-desk/reference-case-study-bullets'
-import type { ReferenceIncubatorHarvest } from '@/lib/deal-desk/reference-incubator-mock'
+
+export type ReferenceIncubatorHarvest = {
+  companyName: string
+  logoUrl: string | null
+  website: string
+  industry: string
+  headquarters: string
+  employeeCount: string
+  challenge: string
+  solution: string
+  projectIndustry: string
+  projectDuration: string
+  projectVolume: string
+}
 
 function firstSentence(text: string, max = 320): string {
   const t = text.replace(/\s+/g, ' ').trim()

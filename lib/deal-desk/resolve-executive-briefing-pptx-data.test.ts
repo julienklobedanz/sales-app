@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEMO_EXECUTIVE_BRIEFING } from '@/lib/deal-desk/mock-analysis'
+import { DEMO_EXECUTIVE_BRIEFING } from '@/lib/deal-desk/deal-analysis-types'
 import { resolveExecutiveBriefingPptxData } from '@/lib/deal-desk/resolve-executive-briefing-pptx-data'
 
 describe('resolveExecutiveBriefingPptxData', () => {

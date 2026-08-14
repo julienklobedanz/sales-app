@@ -6,7 +6,7 @@ import type {
   DealDeskMockAnalysis,
   DealDeskSmeTask,
   DealDeskTimelineItem,
-} from '@/lib/deal-desk/mock-analysis'
+} from '@/lib/deal-desk/deal-analysis-types'
 import type { BenchmarkRiskAnalysis } from '@/lib/deal-desk/benchmark-risk'
 import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
