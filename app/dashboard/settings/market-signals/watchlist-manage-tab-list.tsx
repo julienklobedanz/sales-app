@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { AppIcon } from '@/lib/icons'
-import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 
 import type { ManageWatchlistTab } from './watchlist-manage-types'

@@ -10,7 +10,7 @@ Nicht anfassen außer nötige Anbindung:
 - Stark-belegt-**Logik** (Home: ≥1 verknüpfte Referenz + Match-Score ≥ 47 %)
 - Marktsignale = 1 Tabelle + Filter
 - H1-Unification in Tabs
-- Cognism-**Shell** (Workspace-Farben)
+- App-**Shell** (Workspace-Farben)
 
 ## Ziel
 
@@ -22,7 +22,7 @@ flowchart LR
     Review[DealFeldReview]
     Capsule[StarkBelegtKapsel]
     Feeds[MarktsignaleCron]
-    Cognism[CognismUiKit]
+    Shell[ShellUiKit]
   end
   subgraph wave2 [Welle2Accounts]
     T1[T1_Shell]
@@ -42,7 +42,7 @@ flowchart LR
 - [ ] Post-Analyse Review-Dialog (CRM-Felder) + Facts-Card Highlight leer/abweichend + apply via `updateDeal`
 - [ ] Stark-belegt / teilweise / kein Beweis als Badge-Kapsel im Sales-Leader-Dashboard
 - [ ] Feeds-abrufen-Button entfernen; Cron 6h; Enrichment/Ingest ohne Sync-Purge-UX; Timestamp behalten
-- [ ] Dashboard-Beispielseite mit Cognism-Shell UI-Elementen
+- [ ] Dashboard-Beispielseite mit App-Shell UI-Elementen
 - [ ] Accounts T1: 3 Tabs, Signal-Strip, Buying-Center konsolidieren, tab-Remap
 - [ ] Accounts T2: `deal_requirements` Migration + Coverage-Matrix im Deals-Tab
 - [ ] Accounts T3 Champion-Kit + T4 echte/klare Match-Scores in Referenzen
@@ -81,9 +81,9 @@ Neben der Tone-Pill eine Coverage-Badge (`kein Beweis` / `teilweise` / `stark be
 
 ---
 
-## 4) Cognism-Beispielseite
+## 4) Shell-Beispielseite
 
-Neue interne Dashboard-Seite (z. B. `/dashboard/ui-kit`, Admin/Settings-Link), die Shell-Elemente auflistet: Nav/Header/H1, Buttons, Cards, Badges, Tabs, Tables, Inputs — mit `--cognism-*` Workspace-Farben. Nutzt [`lib/cognism-shell-styles.ts`](../lib/cognism-shell-styles.ts).
+Neue interne Dashboard-Seite (z. B. `/dashboard/ui-kit`, Admin/Settings-Link), die Shell-Elemente auflistet: Nav/Header/H1, Buttons, Cards, Badges, Tabs, Tables, Inputs — mit `--shell-*` Workspace-Farben. Nutzt [`lib/shell-styles.ts`](../lib/shell-styles.ts).
 
 ---
 
@@ -116,14 +116,14 @@ Neue interne Dashboard-Seite (z. B. `/dashboard/ui-kit`, Admin/Settings-Link), d
 - [ ] Nach Analyse: Review-Dialog; CRM-Felder bestätigbar; Facts-Card markiert leer/abweichend
 - [ ] Home: Coverage-Kapsel neben Tone
 - [ ] Marktsignale: kein Feeds-Button; Timestamp; Cron 6h; keine Sync-Purge-UX
-- [ ] Cognism-Beispielseite listet Kern-Elemente
+- [ ] Shell-Beispielseite listet Kern-Elemente
 - [ ] Accounts: 3 Tabs + Signal-Strip; Coverage; Scores; Champion-Kit
 
 ---
 
 ## Liefer-Reihenfolge
 
-1. Welle 1: Review + Kapsel + Marktsignale + Cognism-Seite
+1. Welle 1: Review + Kapsel + Marktsignale + Shell-Seite
 2. Accounts T1
 3. Accounts T2
 4. Accounts T3 + T4

@@ -16,7 +16,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
-import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 import {
   CirclePlus,

@@ -4,8 +4,8 @@ import type { ReactNode } from 'react'
 import { Suspense, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 
-import { CognismAppSidebar } from '@/components/dashboard/cognism/cognism-app-sidebar'
-import { CognismShellFrame } from '@/components/dashboard/cognism/cognism-shell-frame'
+import { AppSidebar } from '@/components/dashboard/shell/app-sidebar'
+import { ShellFrame } from '@/components/dashboard/shell/shell-frame'
 import { DashboardListPageHeader } from '@/components/dashboard/dashboard-list-page-header'
 import { SupportChannelsDialog } from '@/components/dashboard/support-channels-dialog'
 import { SupportTicketModal } from '@/components/dashboard/support-ticket-modal'
@@ -16,10 +16,10 @@ import { SidebarProvider, useSidebar } from '@/components/ui/sidebar'
 import { RoleProvider } from '@/hooks/useRole'
 import type { User } from '@supabase/supabase-js'
 import {
-  COGNISM_CONTENT_AREA_CLASS,
-  COGNISM_CONTENT_BLEED_CLASS,
-  COGNISM_SIDEBAR_EXPANDED,
-} from '@/lib/cognism-shell-styles'
+  SHELL_CONTENT_AREA_CLASS,
+  SHELL_CONTENT_BLEED_CLASS,
+  SHELL_SIDEBAR_EXPANDED,
+} from '@/lib/shell-styles'
 import {
   detailRouteNeedsBottomPadding,
   routeExcludesDashboardContentPadding,
@@ -33,7 +33,7 @@ import type { SidebarDealNavItem } from '@/lib/deals/list-my-sidebar-deals'
 
 export type { Profile } from './dashboard-types'
 
-function CognismMobileMenuButton() {
+function MobileMenuButton() {
   const { setOpenMobile, isMobile } = useSidebar()
   if (!isMobile) return null
 
@@ -51,7 +51,7 @@ function CognismMobileMenuButton() {
   )
 }
 
-function CognismMobileSidebarSheet({ sidebar }: { sidebar: ReactNode }) {
+function MobileSidebarSheet({ sidebar }: { sidebar: ReactNode }) {
   const { openMobile, setOpenMobile, isMobile } = useSidebar()
   if (!isMobile) return null
 
@@ -111,11 +111,11 @@ export function DashboardShell({
       ['--primary', workspaceBranding.primary],
       ['--sidebar-primary', workspaceBranding.primary],
       ['--ring', workspaceBranding.secondary],
-      ['--cognism-nav-active-border', workspaceBranding.primary],
-      ['--cognism-nav-active-text', workspaceBranding.primary],
-      ['--cognism-btn-top', workspaceBranding.primary],
-      ['--cognism-btn-bottom', workspaceBranding.secondary],
-      ['--cognism-btn-hover-bottom', workspaceBranding.secondary],
+      ['--shell-nav-active-border', workspaceBranding.primary],
+      ['--shell-nav-active-text', workspaceBranding.primary],
+      ['--shell-btn-top', workspaceBranding.primary],
+      ['--shell-btn-bottom', workspaceBranding.secondary],
+      ['--shell-btn-hover-bottom', workspaceBranding.secondary],
     ]
 
     for (const [key, value] of vars) {
@@ -153,11 +153,11 @@ export function DashboardShell({
         ['--primary' as never]: workspaceBranding.primary,
         ['--sidebar-primary' as never]: workspaceBranding.primary,
         ['--ring' as never]: workspaceBranding.secondary,
-        ['--cognism-nav-active-border' as never]: workspaceBranding.primary,
-        ['--cognism-nav-active-text' as never]: workspaceBranding.primary,
-        ['--cognism-btn-top' as never]: workspaceBranding.primary,
-        ['--cognism-btn-bottom' as never]: workspaceBranding.secondary,
-        ['--cognism-btn-hover-bottom' as never]: workspaceBranding.secondary,
+        ['--shell-nav-active-border' as never]: workspaceBranding.primary,
+        ['--shell-nav-active-text' as never]: workspaceBranding.primary,
+        ['--shell-btn-top' as never]: workspaceBranding.primary,
+        ['--shell-btn-bottom' as never]: workspaceBranding.secondary,
+        ['--shell-btn-hover-bottom' as never]: workspaceBranding.secondary,
       } as React.CSSProperties)
     : undefined
 
@@ -175,7 +175,7 @@ export function DashboardShell({
     onFeedbackOpen: () => setTicketModalOpen(true),
   }
 
-  const sidebar = <CognismAppSidebar {...sidebarProps} />
+  const sidebar = <AppSidebar {...sidebarProps} />
 
   return (
     <RoleProvider
@@ -189,20 +189,20 @@ export function DashboardShell({
           className="block min-h-0 w-full"
           style={
             {
-              '--sidebar-width': COGNISM_SIDEBAR_EXPANDED,
+              '--sidebar-width': SHELL_SIDEBAR_EXPANDED,
             } as React.CSSProperties
           }
         >
-          <CognismShellFrame className="min-h-0 flex-1" sidebar={sidebar}>
-            <CognismMobileMenuButton />
-            <CognismMobileSidebarSheet
-              sidebar={<CognismAppSidebar {...sidebarProps} forceExpanded />}
+          <ShellFrame className="min-h-0 flex-1" sidebar={sidebar}>
+            <MobileMenuButton />
+            <MobileSidebarSheet
+              sidebar={<AppSidebar {...sidebarProps} forceExpanded />}
             />
             <div
               className={cn(
                 routeExcludesDashboardContentPadding(pathname)
-                  ? COGNISM_CONTENT_BLEED_CLASS
-                  : COGNISM_CONTENT_AREA_CLASS,
+                  ? SHELL_CONTENT_BLEED_CLASS
+                  : SHELL_CONTENT_AREA_CLASS,
                 detailRouteNeedsBottomPadding(pathname) && 'pb-10',
                 'h-full min-h-0 overflow-y-auto',
               )}
@@ -212,7 +212,7 @@ export function DashboardShell({
               </Suspense>
               {children}
             </div>
-          </CognismShellFrame>
+          </ShellFrame>
           <CommandPalette />
           <SupportChannelsDialog
             open={supportChannelsOpen}

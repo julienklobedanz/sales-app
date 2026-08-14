@@ -1,9 +1,9 @@
 /**
- * Cognism-Dashboard-Design-Tokens und Shell-Komponenten.
- * Aktiv innerhalb von `.theme-cognism` (CognismShellFrame).
+ * Shell-Dashboard-Design-Tokens und Shell-Komponenten.
+ * Aktiv innerhalb von `.theme-shell` (ShellFrame).
  * Plain CSS (kein @apply), damit die Datei unabhängig von Tailwind-Reference lädt.
  */
-.theme-cognism {
+.theme-shell {
   --radius: 0.625rem;
 
   --background: oklch(1 0 0);
@@ -37,18 +37,18 @@
   --sidebar-border: oklch(0.91 0.01 285);
   --sidebar-ring: oklch(0.62 0.18 293);
 
-  --cognism-shell-outer: oklch(0.965 0.018 285);
-  --cognism-shell-inner: oklch(1 0 0);
-  --cognism-nav-active-bg: oklch(0.94 0.04 293);
-  --cognism-nav-active-border: oklch(0.52 0.22 293);
-  --cognism-nav-active-text: oklch(0.42 0.14 293);
-  --cognism-ai-accent: oklch(0.55 0.24 310);
-  --cognism-btn-top: oklch(0.55 0.22 293);
-  --cognism-btn-bottom: oklch(0.48 0.21 293);
-  --cognism-btn-hover-bottom: oklch(0.45 0.21 293);
+  --shell-outer: oklch(0.965 0.018 285);
+  --shell-inner: oklch(1 0 0);
+  --shell-nav-active-bg: oklch(0.94 0.04 293);
+  --shell-nav-active-border: oklch(0.52 0.22 293);
+  --shell-nav-active-text: oklch(0.42 0.14 293);
+  --shell-ai-accent: oklch(0.55 0.24 310);
+  --shell-btn-top: oklch(0.55 0.22 293);
+  --shell-btn-bottom: oklch(0.48 0.21 293);
+  --shell-btn-hover-bottom: oklch(0.45 0.21 293);
 }
 
-.theme-cognism .cognism-nav-item {
+.theme-shell .shell-nav-item {
   position: relative;
   display: flex;
   width: 100%;
@@ -65,17 +65,17 @@
     background-color 150ms;
 }
 
-.theme-cognism .cognism-nav-item:hover {
+.theme-shell .shell-nav-item:hover {
   background: oklch(0.98 0.003 285);
 }
 
-.theme-cognism .cognism-nav-item[data-active='true'] {
-  background: var(--cognism-nav-active-bg);
-  color: var(--cognism-nav-active-text);
+.theme-shell .shell-nav-item[data-active='true'] {
+  background: var(--shell-nav-active-bg);
+  color: var(--shell-nav-active-text);
   font-weight: 500;
 }
 
-.theme-cognism .cognism-nav-item[data-active='true']::before {
+.theme-shell .shell-nav-item[data-active='true']::before {
   content: '';
   position: absolute;
   left: 0;
@@ -83,10 +83,10 @@
   bottom: 0.375rem;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: var(--cognism-nav-active-border);
+  background: var(--shell-nav-active-border);
 }
 
-.theme-cognism [data-collapsible='icon'] .cognism-nav-item {
+.theme-shell [data-collapsible='icon'] .shell-nav-item {
   justify-content: center;
   gap: 0;
   width: 2.25rem;
@@ -94,7 +94,7 @@
   padding: 0.5rem;
 }
 
-.theme-cognism .cognism-nav-subitem {
+.theme-shell .shell-nav-subitem {
   display: flex;
   width: 100%;
   align-items: center;
@@ -109,19 +109,19 @@
     background-color 150ms;
 }
 
-.theme-cognism .cognism-nav-subitem:hover {
+.theme-shell .shell-nav-subitem:hover {
   background: oklch(0.98 0.003 285);
   color: var(--foreground);
 }
 
-.theme-cognism .cognism-nav-subitem-active,
-.theme-cognism .cognism-nav-subitem[data-active='true'] {
-  background: var(--cognism-nav-active-bg);
-  color: var(--cognism-nav-active-text);
+.theme-shell .shell-nav-subitem-active,
+.theme-shell .shell-nav-subitem[data-active='true'] {
+  background: var(--shell-nav-active-bg);
+  color: var(--shell-nav-active-text);
   font-weight: 500;
 }
 
-.theme-cognism .cognism-sidebar-icon-btn {
+.theme-shell .shell-sidebar-icon-btn {
   position: relative;
   display: flex;
   width: 2.25rem;
@@ -140,25 +140,25 @@
     background-color 150ms;
 }
 
-.theme-cognism .cognism-sidebar-icon-btn:hover {
+.theme-shell .shell-sidebar-icon-btn:hover {
   background-color: oklch(0.965 0.006 285 / 0.75);
   color: var(--foreground);
 }
 
-.theme-cognism .cognism-sidebar-icon-btn[data-active='true'] {
+.theme-shell .shell-sidebar-icon-btn[data-active='true'] {
   border-color: oklch(0.52 0.22 293 / 0.3);
   background-color: var(--muted);
   color: var(--foreground);
 }
 
-.theme-cognism .cognism-sidebar-rail {
+.theme-shell .shell-sidebar-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.375rem;
 }
 
-.theme-cognism .cognism-tab {
+.theme-shell .shell-tab {
   position: relative;
   padding-bottom: 0.5rem;
   font-size: 0.875rem;
@@ -168,16 +168,16 @@
   transition: color 150ms;
 }
 
-.theme-cognism .cognism-tab:hover {
+.theme-shell .shell-tab:hover {
   color: var(--foreground);
 }
 
-.theme-cognism .cognism-tab[data-active='true'] {
-  color: var(--cognism-nav-active-border);
+.theme-shell .shell-tab[data-active='true'] {
+  color: var(--shell-nav-active-border);
   font-weight: 600;
 }
 
-.theme-cognism .cognism-tab[data-active='true']::after {
+.theme-shell .shell-tab[data-active='true']::after {
   content: '';
   position: absolute;
   left: 0;
@@ -185,10 +185,10 @@
   bottom: 0;
   height: 2px;
   border-radius: 1px;
-  background: var(--cognism-nav-active-border);
+  background: var(--shell-nav-active-border);
 }
 
-.theme-cognism .cognism-segment {
+.theme-shell .shell-segment {
   border-radius: 0.375rem;
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
@@ -199,20 +199,20 @@
     background-color 150ms;
 }
 
-.theme-cognism .cognism-segment[data-active='true'] {
+.theme-shell .shell-segment[data-active='true'] {
   background: oklch(0.37 0.03 260);
   color: #fff;
 }
 
-.theme-cognism .cognism-segment[data-active='false'] {
+.theme-shell .shell-segment[data-active='false'] {
   color: var(--muted-foreground);
 }
 
-.theme-cognism .cognism-segment[data-active='false']:hover {
+.theme-shell .shell-segment[data-active='false']:hover {
   background: oklch(0.965 0.006 285 / 0.8);
 }
 
-.theme-cognism .cognism-filter-row {
+.theme-shell .shell-filter-row {
   display: flex;
   width: 100%;
   align-items: center;
@@ -224,11 +224,11 @@
   transition: background-color 150ms;
 }
 
-.theme-cognism .cognism-filter-row:hover {
+.theme-shell .shell-filter-row:hover {
   background: oklch(0.98 0.003 285);
 }
 
-.theme-cognism .cognism-ai-input {
+.theme-shell .shell-ai-input {
   display: flex;
   width: 100%;
   align-items: center;
@@ -242,7 +242,7 @@
     box-shadow 150ms;
 }
 
-.theme-cognism .cognism-ai-input:focus-within {
-  border-color: var(--cognism-nav-active-border);
+.theme-shell .shell-ai-input:focus-within {
+  border-color: var(--shell-nav-active-border);
   box-shadow: 0 0 0 3px oklch(0.62 0.18 293 / 0.18);
 }

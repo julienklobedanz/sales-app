@@ -1,7 +1,7 @@
 'use client'
 
 import { Save } from 'lucide-react'
-import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 
 export function StickySaveBar({

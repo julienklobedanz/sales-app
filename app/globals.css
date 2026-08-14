@@ -77,10 +77,10 @@
   --popover-foreground: oklch(0.148 0.004 228.8);
   --primary: oklch(0.52 0.22 293);
   --primary-foreground: oklch(0.99 0.01 293);
-  --cognism-btn-top: oklch(0.55 0.22 293);
-  --cognism-btn-bottom: oklch(0.48 0.21 293);
-  --cognism-btn-hover-bottom: oklch(0.45 0.21 293);
-  --cognism-nav-active-border: oklch(0.52 0.22 293);
+  --shell-btn-top: oklch(0.55 0.22 293);
+  --shell-btn-bottom: oklch(0.48 0.21 293);
+  --shell-btn-hover-bottom: oklch(0.45 0.21 293);
+  --shell-nav-active-border: oklch(0.52 0.22 293);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);

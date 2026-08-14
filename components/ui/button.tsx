@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Slot } from 'radix-ui'
 
-import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(

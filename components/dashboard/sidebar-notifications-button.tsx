@@ -52,7 +52,7 @@ const NotificationTrigger = forwardRef<
       ref={ref}
       type="button"
       className={cn(
-        rail ? 'cognism-sidebar-icon-btn' : triggerClassName,
+        rail ? 'shell-sidebar-icon-btn' : triggerClassName,
         compact &&
           !rail &&
           'size-9 shrink-0 rounded-lg border-border/40 bg-muted/45 shadow-none hover:bg-muted/75',

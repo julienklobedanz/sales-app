@@ -43,7 +43,7 @@ type NavItem = {
   icon: ReactNode
 }
 
-function CognismSidebarIconButton({
+function SidebarIconButton({
   label,
   children,
   onClick,
@@ -57,7 +57,7 @@ function CognismSidebarIconButton({
   active?: boolean
 }) {
   const className = cn(
-    'cognism-sidebar-icon-btn',
+    'shell-sidebar-icon-btn',
     active && 'border-primary/30 bg-muted text-foreground',
   )
 
@@ -79,14 +79,14 @@ function CognismSidebarIconButton({
   )
 }
 
-function CognismCommandSearch({ collapsed }: { collapsed: boolean }) {
+function CommandSearch({ collapsed }: { collapsed: boolean }) {
   const { setOpen } = useCommandPalette()
 
   if (collapsed) {
     return (
-      <CognismSidebarIconButton label="Suchen" onClick={() => setOpen(true)}>
+      <SidebarIconButton label="Suchen" onClick={() => setOpen(true)}>
         <AppIcon icon={Search01Icon} size={16} className="shrink-0 opacity-70" />
-      </CognismSidebarIconButton>
+      </SidebarIconButton>
     )
   }
 
@@ -137,7 +137,7 @@ function DealsNavSection({
         href={ROUTES.deals.root}
         data-active={dealsActive}
         title={COPY.nav.deals}
-        className={cn('cognism-nav-item', 'justify-center px-0')}
+        className={cn('shell-nav-item', 'justify-center px-0')}
       >
         {dealsIcon}
       </Link>
@@ -150,7 +150,7 @@ function DealsNavSection({
         <Link
           href={ROUTES.deals.root}
           data-active={dealsActive}
-          className="cognism-nav-item min-w-0 flex-1"
+          className="shell-nav-item min-w-0 flex-1"
         >
           {dealsIcon}
           <span className="truncate">{COPY.nav.deals}</span>
@@ -188,8 +188,8 @@ function DealsNavSection({
                     href={deal.href}
                     data-active={active}
                     className={cn(
-                      'cognism-nav-subitem',
-                      active && 'cognism-nav-subitem-active',
+                      'shell-nav-subitem',
+                      active && 'shell-nav-subitem-active',
                     )}
                     title={
                       deal.companyName ? `${deal.title} · ${deal.companyName}` : deal.title
@@ -207,7 +207,7 @@ function DealsNavSection({
   )
 }
 
-export function CognismAppSidebar({
+export function AppSidebar({
   profile,
   userId,
   userName,
@@ -316,7 +316,7 @@ export function CognismAppSidebar({
       >
         {!collapsed ? (
           <Link href={ROUTES.home} className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--cognism-nav-active-border)] text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--shell-nav-active-border)] text-white">
               <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
             </div>
             <span className="truncate text-sm font-semibold tracking-tight text-[#2D1B4E]">
@@ -344,8 +344,8 @@ export function CognismAppSidebar({
 
       <div className={cn('flex min-h-0 flex-col py-3', collapsed ? 'px-1' : 'px-2')}>
         {collapsed ? (
-          <div className="cognism-sidebar-rail mb-2 shrink-0">
-            <CognismCommandSearch collapsed />
+          <div className="shell-sidebar-rail mb-2 shrink-0">
+            <CommandSearch collapsed />
             <SidebarNotificationsSection
               userId={userId}
               systemRole={profile.systemRole}
@@ -357,7 +357,7 @@ export function CognismAppSidebar({
         ) : (
           <div className="mb-2 flex shrink-0 items-center gap-1.5">
             <div className="min-w-0 flex-1">
-              <CognismCommandSearch collapsed={false} />
+              <CommandSearch collapsed={false} />
             </div>
             <SidebarNotificationsSection
               userId={userId}
@@ -378,7 +378,7 @@ export function CognismAppSidebar({
                 href={item.href}
                 data-active={active}
                 title={collapsed ? item.label : undefined}
-                className={cn('cognism-nav-item', collapsed && 'justify-center px-0')}
+                className={cn('shell-nav-item', collapsed && 'justify-center px-0')}
               >
                 {item.icon}
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
@@ -396,7 +396,7 @@ export function CognismAppSidebar({
             href={accountsItem.href}
             data-active={accountsItem.isActive(pathname)}
             title={collapsed ? accountsItem.label : undefined}
-            className={cn('cognism-nav-item', collapsed && 'justify-center px-0')}
+            className={cn('shell-nav-item', collapsed && 'justify-center px-0')}
           >
             {accountsItem.icon}
             {!collapsed ? <span className="truncate">{accountsItem.label}</span> : null}
@@ -406,20 +406,20 @@ export function CognismAppSidebar({
 
       <div className={cn('shrink-0 space-y-2 pb-3', collapsed ? 'px-1' : 'px-2')}>
         {collapsed ? (
-          <div className="cognism-sidebar-rail">
-            <CognismSidebarIconButton label="Support erhalten" onClick={onSupportOpen}>
+          <div className="shell-sidebar-rail">
+            <SidebarIconButton label="Support erhalten" onClick={onSupportOpen}>
               <AppIcon icon={HeadsetIcon} size={16} />
-            </CognismSidebarIconButton>
-            <CognismSidebarIconButton label="Feedback senden" onClick={onFeedbackOpen}>
+            </SidebarIconButton>
+            <SidebarIconButton label="Feedback senden" onClick={onFeedbackOpen}>
               <AppIcon icon={Send} size={16} />
-            </CognismSidebarIconButton>
-            <CognismSidebarIconButton
+            </SidebarIconButton>
+            <SidebarIconButton
               label="Einstellungen"
               href={ROUTES.settings}
               active={Boolean(pathname?.startsWith(ROUTES.settings))}
             >
               <AppIcon icon={SettingsIcon} size={16} />
-            </CognismSidebarIconButton>
+            </SidebarIconButton>
             <DashboardUserMenu
               userName={userName}
               userEmail={userEmail}

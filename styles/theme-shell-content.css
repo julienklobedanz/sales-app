@@ -1,0 +1,184 @@
+/**
+ * Harmonisiert bestehende Dashboard-Seiteninhalte innerhalb der App-Shell.
+ * Ersetzt harte slate/blau-Stellen durch Design-Tokens — nur unter .theme-shell.
+ */
+
+.theme-shell {
+  --background: oklch(1 0 0);
+}
+
+.theme-shell .shell-page-content {
+  color: var(--foreground);
+  width: 100%;
+  max-width: none;
+}
+
+.theme-shell [data-slot='sidebar-wrapper'] {
+  display: block;
+  width: 100%;
+  min-height: 0;
+}
+
+.theme-shell .shell-page-content > * {
+  width: 100%;
+  max-width: none;
+}
+
+/* Hauptseiten: volle Breite im weißen Content-Panel */
+.theme-shell .shell-page-content [class*='max-w-5xl'],
+.theme-shell .shell-page-content [class*='max-w-6xl'],
+.theme-shell .shell-page-content [class*='max-w-7xl'],
+.theme-shell .shell-page-content [class*='max-w-[1000px]'],
+.theme-shell .shell-page-content [class*='1000px]'] {
+  max-width: none !important;
+  width: 100%;
+}
+
+.theme-shell .shell-page-content .mx-auto[class*='max-w-'] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Kein Doppel-Padding auf Bleed-Detailseiten */
+.theme-shell .shell-page-content > div[class*='px-6'][class*='py-6'] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.theme-shell .shell-page-content [class*='max-w-6xl'][class*='p-6'] {
+  padding: 0 !important;
+}
+
+.theme-shell .shell-page-content [class*='max-w-5xl'][class*='px-4'] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Seitentitel (DashboardListPageHeader + inline h1) — text-2xl / semibold */
+.theme-shell .shell-page-content header h1,
+.theme-shell .shell-page-content > h1:first-child {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+}
+
+.theme-shell .shell-page-content header p,
+.theme-shell .shell-page-content .text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+/* Cards & Tabellen-Container */
+.theme-shell [data-slot='card'] {
+  border-color: var(--border) !important;
+  background-color: var(--card) !important;
+  box-shadow: 0 1px 2px oklch(0.45 0.02 285 / 0.05) !important;
+}
+
+.theme-shell [data-slot='table-container'],
+.theme-shell .rounded-lg.border,
+.theme-shell .rounded-xl.border {
+  border-color: var(--border);
+}
+
+/* Slate → Token (häufigste Legacy-Klassen) */
+.theme-shell [class*='border-slate-'] {
+  border-color: var(--border) !important;
+}
+
+.theme-shell [class*='bg-slate-50'] {
+  background-color: var(--muted) !important;
+}
+
+.theme-shell [class*='bg-slate-100'] {
+  background-color: oklch(0.96 0.008 285) !important;
+}
+
+.theme-shell [class*='text-slate-400'],
+.theme-shell [class*='text-slate-500'],
+.theme-shell [class*='text-slate-600'] {
+  color: var(--muted-foreground) !important;
+}
+
+.theme-shell [class*='text-slate-700'],
+.theme-shell [class*='text-slate-800'],
+.theme-shell [class*='text-slate-900'] {
+  color: var(--foreground) !important;
+}
+
+.theme-shell [class*='hover:bg-slate-50']:hover,
+.theme-shell [class*='hover:bg-slate-100']:hover,
+.theme-shell [class*='aria-selected:bg-slate-50'][aria-selected='true'],
+.theme-shell [class*='data-[selected=true]:bg-slate-50'][data-selected='true'] {
+  background-color: var(--accent) !important;
+}
+
+/* Inputs & Selects */
+.theme-shell [data-slot='input'],
+.theme-shell input:not([type='checkbox']):not([type='radio']),
+.theme-shell textarea {
+  border-color: var(--border);
+}
+
+.theme-shell [data-slot='select-trigger'] {
+  border-color: var(--border);
+  background-color: var(--card);
+}
+
+/* Tabs (Settings, Account-Detail, …) */
+.theme-shell [role='tab'][data-state='active'] {
+  color: var(--shell-nav-active-border) !important;
+  background-color: var(--shell-nav-active-bg) !important;
+}
+
+.theme-shell [role='tab']:not([data-state='active']) {
+  color: var(--muted-foreground);
+}
+
+/* Brand primary — gilt auch in Dialog-Portalen außerhalb von .theme-shell */
+.brand-primary-button {
+  border: none;
+  background-image: linear-gradient(
+    to bottom,
+    var(--shell-btn-top),
+    var(--shell-btn-bottom)
+  );
+  color: #fff;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.brand-primary-button:hover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    var(--shell-btn-top),
+    var(--shell-btn-hover-bottom)
+  );
+}
+
+.brand-primary-pill-active {
+  border-color: var(--shell-btn-top);
+  background-color: var(--shell-btn-top);
+  color: #fff;
+}
+
+.brand-primary-pill-active:hover:not(:disabled) {
+  background-color: var(--shell-btn-top);
+  color: #fff;
+}
+
+.theme-shell [data-slot='button'][data-variant='outline'] {
+  border-color: var(--border);
+  background-color: var(--card);
+}
+
+.theme-shell [data-slot='button'][data-variant='outline']:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Links */
+.theme-shell a.text-primary,
+.theme-shell .text-primary {
+  color: var(--shell-nav-active-border) !important;
+}

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import { submitTicket } from '@/app/dashboard/actions'
 import { AppIcon } from '@/lib/icons'
-import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 
 export type SupportCategory = 'sales' | 'technical' | 'billing' | 'account' | 'other'

@@ -183,7 +183,7 @@ export function DashboardUserMenu({
       return (
         <button
           type="button"
-          className="cognism-sidebar-icon-btn overflow-hidden p-0"
+          className="shell-sidebar-icon-btn overflow-hidden p-0"
           tabIndex={-1}
           aria-label={userName}
         >
@@ -212,7 +212,7 @@ export function DashboardUserMenu({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="cognism-sidebar-icon-btn overflow-hidden p-0 hover:bg-muted/60 data-[state=open]:bg-muted"
+            className="shell-sidebar-icon-btn overflow-hidden p-0 hover:bg-muted/60 data-[state=open]:bg-muted"
             aria-label={userName}
           >
             <Avatar className="size-7 rounded-md">

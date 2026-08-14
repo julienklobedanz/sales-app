@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { submitTicket } from '@/app/dashboard/actions'
 import { AppIcon } from '@/lib/icons'
-import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/cognism-shell-styles'
+import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/shell-styles'
 import { cn } from '@/lib/utils'
 
 type FeedbackKind = 'idea' | 'bug' | 'other'
