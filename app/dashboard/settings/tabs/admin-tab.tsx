@@ -9,6 +9,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { DevRolePreview } from '@/lib/dev-role-preview'
 import { SettingsDevRoleCard } from '../settings-dev-role-card'
 import {
@@ -244,7 +252,7 @@ export function AdminTab({
             <CardTitle className="text-base">Entwicklung / API-Keys</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 px-0 pb-0 pt-1">
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
               <div>
                 <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
               </div>
@@ -254,12 +262,12 @@ export function AdminTab({
                 disabled={!roleSwitcher.isServerAdmin}
               />
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
+            <div className="rounded-lg border border-border p-4">
               <p className="text-sm font-medium">Workspace API Key</p>
               <Input
                 value={apiKeyMask}
                 onChange={(e) => setApiKeyMask(e.target.value)}
-                className="mt-3 bg-slate-50"
+                className="mt-3 bg-muted"
               />
             </div>
             {devRolePreviewEnabled ? (
@@ -286,7 +294,7 @@ export function AdminTab({
                 onChange={(e) => setPublicLinkMaxTtl(e.target.value)}
                 inputMode="numeric"
                 disabled={!roleSwitcher.isServerAdmin}
-                className={!roleSwitcher.isServerAdmin ? 'bg-slate-50' : ''}
+                className={!roleSwitcher.isServerAdmin ? 'bg-muted' : ''}
               />
             </div>
             <div className="max-w-md space-y-2">
@@ -297,10 +305,10 @@ export function AdminTab({
                 onChange={(e) => setAuditRetentionDays(e.target.value)}
                 inputMode="numeric"
                 disabled={!roleSwitcher.isServerAdmin}
-                className={!roleSwitcher.isServerAdmin ? 'bg-slate-50' : ''}
+                className={!roleSwitcher.isServerAdmin ? 'bg-muted' : ''}
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
               <div>
                 <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
               </div>
@@ -343,7 +351,7 @@ export function AdminTab({
             </CardHeader>
             <CardContent className="space-y-4 px-0 pb-0 pt-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
+                <div className="flex items-center gap-1 rounded-md border border-border p-1">
                   {(
                     [
                       ['all', 'Alle'],
@@ -378,44 +386,48 @@ export function AdminTab({
                   CSV Export
                 </Button>
               </div>
-              <div className="mt-1 max-h-[360px] overflow-auto rounded-lg border border-slate-200">
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium">Zeit</th>
-                      <th className="px-3 py-2 text-left font-medium">Action</th>
-                      <th className="px-3 py-2 text-left font-medium">Entity</th>
-                      <th className="px-3 py-2 text-left font-medium">User</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAuditLogs.length === 0 ? (
-                      <tr>
-                        <td className="px-3 py-3 text-slate-500" colSpan={4}>
-                          Keine Einträge für den gewählten Filter.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredAuditLogs.map((row) => (
-                        <tr key={row.id} className="border-t border-slate-100 align-top">
-                          <td className="whitespace-nowrap px-3 py-2 text-slate-600">
-                            {new Date(row.timestamp).toLocaleString('de-DE')}
-                          </td>
-                          <td className="px-3 py-2 font-medium text-slate-900">
-                            {row.action}
-                          </td>
-                          <td className="px-3 py-2 font-mono text-slate-700">
-                            {row.entity_id ?? '—'}
-                          </td>
-                          <td className="px-3 py-2 font-mono text-slate-700">
-                            {row.user_id ?? '—'}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <Table
+                className="text-xs"
+                containerClassName="mt-1 max-h-[360px] overflow-auto rounded-lg border border-border"
+              >
+                <TableHeader className="sticky top-0 z-10 bg-background">
+                  <TableRow>
+                    <TableHead>Zeit</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>User</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAuditLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        className="whitespace-normal py-3 text-muted-foreground"
+                        colSpan={4}
+                      >
+                        Keine Einträge für den gewählten Filter.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAuditLogs.map((row) => (
+                      <TableRow key={row.id} className="align-top">
+                        <TableCell className="text-muted-foreground">
+                          {new Date(row.timestamp).toLocaleString('de-DE')}
+                        </TableCell>
+                        <TableCell className="whitespace-normal font-medium">
+                          {row.action}
+                        </TableCell>
+                        <TableCell className="whitespace-normal font-mono">
+                          {row.entity_id ?? '—'}
+                        </TableCell>
+                        <TableCell className="whitespace-normal font-mono">
+                          {row.user_id ?? '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </div>
         ) : null}

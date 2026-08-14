@@ -80,6 +80,8 @@ export const COPY = {
       'Einladung ist gespeichert, die E-Mail konnte nicht versendet werden.',
     teamInviteCopyLink: 'Einladungslink kopieren',
     teamInviteLinkCopied: 'Einladungslink in die Zwischenablage kopiert.',
+    teamOwnRoleDisabledHint: 'Deine eigene Rolle kannst du hier nicht ändern.',
+    teamRemoveMemberTooltip: 'Mitglied entfernen',
     roleSwitcherTab: 'Entwicklung',
     roleSwitcherCardTitle: 'Rollenauswahl (Entwicklung)',
     roleSwitcherCardDescription:
