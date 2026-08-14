@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 type PdfTemplate = 'one_pager' | 'anonymized'
 
@@ -117,7 +118,7 @@ export function PdfExportDialog({
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={FileDownIcon} size={16} />
-          PDF Export
+          {COPY.references.exportAsPdf}
         </Button>
       ) : null}
       <Dialog open={open} onOpenChange={setOpen}>

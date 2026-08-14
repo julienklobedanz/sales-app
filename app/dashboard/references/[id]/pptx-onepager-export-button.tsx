@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FileDownIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
+import { COPY } from '@/lib/copy'
 import { toast } from 'sonner'
 
 function parseFilenameFromContentDisposition(header: string | null): string | null {
@@ -73,7 +74,7 @@ export function PptxOnepagerExportButton({
       onClick={() => void onExport()}
     >
       <AppIcon icon={FileDownIcon} size={16} />
-      {pending ? 'PPTX wird erstellt…' : 'PPTX Export'}
+      {pending ? COPY.references.exportAsPptxPending : COPY.references.exportAsPptx}
     </Button>
   )
 }

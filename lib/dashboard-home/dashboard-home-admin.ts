@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import { getRequestsImpl } from '@/lib/references/library/approval-requests'
+import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import {
   ACTIVE_DEAL_STATUSES,
@@ -188,7 +189,7 @@ export async function loadAdminDashboardData(
         id: 'sync-errors',
         title: `Sync-Errors erkannt`,
         detail: `${syncErrors} fehlerhafte Integrations-Events`,
-        ctaLabel: 'Fix Sync',
+        ctaLabel: COPY.dashboard.home.salesLeader.fixSync,
         href: ROUTES.settings,
         severity: 'high',
       })

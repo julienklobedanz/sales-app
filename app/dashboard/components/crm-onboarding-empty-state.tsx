@@ -1,7 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { Plus } from 'lucide-react'
+import { CirclePlus } from '@hugeicons/core-free-icons'
+
+import { AppIcon } from '@/lib/icons'
 
 export type CrmOnboardingVariant = 'accounts' | 'deals'
 
@@ -191,7 +193,7 @@ export function CrmOnboardingEmptyState({
           className={`${actionButtonClass} bg-primary font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50`}
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white/15">
-            <Plus className="size-5 shrink-0 text-white" aria-hidden />
+            <AppIcon icon={CirclePlus} size={20} className="shrink-0 text-white" />
           </span>
           <span className="min-w-0 flex-1 text-center text-sm leading-tight line-clamp-2">
             {copy.manualLabel}

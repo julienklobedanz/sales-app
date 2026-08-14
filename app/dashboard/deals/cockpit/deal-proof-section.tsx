@@ -128,7 +128,6 @@ export function DealProofSection({
           <Button
             type="button"
             size="sm"
-            variant="outline"
             className="shrink-0"
             onClick={onFindReference}
           >

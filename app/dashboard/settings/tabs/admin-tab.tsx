@@ -26,6 +26,7 @@ import {
 } from '../settings-consolidation-actions'
 import { SETTINGS_CARD_CLASS, type RegisterSettingsTab } from './settings-tab-shared'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
+import { COPY } from '@/lib/copy'
 
 type AdminTabProps = {
   devRolePreviewEnabled?: boolean
@@ -383,7 +384,7 @@ export function AdminTab({
                   size="sm"
                   onClick={exportAuditCsv}
                 >
-                  CSV Export
+                  {COPY.settings.exportAsCsv}
                 </Button>
               </div>
               <Table

@@ -15,6 +15,7 @@ import { SalesRepDashboard } from '@/components/dashboard/sales-rep-dashboard'
 import { COPY } from '@/lib/copy'
 import type { FunctionRole } from '@/lib/roles/capabilities'
 import { ROUTES } from '@/lib/routes'
+import { CirclePlus, Search01Icon } from '@hugeicons/core-free-icons'
 
 export type RoleHomeDashboardPayload =
   | { variant: 'sales_rep'; data: SalesRepDashboardModel }
@@ -42,6 +43,7 @@ export function RoleHomeDashboard({
           subtitle={COPY.dashboard.home.salesRep.subtitle}
           ctaLabel={COPY.dashboard.home.salesRep.cta}
           ctaHref={ROUTES.match}
+          ctaIcon={Search01Icon}
           thin={thin}
           thinBannerText={COPY.dashboard.home.thinBanner}
         >
@@ -56,6 +58,7 @@ export function RoleHomeDashboard({
           subtitle={COPY.dashboard.home.accountManager.subtitle}
           ctaLabel={COPY.dashboard.home.accountManager.cta}
           ctaHref={ROUTES.references.new}
+          ctaIcon={CirclePlus}
           thin={thin}
           thinBannerText={COPY.dashboard.home.thinBanner}
         >

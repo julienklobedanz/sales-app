@@ -79,6 +79,7 @@ export function DealProofSuggestedReferences({
               className="shrink-0 not-italic"
               disabled={pendingId === s.id}
               title={COPY.deals.cockpit.proofSuggestedAdd}
+              aria-label={COPY.deals.cockpit.proofSuggestedAdd}
               onClick={() => handleAdd(s)}
             >
               {pendingId === s.id ? (
