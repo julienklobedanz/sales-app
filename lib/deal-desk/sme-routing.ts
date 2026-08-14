@@ -47,7 +47,7 @@ export const SME_DEFAULT_EXPERTS: SmeExpertOption[] = [
 export function getSmeCategoryBadgeClass(category: string): string {
   const c = category.toLowerCase()
   if (c.includes('legal') || c.includes('compliance')) {
-    return 'border-purple-200 bg-purple-50 text-purple-700'
+    return 'border-primary/30 bg-primary/10 text-primary'
   }
   if (c.includes('cto') || c.includes('delivery') || c.includes('techn')) {
     return 'border-blue-200 bg-blue-50 text-blue-700'

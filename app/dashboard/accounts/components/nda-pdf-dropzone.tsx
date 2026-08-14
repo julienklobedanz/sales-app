@@ -53,7 +53,7 @@ export function NdaPdfDropzone({
         className={cn(
           'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
           dragOver && !busy
-            ? 'border-violet-400 bg-violet-50/50'
+            ? 'border-primary bg-primary/5'
             : 'border-border bg-muted/40',
           busy
             ? 'cursor-not-allowed opacity-60'

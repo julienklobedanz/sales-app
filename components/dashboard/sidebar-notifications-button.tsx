@@ -28,7 +28,7 @@ const triggerClassName =
 function typeChipClass(kind: DashboardNotificationItem['typeKind']) {
   if (kind === 'move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
   if (kind === 'executive')
-    return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
+    return 'bg-primary/10 text-primary border-0'
   if (kind === 'company') return 'bg-muted text-foreground border-0'
   if (kind === 'approval')
     return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
