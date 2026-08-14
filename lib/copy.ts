@@ -463,6 +463,8 @@ export const COPY = {
         coverageDonutSublabel: 'mit Beweis',
         coverageProofOk: 'Beweis ✓',
         coverageUntil: 'bis',
+        coverageSignalCta: 'Beweis finden',
+        coverageSignalBadge: 'Signal',
         reuseTitle: 'Was bei dir zieht',
         reuseDescription: 'Deine häufigsten Shares — Gewinner wiederverwenden.',
         reuseEmptyTitle: 'Noch nichts geteilt',

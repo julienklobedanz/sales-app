@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, Handshake, Radar } from 'lucide-react'
+import { ChevronDown, Handshake } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -13,7 +13,6 @@ import {
   Search01Icon,
   Send,
   SettingsIcon,
-  Sparkles,
 } from '@hugeicons/core-free-icons'
 import { ChevronsLeft, ChevronsRight } from 'lucide-react'
 
@@ -238,55 +237,31 @@ export function AppSidebar({
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const collapsed = forceExpanded ? false : state === 'collapsed'
 
-  const navItemsBeforeDeals: NavItem[] = [
-    {
-      href: ROUTES.home,
-      label: COPY.pages.dashboard,
-      isActive: (p) => p === ROUTES.home,
-      icon: (
-        <AppIcon
-          icon={GalleryHorizontalEndIcon}
-          size={16}
-          strokeWidth={pathname === ROUTES.home ? 2.5 : 2}
-        />
-      ),
-    },
-    {
-      href: ROUTES.match,
-      label: COPY.nav.match,
-      isActive: (p) => Boolean(p?.startsWith(ROUTES.match)),
-      icon: (
-        <AppIcon
-          icon={Sparkles}
-          size={16}
-          strokeWidth={pathname?.startsWith(ROUTES.match) ? 2.5 : 2}
-        />
-      ),
-    },
-    {
-      href: ROUTES.marketSignals,
-      label: COPY.nav.marketSignals,
-      isActive: (p) => Boolean(p?.startsWith(ROUTES.marketSignals)),
-      icon: (
-        <Radar
-          className="size-4 shrink-0"
-          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
-        />
-      ),
-    },
-    {
-      href: ROUTES.references.root,
-      label: COPY.nav.references,
-      isActive: (p) => Boolean(p?.startsWith(ROUTES.references.root)),
-      icon: (
-        <AppIcon
-          icon={FileText}
-          size={16}
-          strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2}
-        />
-      ),
-    },
-  ]
+  const homeItem: NavItem = {
+    href: ROUTES.home,
+    label: COPY.pages.dashboard,
+    isActive: (p) => p === ROUTES.home,
+    icon: (
+      <AppIcon
+        icon={GalleryHorizontalEndIcon}
+        size={16}
+        strokeWidth={pathname === ROUTES.home ? 2.5 : 2}
+      />
+    ),
+  }
+
+  const referencesItem: NavItem = {
+    href: ROUTES.references.root,
+    label: COPY.nav.references,
+    isActive: (p) => Boolean(p?.startsWith(ROUTES.references.root)),
+    icon: (
+      <AppIcon
+        icon={FileText}
+        size={16}
+        strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2}
+      />
+    ),
+  }
 
   const accountsItem: NavItem = {
     href: ROUTES.accounts,
@@ -370,7 +345,7 @@ export function AppSidebar({
         )}
 
         <nav className="flex min-h-0 shrink-0 flex-col gap-0.5 overflow-y-auto">
-          {navItemsBeforeDeals.map((item) => {
+          {[homeItem].map((item) => {
             const active = item.isActive(pathname)
             return (
               <Link
@@ -392,15 +367,21 @@ export function AppSidebar({
             mySidebarDeals={mySidebarDeals}
           />
 
-          <Link
-            href={accountsItem.href}
-            data-active={accountsItem.isActive(pathname)}
-            title={collapsed ? accountsItem.label : undefined}
-            className={cn('shell-nav-item', collapsed && 'justify-center px-0')}
-          >
-            {accountsItem.icon}
-            {!collapsed ? <span className="truncate">{accountsItem.label}</span> : null}
-          </Link>
+          {[referencesItem, accountsItem].map((item) => {
+            const active = item.isActive(pathname)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-active={active}
+                title={collapsed ? item.label : undefined}
+                className={cn('shell-nav-item', collapsed && 'justify-center px-0')}
+              >
+                {item.icon}
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              </Link>
+            )
+          })}
         </nav>
       </div>
 

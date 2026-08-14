@@ -184,19 +184,33 @@ export function SalesRepDashboard({
                       className="flex items-center justify-between gap-2 border-t border-border py-2 first:border-t-0 first:pt-0"
                     >
                       <div className="min-w-0 text-sm">
-                        <Link
-                          href={ROUTES.deals.detail(deal.id)}
-                          className="font-medium hover:underline"
-                        >
-                          {deal.company_name ?? deal.title}
-                        </Link>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <Link
+                            href={ROUTES.deals.detail(deal.id)}
+                            className="truncate font-medium hover:underline"
+                          >
+                            {deal.company_name ?? deal.title}
+                          </Link>
+                          {deal.recentSignalCount > 0 ? (
+                            <Link
+                              href={
+                                deal.company_id
+                                  ? ROUTES.accountsDetail(deal.company_id)
+                                  : ROUTES.matchWithDeal(deal.id)
+                              }
+                              className="shrink-0 rounded-full border border-amber-300/80 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
+                            >
+                              {c.coverageSignalBadge}
+                            </Link>
+                          ) : null}
+                        </div>
                         {deadline ? (
                           <p className="text-xs text-muted-foreground">
                             {c.coverageUntil} {deadline}
                           </p>
                         ) : null}
                       </div>
-                      {hasProof ? (
+                      {hasProof && deal.recentSignalCount === 0 ? (
                         <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                           {c.coverageProofOk}
                         </span>
@@ -208,7 +222,7 @@ export function SalesRepDashboard({
                           className="h-7 text-xs"
                         >
                           <Link href={ROUTES.matchWithDeal(deal.id)}>
-                            {c.queueFindProof}
+                            {c.coverageSignalCta}
                           </Link>
                         </Button>
                       )}
