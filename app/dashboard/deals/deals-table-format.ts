@@ -1,5 +1,12 @@
-import type { DealRow } from './types'
+import type { DealRow, DealStatus } from './types'
 import type { StatusFilterValue } from './deals-table-constants'
+
+const TERMINAL_DEAL_STATUSES = new Set<DealStatus>([
+  'won',
+  'lost',
+  'archived',
+  'withdrawn',
+])
 
 export function formatDealTableDate(iso: string): string {
   const d = new Date(iso)
@@ -9,15 +16,20 @@ export function formatDealTableDate(iso: string): string {
   return `${day}.${month}.${year}`
 }
 
-export function isDealExpiringIn30Days(dateStr: string | null): boolean {
+export function isDealExpiringIn30Days(
+  dateStr: string | null,
+  status?: DealStatus | string | null,
+): boolean {
   if (!dateStr) return false
+  const normalized = String(status ?? '').toLowerCase() as DealStatus
+  if (TERMINAL_DEAL_STATUSES.has(normalized)) return false
   const end = new Date(dateStr)
   if (Number.isNaN(end.getTime())) return false
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   end.setHours(0, 0, 0, 0)
   const days = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  return days <= 30
+  return days >= 0 && days <= 30
 }
 
 export function filterDealsTableRows({

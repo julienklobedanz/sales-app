@@ -187,18 +187,10 @@ export function SettingsTabs({
       className="gap-6 pb-20"
     >
       <TabsList variant="line" className="w-full justify-start">
-        <TabsTrigger value="profile" className="after:hidden">
-          Persönlich
-        </TabsTrigger>
-        <TabsTrigger value="workspace" className="after:hidden">
-          Workspace
-        </TabsTrigger>
-        <TabsTrigger value="integrations" className="after:hidden">
-          Verbindungen
-        </TabsTrigger>
-        <TabsTrigger value="process" className="after:hidden">
-          Prozess
-        </TabsTrigger>
+        <TabsTrigger value="profile">Persönlich</TabsTrigger>
+        <TabsTrigger value="workspace">Workspace</TabsTrigger>
+        <TabsTrigger value="integrations">Verbindungen</TabsTrigger>
+        <TabsTrigger value="process">Prozess</TabsTrigger>
       </TabsList>
 
       <ProfileTab profile={profile} register={registerTab} />

@@ -82,4 +82,29 @@ describe('buildSalesRepQueue', () => {
     expect(queue.filter((q) => q.tone === 'intent')).toHaveLength(1)
     expect(new Set(queue.map((q) => q.id)).size).toBe(queue.length)
   })
+
+  it('formatiert Deal-Volumen in der Warn-Zeile', () => {
+    const queue = buildSalesRepQueue(
+      baseModel({
+        activeDeals: [
+          {
+            id: 'd1',
+            title: 'Beta AG',
+            status: 'open',
+            company_id: 'c1',
+            company_name: 'Beta AG',
+            volume: '1200000',
+            expiry_date: '2026-07-15',
+            linkedCount: 1,
+            bestMatchScore: 0.3,
+            quickShareReferenceId: null,
+            recentSignalCount: 0,
+          },
+        ],
+      }),
+    )
+
+    expect(queue[0]?.meta).toContain('1.200.000 €')
+    expect(queue[0]?.meta).not.toContain('1200000')
+  })
 })
