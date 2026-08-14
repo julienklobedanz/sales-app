@@ -202,18 +202,18 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
       <div
         className={
           compact
-            ? 'flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between'
-            : 'flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between'
+            ? 'flex flex-col gap-2 rounded-lg border border-border bg-muted/70 p-3 sm:flex-row sm:items-center sm:justify-between'
+            : 'flex flex-col gap-3 rounded-lg border border-border bg-muted/70 p-4 sm:flex-row sm:items-center sm:justify-between'
         }
       >
         <div>
-          <p className="text-sm font-medium text-slate-900">
+          <p className="text-sm font-medium text-foreground">
             Zwei-Faktor-Authentifizierung (TOTP)
           </p>
           {loading || verifiedFactor ? (
             <p
               className={
-                compact ? 'mt-0.5 text-xs text-slate-600' : 'mt-1 text-xs text-slate-600'
+                compact ? 'mt-0.5 text-xs text-muted-foreground' : 'mt-1 text-xs text-muted-foreground'
               }
             >
               {loading

@@ -37,7 +37,7 @@ function verdictBannerClass(tone: ReturnType<typeof eligibilityVerdictTone>): st
     case 'caution':
       return 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
     default:
-      return 'border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200'
+      return 'border-border bg-muted text-foreground dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200'
   }
 }
 

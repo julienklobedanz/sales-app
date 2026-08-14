@@ -36,8 +36,8 @@ function recentTitle(item: CommandRecentItem) {
 
 function RecentIcon({ kind }: { kind: CommandRecentKind }) {
   if (kind === 'account')
-    return <Building2 className="size-4 shrink-0 text-slate-500" aria-hidden />
-  return <FileText className="size-4 shrink-0 text-slate-500" aria-hidden />
+    return <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+  return <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
 }
 
 type Props = {
@@ -129,21 +129,21 @@ export function CommandCenter({ greetingName }: Props) {
   return (
     <div className="flex min-h-[min(70vh,640px)] flex-col pb-16">
       <div className="mx-auto mt-12 flex w-full max-w-3xl flex-col items-center px-4 text-center sm:mt-16 md:mt-20">
-        <h2 className="mb-6 text-xl font-medium tracking-tight text-slate-800">
+        <h2 className="mb-6 text-xl font-medium tracking-tight text-foreground">
           Wie kann RefStack dir heute helfen, {firstName}?
         </h2>
 
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-white py-3.5 pl-3 pr-4 shadow-md transition-all focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-slate-950/10">
-              <Search className="ml-1 size-5 shrink-0 text-slate-400" aria-hidden />
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-white py-3.5 pl-3 pr-4 shadow-md transition-all focus-within:border-border focus-within:ring-2 focus-within:ring-slate-950/10">
+              <Search className="ml-1 size-5 shrink-0 text-muted-foreground" aria-hidden />
               <input
                 ref={inputRef}
                 type="search"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="RefStack durchsuchen …"
-                className="w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400"
+                className="w-full min-w-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
                 autoComplete="off"
                 spellCheck={false}
                 aria-label="Universal-Suche"
@@ -170,7 +170,7 @@ export function CommandCenter({ greetingName }: Props) {
 
         {visibleSuggestions.length > 0 ? (
           <div className="mt-5 w-full text-left">
-            <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {draft.trim() ? 'Vorschläge' : 'Beispielanfragen'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2.5">
@@ -179,7 +179,7 @@ export function CommandCenter({ greetingName }: Props) {
                   key={s.query}
                   type="button"
                   onClick={() => applySuggestion(s.query, true)}
-                  className="cursor-pointer rounded-full border border-slate-200/60 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
+                  className="cursor-pointer rounded-full border border-border/60 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
                 >
                   {s.label}
                 </button>
@@ -205,7 +205,7 @@ export function CommandCenter({ greetingName }: Props) {
 
       {displayRecents.length > 0 ? (
         <div className="mx-auto mt-10 w-full max-w-3xl px-4 sm:mt-12">
-          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Zuletzt geöffnet
           </h3>
           <ul className="space-y-1">
@@ -214,15 +214,15 @@ export function CommandCenter({ greetingName }: Props) {
                 <button
                   type="button"
                   onClick={() => openRecent(item)}
-                  className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-transparent p-3 text-left transition-all hover:border-slate-100 hover:bg-slate-50"
+                  className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-transparent p-3 text-left transition-all hover:border-border hover:bg-muted"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <RecentIcon kind={item.kind} />
-                    <span className="truncate text-sm font-medium text-slate-800">
+                    <span className="truncate text-sm font-medium text-foreground">
                       {recentTitle(item)}
                     </span>
                   </span>
-                  <span className="ml-3 shrink-0 text-xs text-slate-400">
+                  <span className="ml-3 shrink-0 text-xs text-muted-foreground">
                     {relativeTimeDe(item.at, nowMs)}
                   </span>
                 </button>

@@ -70,8 +70,8 @@ export function WorkflowFreigabeSettingsCard({
         <CardTitle className="text-base">Freigabe-Workflow</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 px-0 pb-0 pt-2">
-        <div className="rounded-lg border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">1. Entry</p>
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm font-semibold text-foreground">1. Entry</p>
           <div className="mt-3 max-w-sm space-y-2">
             <Label htmlFor="link-expiry-days">Link Expiry (Tage)</Label>
             <Input
@@ -83,9 +83,9 @@ export function WorkflowFreigabeSettingsCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">2. Interne Prüfung</p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm font-semibold text-foreground">2. Interne Prüfung</p>
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
             <div>
               <p className="text-sm font-medium">Vier-Augen-Prinzip aktiv</p>
             </div>
@@ -96,9 +96,9 @@ export function WorkflowFreigabeSettingsCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">3. Externer Versand</p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm font-semibold text-foreground">3. Externer Versand</p>
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
             <div>
               <p className="text-sm font-medium">Delegation erlauben</p>
             </div>
@@ -109,8 +109,8 @@ export function WorkflowFreigabeSettingsCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">4. Follow-up Sequenz</p>
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm font-semibold text-foreground">4. Follow-up Sequenz</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="approval-reminder-1">Reminder #1 (Tage)</Label>
@@ -142,9 +142,9 @@ export function WorkflowFreigabeSettingsCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">5. Abschluss & Transparenz</p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm font-semibold text-foreground">5. Abschluss & Transparenz</p>
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
             <div>
               <p className="text-sm font-medium">
                 Requester bei Eskalation benachrichtigen
@@ -157,10 +157,10 @@ export function WorkflowFreigabeSettingsCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-muted p-3">
           <div>
-            <p className="text-sm font-medium text-slate-900">Live-Ablaufvorschau</p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-sm font-medium text-foreground">Live-Ablaufvorschau</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               Tag 0 Anfrage · Tag {reminder1Days || '3'} Reminder 1 · Tag{' '}
               {reminder2Days || '7'} Reminder 2 · Tag {escalationAfterDays || '10'}{' '}
               Eskalation

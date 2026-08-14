@@ -21,10 +21,10 @@ const HOMEPAGE_GROUP_LABELS = {
 } as const
 
 const SECTION_HEADING_CLASS =
-  'border-b border-slate-100 bg-slate-50/50 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400'
+  'border-b border-border bg-muted/50 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground'
 
 const ROW_CLASS =
-  'flex w-full cursor-pointer items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 transition-colors last:border-b-0 hover:bg-slate-50'
+  'flex w-full cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-left text-sm text-foreground transition-colors last:border-b-0 hover:bg-muted'
 
 type Props = {
   query: string
@@ -60,7 +60,7 @@ function HomepageGroupSection({
   if (count === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
       <p className={SECTION_HEADING_CLASS}>
         {label} ({count})
       </p>
@@ -102,9 +102,9 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
 
   if (!hasAnyHomepageSearchHit(referenceHits, groups)) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-12 text-center">
-        <p className="text-sm font-medium text-slate-800">Keine Treffer</p>
-        <p className="mt-2 text-sm text-slate-500">
+      <div className="rounded-2xl border border-dashed border-border bg-muted/60 px-6 py-12 text-center">
+        <p className="text-sm font-medium text-foreground">Keine Treffer</p>
+        <p className="mt-2 text-sm text-muted-foreground">
           Für „{query}“ wurden keine Ergebnisse gefunden. Formuliere die Anfrage anders
           oder probiere eine der Vorschläge.
         </p>
@@ -124,8 +124,8 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
-        <span className="font-medium text-slate-900">{total}</span>{' '}
+      <p className="text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{total}</span>{' '}
         {total === 1 ? 'Ergebnis' : 'Ergebnisse'} für „{query}“
       </p>
 
@@ -133,7 +133,7 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
         <HomepageGroupSection label="Referenzen" count={referenceHits.length}>
           <ul>
             {referenceHits.map((hit, index) => (
-              <li key={hit.id} className="border-b border-slate-100 last:border-b-0">
+              <li key={hit.id} className="border-b border-border last:border-b-0">
                 <MatchResultCard
                   variant="embedded"
                   hit={toMatchHit(hit)}

@@ -51,19 +51,19 @@ export function WorkflowSimulationPanel({
   resetWorkflowSandbox: () => void
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
+    <div className="rounded-lg border border-border p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Testlauf</p>
+          <p className="text-sm font-semibold text-foreground">Testlauf</p>
         </div>
         <Button type="button" size="sm" variant="outline" onClick={runWorkflowSimulation}>
           Testlauf starten
         </Button>
       </div>
-      <div className="mt-3 rounded-md border border-slate-200 p-3">
+      <div className="mt-3 rounded-md border border-border p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-900">What-if-Sandbox</p>
+            <p className="text-sm font-medium text-foreground">What-if-Sandbox</p>
           </div>
           <Switch
             checked={simulationSandboxEnabled}
@@ -108,15 +108,15 @@ export function WorkflowSimulationPanel({
                 inputMode="numeric"
               />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-slate-200 p-2.5 sm:col-span-2">
-              <span className="text-xs text-slate-600">Interne Freigabe aktiv</span>
+            <div className="flex items-center justify-between rounded-md border border-border p-2.5 sm:col-span-2">
+              <span className="text-xs text-muted-foreground">Interne Freigabe aktiv</span>
               <Switch
                 checked={simRequireInternalApproval}
                 onCheckedChange={setSimRequireInternalApproval}
               />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-slate-200 p-2.5 sm:col-span-2">
-              <span className="text-xs text-slate-600">
+            <div className="flex items-center justify-between rounded-md border border-border p-2.5 sm:col-span-2">
+              <span className="text-xs text-muted-foreground">
                 Requester bei Eskalation benachrichtigen
               </span>
               <Switch
@@ -124,18 +124,18 @@ export function WorkflowSimulationPanel({
                 onCheckedChange={setSimAutoNotifyRequesterOnEscalation}
               />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-slate-200 p-2.5 sm:col-span-2">
-              <span className="text-xs text-slate-600">Delegation erlauben</span>
+            <div className="flex items-center justify-between rounded-md border border-border p-2.5 sm:col-span-2">
+              <span className="text-xs text-muted-foreground">Delegation erlauben</span>
               <Switch
                 checked={simAutoAllowDelegation}
                 onCheckedChange={setSimAutoAllowDelegation}
               />
             </div>
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 sm:col-span-2">
-              <p className="text-xs font-medium text-slate-700">
+            <div className="rounded-md border border-border bg-muted p-2.5 sm:col-span-2">
+              <p className="text-xs font-medium text-foreground">
                 Delta zur Live-Konfiguration
               </p>
-              <ul className="mt-1.5 space-y-1 text-xs text-slate-600">
+              <ul className="mt-1.5 space-y-1 text-xs text-muted-foreground">
                 <li>
                   Reminder #1: Live {liveSettings.reminder1Days}d → Sandbox{' '}
                   {simReminder1Days || '—'}d
@@ -191,13 +191,13 @@ export function WorkflowSimulationPanel({
                   ? 'border-amber-200 bg-amber-50'
                   : item.tone === 'info'
                     ? 'border-blue-200 bg-blue-50'
-                    : 'border-slate-200 bg-slate-50'
+                    : 'border-border bg-muted'
               }`}
             >
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-foreground">
                 Tag {item.day}: {item.label}
               </p>
-              <p className="mt-0.5 text-xs text-slate-600">{item.detail}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
             </li>
           ))}
         </ul>

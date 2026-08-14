@@ -198,10 +198,10 @@ export function DashboardHome({
           size="icon"
           variant="outline"
           onClick={() => setHelpExpanded(true)}
-          className="fixed bottom-6 right-6 z-40 size-11 rounded-full border-gray-200 bg-white shadow-md hover:bg-gray-50"
+          className="fixed bottom-6 right-6 z-40 size-11 rounded-full border-border bg-white shadow-md hover:bg-muted"
           aria-label="Erste Schritte anzeigen"
         >
-          <HelpCircle className="size-5 text-gray-600" aria-hidden />
+          <HelpCircle className="size-5 text-muted-foreground" aria-hidden />
         </Button>
       ) : null}
     </div>
@@ -220,23 +220,23 @@ function ChecklistCard({
   return (
     <div
       className={cn(
-        'relative mx-auto max-w-xl rounded-2xl border border-gray-100 bg-white p-6 shadow-sm',
+        'relative mx-auto max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm',
         className ?? 'mt-12',
       )}
     >
       <button
         type="button"
         onClick={onDismiss}
-        className="absolute right-4 top-4 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
         aria-label="Checkliste schließen"
       >
         <X className="size-4" aria-hidden />
       </button>
 
-      <h2 className="pr-8 text-lg font-semibold text-gray-900">
+      <h2 className="pr-8 text-lg font-semibold text-foreground">
         Willkommen bei RefStack! Lass uns deinen Workspace einrichten.
       </h2>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-muted-foreground">
         In wenigen Schritten bist du startklar für Accounts, Referenzen und Markt-Signale.
       </p>
 
@@ -248,14 +248,14 @@ function ChecklistCard({
               <Link
                 href={step.href}
                 className={cn(
-                  'group flex items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all hover:border-gray-100 hover:bg-gray-50',
+                  'group flex items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all hover:border-border hover:bg-muted',
                   done && 'opacity-90',
                 )}
               >
                 <span
                   className={cn(
                     'mt-0.5 shrink-0 transition-all duration-300 ease-out',
-                    done ? 'scale-110 text-emerald-600' : 'text-gray-300',
+                    done ? 'scale-110 text-emerald-600' : 'text-muted-foreground',
                   )}
                 >
                   {done ? (
@@ -268,8 +268,8 @@ function ChecklistCard({
                   className={cn(
                     'text-sm leading-snug transition-all duration-300 ease-out',
                     done
-                      ? 'text-gray-500 line-through decoration-gray-400'
-                      : 'text-gray-800',
+                      ? 'text-muted-foreground line-through decoration-gray-400'
+                      : 'text-foreground',
                   )}
                 >
                   {step.label}
