@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { statusTone } from '@/lib/ui/status-tone'
+
 import {
   getReferenceApprovalExplanation,
   resolveCustomerWorkflowBadge,
@@ -146,6 +148,45 @@ describe('reference-approval-display', () => {
         approvalRequestedAt: '2026-01-01T00:00:00Z',
       }),
     ).toContain('Freigabestatus-Card')
+  })
+
+  it('title badge uses Extern nutzbar for portfolio approval without customer workflow', () => {
+    for (const referenceStatus of ['approved', 'external'] as const) {
+      const badge = resolveReferenceTitleBadge({
+        referenceStatus,
+        customerApprovalStatus: null,
+        approvalRequestedAt: null,
+      })
+      expect(badge.label).toBe('Extern nutzbar')
+      expect(badge.className).toBe(statusTone.info)
+      expect(badge.className).not.toMatch(/border-sky-|bg-orange-50/)
+    }
+  })
+
+  it('card customer badge uses Extern nutzbar instead of Noch nicht gestartet', () => {
+    const badges = resolveFreigabestatusCardBadges({
+      internalApprovalStatus: 'pending_internal',
+      customerApprovalStatus: null,
+      referenceStatus: 'approved',
+      approvalRequestedAt: null,
+    })
+    expect(badges.customer.label).toBe('Extern nutzbar')
+    expect(badges.customer.label).not.toBe('Noch nicht gestartet')
+    expect(badges.customer.className).toBe(statusTone.info)
+    expect(badges.internal.label).toBe('Noch nicht gestartet')
+  })
+
+  it('title badge Extern freigegeben uses statusTone, not sky/orange utilities', () => {
+    const badge = resolveReferenceTitleBadge({
+      referenceStatus: 'external',
+      internalApprovalStatus: 'approved_internal',
+      customerApprovalStatus: 'approved',
+      approvalScopeNamedMention: true,
+      approvalScopeAnonymousMention: false,
+    })
+    expect(badge.label).toBe('Extern freigegeben')
+    expect(badge.className).toBe(statusTone.info)
+    expect(badge.className).not.toMatch(/border-sky-|bg-orange-50/)
   })
 
   it('readiness state aligns with internal rejected', () => {

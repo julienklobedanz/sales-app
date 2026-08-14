@@ -14,4 +14,22 @@ export const statusTone = {
     'border-border/80 bg-muted/50 text-muted-foreground dark:border-border dark:bg-muted/30',
 } as const
 
+/** Text-only status color (metrics, scores). */
+export const statusToneText = {
+  success: 'text-status-success-foreground',
+  warning: 'text-status-warning-foreground',
+  danger: 'text-status-danger-foreground',
+  info: 'text-status-info-foreground',
+  muted: 'text-muted-foreground',
+} as const
+
+/** Solid fill for compact recommendation chips. */
+export const statusToneFill = {
+  success: 'bg-status-success text-white',
+  warning: 'bg-status-warning text-white',
+  danger: 'bg-status-danger text-white',
+  info: 'bg-status-info text-white',
+  muted: 'bg-muted-foreground/80 text-white',
+} as const
+
 export type StatusTone = keyof typeof statusTone

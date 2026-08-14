@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { COPY } from '@/lib/copy'
+import { statusTone, statusToneFill, statusToneText } from '@/lib/ui/status-tone'
 import {
   eligibilityVerdictLabel,
   eligibilityVerdictTone,
@@ -15,28 +16,26 @@ function toneStyles(tone: DealRfpCockpitData['recommendation']['tone']) {
   switch (tone) {
     case 'go':
       return {
-        shell:
-          'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40',
-        badge: 'bg-emerald-600 text-white',
-        accent: 'bg-emerald-600',
+        shell: statusTone.success,
+        badge: statusToneFill.success,
+        accent: 'bg-status-success',
       }
     case 'caution':
       return {
-        shell:
-          'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40',
-        badge: 'bg-amber-500 text-white',
-        accent: 'bg-amber-500',
+        shell: statusTone.warning,
+        badge: statusToneFill.warning,
+        accent: 'bg-status-warning',
       }
     case 'no-bid':
       return {
-        shell: 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/40',
-        badge: 'bg-red-600 text-white',
-        accent: 'bg-red-600',
+        shell: statusTone.danger,
+        badge: statusToneFill.danger,
+        accent: 'bg-status-danger',
       }
     default:
       return {
         shell: 'border-border bg-muted/40',
-        badge: 'bg-muted-foreground/80 text-white',
+        badge: statusToneFill.muted,
         accent: 'bg-muted-foreground/60',
       }
   }
@@ -48,9 +47,9 @@ function shortLabel(label: string): string {
 }
 
 function metricValueClass(tone: 'go' | 'caution' | 'no-bid' | 'muted'): string {
-  if (tone === 'go') return 'text-emerald-700 dark:text-emerald-300'
-  if (tone === 'caution') return 'text-amber-700 dark:text-amber-300'
-  if (tone === 'no-bid') return 'text-red-700 dark:text-red-300'
+  if (tone === 'go') return statusToneText.success
+  if (tone === 'caution') return statusToneText.warning
+  if (tone === 'no-bid') return statusToneText.danger
   return 'text-foreground'
 }
 

@@ -1,3 +1,5 @@
+import { statusToneFill, statusToneText } from '@/lib/ui/status-tone'
+
 export type BenchmarkRiskCriterionId =
   | 'no_contact_rule'
   | 'incumbent_spec_sheet'
@@ -130,20 +132,16 @@ export function benchmarkRiskTone(scorePercent: number): BenchmarkRiskTone {
 }
 
 export function benchmarkRiskValueClass(tone: BenchmarkRiskTone): string {
-  if (tone === 'high') return 'text-red-600'
-  if (tone === 'medium') return 'text-amber-500'
-  return 'text-green-600'
+  if (tone === 'high') return statusToneText.danger
+  if (tone === 'medium') return statusToneText.warning
+  return statusToneText.success
 }
 
-/** Badge-Stil analog „Empfehlung: Go“ — sichtbare Umrandung + Vollton-Hintergrund. */
+/** Badge-Stil analog „Empfehlung: Go“ — Vollton über statusToneFill. */
 export function benchmarkRiskBadgeClass(tone: BenchmarkRiskTone): string {
-  if (tone === 'high') {
-    return 'border border-red-700 bg-red-600 text-white'
-  }
-  if (tone === 'medium') {
-    return 'border border-amber-600 bg-amber-500 text-white'
-  }
-  return 'border border-emerald-700 bg-emerald-600 text-white'
+  if (tone === 'high') return statusToneFill.danger
+  if (tone === 'medium') return statusToneFill.warning
+  return statusToneFill.success
 }
 
 export function topBenchmarkRiskTooltipHits(

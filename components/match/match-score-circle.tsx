@@ -3,12 +3,8 @@
 import { cn } from '@/lib/utils'
 import type { MatchStrengthDisplay } from '@/lib/match/match-strength'
 
-const TIER_COLOR: Record<MatchStrengthDisplay['tier'], string> = {
-  excellent: 'text-emerald-600 border-emerald-500/35',
-  good: 'text-emerald-600 border-emerald-500/30',
-  moderate: 'text-amber-600 border-amber-500/35',
-  low: 'text-muted-foreground border-border',
-}
+/** D2: Prozent ist kein Status — Kreis bleibt neutral, Label trägt die Stufe. */
+const CIRCLE_TONE = 'text-foreground border-border'
 
 const SIZE_CLASS = {
   default: 'h-[3.25rem] w-[3.25rem] px-1 text-[10px]',
@@ -37,7 +33,7 @@ export function MatchScoreCircle({
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full border-2 bg-muted/40 text-center font-semibold leading-tight',
         SIZE_CLASS[size],
-        TIER_COLOR[strength.tier],
+        CIRCLE_TONE,
       )}
       aria-label={strength.ariaLabel}
     >
