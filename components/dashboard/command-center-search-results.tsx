@@ -192,7 +192,7 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
         <>
           <span className="flex min-w-0 items-center gap-3">
             <ResultIconWrap>
-              <TrendingUp className="size-4 text-violet-600" aria-hidden />
+              <TrendingUp className="size-4 text-primary" aria-hidden />
             </ResultIconWrap>
             <span className="min-w-0 truncate font-medium text-foreground">
               {item.title}
@@ -233,7 +233,7 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
           </span>
           <Badge
             variant="outline"
-            className="shrink-0 border-violet-200 bg-violet-50 text-[10px] font-medium text-violet-800"
+            className="shrink-0 border-primary/30 bg-primary/10 text-[10px] font-medium text-primary"
           >
             Kollege für Warm-Intro
           </Badge>

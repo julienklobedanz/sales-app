@@ -41,7 +41,7 @@ function severityBadge(severity: DealDeskRedFlag['severity']): {
 function topicBadgeClass(topic: string): string {
   const t = topic.toLowerCase()
   if (/legal|recht|vertrag/.test(t)) {
-    return 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200'
+    return 'bg-primary/10 text-primary'
   }
   if (/security|sicherheit|compliance|iso/.test(t)) {
     return 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200'

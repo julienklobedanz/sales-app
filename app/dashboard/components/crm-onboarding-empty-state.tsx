@@ -188,7 +188,7 @@ export function CrmOnboardingEmptyState({
           type="button"
           onClick={onCreateManual}
           disabled={!canCreateManual}
-          className={`${actionButtonClass} bg-violet-600 font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`${actionButtonClass} bg-primary font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50`}
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white/15">
             <Plus className="size-5 shrink-0 text-white" aria-hidden />
