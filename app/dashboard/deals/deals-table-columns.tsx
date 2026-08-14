@@ -227,7 +227,10 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
       minSize: 88,
       header: ({ column }) => <TableSortableHeader label="Deadline" column={column} />,
       cell: ({ row }) => {
-        const isHot = isDealExpiringIn30Days(row.original.expiry_date)
+        const isHot = isDealExpiringIn30Days(
+          row.original.expiry_date,
+          row.original.status,
+        )
         return (
           <span
             className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}

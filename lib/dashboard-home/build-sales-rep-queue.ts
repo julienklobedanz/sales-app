@@ -4,6 +4,7 @@ import type {
   DashboardQueueTone,
   SalesRepDashboardModel,
 } from '@/lib/dashboard-home/dashboard-home-types'
+import { formatDealVolume } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
 
 export type QueueTone = DashboardQueueTone
@@ -83,7 +84,12 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
       id: `deal-warn-${deal.id}`,
       tone: 'warn',
       title: `${deal.company_name ?? deal.title} — ${copy.queueWeakProof}`,
-      meta: [deal.volume, dealLabel(deal)].filter(Boolean).join(' · '),
+      meta: [
+        deal.volume ? formatDealVolume(deal.volume) : null,
+        dealLabel(deal),
+      ]
+        .filter(Boolean)
+        .join(' · '),
       ctaLabel: copy.queueFindProof,
       href: ROUTES.matchWithDeal(deal.id),
     })
