@@ -29,6 +29,7 @@ import { deleteWorkspace } from '../settings-workspace-actions'
 import type { OrganizationBillingSettings } from '@/lib/organizations/billing-settings'
 import type { RolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { ROUTES } from '@/lib/routes'
+import { COPY } from '@/lib/copy'
 import {
   SETTINGS_CARD_CLASS_COMPACT,
   SETTINGS_DANGER_ZONE_CLASS_COMPACT,
@@ -172,8 +173,10 @@ export function WorkspaceTab({
           <div className={SETTINGS_DANGER_ZONE_CLASS_COMPACT}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-red-700">Danger Zone</p>
-                <p className="mt-0.5 text-xs text-red-600/90">
+                <p className="text-sm font-semibold text-destructive">
+                  {COPY.settings.dangerZoneTitle}
+                </p>
+                <p className="mt-0.5 text-xs text-destructive/80">
                   Workspace inkl. Daten dauerhaft löschen. Nicht rückgängig zu machen.
                 </p>
               </div>

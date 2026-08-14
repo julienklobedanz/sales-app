@@ -332,7 +332,7 @@ export function SettingsProfileCard({
                 inputMode="tel"
                 value={phoneValue}
                 onChange={(e) => setPhoneValue(e.target.value)}
-                placeholder="+49 …"
+                placeholder="z. B. +49 …"
                 className="h-9 bg-background"
                 autoComplete="tel"
                 required={salesRequired}
@@ -357,19 +357,22 @@ export function SettingsProfileCard({
             </div>
             <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="bookingUrl" className="text-xs">
-                Terminbuchung (öffentliche Kundenansicht)
+                Terminbuchung
               </Label>
               <Input
                 id="bookingUrl"
                 name="bookingUrl"
                 type="url"
                 inputMode="url"
-                placeholder="https://calendly.com/…"
+                placeholder="z. B. https://calendly.com/…"
                 value={bookingUrlValue}
                 onChange={(e) => setBookingUrlValue(e.target.value)}
                 className="h-9 bg-background"
                 autoComplete="off"
               />
+              <p className="text-[11px] text-muted-foreground">
+                Wird in der öffentlichen Kundenansicht angezeigt.
+              </p>
             </div>
           </div>
         </div>

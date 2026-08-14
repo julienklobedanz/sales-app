@@ -11,7 +11,7 @@ describe('team-invite-email', () => {
     expect(formatTeamInviteRoleLabel('admin', 'sales_leader')).toBe(
       'Administrator · Sales Lead',
     )
-    expect(formatTeamInviteRoleLabel('member', 'sales_rep')).toBe('Mitglied · Vertrieb')
+    expect(formatTeamInviteRoleLabel('member', 'sales_rep')).toBe('Mitglied · Sales Rep')
   })
 
   it('builds branded html with invite link and meta', () => {
