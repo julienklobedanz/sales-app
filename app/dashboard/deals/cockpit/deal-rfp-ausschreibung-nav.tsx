@@ -29,7 +29,7 @@ export function DealRfpAusschreibungNav({ items }: { items: AusschreibungNavItem
 
   return (
     <nav aria-label={COPY.deals.cockpit.rfpBlockTitle} className="sticky top-0 z-20 mb-3">
-      <div className="rounded-2xl border border-gray-100 bg-white p-2 shadow-lg dark:border-border dark:bg-card sm:p-3">
+      <div className="rounded-2xl border border-border bg-white p-2 shadow-lg dark:border-border dark:bg-card sm:p-3">
         <ul className="flex gap-1 overflow-x-auto pb-0.5">
           {items.map((item) => {
             const icon = NAV_ICONS[item.id]
@@ -38,20 +38,20 @@ export function DealRfpAusschreibungNav({ items }: { items: AusschreibungNavItem
                 <a
                   href={item.href}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors',
-                    'hover:bg-gray-50 dark:text-foreground dark:hover:bg-muted',
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-foreground transition-colors',
+                    'hover:bg-muted dark:text-foreground dark:hover:bg-muted',
                   )}
                 >
                   {icon ? (
                     <AppIcon
                       icon={icon}
                       size={16}
-                      className="shrink-0 text-gray-500 dark:text-muted-foreground"
+                      className="shrink-0 text-muted-foreground dark:text-muted-foreground"
                     />
                   ) : null}
                   <span>{item.label}</span>
                   {item.count ? (
-                    <span className="tabular-nums text-gray-500 dark:text-muted-foreground">
+                    <span className="tabular-nums text-muted-foreground dark:text-muted-foreground">
                       {item.count}
                     </span>
                   ) : null}

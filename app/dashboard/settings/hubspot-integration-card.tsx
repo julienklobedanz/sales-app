@@ -67,7 +67,7 @@ export function HubSpotIntegrationCard({
       <CardHeader className={compact ? 'space-y-1.5 px-0 pt-0 pb-0' : 'px-0 pt-0'}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+            <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-border bg-white">
               <Image
                 src="/brands/hubspot.png"
                 alt="HubSpot Logo"
@@ -87,7 +87,7 @@ export function HubSpotIntegrationCard({
           </span>
         </div>
         <CardDescription
-          className={compact ? 'line-clamp-1 text-xs text-slate-500' : 'text-slate-500'}
+          className={compact ? 'line-clamp-1 text-xs text-muted-foreground' : 'text-muted-foreground'}
           title="Verbinde CRM-Kontakte und Deal-Daten mit RefStack."
         >
           Verbinde CRM-Kontakte und Deal-Daten mit RefStack.
@@ -98,7 +98,7 @@ export function HubSpotIntegrationCard({
       >
         <div
           className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] ${
-            connected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+            connected ? 'bg-emerald-50 text-emerald-700' : 'bg-accent text-muted-foreground'
           }`}
         >
           <AppIcon icon={connected ? Tick01Icon : PlugSocketIcon} size={12} />
@@ -106,18 +106,18 @@ export function HubSpotIntegrationCard({
         </div>
 
         {!configured ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             HubSpot OAuth ist noch nicht konfiguriert (HUBSPOT_CLIENT_ID /
             HUBSPOT_CLIENT_SECRET).
           </p>
         ) : null}
 
         {connected && externalAccountId ? (
-          <p className="text-xs text-slate-500">Portal-ID: {externalAccountId}</p>
+          <p className="text-xs text-muted-foreground">Portal-ID: {externalAccountId}</p>
         ) : null}
 
         {connected && lastSyncAt ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Letzter Import: {new Date(lastSyncAt).toLocaleString('de-DE')}
           </p>
         ) : null}
@@ -139,7 +139,7 @@ export function HubSpotIntegrationCard({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-full justify-center text-slate-600"
+                className="h-8 w-full justify-center text-muted-foreground"
                 disabled={pending}
                 onClick={handleDisconnect}
               >
@@ -158,7 +158,7 @@ export function HubSpotIntegrationCard({
             </Button>
           )
         ) : !canManage ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Nur Administratoren können CRM-Verbindungen verwalten.
           </p>
         ) : null}

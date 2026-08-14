@@ -33,7 +33,7 @@ function severityBadge(severity: DealDeskRedFlag['severity']): {
     default:
       return {
         label: COPY.deals.cockpit.risksSeverityMedium,
-        className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+        className: 'bg-accent text-foreground dark:bg-slate-800 dark:text-slate-200',
       }
   }
 }
@@ -157,7 +157,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                               ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
                               : gap.severity === 'partial'
                                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+                                : 'bg-accent text-foreground dark:bg-slate-800 dark:text-slate-200',
                           )}
                         >
                           {gap.severity === 'missing'

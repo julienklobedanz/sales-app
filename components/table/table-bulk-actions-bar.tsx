@@ -23,7 +23,7 @@ type Props = {
 
 const actionButtonClass = {
   default:
-    'text-sm flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-50 rounded-xl text-gray-700 font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+    'text-sm flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted rounded-xl text-foreground font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
   destructive:
     'text-sm flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
 }
@@ -47,8 +47,8 @@ export function TableBulkActionsBar({
       role="region"
       aria-label="Bulk-Aktionen"
     >
-      <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
-        <p className="px-2 text-sm font-medium text-gray-600">
+      <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-border bg-white p-3 shadow-lg">
+        <p className="px-2 text-sm font-medium text-muted-foreground">
           {selectedCount} ausgewählt
         </p>
 
@@ -70,12 +70,12 @@ export function TableBulkActionsBar({
             )
           })}
 
-          <div className="mx-1 h-4 w-px bg-gray-200" aria-hidden />
+          <div className="mx-1 h-4 w-px bg-accent" aria-hidden />
 
           <button
             type="button"
             onClick={onClearSelection}
-            className="rounded-xl px-2 py-1.5 text-sm text-gray-400 transition-colors hover:text-gray-600"
+            className="rounded-xl px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-muted-foreground"
             aria-label="Auswahl aufheben"
           >
             <X className="size-4" aria-hidden />
