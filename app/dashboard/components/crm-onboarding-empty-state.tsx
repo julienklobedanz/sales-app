@@ -92,7 +92,7 @@ function CrmLogo({ src, variant }: { src: string; variant: 'brand' | 'light' }) 
 function SoonBadge({ variant }: { variant: 'brand' | 'light' }) {
   if (variant === 'light') {
     return (
-      <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <span className="shrink-0 rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-muted-foreground">
         Demnächst
       </span>
     )
@@ -142,8 +142,8 @@ export function CrmOnboardingEmptyState({
 
   return (
     <div className="flex min-h-[70vh] w-full flex-col items-center justify-center p-8">
-      <h2 className="mb-2 text-center text-2xl font-bold text-gray-900">{copy.title}</h2>
-      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-gray-500">
+      <h2 className="mb-2 text-center text-2xl font-bold text-foreground">{copy.title}</h2>
+      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-muted-foreground">
         {copy.description}
       </p>
 
@@ -162,7 +162,7 @@ export function CrmOnboardingEmptyState({
               disabled={isDisabled}
               aria-disabled={isDisabled}
               onClick={hubSpotActive ? onHubSpotClick : undefined}
-              className={`${isDisabled ? disabledCrmButtonClass : `${actionButtonClass} opacity-100 text-white hover:brightness-105`} ${isLight ? 'border-gray-200 text-gray-800' : ''}`}
+              className={`${isDisabled ? disabledCrmButtonClass : `${actionButtonClass} opacity-100 text-white hover:brightness-105`} ${isLight ? 'border-border text-foreground' : ''}`}
               style={{ backgroundColor: integration.backgroundColor }}
             >
               <CrmLogo src={integration.logoSrc} variant={integration.variant} />
@@ -182,7 +182,7 @@ export function CrmOnboardingEmptyState({
           )
         })}
 
-        <div className="my-1 border-t border-gray-200" aria-hidden />
+        <div className="my-1 border-t border-border" aria-hidden />
 
         <button
           type="button"

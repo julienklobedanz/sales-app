@@ -40,11 +40,11 @@ export function PortfolioEmailUnlockGate({ slug }: { slug: string }) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/25 p-6">
       <div className="w-full max-w-md rounded-2xl border bg-card/95 p-8 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent dark:bg-slate-800">
             <AppIcon
               icon={SquareLock02Icon}
               size={22}
-              className="text-slate-700 dark:text-slate-200"
+              className="text-foreground dark:text-slate-200"
             />
           </div>
           <div>

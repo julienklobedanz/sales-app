@@ -69,7 +69,7 @@ function PlaceholderIntegrationCard({
       <CardHeader className="space-y-1.5 px-0 pt-0 pb-0">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+            <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-border bg-white">
               <Image
                 src={integration.logo}
                 alt={`${integration.key} Logo`}
@@ -88,14 +88,14 @@ function PlaceholderIntegrationCard({
           </span>
         </div>
         <CardDescription
-          className="line-clamp-1 text-xs text-slate-500"
+          className="line-clamp-1 text-xs text-muted-foreground"
           title={integration.desc}
         >
           {integration.desc}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2.5 px-0 pb-0 pt-3">
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2 py-0.5 text-[11px] text-muted-foreground">
           <AppIcon icon={PlugSocketIcon} size={12} />
           Nicht verbunden
         </div>

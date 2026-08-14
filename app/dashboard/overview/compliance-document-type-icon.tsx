@@ -44,7 +44,7 @@ export function ComplianceDocumentTypeIcon({
           decoding="async"
         />
       ) : (
-        <Lock className="size-4 text-slate-500" aria-hidden />
+        <Lock className="size-4 text-muted-foreground" aria-hidden />
       )}
     </span>
   )

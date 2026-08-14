@@ -56,16 +56,16 @@ export function getSmeCategoryBadgeClass(category: string): string {
     return 'border-amber-200 bg-amber-50 text-amber-800'
   }
   if (c.includes('security')) {
-    return 'border-slate-300 bg-slate-100 text-slate-700'
+    return 'border-border bg-accent text-foreground'
   }
-  return 'border-slate-200 bg-slate-50 text-slate-700'
+  return 'border-border bg-muted text-foreground'
 }
 
 export function getSmeDueBadgeClass(dueInDays: number): string {
   if (dueInDays < 3) {
     return 'border-red-100 bg-red-50 text-red-700'
   }
-  return 'border-transparent bg-slate-100 text-slate-600'
+  return 'border-transparent bg-accent text-muted-foreground'
 }
 
 export function formatSmeDueLabel(dueInDays: number): string {

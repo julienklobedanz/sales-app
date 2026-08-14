@@ -117,7 +117,7 @@ export function AuthAlternativeSignIn({
               setSsoOpen(true)
             }}
           >
-            <AppIcon icon={Shield} size={15} className="text-zinc-400" />
+            <AppIcon icon={Shield} size={15} className="text-muted-foreground" />
             SSO
           </Button>
         ) : null}
@@ -128,7 +128,7 @@ export function AuthAlternativeSignIn({
           disabled={isBusy || magicLinkSent}
           onClick={handleMagicLink}
         >
-          <AppIcon icon={Mail01Icon} size={15} className="text-zinc-400" />
+          <AppIcon icon={Mail01Icon} size={15} className="text-muted-foreground" />
           {isMagicPending ? 'Wird gesendet …' : 'Magic Link'}
         </Button>
       </div>

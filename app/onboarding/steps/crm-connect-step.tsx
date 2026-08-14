@@ -92,7 +92,7 @@ export function CrmConnectStep({ hubspotConfigured, onSkip }: CrmConnectStepProp
       <button
         type="button"
         onClick={onSkip}
-        className="mt-4 block w-full text-center text-sm text-gray-400 transition-colors hover:text-gray-600"
+        className="mt-4 block w-full text-center text-sm text-muted-foreground transition-colors hover:text-muted-foreground"
       >
         Accounts später importieren oder manuell anlegen (Schritt überspringen)
       </button>

@@ -86,11 +86,11 @@ export function MarketSignalsPushCard() {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 px-3 py-2">
+    <div className="rounded-lg border border-border px-3 py-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium">Browser registrieren (Web Push)</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Status: {status === 'connected' ? 'Verbunden' : 'Nicht verbunden'}
           </p>
         </div>

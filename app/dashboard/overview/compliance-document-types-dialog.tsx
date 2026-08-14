@@ -169,7 +169,7 @@ export function ComplianceDocumentTypesDialog({
                     </>
                   ) : (
                     <>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                         {t.label}
                       </span>
                       {t.isSystem ? (

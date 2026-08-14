@@ -113,7 +113,7 @@ export function DealExecutiveBriefingDialog({
             {COPY.deals.cockpit.briefingDialogDescription}
           </DialogDescription>
         </DialogHeader>
-        <pre className="max-h-[min(50vh,400px)] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+        <pre className="max-h-[min(50vh,400px)] overflow-y-auto rounded-xl border border-border bg-muted p-4 text-xs leading-relaxed whitespace-pre-wrap text-foreground">
           {briefing}
         </pre>
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">

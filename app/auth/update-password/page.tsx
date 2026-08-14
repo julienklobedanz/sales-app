@@ -24,15 +24,15 @@ export default async function UpdatePasswordPage() {
     >
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Neues Passwort festlegen
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Wähle ein sicheres Passwort für dein Konto.
           </p>
         </div>
         <UpdatePasswordForm />
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           <Link
             href={ROUTES.login}
             className="font-medium text-primary underline-offset-4 hover:underline"

@@ -122,7 +122,7 @@ export function SettingsCapabilityProfile({
         <CardTitle className={compact ? 'text-sm font-semibold' : 'text-base'}>
           {COPY.settings.capabilityProfile.title}
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className="text-muted-foreground">
           {COPY.settings.capabilityProfile.description}
         </CardDescription>
       </CardHeader>
@@ -194,7 +194,7 @@ export function SettingsCapabilityProfile({
           />
         </div>
 
-        <div className="border-t border-slate-200 pt-3">
+        <div className="border-t border-border pt-3">
           <p className="mb-2 text-sm font-medium">
             {COPY.settings.capabilityProfile.icpTitle}
           </p>

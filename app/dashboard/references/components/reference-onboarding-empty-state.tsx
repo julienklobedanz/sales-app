@@ -73,10 +73,10 @@ export function ReferenceOnboardingEmptyState({
 
   return (
     <div className="flex min-h-[70vh] w-full flex-col items-center justify-center p-8">
-      <h2 className="mb-2 text-center text-2xl font-bold text-gray-900">
+      <h2 className="mb-2 text-center text-2xl font-bold text-foreground">
         Importiere deine Referenzen auf Autopilot
       </h2>
-      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-gray-500">
+      <p className="mx-auto mb-8 max-w-lg text-center text-sm text-muted-foreground">
         Lade eine oder mehrere bestehende Case Studies oder Projekt-Folien (PDF, PPTX)
         hoch. RefStack extrahiert die Daten, strukturiert sie und erstellt daraus sofort
         nutzbare Referenzen für euren Vertrieb — alles an einem Ort.
@@ -143,7 +143,7 @@ export function ReferenceOnboardingEmptyState({
               <button
                 type="button"
                 onClick={onCreateManual}
-                className="flex items-center gap-1 font-medium text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
               >
                 <Plus className="size-4 shrink-0" aria-hidden />
                 Erste Referenz manuell anlegen
@@ -151,7 +151,7 @@ export function ReferenceOnboardingEmptyState({
             ) : (
               <Link
                 href={ROUTES.references.new}
-                className="flex items-center gap-1 font-medium text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
               >
                 <Plus className="size-4 shrink-0" aria-hidden />
                 Erste Referenz manuell anlegen
@@ -160,7 +160,7 @@ export function ReferenceOnboardingEmptyState({
           </div>
         </>
       ) : (
-        <p className="max-w-md text-center text-sm text-gray-500">
+        <p className="max-w-md text-center text-sm text-muted-foreground">
           Noch keine freigegebenen Referenzen in deinem Workspace. Bitte dein Team, eine
           Referenz anzulegen oder freizugeben.
         </p>
