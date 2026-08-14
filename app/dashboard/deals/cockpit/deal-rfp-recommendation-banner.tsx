@@ -139,6 +139,10 @@ export function DealRfpRecommendationBanner({
       ? formatAngebotsReifeBreakdown(data.winProbabilityBreakdown)
       : null
 
+  const knockouts = (eligibilityAssessment?.criteria ?? []).filter(
+    (row) => row.mandatory && row.status === 'not_met',
+  )
+
   return (
     <div id="urteil" className="scroll-mt-24">
       <div
@@ -163,6 +167,16 @@ export function DealRfpRecommendationBanner({
                 <p className="text-sm leading-relaxed text-foreground">
                   {recommendation.detail}
                 </p>
+                {knockouts.length > 0 ? (
+                    <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-xs text-foreground">
+                      {knockouts.map((row) => (
+                        <li key={row.id}>
+                          <span className="font-medium">{row.label}</span>
+                          {row.detail ? `: ${row.detail}` : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 {analyzedLabel ? (
                   <p className="text-xs text-muted-foreground">{analyzedLabel}</p>
                 ) : null}

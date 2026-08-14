@@ -5,6 +5,7 @@ import {
 } from '@/lib/deal-desk/win-probability'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 import { computeCoveragePercentWithVerdicts } from '@/lib/deals/rfp-relevance-coverage'
+import type { EligibilityVerdict } from '@/lib/deals/eligibility-criteria-schema'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { RfpVerdict } from '@/lib/rfp-relevance'
@@ -46,6 +47,8 @@ export function resolveBidRecommendation(args: {
   winProbability: number
   hasAnalysis: boolean
   isStale: boolean
+  eligibilityVerdict?: EligibilityVerdict | null
+  eligibilitySummary?: string | null
 }): {
   tone: WinProbabilityTone | 'unknown'
   label: string
@@ -61,7 +64,40 @@ export function resolveBidRecommendation(args: {
     }
   }
 
+  const summary = args.eligibilitySummary?.trim() || null
+  const eligibility = args.eligibilityVerdict ?? null
+
+  if (eligibility === 'ko') {
+    return {
+      tone: 'no-bid',
+      label: 'Empfehlung: NO-BID',
+      detail:
+        summary ??
+        'Ein Muss-Kriterium ist nicht erfüllt — formal ausgeschlossen, unabhängig von der Angebots-Reife.',
+    }
+  }
+
+  if (eligibility === 'partner_required' || eligibility === 'unknown') {
+    return {
+      tone: 'caution',
+      label: 'Empfehlung: Prüfen',
+      detail:
+        summary ??
+        'Eignung nicht eindeutig — Lücken und Partneroptionen vor einer Entscheidung klären.',
+    }
+  }
+
   const tone = winProbabilityTone(args.winProbability)
+  if (eligibility === 'eligible' && tone !== 'go') {
+    return {
+      tone: 'caution',
+      label: 'Empfehlung: Prüfen',
+      detail:
+        summary ??
+        'Formal bietfähig, aber die Angebots-Reife reicht noch nicht für eine klare BID-Empfehlung.',
+    }
+  }
+
   const label =
     tone === 'go'
       ? 'Empfehlung: BID'
@@ -70,11 +106,12 @@ export function resolveBidRecommendation(args: {
         : 'Empfehlung: NO-BID'
 
   const detail =
-    tone === 'go'
+    summary ??
+    (tone === 'go'
       ? 'Starke Angebots-Reife und ausreichende Referenz-Abdeckung — grundsätzlich bieten.'
       : tone === 'caution'
         ? 'Gemischte Signale — Lücken und Risiken vor einer Entscheidung klären.'
-        : 'Schwache Ausgangslage — Ressourcen und Alternativen (Partner, No-Bid) prüfen.'
+        : 'Schwache Ausgangslage — Ressourcen und Alternativen (Partner, No-Bid) prüfen.')
 
   return { tone, label, detail }
 }

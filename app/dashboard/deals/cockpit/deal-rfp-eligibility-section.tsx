@@ -57,7 +57,10 @@ function statusClass(status: string): string {
 export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }) {
   const assessment = data.eligibilityAssessment
   const showSection = data.hasAnalysis && !data.isStale
-  const [expanded, setExpanded] = useState(false)
+  const knockouts = (assessment?.criteria ?? []).filter(
+    (row) => row.mandatory && row.status === 'not_met',
+  )
+  const [expanded, setExpanded] = useState(knockouts.length > 0)
 
   if (!showSection) return null
 

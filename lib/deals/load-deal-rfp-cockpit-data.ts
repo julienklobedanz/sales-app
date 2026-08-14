@@ -187,6 +187,8 @@ export async function loadDealRfpCockpitData(
       winProbability,
       hasAnalysis,
       isStale,
+      eligibilityVerdict: eligibilityAssessment?.verdict ?? null,
+      eligibilitySummary: eligibilityAssessment?.summary ?? null,
     }),
     requestedEvidenceGaps: buildRequestedEvidenceGaps({
       eligibilityAssessment,
