@@ -27,30 +27,31 @@ import {
 } from '@/lib/deals/compare-eligibility-criteria'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { cn } from '@/lib/utils'
+import { statusTone, statusToneText } from '@/lib/ui/status-tone'
 
 function verdictBannerClass(tone: ReturnType<typeof eligibilityVerdictTone>): string {
   switch (tone) {
     case 'go':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100'
+      return statusTone.success
     case 'no-bid':
-      return 'border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100'
+      return statusTone.danger
     case 'caution':
-      return 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
+      return statusTone.warning
     default:
-      return 'border-border bg-muted text-foreground dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200'
+      return statusTone.neutral
   }
 }
 
 function statusClass(status: string): string {
   switch (status) {
     case 'met':
-      return 'text-emerald-700 dark:text-emerald-300'
+      return statusToneText.success
     case 'not_met':
-      return 'text-red-700 dark:text-red-300'
+      return statusToneText.danger
     case 'partial':
-      return 'text-amber-700 dark:text-amber-300'
+      return statusToneText.warning
     default:
-      return 'text-amber-600 dark:text-amber-400'
+      return statusToneText.muted
   }
 }
 

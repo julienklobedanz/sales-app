@@ -77,6 +77,7 @@ export function DealCockpitClient({
         {showRfpBlock ? (
           <DealDeadlineMilestoneChips
             deadlines={deadlines}
+            dealStatus={deal.status}
             orgDateDisplayFormat={orgDateDisplayFormat}
             className="mb-4"
           />

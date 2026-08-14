@@ -22,12 +22,16 @@ function normalize(raw: DealStatus | string | null | undefined): DealStatus {
 
 const DEAL_TONE: Record<DealStatus, string> = {
   open: statusTone.info,
-  rfp: statusTone.warning,
+  rfp: statusTone.info,
   negotiation: statusTone.warning,
   won: statusTone.success,
   lost: statusTone.danger,
   withdrawn: statusTone.danger,
   archived: statusTone.neutral,
+}
+
+export function dealStatusTone(status: DealStatus): string {
+  return DEAL_TONE[status]
 }
 
 export function DealStatusBadge({ status, className }: Props) {
@@ -49,7 +53,7 @@ export function DealStatusBadge({ status, className }: Props) {
                 : 'Archiviert'
 
   return (
-    <Badge className={cn(DEAL_TONE[s], className)} variant="outline">
+    <Badge className={cn(dealStatusTone(s), className)} variant="outline">
       {label}
     </Badge>
   )

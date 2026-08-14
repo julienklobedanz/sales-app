@@ -53,8 +53,16 @@ export type DeadlineMilestoneChip = {
   relativeLabel: string
   absoluteDateLabel: string
   isOverdue: boolean
+  /** False on closed deals — chip stays visible without warn color (D3). */
+  showOverdueTone: boolean
   isToday: boolean
   isNextFuture: boolean
+}
+
+const TERMINAL_DEAL_STATUSES = new Set(['won', 'lost', 'archived', 'withdrawn'])
+
+export function isTerminalDealStatus(status: string | null | undefined): boolean {
+  return TERMINAL_DEAL_STATUSES.has(String(status ?? '').toLowerCase())
 }
 
 export function compactRelativeDays(days: number): string {
@@ -75,10 +83,15 @@ function isCanonicalKind(kind: string): kind is DealDeadlineKind {
 
 export function buildDeadlineMilestoneChips(
   deadlines: DealDeadlineRow[],
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
+  options?: {
+    now?: Date
+    dateDisplayFormat?: OrgDateDisplayFormat
+    dealStatus?: string | null
+  },
 ): DeadlineMilestoneChip[] {
   const now = options?.now ?? new Date()
   const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
+  const warnOverdue = !isTerminalDealStatus(options?.dealStatus)
 
   const active = deadlines.filter((d) => !d.suppressed_at && d.due_at)
   const byKind = new Map<DealDeadlineKind, DealDeadlineRow>()
@@ -127,6 +140,7 @@ export function buildDeadlineMilestoneChips(
       relativeLabel: compactRelativeDays(days),
       absoluteDateLabel: formatReferenceDate(dueIso, dateDisplayFormat),
       isOverdue: days < 0,
+      showOverdueTone: days < 0 && warnOverdue,
       isToday: days === 0,
       isNextFuture: false,
     })

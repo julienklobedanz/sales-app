@@ -128,7 +128,7 @@ export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
     }
     return {
       label: 'Freigabe ohne Ref. Calls',
-      className: 'border-sky-200 bg-sky-50 text-sky-900',
+      className: statusTone.info,
     }
   }
 
@@ -161,7 +161,7 @@ export function resolveInternalWorkflowBadge(
     default:
       return {
         label: 'Interne Prüfung ausstehend',
-        className: 'border-sky-200 bg-sky-50 text-sky-800',
+        className: statusTone.info,
       }
   }
 }
@@ -215,7 +215,7 @@ export function resolveCustomerWorkflowBadge(input: {
   if (customer === 'expired' || customerRaw === 'expired') {
     return {
       label: 'Kundenfrist abgelaufen',
-      className: 'border-orange-200 bg-orange-50 text-orange-800',
+      className: statusTone.warning,
     }
   }
 
@@ -254,6 +254,11 @@ export function resolveWorkflowStatusBadges(
   return { internal: internalBadge, customer: customerBadge }
 }
 
+const externNutzbarBadge: ApprovalBadge = {
+  label: 'Extern nutzbar',
+  className: statusTone.info,
+}
+
 /** Intern + Kunde in der Freigabestatus-Card (inkl. Entwurf vor/nach Widerruf). */
 export function resolveFreigabestatusCardBadges(input: WorkflowBadgesInput): {
   internal: ApprovalBadge
@@ -265,6 +270,11 @@ export function resolveFreigabestatusCardBadges(input: WorkflowBadgesInput): {
       internal: active.internal,
       customer: active.customer ?? notStartedFreigabeBadge,
     }
+  }
+  const portfolioApproved =
+    normalizeReferenceStatus(input.referenceStatus) === 'approved'
+  if (portfolioApproved) {
+    return { internal: notStartedFreigabeBadge, customer: externNutzbarBadge }
   }
   return { internal: notStartedFreigabeBadge, customer: notStartedFreigabeBadge }
 }
@@ -339,7 +349,7 @@ export function resolveReferenceTitleBadge(
   if (customer === 'expired' || customerRaw === 'expired') {
     return {
       label: 'Frist abgelaufen',
-      className: 'border-orange-200 bg-orange-50 text-orange-800',
+      className: statusTone.warning,
     }
   }
 
@@ -350,8 +360,15 @@ export function resolveReferenceTitleBadge(
     }
   }
 
-  if (customer === 'approved' || customerRaw === 'approved') {
+  if (customerRaw === 'approved') {
     return resolvePostCustomerApprovalTitleBadge(input)
+  }
+
+  if (referenceStatus === 'approved' && !workflowStarted) {
+    return {
+      label: 'Extern nutzbar',
+      className: statusTone.info,
+    }
   }
 
   if (referenceStatus === 'approved') {

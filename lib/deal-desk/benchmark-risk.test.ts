@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  benchmarkRiskBadgeClass,
   benchmarkRiskTone,
   benchmarkRiskValueClass,
   buildBenchmarkRiskAnalysis,
   computeBenchmarkRiskScore,
   topBenchmarkRiskTooltipHits,
 } from '@/lib/deal-desk/benchmark-risk'
+import { statusToneFill, statusToneText } from '@/lib/ui/status-tone'
 
 describe('benchmark risk score', () => {
   it('sums weights and caps at 100%', () => {
@@ -39,9 +41,12 @@ describe('benchmark risk score', () => {
     expect(benchmarkRiskTone(10)).toBe('low')
     expect(benchmarkRiskTone(45)).toBe('medium')
     expect(benchmarkRiskTone(70)).toBe('high')
-    expect(benchmarkRiskValueClass('low')).toBe('text-green-600')
-    expect(benchmarkRiskValueClass('medium')).toBe('text-amber-500')
-    expect(benchmarkRiskValueClass('high')).toBe('text-red-600')
+    expect(benchmarkRiskValueClass('low')).toBe(statusToneText.success)
+    expect(benchmarkRiskValueClass('medium')).toBe(statusToneText.warning)
+    expect(benchmarkRiskValueClass('high')).toBe(statusToneText.danger)
+    expect(benchmarkRiskBadgeClass('low')).toBe(statusToneFill.success)
+    expect(benchmarkRiskBadgeClass('medium')).toBe(statusToneFill.warning)
+    expect(benchmarkRiskBadgeClass('high')).toBe(statusToneFill.danger)
   })
 
   it('returns top weighted tooltip hits', () => {

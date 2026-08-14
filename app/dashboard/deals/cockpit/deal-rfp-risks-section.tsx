@@ -14,6 +14,7 @@ import { COPY } from '@/lib/copy'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/deal-analysis-types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { cn } from '@/lib/utils'
+import { statusTone } from '@/lib/ui/status-tone'
 
 function severityBadge(severity: DealDeskRedFlag['severity']): {
   label: string
@@ -23,17 +24,17 @@ function severityBadge(severity: DealDeskRedFlag['severity']): {
     case 'critical':
       return {
         label: COPY.deals.cockpit.risksSeverityCritical,
-        className: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200',
+        className: statusTone.danger,
       }
     case 'high':
       return {
         label: COPY.deals.cockpit.risksSeverityHigh,
-        className: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
+        className: statusTone.warning,
       }
     default:
       return {
         label: COPY.deals.cockpit.risksSeverityMedium,
-        className: 'bg-accent text-foreground dark:bg-slate-800 dark:text-slate-200',
+        className: statusTone.neutral,
       }
   }
 }
@@ -154,10 +155,10 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                           className={cn(
                             'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide',
                             gap.severity === 'missing'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
+                              ? statusTone.danger
                               : gap.severity === 'partial'
-                                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
-                                : 'bg-accent text-foreground dark:bg-slate-800 dark:text-slate-200',
+                                ? statusTone.warning
+                                : statusTone.neutral,
                           )}
                         >
                           {gap.severity === 'missing'
