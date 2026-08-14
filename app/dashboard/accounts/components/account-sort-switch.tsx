@@ -34,9 +34,9 @@ export function AccountSortSwitch({ value, onChange }: Props) {
           )}
         >
           {isActivity ? (
-            <ActivityPulseIcon className="text-slate-600" />
+            <ActivityPulseIcon className="text-muted-foreground" />
           ) : (
-            <span className="text-[10px] font-semibold leading-none tracking-tight text-slate-600">
+            <span className="text-[10px] font-semibold leading-none tracking-tight text-muted-foreground">
               A-Z
             </span>
           )}

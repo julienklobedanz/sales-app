@@ -26,7 +26,7 @@ export function WorkflowMeddpiccCard() {
         {MEDDPICC_FIELDS.map(([key, label]) => (
           <label
             key={key}
-            className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
           >
             {label}
             <Switch

@@ -181,7 +181,7 @@ export function renderComplianceColumnCell(
   switch (column) {
     case 'title':
       return (
-        <TableDataCell className="min-w-[180px] font-medium text-slate-900">
+        <TableDataCell className="min-w-[180px] font-medium text-foreground">
           <span className="flex min-w-0 items-center gap-3">
             <ComplianceDocumentTypeIcon
               documentType={doc.document_type}
@@ -205,7 +205,7 @@ export function renderComplianceColumnCell(
       )
     case 'document_type':
       return (
-        <TableDataCell className="text-sm font-medium text-slate-900">
+        <TableDataCell className="text-sm font-medium text-foreground">
           <span className="truncate leading-none">
             {complianceDocumentTypeLabel(doc.document_type)}
           </span>
@@ -213,7 +213,7 @@ export function renderComplianceColumnCell(
       )
     case 'valid_until':
       return (
-        <TableDataCell className="text-sm text-slate-600">
+        <TableDataCell className="text-sm text-muted-foreground">
           <span className="leading-none">
             {formatComplianceValidUntilDate(doc.valid_until)}
           </span>

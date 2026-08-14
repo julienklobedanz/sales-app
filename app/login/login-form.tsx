@@ -97,7 +97,7 @@ export function LoginForm({
       <div className="space-y-3 pt-1">
         <div className="relative flex items-center gap-2">
           <div className="h-px flex-1 bg-border" />
-          <span className="shrink-0 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
+          <span className="shrink-0 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
             Oder anmelden via
           </span>
           <div className="h-px flex-1 bg-border" />
@@ -109,7 +109,7 @@ export function LoginForm({
           getEmail={() => emailRef.current?.value ?? ''}
         />
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-muted-foreground">
           Neu bei RefStack?{' '}
           <Link
             href={registerHref}

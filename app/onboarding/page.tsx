@@ -52,7 +52,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
       : ''
 
   return (
-    <Suspense fallback={<div className="min-h-screen animate-pulse bg-zinc-100/50" />}>
+    <Suspense fallback={<div className="min-h-screen animate-pulse bg-accent/50" />}>
       <OnboardingWizard
         inviteToken={inviteToken}
         inviteOrganizationName={inviteOrganizationName}

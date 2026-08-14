@@ -32,9 +32,9 @@ export function EntityKindSwitch({ value, onChange }: Props) {
           )}
         >
           {isPartner ? (
-            <User className="size-3.5 text-slate-600" aria-hidden />
+            <User className="size-3.5 text-muted-foreground" aria-hidden />
           ) : (
-            <Building2 className="size-3.5 text-slate-600" aria-hidden />
+            <Building2 className="size-3.5 text-muted-foreground" aria-hidden />
           )}
         </span>
       </button>

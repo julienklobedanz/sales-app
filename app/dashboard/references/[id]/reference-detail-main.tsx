@@ -79,7 +79,7 @@ export function ReferenceDetailMain({
             {hasChallenge ? (
               <Card className="border-border/70">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                  <CardTitle className="text-xs uppercase tracking-wider text-foreground dark:text-slate-100 inline-flex items-center gap-1.5">
                     <AppIcon
                       icon={TrendingUp}
                       size={14}
@@ -101,7 +101,7 @@ export function ReferenceDetailMain({
             {hasSolution ? (
               <Card className="border-border/70">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                  <CardTitle className="text-xs uppercase tracking-wider text-foreground dark:text-slate-100 inline-flex items-center gap-1.5">
                     <AppIcon
                       icon={LinkIcon}
                       size={14}

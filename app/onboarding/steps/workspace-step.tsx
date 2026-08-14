@@ -13,10 +13,10 @@ export type WorkspaceStepValue = {
 }
 
 const activeFieldClass =
-  'w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
+  'w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
 
 const disabledFieldClass =
-  'w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-400'
+  'w-full cursor-not-allowed rounded-xl border border-border bg-accent px-4 py-3 text-sm text-muted-foreground'
 
 type WorkspaceStepProps = {
   value: WorkspaceStepValue

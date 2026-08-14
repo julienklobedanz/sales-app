@@ -19,7 +19,7 @@ export function AuthBrandPanel({ content }: { content: AuthBrandContent }) {
       />
 
       <div className="relative z-10 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-zinc-950 shadow-sm">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-foreground shadow-sm">
           R
         </div>
         <span className="text-lg font-semibold tracking-tight text-white">RefStack</span>
@@ -30,7 +30,7 @@ export function AuthBrandPanel({ content }: { content: AuthBrandContent }) {
           {content.title}
         </h2>
         {content.bullets && content.bullets.length > 0 ? (
-          <div className="mt-4 max-w-sm text-sm text-zinc-400">
+          <div className="mt-4 max-w-sm text-sm text-muted-foreground">
             <p className="mb-2">Alles an einem Ort:</p>
             <ul className="list-inside list-disc space-y-1">
               {content.bullets.map((item) => (
@@ -39,7 +39,7 @@ export function AuthBrandPanel({ content }: { content: AuthBrandContent }) {
             </ul>
           </div>
         ) : content.description ? (
-          <p className="mt-4 max-w-sm text-sm text-zinc-400">{content.description}</p>
+          <p className="mt-4 max-w-sm text-sm text-muted-foreground">{content.description}</p>
         ) : null}
       </div>
 

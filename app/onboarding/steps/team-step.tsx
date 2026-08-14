@@ -61,7 +61,7 @@ export function removeLastInviteRow(invites: TeamInviteRow[]): TeamInviteRow[] {
 }
 
 const fieldClass =
-  'h-11 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 text-sm text-gray-900 shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
+  'h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-foreground shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
 
 const selectTriggerClass = `${fieldClass} !h-11 data-[size=default]:!h-11 flex items-center justify-between`
 
@@ -174,7 +174,7 @@ export function TeamStep({
               disabled || sending || invites.length >= ONBOARDING_MAX_TEAM_INVITES
             }
             onClick={() => onChange([...invites, emptyInviteRow()])}
-            className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 disabled:opacity-40"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
           >
             + Weitere einladen
           </button>
@@ -183,7 +183,7 @@ export function TeamStep({
               type="button"
               disabled={disabled || sending}
               onClick={() => onChange(removeLastInviteRow(invites))}
-              className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 disabled:opacity-40"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
             >
               − Weniger einladen
             </button>
@@ -204,7 +204,7 @@ export function TeamStep({
         type="button"
         onClick={onSkip}
         disabled={disabled || sending}
-        className="text-center text-sm text-gray-400 transition-colors hover:text-gray-600 disabled:opacity-40"
+        className="text-center text-sm text-muted-foreground transition-colors hover:text-muted-foreground disabled:opacity-40"
       >
         Diesen Schritt überspringen
       </button>

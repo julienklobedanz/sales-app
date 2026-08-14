@@ -219,7 +219,7 @@ export function WorkspaceTab({
                         placeholder={org.subdomain || 'firmenname'}
                         autoComplete="off"
                       />
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         Gib exakt{' '}
                         <span className="font-mono">
                           {org.subdomain || 'deine-subdomain'}

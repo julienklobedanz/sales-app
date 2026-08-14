@@ -110,7 +110,7 @@ export function ShareLinkPopoverPanel({
           </p>
           <Input value={url} readOnly className="font-mono text-xs" />
           {(metaExpiresAt || metaHasPassword) && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {metaHasPassword ? 'Passwortschutz aktiv.' : 'Ohne Passwortschutz.'}
               {metaExpiresAt
                 ? ` Gültig bis ${new Date(metaExpiresAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}.`
@@ -355,7 +355,7 @@ export function ShareLinkSecurityDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-1">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Zugang, Passwort und Ablaufdatum gelten für diesen Kundenlink.
             Besucher-Tracking (Land, Aktivzeit) erfolgt ohne Speicherung der IP.
           </p>

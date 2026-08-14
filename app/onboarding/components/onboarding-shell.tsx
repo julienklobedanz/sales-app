@@ -36,7 +36,7 @@ export function OnboardingShell({
   children,
 }: OnboardingShellProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-zinc-100/50">
+    <div className="relative min-h-screen overflow-hidden bg-accent/50">
       <div
         className={cn(
           'grid min-h-screen grid-cols-1 will-change-transform lg:grid-cols-2',
@@ -50,14 +50,14 @@ export function OnboardingShell({
         <div className="flex flex-col items-center justify-center bg-white/75 px-8 py-10 backdrop-blur-xl lg:px-16">
           <div className="flex w-full max-w-sm flex-col gap-6 text-left">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Schritt {stepIndex + 1} von {stepCount}
               </p>
               {onBack ? (
                 <button
                   type="button"
                   onClick={onBack}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <ArrowLeft className="size-3.5 shrink-0" aria-hidden />
                   Zurück
@@ -66,8 +66,8 @@ export function OnboardingShell({
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h1>
-              <p className="text-sm text-gray-500">{subtitle}</p>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
             </div>
 
             <div className="w-full">{children}</div>

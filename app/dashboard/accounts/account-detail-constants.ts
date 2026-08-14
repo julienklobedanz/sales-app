@@ -1,7 +1,7 @@
 import type { StakeholderRole } from './actions'
 
 export const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
-  'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
+  'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-none transition-all after:hidden hover:bg-muted hover:text-foreground data-[state=active]:border-transparent data-[state=active]:bg-accent data-[state=active]:font-medium data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-accent dark:data-[state=active]:text-foreground'
 
 export type AccountDetailTab =
   | 'mission_control'

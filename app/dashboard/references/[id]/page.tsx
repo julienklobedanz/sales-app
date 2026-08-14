@@ -265,7 +265,7 @@ export default async function ReferenceDetailPage({
   const isNdaDeal = Boolean(ref.is_nda_deal)
   const ndaDealBadgeClass = isNdaDeal
     ? 'border-amber-200 bg-amber-50 text-amber-900'
-    : 'border-border bg-slate-50 text-slate-700'
+    : 'border-border bg-muted text-foreground'
 
   const canStartApproval = canStartApprovalWorkflow({
     systemRole,

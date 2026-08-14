@@ -54,10 +54,10 @@ export function NdaPdfDropzone({
           'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
           dragOver && !busy
             ? 'border-violet-400 bg-violet-50/50'
-            : 'border-slate-200 bg-slate-50/40',
+            : 'border-border bg-muted/40',
           busy
             ? 'cursor-not-allowed opacity-60'
-            : 'cursor-pointer hover:border-slate-300 hover:bg-slate-50/80',
+            : 'cursor-pointer hover:border-border hover:bg-muted/80',
         )}
         onClick={() => !busy && inputRef.current?.click()}
         onKeyDown={(e) => {
@@ -103,7 +103,7 @@ export function NdaPdfDropzone({
             </p>
             <button
               type="button"
-              className="text-xs font-medium text-slate-600 underline-offset-2 hover:underline"
+              className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
               disabled={busy}
               onClick={(e) => {
                 e.stopPropagation()
