@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -200,84 +208,76 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
             <CardTitle className="text-sm font-semibold">Benachrichtigungen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 px-0 pb-0 pt-2">
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full min-w-[480px] text-sm">
-                <thead className="bg-slate-50 text-slate-600">
-                  <tr>
-                    <th className="px-2.5 py-1.5 text-left text-xs font-medium">
-                      Ereignis
-                    </th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
-                      E-Mail
-                    </th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
-                      In-App
-                    </th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
-                      Web-Push
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t">
-                    <td className="px-2.5 py-1.5">Neue Marktsignale</td>
-                    <td className="px-2 py-1.5 text-center">
+            <div className="rounded-lg border">
+              <Table className="min-w-[480px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ereignis</TableHead>
+                    <TableHead className="w-20 text-center">E-Mail</TableHead>
+                    <TableHead className="w-20 text-center">In-App</TableHead>
+                    <TableHead className="w-20 text-center">Web-Push</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="whitespace-normal">Neue Marktsignale</TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyInstantMarketSignals}
                         onCheckedChange={setNotifyInstantMarketSignals}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyMarketSignalsDigest}
                         onCheckedChange={setNotifyMarketSignalsDigest}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={browserPushMarketSignals}
                         onCheckedChange={setBrowserPushMarketSignals}
                       />
-                    </td>
-                  </tr>
-                  <tr className="border-t">
-                    <td className="px-2.5 py-1.5">Referenz-Anfragen</td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="whitespace-normal">Referenz-Anfragen</TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyApproval}
                         onCheckedChange={setNotifyApproval}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyNewMatch}
                         onCheckedChange={setNotifyNewMatch}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch checked={false} onCheckedChange={() => {}} disabled />
-                    </td>
-                  </tr>
-                  <tr className="border-t">
-                    <td className="px-2.5 py-1.5">System-Updates</td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="whitespace-normal">System-Updates</TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyDigestEmptyDay}
                         onCheckedChange={setNotifyDigestEmptyDay}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch
                         checked={notifyDigestEmptyDay}
                         onCheckedChange={setNotifyDigestEmptyDay}
                       />
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Switch checked={false} onCheckedChange={() => {}} disabled />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
 
             <div className="grid items-end gap-2 sm:grid-cols-[1fr_auto_auto]">

@@ -18,6 +18,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,7 +56,6 @@ import {
   DEFAULT_INVITE_ROLES,
   INVITE_FUNCTION_ROLE_OPTIONS,
   INVITE_SYSTEM_ROLE_OPTIONS,
-  formatRoleDimensionsLabel,
   type InviteRoleDimensions,
 } from '@/lib/roles/invite-roles'
 
@@ -286,7 +291,8 @@ export function SettingsTeamCard({
           </p>
         ) : (
           <div className="rounded-lg border">
-            <Table>
+            <TooltipProvider>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[32%] min-w-[180px]">Name</TableHead>
@@ -328,9 +334,11 @@ export function SettingsTeamCard({
                         }
                         onChange={(nextRoles) => void handleRoleChange(m, nextRoles)}
                       />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatRoleDimensionsLabel(m.systemRole, m.functionRole)}
-                      </p>
+                      {m.status === 'active' && m.isSelf ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {COPY.settings.teamOwnRoleDisabledHint}
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-2">
@@ -350,18 +358,25 @@ export function SettingsTeamCard({
 
                         {!m.isSelf ? (
                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                disabled={removingId === m.id}
-                                aria-label="Mitglied entfernen"
-                              >
-                                <AppIcon icon={Trash2} size={16} />
-                              </Button>
-                            </AlertDialogTrigger>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                    disabled={removingId === m.id}
+                                    aria-label={COPY.settings.teamRemoveMemberTooltip}
+                                  >
+                                    <AppIcon icon={Trash2} size={16} />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {COPY.settings.teamRemoveMemberTooltip}
+                              </TooltipContent>
+                            </Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Mitglied entfernen?</AlertDialogTitle>
@@ -393,7 +408,8 @@ export function SettingsTeamCard({
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </TooltipProvider>
           </div>
         )}
       </div>
