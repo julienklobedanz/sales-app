@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 import { Notification01Icon } from '@hugeicons/core-free-icons'
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -97,12 +98,12 @@ export function MarketSignalsPushCard() {
         <Button
           type="button"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => void enablePush()}
           disabled={pending}
         >
           <AppIcon icon={Notification01Icon} size={16} className="mr-2" />
-          {pending ? 'Wird eingerichtet …' : 'Push erlauben & registrieren'}
+          {pending ? COPY.settings.pushEnablePending : COPY.settings.pushEnable}
         </Button>
       </div>
     </div>

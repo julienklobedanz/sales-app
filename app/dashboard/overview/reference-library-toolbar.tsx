@@ -141,7 +141,7 @@ export function ReferenceLibraryToolbar({
             aria-hidden={!isReferencesLibrary || referenceLayout === 'match'}
           >
             {isReferencesLibrary && referenceLayout !== 'match' ? (
-              <div key="reference-filters" className="flex h-10 items-center gap-2.5">
+              <div key="reference-filters" className="flex h-10 items-center rounded-lg border border-border/70 bg-muted/20 p-0.5">
                 <AccountsToolbarTooltip label={COPY.dashboard.tooltipFavorites}>
                   <Button
                     type="button"

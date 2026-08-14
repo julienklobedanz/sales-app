@@ -1,3 +1,5 @@
+import { COPY } from '@/lib/copy'
+
 export function dashboardFirstName(fullName: string | null | undefined): string {
   const s = fullName?.trim()
   if (!s) return ''
@@ -34,13 +36,22 @@ export function meddpiccAccountAction(flags: {
   hasGoals: boolean
 }): { meddpiccGap: string; actionLabel: string } {
   if (!flags.hasEconomic) {
-    return { meddpiccGap: 'MEDDPICC: Economic Buyer fehlt', actionLabel: 'Fix' }
+    return {
+      meddpiccGap: 'MEDDPICC: Economic Buyer fehlt',
+      actionLabel: COPY.dashboard.home.salesRep.meddpiccFixEconomic,
+    }
   }
   if (!flags.hasChampion) {
-    return { meddpiccGap: 'MEDDPICC: Champion fehlt', actionLabel: 'Fix' }
+    return {
+      meddpiccGap: 'MEDDPICC: Champion fehlt',
+      actionLabel: COPY.dashboard.home.salesRep.meddpiccFixChampion,
+    }
   }
   if (!flags.hasGoals) {
-    return { meddpiccGap: 'MEDDPICC: Metrics/Pain fehlt', actionLabel: 'Fix' }
+    return {
+      meddpiccGap: 'MEDDPICC: Metrics/Pain fehlt',
+      actionLabel: COPY.dashboard.home.salesRep.meddpiccFixMetrics,
+    }
   }
   return { meddpiccGap: 'Story passt zum Signal', actionLabel: 'Send' }
 }

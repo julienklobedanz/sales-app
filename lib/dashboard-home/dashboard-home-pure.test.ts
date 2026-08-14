@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { COPY } from '@/lib/copy'
+
 import {
   computeWinRateMetrics,
   countDueMarketSnoozes,
@@ -53,7 +55,7 @@ describe('meddpiccAccountAction', () => {
     expect(
       meddpiccAccountAction({ hasChampion: true, hasEconomic: false, hasGoals: true })
         .actionLabel,
-    ).toBe('Fix')
+    ).toBe(COPY.dashboard.home.salesRep.meddpiccFixEconomic)
     expect(
       meddpiccAccountAction({ hasChampion: false, hasEconomic: true, hasGoals: true })
         .meddpiccGap,

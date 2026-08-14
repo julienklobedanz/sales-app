@@ -36,7 +36,7 @@ export function DealCockpitPromoteCard({ dealId }: { dealId: string }) {
           Formale Ausschreibung mit Eignungs-Check, Antwort-Entwürfen und Bid-Analyse?
         </p>
         <Button type="button" size="sm" onClick={() => void promote()} disabled={pending}>
-          {COPY.deals.cockpit.promoteToRfp} →
+          {COPY.deals.cockpit.promoteToRfp}
         </Button>
       </CardContent>
     </Card>

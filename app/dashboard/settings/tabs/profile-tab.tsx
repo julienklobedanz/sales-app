@@ -56,6 +56,7 @@ import {
 import { MarketSignalsPushCard } from '../market-signals-push-card'
 import { updateProfileNotificationSettings } from '../settings-consolidation-actions'
 import { ROUTES } from '@/lib/routes'
+import { COPY } from '@/lib/copy'
 import {
   SETTINGS_CARD_CLASS_COMPACT,
   SETTINGS_DANGER_ZONE_CLASS_COMPACT,
@@ -414,7 +415,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               Dieses Gerät bleibt angemeldet, bis du dich abmeldest. Andere Geräte kannst
               du gezielt oder komplett abmelden.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -431,27 +432,50 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                   })
                 }}
               >
-                Andere Geräte abmelden
+                {COPY.settings.signOutOtherDevices}
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={sessionsPending}
-                onClick={() => {
-                  startSessionsTransition(async () => {
-                    const result = await signOutAllSessions()
-                    if (!result.success) {
-                      toast.error(result.error)
-                      return
-                    }
-                    toast.success('Überall abgemeldet.')
-                    router.push(ROUTES.login)
-                  })
-                }}
-              >
-                Überall abmelden
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={sessionsPending}
+                  >
+                    {COPY.settings.signOutEverywhere}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {COPY.settings.signOutEverywhereTitle}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {COPY.settings.signOutEverywhereDescription}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={sessionsPending}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        startSessionsTransition(async () => {
+                          const result = await signOutAllSessions()
+                          if (!result.success) {
+                            toast.error(result.error)
+                            return
+                          }
+                          toast.success('Überall abgemeldet.')
+                          router.push(ROUTES.login)
+                        })
+                      }}
+                    >
+                      {COPY.settings.signOutEverywhere}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </div>

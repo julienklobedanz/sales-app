@@ -3,9 +3,11 @@
 import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, UploadCloud } from 'lucide-react'
+import { CirclePlus } from '@hugeicons/core-free-icons'
+import { UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
@@ -145,7 +147,7 @@ export function ReferenceOnboardingEmptyState({
                 onClick={onCreateManual}
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
               >
-                <Plus className="size-4 shrink-0" aria-hidden />
+                <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
                 Erste Referenz manuell anlegen
               </button>
             ) : (
@@ -153,7 +155,7 @@ export function ReferenceOnboardingEmptyState({
                 href={ROUTES.references.new}
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
               >
-                <Plus className="size-4 shrink-0" aria-hidden />
+                <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
                 Erste Referenz manuell anlegen
               </Link>
             )}

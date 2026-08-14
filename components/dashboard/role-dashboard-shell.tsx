@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
 import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'
+import { AppIcon, type AppIconProps } from '@/lib/icons'
 import type { FunctionRole } from '@/lib/roles/capabilities'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +14,7 @@ type RoleDashboardShellProps = {
   subtitle: string
   ctaLabel: string
   ctaHref: string
+  ctaIcon?: AppIconProps['icon']
   thin?: boolean
   thinBannerText?: string
   children: ReactNode
@@ -29,6 +31,7 @@ export function RoleDashboardShell({
   subtitle,
   ctaLabel,
   ctaHref,
+  ctaIcon,
   thin = false,
   thinBannerText,
   children,
@@ -49,8 +52,11 @@ export function RoleDashboardShell({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         </div>
-        <Button asChild size="sm" className="shrink-0">
-          <Link href={ctaHref}>{ctaLabel}</Link>
+        <Button asChild size="sm" className="shrink-0 gap-1.5">
+          <Link href={ctaHref}>
+            {ctaIcon ? <AppIcon icon={ctaIcon} size={16} /> : null}
+            {ctaLabel}
+          </Link>
         </Button>
       </div>
 

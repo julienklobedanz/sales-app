@@ -85,7 +85,7 @@ export function WorkQueueRow({
         {meta ? <span className="text-muted-foreground"> · {meta}</span> : null}
       </div>
       <Button asChild variant="outline" size="sm" className="h-7 shrink-0 text-xs">
-        <Link href={href}>{ctaLabel} →</Link>
+        <Link href={href}>{ctaLabel}</Link>
       </Button>
     </div>
   )

@@ -256,6 +256,7 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
             <Button
               type="button"
               size="sm"
+              variant="outline"
               onClick={() => void startEnroll()}
               disabled={enrollBusy}
             >
