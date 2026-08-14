@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { deleteReference } from '@/app/dashboard/actions'
 import {
-  approveInternalAndSend,
+  prepareCustomerApproval,
   getApprovalLink,
   resendClientApprovalEmail,
   withdrawApprovalRequest,
@@ -33,8 +33,8 @@ export async function deleteReferenceFromDetailPage(id: string) {
   redirect(ROUTES.references.root)
 }
 
-export async function approveInternalAndSendFromDetail(referenceId: string) {
-  const result = await approveInternalAndSend(referenceId)
+export async function prepareCustomerApprovalFromDetail(referenceId: string) {
+  const result = await prepareCustomerApproval(referenceId)
   if (result.success) {
     revalidatePath(ROUTES.references.detail(referenceId))
   }

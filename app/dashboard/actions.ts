@@ -7,7 +7,7 @@ import {
   requestCustomerApprovalAgainAfterChangesImpl,
   updateApprovalRecipientImpl,
   updateApprovalCoordinatorImpl,
-  approveInternalAndSendImpl,
+  prepareCustomerApprovalImpl,
   getApprovalLinkImpl,
   withdrawApprovalRequestImpl,
   type ApproveInternalRecipientOptions,
@@ -320,15 +320,15 @@ export async function submitForApproval(id: string, options?: SubmitForApprovalO
   return submitForApprovalImpl(id, options)
 }
 
-export async function approveInternalAndSend(
+export async function prepareCustomerApproval(
   referenceId: string,
   recipient?: ApproveInternalRecipientOptions,
 ) {
-  return approveInternalAndSendImpl(referenceId, recipient)
+  return prepareCustomerApprovalImpl(referenceId, recipient)
 }
 
 export type {
-  ApproveInternalAndSendResult,
+  PrepareCustomerApprovalResult,
   ApproveInternalRecipientOptions,
 } from '@/lib/references/library/approvals'
 

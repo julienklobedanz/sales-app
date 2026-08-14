@@ -97,7 +97,6 @@ export function DashboardShell({
     router.prefetch(ROUTES.accounts)
     router.prefetch(ROUTES.references.root)
     router.prefetch(ROUTES.deals.root)
-    router.prefetch(ROUTES.match)
     router.prefetch(ROUTES.deals.requestNew)
     router.prefetch(ROUTES.settings)
   }, [router])

@@ -40,7 +40,7 @@ export type ResolvedApprovalRecipient = {
   approvalExternalContactId: string | null
 }
 
-export type ApproveInternalAndSendResult =
+export type PrepareCustomerApprovalResult =
   | { success: true; customerEmailSent: boolean; recipientEmail: string }
   | { success: false; error: string }
 

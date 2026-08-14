@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  approveInternalAndSend,
+  prepareCustomerApproval,
   getApprovalLink,
   getContactOptionsForReference,
   requestCustomerApprovalAgainAfterChanges,
@@ -258,7 +258,7 @@ export function ReferenceReadinessActions({
       return
     }
     startTransition(async () => {
-      const result = await approveInternalAndSend(referenceId, recipient)
+      const result = await prepareCustomerApproval(referenceId, recipient)
       if (!result.success) {
         toast.error(result.error)
         return

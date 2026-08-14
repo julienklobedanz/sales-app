@@ -6,7 +6,6 @@ import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { ensureApprovalRecipientFromInputImpl } from '@/lib/references/library/approval-contacts'
-import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
@@ -16,14 +15,14 @@ import {
 } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type {
-  ApproveInternalAndSendResult,
+  PrepareCustomerApprovalResult,
   ApproveInternalRecipientOptions,
 } from '@/lib/references/library/approvals-types'
 
-export async function approveInternalAndSendImpl(
+export async function prepareCustomerApprovalImpl(
   referenceId: string,
   recipient?: ApproveInternalRecipientOptions,
-): Promise<ApproveInternalAndSendResult> {
+): Promise<PrepareCustomerApprovalResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -45,7 +44,7 @@ export async function approveInternalAndSendImpl(
   if (!profileCanManageOrgData(systemRole, functionRole)) {
     return {
       success: false,
-      error: 'Nur Admin oder Account Manager dürfen extern versenden.',
+      error: 'Nur Admin oder Account Manager dürfen die Kundenfreigabe vorbereiten.',
     }
   }
 
@@ -162,12 +161,6 @@ export async function approveInternalAndSendImpl(
       e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
     return { success: false, error: msg }
   }
-
-  await logEventForCurrentOrg({
-    eventType: 'customer_approval_requested',
-    referenceId,
-    payload: {},
-  })
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.references.detail(referenceId))
