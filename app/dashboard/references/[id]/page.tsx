@@ -412,7 +412,6 @@ export default async function ReferenceDetailPage({
               <ReferenceReadinessActions
                 referenceId={id}
                 readiness={readinessState}
-                existingSharePath={existingShare?.url ?? null}
                 canStartApproval={canStartApproval}
                 canInternalApprove={
                   canApproveInternalReference(functionRole, systemRole, capabilities) &&

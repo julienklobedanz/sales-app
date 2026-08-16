@@ -12,6 +12,10 @@ import {
 
 import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
 import { ShareLinkButton } from '@/app/dashboard/references/[id]/share-link-button'
+import {
+  SperrAnsichtConfirmDialog,
+  useSperrAnsicht,
+} from '@/app/dashboard/references/[id]/reference-readiness-showcase-links'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -82,6 +86,7 @@ export function ReferenceObjectActions({
   const [shareOpen, setShareOpen] = useState(false)
   const [pdfOpen, setPdfOpen] = useState(false)
   const [pptxPending, setPptxPending] = useState(false)
+  const sperr = useSperrAnsicht(referenceId, existingSharePath ?? null)
 
   function openCustomerLink() {
     if (!existingSharePath) return
@@ -115,9 +120,17 @@ export function ReferenceObjectActions({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setShareOpen(true)}>Kundenlink</DropdownMenuItem>
           {existingSharePath ? (
-            <DropdownMenuItem onSelect={() => openCustomerLink()}>
-              Kundenlink öffnen
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onSelect={() => openCustomerLink()}>
+                Kundenlink öffnen
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={sperr.pending || sperr.issuingRevoke}
+                onSelect={() => void sperr.onOpenRevoke()}
+              >
+                {sperr.issuingRevoke ? 'Sperr-Ansicht wird geladen…' : 'Sperr-Ansicht öffnen'}
+              </DropdownMenuItem>
+            </>
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -126,6 +139,13 @@ export function ReferenceObjectActions({
         open={shareOpen}
         onOpenChange={setShareOpen}
         showTriggerButton={false}
+      />
+      <SperrAnsichtConfirmDialog
+        open={sperr.confirmOpen}
+        onOpenChange={sperr.setConfirmOpen}
+        customerEmail={sperr.customerEmail}
+        issuingRevoke={sperr.issuingRevoke}
+        onConfirm={() => void sperr.runRevokeWithNewToken(true)}
       />
 
       <DropdownMenu>
