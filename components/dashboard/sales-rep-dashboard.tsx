@@ -18,13 +18,6 @@ import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { ROUTES } from '@/lib/routes'
 
-function signalToneFromGap(meddpiccGap: string): 'ok' | 'warn' | 'gap' {
-  const g = meddpiccGap.toLowerCase()
-  if (g.includes('economic buyer') || g.includes('champion fehlt')) return 'gap'
-  if (g.includes('fehlt') || g.includes('ziele')) return 'warn'
-  return 'ok'
-}
-
 function aggregateShareBars(
   recentShares: SalesRepDashboardModel['recentShares'],
   fallbackTitle: string,
@@ -123,13 +116,12 @@ export function SalesRepDashboard({
         ) : (
           <div className="space-y-0">
             {data.strategicAccounts.map((signal) => {
-              const tone = signalToneFromGap(signal.meddpiccGap)
               return (
                 <div
                   key={signal.companyId}
                   className="flex items-start gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0"
                 >
-                  <SignalStatusPill tone={tone} />
+                  <SignalStatusPill tone="ok" />
                   <div className="min-w-0 flex-1 text-sm">
                     <span className="font-medium">{signal.companyName}</span>
                     <span className="text-muted-foreground">

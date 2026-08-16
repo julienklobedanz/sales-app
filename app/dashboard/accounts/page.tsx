@@ -224,8 +224,6 @@ export default async function AccountsPage() {
   const [
     dealsRows,
     refRows,
-    stakeholderRows,
-    strategyRows,
     executiveSignalRows,
     newsSignalRows,
   ] = await Promise.all([
@@ -265,30 +263,6 @@ export default async function AccountsPage() {
                 title: string | null
                 approval_expires_at: string | null
                 approval_grace_until: string | null
-              }[]
-            | null,
-        }),
-    companyIds.length
-      ? supabase
-          .from('stakeholders')
-          .select('id, company_id')
-          .in('company_id', companyIds)
-      : Promise.resolve({
-          data: [] as { id: string; company_id: string | null }[] | null,
-        }),
-    companyIds.length
-      ? supabase
-          .from('company_strategies')
-          .select('company_id, main_goals, red_flags, competitive_situation, next_steps')
-          .in('company_id', companyIds)
-      : Promise.resolve({
-          data: [] as
-            | {
-                company_id: string
-                main_goals: string | null
-                red_flags: string | null
-                competitive_situation: string | null
-                next_steps: string | null
               }[]
             | null,
         }),
@@ -412,23 +386,6 @@ export default async function AccountsPage() {
     if (!r.company_id) continue
     refCountByCompany[r.company_id] = (refCountByCompany[r.company_id] ?? 0) + 1
   }
-  const stakeholderCountByCompany: Record<string, number> = {}
-  for (const s of stakeholderRows.data ?? []) {
-    if (!s.company_id) continue
-    stakeholderCountByCompany[s.company_id] =
-      (stakeholderCountByCompany[s.company_id] ?? 0) + 1
-  }
-  const strategyFilledByCompany: Record<string, boolean> = {}
-  for (const st of strategyRows.data ?? []) {
-    if (!st.company_id) continue
-    const filled = Boolean(
-      (st.main_goals ?? '').trim() ||
-      (st.red_flags ?? '').trim() ||
-      (st.competitive_situation ?? '').trim() ||
-      (st.next_steps ?? '').trim(),
-    )
-    strategyFilledByCompany[st.company_id] = filled
-  }
   const signalCountByCompany: Record<string, number> = {}
   const latestSignalByCompany: Record<string, { at: number; summary: string }> = {}
 
@@ -523,8 +480,6 @@ export default async function AccountsPage() {
         account_status: accountStatus,
         open_deals_count: openDealsCount,
         reference_count: referenceCount,
-        stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
-        strategy_filled: strategyFilledByCompany[c.id] ?? false,
         signal_count: signalCountByCompany[c.id] ?? 0,
         nda_status: ndaStatus,
         linked_account_name: c.linked_account_id
