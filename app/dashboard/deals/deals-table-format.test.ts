@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isDealExpiringIn30Days } from './deals-table-format'
+import { isDealExpiringIn30Days, formatDealCollectionDeadline } from './deals-table-format'
 
 function isoDaysFromToday(days: number): string {
   const d = new Date()
@@ -27,5 +27,15 @@ describe('isDealExpiringIn30Days', () => {
     expect(isDealExpiringIn30Days(soon, 'lost')).toBe(false)
     expect(isDealExpiringIn30Days(soon, 'archived')).toBe(false)
     expect(isDealExpiringIn30Days(soon, 'withdrawn')).toBe(false)
+  })
+})
+
+describe('formatDealCollectionDeadline', () => {
+  it('schreibt Handlungsabstände ohne Kalenderdatum', () => {
+    const now = new Date('2026-08-16T12:00:00')
+    expect(formatDealCollectionDeadline('2026-08-16', now)).toBe('heute')
+    expect(formatDealCollectionDeadline('2026-08-17', now)).toBe('in 1 Tag')
+    expect(formatDealCollectionDeadline('2026-08-20', now)).toBe('in 4 Tagen')
+    expect(formatDealCollectionDeadline('2026-08-14', now)).toBe('vor 2 Tagen')
   })
 })

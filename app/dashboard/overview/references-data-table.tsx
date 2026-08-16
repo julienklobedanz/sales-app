@@ -19,23 +19,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { COPY } from '@/lib/copy'
+import { DataTablePaginationBar } from '@/components/ui/data-table-pagination'
 import { ROUTES } from '@/lib/routes'
-import { isSystemAdmin } from '@/lib/roles/capability-access'
 import type { ReferenceRow } from '../actions'
-import type { Profile } from '../dashboard-types'
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   CopyIcon,
   FileText,
   LinkIcon,
@@ -61,7 +48,6 @@ import {
   TABLE_SELECT_COLUMN_CELL_CLASS,
 } from '@/components/table/table-column-head-styles'
 import { TableRowAlign } from '@/components/table/table-row-align'
-import { copyTableRowsSelected } from '@/lib/copy'
 import type { OrgDateDisplayFormat } from '@/lib/format'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
@@ -115,7 +101,7 @@ export type ReferencesDataTableProps = {
   companyLogoById: Map<string, string>
   companyIndustryById: Map<string, string>
   orgDateDisplayFormat: OrgDateDisplayFormat | string
-  profile: Profile
+  canCreateReference: boolean
   search: string
   setNewRefModalOpen: (open: boolean) => void
   rowMenuOpenId: string | null
@@ -176,7 +162,7 @@ export function ReferencesDataTable({
   companyLogoById,
   companyIndustryById,
   orgDateDisplayFormat,
-  profile,
+  canCreateReference,
   search,
   setNewRefModalOpen,
   rowMenuOpenId,
@@ -278,7 +264,7 @@ export function ReferencesDataTable({
                 >
                   <div className="flex flex-col items-center justify-center gap-3 py-2">
                     <p>Keine Referenzen gefunden.</p>
-                    {!search.trim() && isSystemAdmin(profile.systemRole) && (
+                    {!search.trim() && canCreateReference && (
                       <Button className="mt-1" onClick={() => setNewRefModalOpen(true)}>
                         Erstelle eine Referenz
                       </Button>
@@ -404,84 +390,23 @@ export function ReferencesDataTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col gap-2.5 rounded-xl border border-border/70 bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {copyTableRowsSelected(filteredSelectedCount, filteredReferences.length)}
-        </div>
-        <div className="flex items-center gap-3 sm:gap-5">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              {COPY.table.rowsPerPage}
-            </p>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(value) => {
-                setPageSize(Number(value))
-                setPageIndex(0)
-              }}
-            >
-              <SelectTrigger
-                size="sm"
-                className="h-8 w-[88px] rounded-lg border-border/70 bg-background"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 30, 50, 100].map((size) => (
-                  <SelectItem key={size} value={String(size)}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex min-w-[126px] items-center justify-center text-sm font-medium text-muted-foreground">
-            Seite {pageIndex + 1} von {pageCount}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
-              onClick={() => setPageIndex(0)}
-              disabled={pageIndex <= 0}
-              aria-label="Zur ersten Seite"
-            >
-              <AppIcon icon={ChevronsLeft} size={16} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg hover:bg-muted/70"
-              onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
-              disabled={pageIndex <= 0}
-              aria-label="Zur vorherigen Seite"
-            >
-              <AppIcon icon={ChevronLeft} size={16} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg hover:bg-muted/70"
-              onClick={() => setPageIndex((prev) => Math.min(pageCount - 1, prev + 1))}
-              disabled={pageIndex >= pageCount - 1}
-              aria-label="Zur nächsten Seite"
-            >
-              <AppIcon icon={ChevronRight} size={16} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
-              onClick={() => setPageIndex(pageCount - 1)}
-              disabled={pageIndex >= pageCount - 1}
-              aria-label="Zur letzten Seite"
-            >
-              <AppIcon icon={ChevronsRight} size={16} />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTablePaginationBar
+        selectedCount={filteredSelectedCount}
+        totalCount={filteredReferences.length}
+        pageIndex={pageIndex}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPageIndex(0)
+        }}
+        onFirstPage={() => setPageIndex(0)}
+        onPreviousPage={() => setPageIndex((prev) => Math.max(0, prev - 1))}
+        onNextPage={() => setPageIndex((prev) => Math.min(pageCount - 1, prev + 1))}
+        onLastPage={() => setPageIndex(pageCount - 1)}
+        canPrevious={pageIndex > 0}
+        canNext={pageIndex < pageCount - 1}
+      />
     </>
   )
 }

@@ -4,10 +4,11 @@ import { LayoutTwoColumnIcon } from '@hugeicons/core-free-icons'
 import { Table2 } from 'lucide-react'
 
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
+import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
-export type ReferenceLayoutMode = 'table' | 'inbox' | 'match'
+export type ReferenceLayoutMode = 'table' | 'inbox'
 
 type Props = {
   value: ReferenceLayoutMode
@@ -15,9 +16,8 @@ type Props = {
 }
 
 export function ReferenceLayoutSwitch({ value, onChange }: Props) {
-  const listValue: 'table' | 'inbox' = value === 'inbox' ? 'inbox' : 'table'
-  const isInbox = listValue === 'inbox'
-  const label = isInbox ? 'Inbox-Ansicht' : 'Tabellenansicht'
+  const isInbox = value === 'inbox'
+  const label = isInbox ? COPY.dashboard.layoutRead : COPY.dashboard.layoutList
 
   return (
     <AccountsToolbarTooltip label={label}>
@@ -26,7 +26,7 @@ export function ReferenceLayoutSwitch({ value, onChange }: Props) {
         role="switch"
         aria-checked={isInbox}
         aria-label={
-          isInbox ? 'Zur Tabellenansicht wechseln' : 'Zur Inbox-Ansicht wechseln'
+          isInbox ? 'Zur Listenansicht wechseln' : 'Zur Leseansicht wechseln'
         }
         onClick={() => onChange(isInbox ? 'table' : 'inbox')}
         className="relative inline-flex h-10 w-16 shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"

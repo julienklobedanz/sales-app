@@ -1,7 +1,5 @@
 'use client'
 
-/* eslint-disable react-hooks/incompatible-library */
-
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -39,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { DataTablePagination } from '@/components/ui/data-table-pagination'
+import { DataTablePagination, COLLECTION_PAGE_SIZE_OPTIONS } from '@/components/ui/data-table-pagination'
 import { DataTableViewOptions } from '@/components/ui/data-table-view-options'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -72,6 +70,9 @@ export type AppDataTableProps<TData, TValue> = {
   toolbarRight?: (table: TanstackTable<TData>) => React.ReactNode
   /** Spalten ein-/ausblenden (rechts neben der Toolbar). */
   showViewOptions?: boolean
+  enableRowSelection?: boolean
+  initialSorting?: SortingState
+  onResetColumns?: () => void
   emptyText?: React.ReactNode
   getRowId?: (originalRow: TData, index: number, parent?: unknown) => string
   onSelectedRowIdsChange?: (rowIds: string[]) => void
@@ -102,11 +103,14 @@ export function AppDataTable<TData, TValue>({
   toolbar,
   toolbarRight,
   showViewOptions = true,
+  enableRowSelection = true,
+  initialSorting,
+  onResetColumns,
   emptyText = COPY.table.empty,
   getRowId,
   onSelectedRowIdsChange,
   initialPageSize = 10,
-  pageSizeOptions,
+  pageSizeOptions = [...COLLECTION_PAGE_SIZE_OPTIONS],
   initialColumnVisibility,
   initialColumnOrder,
   columnOrder,
@@ -117,7 +121,9 @@ export function AppDataTable<TData, TValue>({
   onColumnSizingChange,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>(
+    () => initialSorting ?? [],
+  )
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(
     () => initialColumnVisibility ?? {},
@@ -137,7 +143,7 @@ export function AppDataTable<TData, TValue>({
     data,
     columns,
     getRowId,
-    enableRowSelection: true,
+    enableRowSelection,
     enableColumnResizing: enableColumnResize,
     columnResizeMode: 'onChange',
     defaultColumn: {
@@ -299,11 +305,7 @@ export function AppDataTable<TData, TValue>({
               {cells}
             </TableRow>
           </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem onSelect={() => row.toggleSelected(true)}>
-              {COPY.deals.contextSelect}
-            </ContextMenuItem>
-            <ContextMenuSeparator />
+            <ContextMenuContent>
             <ContextMenuItem
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
@@ -342,14 +344,18 @@ export function AppDataTable<TData, TValue>({
 
   return (
     <div className="space-y-3.5">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2.5">
+      <div className="flex w-full min-w-0 flex-col gap-2.5 lg:flex-row lg:items-center">
+        <div className="flex w-full min-w-0 flex-1 items-center">
           {toolbar ? toolbar(table) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2.5">
-          {showViewOptions ? <DataTableViewOptions table={table} /> : null}
-          {toolbarRight ? toolbarRight(table) : null}
-        </div>
+        {showViewOptions || toolbarRight ? (
+          <div className="flex shrink-0 items-center gap-2.5">
+            {showViewOptions ? (
+              <DataTableViewOptions table={table} onReset={onResetColumns} />
+            ) : null}
+            {toolbarRight ? toolbarRight(table) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">

@@ -12,7 +12,6 @@ import { deleteReference, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-types'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import type { ReferenceLayoutMode } from './overview/reference-layout-switch'
-import { SmartMatchShell } from './smart-match/smart-match-shell'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
 import {
   REFERENCE_LIBRARY_MODE_STORAGE_KEY,
@@ -27,6 +26,7 @@ import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-
 import {
   COLUMN_KEYS,
   COLUMN_LABELS,
+  PROJECT_STATUS_LABELS,
   REFERENCE_SHOW_EXPIRED_CERTS_KEY,
   STATUS_LABELS,
   loadShowExpiredCertificatesFromStorage,
@@ -146,12 +146,13 @@ export function DashboardOverview({
   const [industrySearch, setIndustrySearch] = useState('')
   const [countrySearch, setCountrySearch] = useState('')
   const [projectStatusSearch, setProjectStatusSearch] = useState('')
-  const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(
+    'project_year',
+  )
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
-  const [listMode, setListMode] = useState<'table' | 'inbox'>('table')
-  const wantMatch = searchParams.get('view') === 'match'
-  const referenceLayout: ReferenceLayoutMode = wantMatch ? 'match' : listMode
+  const viewParam = searchParams.get('view')
+  const referenceLayout: ReferenceLayoutMode = viewParam === 'lesen' ? 'inbox' : 'table'
   const libraryMode = useReferenceLibraryMode()
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(() =>
     loadShowExpiredCertificatesFromStorage(),
@@ -196,7 +197,7 @@ export function DashboardOverview({
     dragOverColumn,
     setDragOverColumn,
     handleColumnWidthChange,
-    resetVisibleColumns,
+    resetColumnsToDefault,
     orderedVisibleColumnKeys,
     moveColumnOrder,
   } = useReferenceOverviewColumns()
@@ -212,17 +213,19 @@ export function DashboardOverview({
   const handleReferenceLayoutChange = useCallback(
     (mode: ReferenceLayoutMode) => {
       const next = new URLSearchParams(searchParams.toString())
-      if (mode === 'match') {
-        next.set('view', 'match')
-      } else {
-        if (!wantMatch) setListMode(mode)
-        next.delete('view')
-      }
+      if (mode === 'inbox') next.set('view', 'lesen')
+      else next.delete('view')
       const qs = next.toString()
       router.replace(qs ? `?${qs}` : '?', { scroll: false })
     },
-    [router, searchParams, wantMatch],
+    [router, searchParams],
   )
+
+  useEffect(() => {
+    if (searchParams.get('view') === 'match') {
+      router.replace(ROUTES.match)
+    }
+  }, [router, searchParams])
 
   useEffect(() => {
     if (!canViewComplianceSegment && libraryMode === 'certificates') {
@@ -455,7 +458,7 @@ export function DashboardOverview({
         <ReferenceOnboardingEmptyState
           canCreate={canCreateReference}
           onUploadFiles={isAdmin ? handleEmptyStateUpload : undefined}
-          onCreateManual={isAdmin ? () => setNewRefModalOpen(true) : undefined}
+          onCreateManual={canCreateReference ? () => setNewRefModalOpen(true) : undefined}
         />
         {renderDialogs({
           profile,
@@ -481,19 +484,36 @@ export function DashboardOverview({
           onReferenceLayoutChange={handleReferenceLayoutChange}
           searchValue={isReferencesLibrary ? search : certificateSearch}
           onSearchChange={isReferencesLibrary ? setSearch : setCertificateSearch}
-          isAdmin={isSystemAdmin(profile.systemRole)}
+          canCreateReference={canCreateReference}
+          canImportReference={isSystemAdmin(profile.systemRole)}
           favoritesOnly={favoritesOnly}
           onFavoritesOnlyChange={setFavoritesOnly}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           volumeFilter={volumeFilter}
           onVolumeFilterChange={setVolumeFilter}
+          industryFilter={industryFilter}
+          onIndustryFilterChange={setIndustryFilter}
+          companyFilter={companyFilter}
+          onCompanyFilterChange={setCompanyFilter}
+          tagsFilter={tagsFilter}
+          onTagsFilterChange={setTagsFilter}
+          countryFilter={countryFilter}
+          onCountryFilterChange={setCountryFilter}
+          projectStatusFilter={projectStatusFilter}
+          onProjectStatusFilterChange={setProjectStatusFilter}
           statusOptions={filterOptions.statuses}
           statusLabels={STATUS_LABELS}
+          industryOptions={filterOptions.industries}
+          companyOptions={filterOptions.companies}
+          tagsOptions={filterOptions.tags}
+          countryOptions={filterOptions.countries}
+          projectStatusOptions={filterOptions.projectStatuses}
+          projectStatusLabels={PROJECT_STATUS_LABELS}
           columnOrder={columnOrder}
           visibleColumns={visibleColumns}
           onVisibleColumnsChange={setVisibleColumns}
-          onResetVisibleColumns={resetVisibleColumns}
+          onResetColumns={resetColumnsToDefault}
           columnLabels={COLUMN_LABELS}
           onImportClick={() => {
             setBulkImportGroups([])
@@ -510,7 +530,7 @@ export function DashboardOverview({
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
         />
 
-        {isReferencesLibrary && referenceLayout !== 'match' ? (
+        {isReferencesLibrary ? (
           <ReferencesBulkActionsBar
             selectedCount={selectedRefIds.size}
             showSalesActions={salesAppView}
@@ -548,10 +568,6 @@ export function DashboardOverview({
             isAdmin={isSystemAdmin(profile.systemRole)}
             onUploadClick={() => setComplianceUploadOpen(true)}
           />
-        ) : referenceLayout === 'match' ? (
-          <div className="min-h-[28rem]">
-            <SmartMatchShell deals={[]} initialDealId={null} variant="embedded" />
-          </div>
         ) : referenceLayout === 'table' ? (
           <ReferencesDataTable
             filteredReferences={filteredReferences}
@@ -596,7 +612,7 @@ export function DashboardOverview({
             companyLogoById={companyLogoById}
             companyIndustryById={companyIndustryById}
             orgDateDisplayFormat={orgDateDisplayFormat}
-            profile={profile}
+            canCreateReference={canCreateReference}
             search={search}
             setNewRefModalOpen={setNewRefModalOpen}
             rowMenuOpenId={rowMenuOpenId}

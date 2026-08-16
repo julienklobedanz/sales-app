@@ -4,8 +4,8 @@ import type { DealStatus } from './types'
 
 export type StatusFilterValue = 'all' | DealStatus
 
-export const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order-v2'
-export const DEAL_COLUMN_SIZING_STORAGE_KEY = 'refstack:deals:column-sizing-v1'
+export const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order-v3'
+export const DEAL_COLUMN_SIZING_STORAGE_KEY = 'refstack:deals:column-sizing-v2'
 
 export const DEAL_COL_LABELS = COPY.deals.columnViewLabels
 
@@ -14,22 +14,19 @@ export const DEAL_RESIZABLE_COLUMN_IDS = [
   'title',
   'company_name',
   'volume',
-  'reference_count',
-  'match',
+  'proof',
   'expiry_date',
   'account_manager_name',
   'sales_manager_name',
 ] as const
 
 export const DEAL_DEFAULT_COLUMN_ORDER = [
-  'select',
   'company_name',
   'title',
-  'volume',
   'status',
-  'reference_count',
-  'match',
+  'proof',
   'expiry_date',
+  'volume',
   'account_manager_name',
   'sales_manager_name',
 ] as const
@@ -49,7 +46,6 @@ export const DEAL_INITIAL_COLUMN_VISIBILITY = {
   company_name: true,
   title: true,
   volume: true,
-  reference_count: true,
-  match: true,
+  proof: true,
   expiry_date: true,
 } as const

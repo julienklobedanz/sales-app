@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ColumnSizingState } from '@tanstack/react-table'
 
 import {
@@ -15,15 +15,32 @@ import {
   DEAL_RESIZABLE_COLUMN_IDS,
 } from './deals-table-constants'
 
+const ALLOWED_DEAL_COLUMN_IDS = new Set<string>(DEAL_DEFAULT_COLUMN_ORDER)
+
+export function normalizeDealColumnOrder(parsed: unknown): string[] {
+  const allowed = ALLOWED_DEAL_COLUMN_IDS
+  const seen = new Set<string>()
+  const result: string[] = []
+  if (Array.isArray(parsed)) {
+    for (const item of parsed) {
+      if (typeof item === 'string' && allowed.has(item) && !seen.has(item)) {
+        seen.add(item)
+        result.push(item)
+      }
+    }
+  }
+  for (const id of DEAL_DEFAULT_COLUMN_ORDER) {
+    if (!seen.has(id)) result.push(id)
+  }
+  return result
+}
+
 function loadDealColumnOrderFromStorage(): string[] {
   if (typeof window === 'undefined') return [...DEAL_DEFAULT_COLUMN_ORDER]
   try {
     const raw = window.localStorage.getItem(DEAL_COLUMNS_STORAGE_KEY)
     if (!raw) return [...DEAL_DEFAULT_COLUMN_ORDER]
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return [...DEAL_DEFAULT_COLUMN_ORDER]
-    const normalized = parsed.filter((id): id is string => typeof id === 'string')
-    return normalized.length > 0 ? normalized : [...DEAL_DEFAULT_COLUMN_ORDER]
+    return normalizeDealColumnOrder(JSON.parse(raw))
   } catch {
     return [...DEAL_DEFAULT_COLUMN_ORDER]
   }
@@ -50,10 +67,16 @@ export function useDealsTableColumnsState() {
     saveColumnWidthsToStorage(DEAL_COLUMN_SIZING_STORAGE_KEY, columnSizing)
   }, [columnSizing])
 
+  const resetColumnsToDefault = useCallback(() => {
+    setColumnOrder([...DEAL_DEFAULT_COLUMN_ORDER])
+    setColumnSizing({})
+  }, [])
+
   return {
     columnOrder,
     setColumnOrder,
     columnSizing,
     setColumnSizing,
+    resetColumnsToDefault,
   }
 }

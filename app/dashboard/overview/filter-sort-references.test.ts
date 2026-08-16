@@ -111,6 +111,30 @@ describe('filterAndSortReferences', () => {
     })
     expect(byTitle.map((r) => r.id).sort()).toEqual(['1', '3'])
   })
+
+  it('sortiert Standard nach Projektjahr absteigend, updated_at nur bei Gleichstand', () => {
+    const refs = [
+      makeRef({
+        id: 'old',
+        title: 'Old',
+        project_end: '2015-01-01',
+        updated_at: '2026-08-15T00:00:00.000Z',
+      }),
+      makeRef({
+        id: 'new',
+        title: 'New',
+        project_end: '2019-12-01',
+        updated_at: '2020-01-01T00:00:00.000Z',
+      }),
+    ]
+    const result = filterAndSortReferences({
+      ...baseArgs,
+      references: refs,
+      sortKey: 'project_year',
+      sortDir: 'desc',
+    })
+    expect(result.map((r) => r.id)).toEqual(['new', 'old'])
+  })
 })
 
 describe('normalizeTagLabel', () => {
