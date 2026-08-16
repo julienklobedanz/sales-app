@@ -18,8 +18,6 @@ import {
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
 import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
-import type { MeetingPrepSessionListItem } from '@/lib/meeting-prep/meeting-prep-types'
-import { listMeetingPrepSessionsForDashboard } from '@/app/dashboard/meeting-prep/actions'
 import {
   buildLeaderCoveragePipeline,
   buildLeaderRiskDeals,
@@ -581,14 +579,8 @@ export async function loadAdminDashboardData(
 
   const riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
   let callQueue: AdminDashboardModel['callQueue'] = []
-  let meetingPrepSessions: MeetingPrepSessionListItem[] = []
   if (orgId && userId) {
     callQueue = await loadLeaderCallQueue(supabase, userId, orgId, allDealsForSignals)
-    meetingPrepSessions = await listMeetingPrepSessionsForDashboard(
-      supabase,
-      orgId,
-      userId,
-    )
   }
   const coveragePipeline = buildLeaderCoveragePipeline(
     pipelineSignals,
@@ -641,7 +633,6 @@ export async function loadAdminDashboardData(
     },
     riskDeals,
     callQueue,
-    meetingPrepSessions,
     coveragePipeline,
     signalRisks,
     winRateCompare,

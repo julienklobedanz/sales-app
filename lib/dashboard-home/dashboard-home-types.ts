@@ -1,7 +1,6 @@
 import type { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
 import type { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import type { DealStatus } from '@/app/dashboard/deals/types'
-import type { MeetingPrepSessionListItem } from '@/lib/meeting-prep/meeting-prep-types'
 
 export const ACTIVE_DEAL_STATUSES: DealStatus[] = ['open', 'rfp', 'negotiation']
 
@@ -255,7 +254,6 @@ export type AdminDashboardModel = {
   topReferences: TopReferenceRow[]
   riskDeals: LeaderRiskDealRow[]
   callQueue: LeaderCallQueueRow[]
-  meetingPrepSessions: MeetingPrepSessionListItem[]
   coveragePipeline: LeaderCoveragePipelineRow[]
   signalRisks: LeaderSignalRiskRow[]
   winRateCompare: {

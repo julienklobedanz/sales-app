@@ -1,10 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
-import { ROUTES } from '@/lib/routes'
 import {
   buildMeetingPrepSnapshot,
   searchCompaniesForMeetingPrep,
@@ -39,7 +36,6 @@ export async function searchMeetingPrepCompaniesAction(
 export type CreateMeetingPrepResult =
   | {
       success: true
-      sessionId: string
       snapshot: MeetingPrepSnapshot
     }
   | { success: false; error: string; disambiguation?: CompanySearchHit[] }
@@ -100,24 +96,7 @@ export async function createMeetingPrepSessionAction(input: {
     nameQuery: query,
   })
 
-  const title = companyName
-  const { data: inserted, error } = await supabase
-    .from('sales_meeting_prep_sessions')
-    .insert({
-      organization_id: auth.orgId,
-      created_by: auth.user.id,
-      company_id: companyId,
-      company_name_query: query,
-      title,
-      snapshot: snapshot as unknown as import('@/lib/database.types').Json,
-    })
-    .select('id')
-    .single()
-
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.home)
-  return { success: true, sessionId: String(inserted.id), snapshot }
+  return { success: true, snapshot }
 }
 
 export async function loadMeetingPrepSessionAction(

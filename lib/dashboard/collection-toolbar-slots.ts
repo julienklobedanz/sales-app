@@ -1,5 +1,6 @@
 import { userCanCreateReference } from '@/lib/roles/reference-access'
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 
 /** Feste DOM-Reihenfolge der Sammel-Toolbar (§10.8). Positionen rücken nicht nach. */
 export const COLLECTION_TOOLBAR_SLOT_IDS = [
@@ -15,11 +16,12 @@ export type CollectionToolbarSlotId = (typeof COLLECTION_TOOLBAR_SLOT_IDS)[numbe
 
 export type CollectionToolbarSlotFill = 'filled' | 'empty'
 
-export type CollectionKind = 'references' | 'deals'
+export type CollectionKind = 'references' | 'deals' | 'accounts'
 
 export function collectionToolbarSlotFill(args: {
   collection: CollectionKind
   canCreateReference: boolean
+  canCreateAccount?: boolean
 }): Record<CollectionToolbarSlotId, CollectionToolbarSlotFill> {
   if (args.collection === 'deals') {
     return {
@@ -28,6 +30,17 @@ export function collectionToolbarSlotFill(args: {
       'collection-filter-more': 'empty',
       'collection-view': 'empty',
       'collection-primary': 'filled',
+      'collection-columns': 'filled',
+    }
+  }
+
+  if (args.collection === 'accounts') {
+    return {
+      'collection-search': 'filled',
+      'collection-filter-primary': 'filled',
+      'collection-filter-more': 'filled',
+      'collection-view': 'filled',
+      'collection-primary': args.canCreateAccount ? 'filled' : 'empty',
       'collection-columns': 'filled',
     }
   }
@@ -55,5 +68,6 @@ export function collectionToolbarSlotFillForRole(args: {
       args.systemRole,
       args.capabilityOverrides,
     ),
+    canCreateAccount: profileCanManageOrgData(args.systemRole, args.functionRole),
   })
 }

@@ -166,14 +166,14 @@ Status wird **ausschließlich** über die `*StatusBadge`‑Wrapper aus Abschnitt
 
 **Nicht jedes Objekt braucht eine Seite.** Maßstab ist das Gewicht des Inhalts:
 
-| Gewicht | Ort | Was die Route rendert |
-|---------|-----|------------------------|
-| Passt auf einen Bildschirm | **In seiner Sammlung**, im Lesebereich neben der Liste | die Sammlung mit dem Objekt ausgewählt |
-| Trägt mehrere Bereiche mit je eigener Darstellungsform | **Eigene Seite** | die Seite |
+| Gewicht | Ort | Was die Route tut |
+|---------|-----|-------------------|
+| Passt auf einen Bildschirm | **In seiner Sammlung**, im Lesebereich neben der Liste | leitet auf die Sammlung mit dem Objekt ausgewählt weiter |
+| Trägt mehrere Bereiche mit je eigener Darstellungsform | **Eigene Seite** | rendert die Seite |
 
 Der Deal ist seitenwürdig — er trägt einen Arbeitsbereich mit sieben Bereichen. Die Referenz ist es nicht — ihr Inhalt füllt einen Bildschirm, eine eigene Seite ließe zwei Drittel leer.
 
-**Beide bleiben verlinkbar.** Der Unterschied liegt darin, was die Route rendert, nicht darin, ob es eine gibt. Auf schmalen Fenstern klappt die Liste weg und der Lesebereich füllt aus — responsives Verhalten, keine zweite Ansicht.
+**Beide bleiben verlinkbar.** Der Unterschied liegt darin, wohin die Route führt, nicht darin, ob es eine gibt. **Die Route eines nicht seitenwürdigen Objekts leitet auf die Sammlung mit Auswahl weiter** — eine kanonische URL, ein Renderpfad. Auf schmalen Fenstern klappt die Liste weg und der Lesebereich füllt aus — responsives Verhalten, keine zweite Ansicht.
 
 #### 10.2 Aufbau einer Objektdarstellung
 
@@ -306,6 +306,8 @@ Manche Objekte haben **keine eigenen Attribute**, sondern bestehen aus ihren Bez
 Solche Objekte bekommen eine **Linse**, kein Verwaltungsobjekt. Der Unterschied ist nicht kosmetisch: Eine Objektseite lädt dazu ein, Felder zu pflegen. Eine Linse zeigt, was das System bereits weiß.
 
 **Bindende Regel:** *Eine Linse hat keine eigenen bearbeitbaren Felder.* Sie zeigt ausschließlich, was anderswo entsteht.
+
+**Benannte Ausnahme — NDA-Erfassung:** Der NDA ist kein Attribut der Firma, sondern ein eigenes Objekt — eigene Tabelle, eigener Posteingang (`notifications/nda-inbox.ts`), eigene Treffer in der globalen Suche, eigene Zeile auf dem AM-Dashboard. Die Linse zeigt seinen Zustand und bietet den Einstieg; sie besitzt die Daten nicht. Deshalb kein Verstoß gegen „keine eigenen bearbeitbaren Felder“. Der Unterschied zum Rückfall ist prüfbar: Ein Notiz-, Strategie- oder Next-Step-Feld hätte kein eigenes Objekt hinter sich. Genau daran ist die Ausnahme zu erkennen — und `accountLensEditableControlIds()` bleibt leer, weil der NDA-Einstieg kein Linsenfeld ist.
 
 Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer Linse ist das Signal, dass sie zum Verwaltungsobjekt wird. Dann greift diese Regel, nicht eine Diskussion.
 

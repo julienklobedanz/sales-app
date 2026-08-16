@@ -1,6 +1,3 @@
-import type { AccountDealRow, CompanyRefRow } from './actions'
-import type { NdaAgreementRow } from './nda-actions'
-
 export type AccountDetailCompany = {
   id: string
   name: string
@@ -12,13 +9,4 @@ export type AccountDetailCompany = {
   description: string | null
   employee_count: number | null
   account_status: string | null
-}
-
-export type AccountDetailClientProps = {
-  company: AccountDetailCompany
-  references: CompanyRefRow[]
-  activeDeals: AccountDealRow[]
-  hubspotPortalId?: string | null
-  initialEditOpen?: boolean
-  ndaAgreements: NdaAgreementRow[]
 }

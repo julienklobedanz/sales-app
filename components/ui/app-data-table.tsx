@@ -94,6 +94,13 @@ export type AppDataTableProps<TData, TValue> = {
   columnSizing?: ColumnSizingState
   /** Callback bei Breiten-Änderung (Persistenz). */
   onColumnSizingChange?: (sizing: ColumnSizingState) => void
+  /** Kontrollierte Spaltensichtbarkeit. */
+  columnVisibility?: VisibilityState
+  onColumnVisibilityChange?: (visibility: VisibilityState) => void
+  /** Zeilenklick navigiert zu dieser URL (z. B. Sammlung mit Auswahl). */
+  getRowHref?: (row: TData) => string | null
+  /** Hebt die aktive Zeile in der Leseansicht hervor. */
+  rowIsActive?: (row: TData) => boolean
 }
 
 export function AppDataTable<TData, TValue>({
@@ -119,15 +126,19 @@ export function AppDataTable<TData, TValue>({
   enableColumnResize = false,
   columnSizing,
   onColumnSizingChange,
+  columnVisibility: controlledColumnVisibility,
+  onColumnVisibilityChange,
+  getRowHref,
+  rowIsActive,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>(
     () => initialSorting ?? [],
   )
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(
-    () => initialColumnVisibility ?? {},
-  )
+  const [internalColumnVisibility, setInternalColumnVisibility] =
+    React.useState<VisibilityState>(() => initialColumnVisibility ?? {})
+  const resolvedColumnVisibility = controlledColumnVisibility ?? internalColumnVisibility
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [internalColumnOrder, setInternalColumnOrder] = React.useState<ColumnOrderState>(
     () => initialColumnOrder ?? [],
@@ -153,7 +164,14 @@ export function AppDataTable<TData, TValue>({
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      const next =
+        typeof updater === 'function'
+          ? updater({ ...resolvedColumnVisibility })
+          : updater
+      setInternalColumnVisibility(next)
+      onColumnVisibilityChange?.(next)
+    },
     onRowSelectionChange: setRowSelection,
     onColumnOrderChange: (updater) => {
       const next =
@@ -174,7 +192,7 @@ export function AppDataTable<TData, TValue>({
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
+      columnVisibility: resolvedColumnVisibility,
       rowSelection,
       columnOrder: resolvedColumnOrder,
       columnSizing: resolvedColumnSizing,
@@ -231,24 +249,36 @@ export function AppDataTable<TData, TValue>({
       </TableCell>
     ))
 
-    const isNavVariant = tableVariant === 'references' || tableVariant === 'deals'
-    const rowNavClass = isNavVariant ? 'cursor-pointer hover:bg-accent/35' : undefined
+    const href = getRowHref?.(row.original) ?? null
+    const isNavVariant = tableVariant === 'references' || tableVariant === 'deals' || Boolean(href)
+    const rowNavClass = isNavVariant
+      ? cn(
+          'cursor-pointer hover:bg-accent/35',
+          rowIsActive?.(row.original) && 'bg-muted',
+        )
+      : undefined
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       if (!isNavVariant) return
       if (isRowNavSuppressedTarget(e.target)) return
-      const rawId = (row.original as { id?: string }).id
-      if (!rawId) return
-      const href =
-        tableVariant === 'references'
-          ? ROUTES.references.detail(rawId)
-          : ROUTES.deals.detail(rawId)
+      const targetHref =
+        href ??
+        (() => {
+          const rawId = (row.original as { id?: string }).id
+          if (!rawId) return null
+          return tableVariant === 'references'
+            ? ROUTES.references.detail(rawId)
+            : tableVariant === 'deals'
+              ? ROUTES.deals.detail(rawId)
+              : null
+        })()
+      if (!targetHref) return
       if (e.metaKey || e.ctrlKey) {
-        window.open(href, '_blank', 'noopener,noreferrer')
+        window.open(targetHref, '_blank', 'noopener,noreferrer')
         return
       }
       if (e.button !== 0) return
-      router.push(href)
+      router.push(targetHref)
     }
 
     if (tableVariant === 'references') {
@@ -336,7 +366,12 @@ export function AppDataTable<TData, TValue>({
     }
 
     return (
-      <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+      <TableRow
+        key={row.id}
+        data-state={row.getIsSelected() ? 'selected' : undefined}
+        className={rowNavClass}
+        onClick={href ? handleRowClick : undefined}
+      >
         {cells}
       </TableRow>
     )

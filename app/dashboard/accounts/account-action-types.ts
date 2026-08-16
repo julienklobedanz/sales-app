@@ -47,6 +47,10 @@ export type CompanyRefRow = {
   industry?: string | null
   country?: string | null
   created_at: string
+  summary?: string | null
+  project_start?: string | null
+  project_end?: string | null
+  project_year?: number | null
 }
 
 /** Opportunity Roadmap: ein Projekt pro Zeile */

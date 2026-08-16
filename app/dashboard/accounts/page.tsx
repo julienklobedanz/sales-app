@@ -2,6 +2,14 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { AccountsGrid } from './accounts-grid'
+import { AccountsCollection } from './accounts-collection'
+import { getReferencesByCompanyId, getActiveDealsByCompanyId } from './actions'
+import { getNdaAgreementsByCompanyId } from './nda-actions'
+import { accountLensLoads } from '@/lib/accounts/account-lens'
+import {
+  parseAccountsCollectionLayout,
+  parseAccountsListView,
+} from '@/lib/accounts/accounts-list-view'
 import {
   resolveNdaDisplayStatus,
   type NdaDisplayStatus,
@@ -40,7 +48,11 @@ type CompanyRow = {
   crm_account_id?: string | null
 }
 
-export default async function AccountsPage() {
+export default async function AccountsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string; id?: string; openNda?: string }>
+}) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -481,6 +493,7 @@ export default async function AccountsPage() {
         open_deals_count: openDealsCount,
         reference_count: referenceCount,
         signal_count: signalCountByCompany[c.id] ?? 0,
+        latest_signal_summary: latestSignalByCompany[c.id]?.summary ?? null,
         nda_status: ndaStatus,
         linked_account_name: c.linked_account_id
           ? (linkedAccountNameById[c.linked_account_id] ?? null)
@@ -499,14 +512,60 @@ export default async function AccountsPage() {
       }
     }) ?? []
 
+  const sp = (await searchParams) ?? {}
+  const paramBag = {
+    get(key: string) {
+      const value = sp[key as keyof typeof sp]
+      return typeof value === 'string' ? value : null
+    },
+  }
+  const listView = parseAccountsListView(paramBag)
+  const layout = parseAccountsCollectionLayout(paramBag)
+  const selectedId = typeof sp.id === 'string' ? sp.id : null
+
+  let lensPayload = null
+  if (listView !== 'partner' && layout === 'inbox' && selectedId) {
+    const [references, activeDeals, ndaResult] = await Promise.all([
+      accountLensLoads('references')
+        ? getReferencesByCompanyId(selectedId)
+        : Promise.resolve([]),
+      accountLensLoads('deals')
+        ? getActiveDealsByCompanyId(selectedId)
+        : Promise.resolve([]),
+      accountLensLoads('nda')
+        ? getNdaAgreementsByCompanyId(selectedId)
+        : Promise.resolve({ success: true as const, rows: [] }),
+    ])
+    lensPayload = {
+      references,
+      activeDeals,
+      ndaAgreements: ndaResult.success ? ndaResult.rows : [],
+    }
+  }
+
+  const accountCompanies = enrichedCompanies.filter(
+    (c) => (c.entity_kind ?? 'account') !== 'partner',
+  )
+
   return (
     <div className="flex flex-col space-y-6">
-      <AccountsGrid
-        companies={enrichedCompanies}
-        hubspotConfigured={hubspotConfigured}
-        hubspotConnected={hubspotStatus.connected}
-        canConnectCrm={isAdmin && hubspotConfigured}
-      />
+      {listView === 'partner' ? (
+        <AccountsGrid
+          companies={enrichedCompanies}
+          hubspotConfigured={hubspotConfigured}
+          hubspotConnected={hubspotStatus.connected}
+          canConnectCrm={isAdmin && hubspotConfigured}
+        />
+      ) : (
+        <AccountsCollection
+          companies={accountCompanies}
+          lensPayload={lensPayload}
+          hubspotConfigured={hubspotConfigured}
+          hubspotConnected={hubspotStatus.connected}
+          canConnectCrm={isAdmin && hubspotConfigured}
+          layout={layout}
+        />
+      )}
     </div>
   )
 }
