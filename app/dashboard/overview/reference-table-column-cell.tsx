@@ -12,6 +12,7 @@ import {
   normalizeOrgDateDisplayFormat,
 } from '@/lib/format'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
+import { projectYearFromDates } from '@/lib/references/project-year'
 import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '../actions'
@@ -57,6 +58,19 @@ export function renderReferenceColumnCell(
         </TableDataCell>
       )
     }
+    case 'summary': {
+      const summaryText = String(ref.summary ?? '').trim()
+      return (
+        <TableDataCell
+          className="min-w-0 overflow-hidden text-muted-foreground"
+          style={widthStyle}
+        >
+          <span className="block min-w-0 truncate leading-normal" title={summaryText || undefined}>
+            {summaryText || '—'}
+          </span>
+        </TableDataCell>
+      )
+    }
     case 'industry': {
       const industryRaw =
         String(ref.industry ?? '').trim() || companyIndustryById.get(ref.company_id) || ''
@@ -98,6 +112,18 @@ export function renderReferenceColumnCell(
           />
         </TableDataCell>
       )
+    case 'project_year': {
+      const year = projectYearFromDates(ref.project_end, ref.project_start)
+      return (
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm tabular-nums"
+          alignClassName="justify-end"
+          style={widthStyle}
+        >
+          <span className="leading-none">{year ?? '—'}</span>
+        </TableDataCell>
+      )
+    }
     case 'project_status':
       return (
         <TableDataCell className="text-sm text-muted-foreground" style={widthStyle}>

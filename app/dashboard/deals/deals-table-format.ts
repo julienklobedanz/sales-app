@@ -1,3 +1,5 @@
+import { daysUntil } from '@/lib/deal-desk/timeline-display'
+
 import type { DealRow, DealStatus } from './types'
 import type { StatusFilterValue } from './deals-table-constants'
 
@@ -14,6 +16,19 @@ export function formatDealTableDate(iso: string): string {
   const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
   const year = d.getUTCFullYear()
   return `${day}.${month}.${year}`
+}
+
+/** Handlungsabstand für Sammelspalten: „in 4 Tagen" / „vor 2 Tagen", ohne Kalenderdatum. */
+export function formatDealCollectionDeadline(
+  iso: string,
+  now: Date = new Date(),
+): string {
+  const days = daysUntil(iso, now)
+  if (days === 0) return 'heute'
+  if (days === 1) return 'in 1 Tag'
+  if (days === -1) return 'vor 1 Tag'
+  if (days > 1) return `in ${days} Tagen`
+  return `vor ${Math.abs(days)} Tagen`
 }
 
 export function isDealExpiringIn30Days(

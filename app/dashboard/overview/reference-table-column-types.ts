@@ -5,9 +5,11 @@ import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-fi
 export type ReferenceColumnKey =
   | 'company'
   | 'title'
+  | 'summary'
   | 'industry'
   | 'volume_eur'
   | 'status'
+  | 'project_year'
   | 'project_status'
   | 'updated_at'
   | 'tags'
@@ -20,9 +22,11 @@ export type ReferenceColumnKey =
 export const DEFAULT_REFERENCE_COLUMN_WIDTHS: Record<ReferenceColumnKey, number> = {
   company: 180,
   title: 280,
+  summary: 280,
   industry: 108,
   volume_eur: 110,
   status: 104,
+  project_year: 88,
   project_status: 140,
   updated_at: 130,
   tags: 120,

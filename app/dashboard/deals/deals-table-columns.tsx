@@ -6,7 +6,6 @@ import { DealStatusBadge } from '@/components/deal-status-badge'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
 import { TableRowAlign } from '@/components/table/table-row-align'
-import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableSortableHeader } from '@/components/table/table-sortable-header'
 import { TableTitleHoverContent } from '@/components/table/table-title-hover-content'
 import {
@@ -15,50 +14,19 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
+import { dealProofDisplay } from '@/lib/deals/deal-proof-display'
 import { formatDealVolume } from '@/lib/format'
-import { getMatchStrength } from '@/lib/match/match-strength'
 import { ROUTES } from '@/lib/routes'
 
 import { DEAL_COL_LABELS } from './deals-table-constants'
 import {
-  formatDealTableDate,
+  formatDealCollectionDeadline,
   isDealExpiringIn30Days,
 } from './deals-table-format'
 import type { DealRow } from './types'
 
 export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
   return [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <TableRowCheckbox
-          rowHeight={10}
-          checked={
-            table.getIsAllPageRowsSelected()
-              ? true
-              : table.getIsSomePageRowsSelected()
-                ? 'indeterminate'
-                : false
-          }
-          onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
-          aria-label="Alle auswählen"
-        />
-      ),
-      cell: ({ row }) => (
-        <TableRowCheckbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(checked) => row.toggleSelected(checked)}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Zeile auswählen"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      enableResizing: false,
-      size: 32,
-      minSize: 32,
-      maxSize: 32,
-    },
     {
       accessorKey: 'status',
       meta: { viewLabel: DEAL_COL_LABELS.status },
@@ -114,45 +82,20 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
       ),
     },
     {
-      id: 'reference_count',
+      id: 'proof',
       accessorFn: (row) => row.linked_refs?.length ?? 0,
       meta: {
-        viewLabel: DEAL_COL_LABELS.reference_count,
+        viewLabel: DEAL_COL_LABELS.proof,
         headerAlign: 'center' as const,
       },
-      size: 96,
-      minSize: 80,
+      size: 120,
+      minSize: 88,
       header: ({ column }) => (
-        <TableSortableHeader label={COPY.deals.referenceCountColumn} column={column} />
-      ),
-      cell: ({ row }) => (
-        <div className="text-center tabular-nums text-muted-foreground">
-          {row.original.linked_refs?.length ?? 0}
-        </div>
-      ),
-    },
-    {
-      id: 'match',
-      accessorFn: (row) => row.best_match_score,
-      meta: { viewLabel: DEAL_COL_LABELS.match, headerAlign: 'center' as const },
-      sortingFn: (rowA, rowB) => {
-        const a = rowA.original.best_match_score
-        const b = rowB.original.best_match_score
-        if (a == null && b == null) return 0
-        if (a == null) return 1
-        if (b == null) return -1
-        return a - b
-      },
-      size: 88,
-      minSize: 72,
-      header: ({ column }) => (
-        <TableSortableHeader label={COPY.deals.matchColumn} column={column} />
+        <TableSortableHeader label={COPY.deals.proofColumn} column={column} />
       ),
       cell: ({ row }) => {
-        const refCount = row.original.linked_refs?.length ?? 0
-        const score = row.original.best_match_score
-
-        if (refCount === 0) {
+        const display = dealProofDisplay(row.original)
+        if (display.kind === 'empty') {
           return (
             <div
               className="flex justify-center text-muted-foreground"
@@ -162,18 +105,17 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
             </div>
           )
         }
-
-        if (score == null || Number.isNaN(score)) {
+        if (display.kind === 'count_only') {
           return (
             <div className="flex justify-center">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span
                     tabIndex={0}
-                    className="cursor-default text-muted-foreground"
-                    aria-label="Manuell verknüpft, kein Match-Score"
+                    className="cursor-default tabular-nums text-muted-foreground"
+                    aria-label={`${display.count} Referenzen, manuell verknüpft`}
                   >
-                    —
+                    {display.count}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs text-xs">
@@ -183,23 +125,24 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
             </div>
           )
         }
-
-        const percent = Math.round(score * 100)
-        const strength = getMatchStrength(score)
-
         return (
-          <div className="flex justify-center">
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="tabular-nums text-muted-foreground">{display.count}</span>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span
                   tabIndex={0}
                   className="inline-flex cursor-default rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <MatchScoreCircle size="sm" strength={strength} percent={percent} />
+                  <MatchScoreCircle
+                    size="sm"
+                    strength={display.strength}
+                    percent={display.percent}
+                  />
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
-                {strength.ariaLabel} · {percent}%
+                {display.strength.ariaLabel} · {display.percent}%
               </TooltipContent>
             </Tooltip>
           </div>
@@ -225,7 +168,17 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
       meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
       size: 120,
       minSize: 88,
-      header: ({ column }) => <TableSortableHeader label="Deadline" column={column} />,
+      sortingFn: (rowA, rowB) => {
+        const a = rowA.original.expiry_date
+        const b = rowB.original.expiry_date
+        if (!a && !b) return 0
+        if (!a) return 1
+        if (!b) return -1
+        return new Date(a).getTime() - new Date(b).getTime()
+      },
+      header: ({ column }) => (
+        <TableSortableHeader label={COPY.deals.deadlineColumn} column={column} />
+      ),
       cell: ({ row }) => {
         const isHot = isDealExpiringIn30Days(
           row.original.expiry_date,
@@ -235,7 +188,9 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
           <span
             className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}
           >
-            {row.original.expiry_date ? formatDealTableDate(row.original.expiry_date) : '—'}
+            {row.original.expiry_date
+              ? formatDealCollectionDeadline(row.original.expiry_date)
+              : '—'}
           </span>
         )
       },

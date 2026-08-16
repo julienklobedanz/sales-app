@@ -14,7 +14,10 @@ import {
   loadReferenceColumnWidthsFromStorage,
   loadVisibleColumnsFromStorage,
 } from './reference-overview-columns'
-import type { ReferenceColumnKey } from './reference-table-column-types'
+import {
+  DEFAULT_REFERENCE_COLUMN_WIDTHS,
+  type ReferenceColumnKey,
+} from './reference-table-column-types'
 
 export function useReferenceOverviewColumns() {
   const [visibleColumns, setVisibleColumns] = useState<
@@ -58,8 +61,10 @@ export function useReferenceOverviewColumns() {
     [],
   )
 
-  const resetVisibleColumns = useCallback(() => {
+  const resetColumnsToDefault = useCallback(() => {
     setVisibleColumns({ ...DEFAULT_VISIBLE })
+    setColumnOrder([...COLUMN_KEYS] as ReferenceColumnKey[])
+    setColumnWidths({ ...DEFAULT_REFERENCE_COLUMN_WIDTHS })
   }, [])
 
   const orderedVisibleColumnKeys = useMemo(
@@ -86,7 +91,7 @@ export function useReferenceOverviewColumns() {
     dragOverColumn,
     setDragOverColumn,
     handleColumnWidthChange,
-    resetVisibleColumns,
+    resetColumnsToDefault,
     orderedVisibleColumnKeys,
     moveColumnOrder,
   }

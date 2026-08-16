@@ -39,9 +39,11 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
 export const COLUMN_KEYS = [
   'company',
   'title',
+  'summary',
+  'status',
+  'project_year',
   'industry',
   'volume_eur',
-  'status',
   'project_status',
   'updated_at',
   'tags',
@@ -55,9 +57,11 @@ export const COLUMN_KEYS = [
 export const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   company: true,
   title: true,
-  industry: true,
-  volume_eur: false,
+  summary: true,
   status: true,
+  project_year: true,
+  industry: false,
+  volume_eur: false,
   project_status: false,
   updated_at: false,
   tags: false,
@@ -69,9 +73,11 @@ export const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
 }
 
 export const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
-  status: 'Referenzstatus',
+  status: 'Status',
   company: 'Account',
   title: 'Titel',
+  summary: 'Ergebnis',
+  project_year: 'Projektjahr',
   tags: 'Tags',
   industry: 'Industrie',
   volume_eur: 'Volumen',
@@ -84,9 +90,9 @@ export const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   updated_at: 'Letzte Änderung',
 }
 
-export const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
-export const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
-export const COLUMN_SIZING_STORAGE_KEY = 'dashboard-overview-column-sizing-v1'
+export const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v2'
+export const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v2'
+export const COLUMN_SIZING_STORAGE_KEY = 'dashboard-overview-column-sizing-v2'
 export const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'reference-compliance-show-expired-v1'
 /** Prefixed legacy key from pre-rename localStorage (Queue #8). */
 const LEGACY_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'

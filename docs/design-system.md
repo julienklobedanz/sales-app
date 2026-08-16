@@ -253,6 +253,7 @@ Eine Sammelseite zeigt viele Objekte eines Typs. Sie folgt überall demselben Au
 | 3 | **Weitere Filter** — ein Menü, nicht mehrere Icons |
 | 4 | **Ansichtswechsel** — nur bei nicht seitenwürdigen Objekten (10.1) |
 | 5 | **Primäraktion** — rollenabhängig |
+| 6 | **Spaltenkonfiguration** — kein Filter; beschriftet, mit Weg zurück zur Voreinstellung |
 
 **Bindende Regel:** *Positionen rücken nicht nach.* Wer eine Aktion nicht darf, sieht die Position leer — sonst sieht die Toolbar für jede Rolle anders aus und niemand lernt, wo etwas liegt.
 
@@ -286,7 +287,7 @@ Wo Spalten konfigurierbar sind, gilt zusätzlich:
 
 ##### Standardsortierung
 
-Folgt der Leitfrage: **Deals nach Frist aufsteigend**, **Referenzen nach Aktualität absteigend**.
+Folgt der Leitfrage **und einer sichtbaren Spalte**: **Deals nach Frist aufsteigend**, **Referenzen nach Projektjahr absteigend**. Eine unsichtbare Spalte darf die Voreinstellung nicht sortieren.
 
 ##### Auswahl und Fuß
 

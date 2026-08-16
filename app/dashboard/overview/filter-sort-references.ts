@@ -9,6 +9,10 @@ import {
   matchesReferenceVolumeFilter,
   type ReferenceVolumeFilter,
 } from '@/lib/references/reference-volume-filter'
+import {
+  compareReferencesByProjectYearDesc,
+  projectYearFromDates,
+} from '@/lib/references/project-year'
 import type { ReferenceRow } from '../actions'
 import {
   COLUMN_KEYS,
@@ -93,6 +97,10 @@ export function getReferenceSortValue(
       return new Date(ref.created_at).getTime()
     case 'updated_at':
       return ref.updated_at ? new Date(ref.updated_at).getTime() : 0
+    case 'summary':
+      return (ref.summary ?? '').toLowerCase()
+    case 'project_year':
+      return projectYearFromDates(ref.project_end, ref.project_start) ?? 0
     default:
       return ''
   }
@@ -184,6 +192,9 @@ export function filterAndSortReferences({
   }
   if (volumeFilter !== 'all') {
     list = list.filter((r) => matchesReferenceVolumeFilter(r.volume_eur, volumeFilter))
+  }
+  if (sortKey === 'project_year' && sortDir === 'desc') {
+    return [...list].sort(compareReferencesByProjectYearDesc)
   }
   if (sortKey) {
     list = [...list].sort((a, b) => {
