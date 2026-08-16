@@ -155,3 +155,159 @@ Status wird **ausschließlich** über die `*StatusBadge`‑Wrapper aus Abschnitt
 **Prozentwerte sind kein Status.** Match‑Scores gehören nicht ins Badge‑System. Entweder eine dokumentierte Skala mit echten Schwellen (dann sind 72 % und 87 % unterschiedlich eingefärbt) oder neutral dargestellt — nicht alles im selben Grün.
 
 **Zeitliche Dringlichkeit** wird nur eingefärbt, wenn sie handlungsrelevant ist. Eine überfällige Frist an einem gewonnenen oder verlorenen Deal ist bedeutungslos; sie rot zu färben entwertet Rot überall sonst.
+
+---
+
+### 10) Seiten‑Grammatik: was eine Seite ist und wann sie eine sein darf
+
+> Ergänzt die Abschnitte 7–9 um die Ebene darüber. Die Farbarbeit hat die Atome geordnet (Tokens, Buttons, Badges); dieser Abschnitt ordnet Seiten. Eingeführt 14.08.2026 nach einem Seitenreview, das **drei Objektseiten mit drei Skeletten** (Referenz, Deal, Account), **zwei Sammelseiten mit zwei Skeletten** und **sieben Komponenten für denselben Referenzinhalt** gefunden hat — fünf davon für dieselbe interne Zielgruppe.
+
+#### 10.1 Seitenwürdigkeit
+
+**Nicht jedes Objekt braucht eine Seite.** Maßstab ist das Gewicht des Inhalts:
+
+| Gewicht | Ort | Was die Route rendert |
+|---------|-----|------------------------|
+| Passt auf einen Bildschirm | **In seiner Sammlung**, im Lesebereich neben der Liste | die Sammlung mit dem Objekt ausgewählt |
+| Trägt mehrere Bereiche mit je eigener Darstellungsform | **Eigene Seite** | die Seite |
+
+Der Deal ist seitenwürdig — er trägt einen Arbeitsbereich mit sieben Bereichen. Die Referenz ist es nicht — ihr Inhalt füllt einen Bildschirm, eine eigene Seite ließe zwei Drittel leer.
+
+**Beide bleiben verlinkbar.** Der Unterschied liegt darin, was die Route rendert, nicht darin, ob es eine gibt. Auf schmalen Fenstern klappt die Liste weg und der Lesebereich füllt aus — responsives Verhalten, keine zweite Ansicht.
+
+#### 10.2 Aufbau einer Objektdarstellung
+
+In dieser Reihenfolge, ob als Seite oder als Lesebereich:
+
+1. **Identität** — wer oder was. Rechts die Ausgaben des Objekts (Export, Briefing)
+2. **Zustand** — die Antwort auf die Leitfrage der Fläche
+3. **Kern** — wofür das Objekt im Produkt existiert
+4. **Kontext** — was gelegentlich gebraucht wird, ruhig gehalten
+5. **Vertiefung** — Zusammenfassung plus Einstieg, nicht der Inhalt selbst
+
+**Bindende Regel:** *Der Zustand ist eine Aussage, keine Feldliste.* „Extern nutzbar — Freigabe außerhalb von RefStack" beantwortet die Frage. Drei Zeilen „Unter NDA? Nein · Intern: Noch nicht gestartet · Kunde: Extern nutzbar" verlangen vom Nutzer, sie selbst zu beantworten.
+
+**Phasenabhängigkeit:** Abschnitte, die für den aktuellen Zustand bedeutungslos sind, werden **nicht gerendert**. Kein Leerlauf, keine Felder mit „—".
+
+#### 10.3 Eine Information, ein Element
+
+Dieselbe Information steht auf einer Fläche an **einer** Stelle. Wo Chips und Timeline dieselben Termine zeigen, entsteht kein Mehrwert, sondern Konkurrenz um Aufmerksamkeit.
+
+#### 10.4 Ein Inhalt, mehrere Einfassungen
+
+Ein Objekt hat **eine** Inhaltsdarstellung. Was sich je nach Ort unterscheidet, ist die Einfassung — nicht der Inhalt.
+
+| Einfassung | Unterschied |
+|------------|-------------|
+| **Intern** | alle Felder, alle Aktionen |
+| **Kundenfreigabe** | reduzierte Felder, Freigabe‑Ansprache |
+| **Öffentlich** | reduzierte Felder, Branding des Workspaces |
+
+Eine neue Ansicht desselben Objekts ist ein **Rahmen um den vorhandenen Kern**, nie eine zweite Implementierung.
+
+**Bindende Regel:** *Wenn zwei interne Ansichten unterschiedliche Felder zeigen, ist das ein Bug, keine Variante.*
+
+#### 10.5 Aktions‑Platzierung
+
+| Art der Aktion | Ort |
+|----------------|-----|
+| Erzeugt ein Artefakt aus dem **ganzen** Objekt | Kopf, bei den Aktionen |
+| Verändert oder exportiert eine **bestimmte Menge** | an dieser Menge |
+| Betrifft einen **einzelnen Eintrag** | im Panel dieses Eintrags |
+| Ist eine **Variante derselben Absicht** | im Dialog der Hauptaktion, nicht als eigener Button |
+
+Vier Knöpfe, die alle „irgendwie teilen" heißen, sind eine Aktion mit vier Varianten. Ergänzt 8.2: die Hierarchie sagt, *wie* ein Button aussieht — dieser Abschnitt sagt, *wo* er steht.
+
+#### 10.6 Navigationsebenen
+
+| Ebene | Mechanismus | Beispiel |
+|-------|-------------|----------|
+| Objekt | Route | Deal, Referenz, Firma |
+| Bereich | Unterroute | Bereich eines Arbeitsbereichs |
+| Eintrag | Query‑Parameter, Panel | ein Risiko, ein Entwurf |
+
+**Höchstens eine schwebende Ebene gleichzeitig.** Wer ein Panel über einem Panel braucht, hat die Ebene darunter falsch gewählt.
+
+Alles muss verlinkbar sein, die Zurück‑Taste muss überall das Erwartete tun, und ein Neuladen darf keinen Zustand verlieren.
+
+#### 10.7 Arbeitsbereiche
+
+Ein Arbeitsbereich entsteht, wenn ein Objekt einen Teil hat, der **eigenständige, längere Arbeit** trägt — erkennbar an mehreren Bereichen mit je eigener Darstellungsform und zweistelligen Mengen.
+
+Aufbau: **Leiste** links mit Fortschrittszahlen · **eine** Inhaltsfläche · **Panel** für Einzeleinträge. Die Zahlen in der Leiste sind kein Schmuck, sondern zeigen, wo Arbeit liegt („1 K.O.", „0/26").
+
+Ein Arbeitsbereich ist eine **Unterroute des Objekts**, kein Sidebar‑Eintrag. Er ist damit erkennbar untergeordnet und steht nicht in Konkurrenz zu den Hauptbereichen der App.
+
+Auf schmalen Fenstern klappt die Leiste auf **Icons und Zahlen** zusammen. Die Beschriftungen entfallen, die Zahlen nicht — sie sind der Grund für die Leiste.
+
+#### 10.8 Sammelseiten
+
+Eine Sammelseite zeigt viele Objekte eines Typs. Sie folgt überall demselben Aufbau: **Titel · Toolbar · Inhalt · Fuß**.
+
+##### Toolbar — feste Positionen
+
+| Position | Inhalt |
+|----------|--------|
+| 1 | **Suche** — der Platzhalter nennt die durchsuchten Felder |
+| 2 | **Primärfilter** — der eine dominante Filter der Sammlung, sichtbar |
+| 3 | **Weitere Filter** — ein Menü, nicht mehrere Icons |
+| 4 | **Ansichtswechsel** — nur bei nicht seitenwürdigen Objekten (10.1) |
+| 5 | **Primäraktion** — rollenabhängig |
+
+**Bindende Regel:** *Positionen rücken nicht nach.* Wer eine Aktion nicht darf, sieht die Position leer — sonst sieht die Toolbar für jede Rolle anders aus und niemand lernt, wo etwas liegt.
+
+Der **Ansichtswechsel** ist kein Zusatzfeature, sondern die Folge daraus, dass ein kleines Objekt in seiner Sammlung gelesen wird. Die Zustände heißen **Liste** und **Lesen**, weil sie unterschiedliche Arbeitsweisen sind, nicht zwei Layouts. Objekte mit eigener Seite haben keinen Ansichtswechsel.
+
+Es gilt weiter 8.4: **höchstens zwei unbeschriftete Icons nebeneinander.** Filter‑Voreinstellungen gehören ins Filtermenü, nicht als eigene Icons in die Toolbar.
+
+##### Standardspalten
+
+**Die Standardspalten beantworten die Leitfrage der Sammlung, nicht die Datenstruktur des Objekts.**
+
+- Ein Feld, nach dem man **filtert**, muss keine Spalte sein (Industrie, Vertragsart, Region)
+- Ein Feld, nach dem man **scannt**, muss eine sein
+- Zwei Spalten, von denen eine aus der anderen folgt, sind **eine** Spalte
+
+| Sammlung | Leitfrage | Standardspalten |
+|----------|-----------|-----------------|
+| **Deals** | Welcher Deal braucht Beweise, und wie dringend? | Account · Titel · Status · **Beweislage** · Frist · Volumen |
+| **Referenzen** | Was hat das gebracht, und darf ich es teilen? | Account · Titel · **Ergebnis** · Status · Projektjahr |
+| **Accounts** | Bei welchen Firmen haben wir was? | Firma · **Beweise** · Offene Deals · NDA |
+
+**Bindende Regel:** *Die Voreinstellung ist eine Produktaussage, keine Vorliebe.* Welche Spalten beim ersten Öffnen stehen, beantwortet die Leitfrage der Sammlung. Das wird nicht ausgehandelt — ob Nutzer **danach** abweichen dürfen, ist eine andere Frage und darf mit Ja beantwortet werden.
+
+Wo Spalten konfigurierbar sind, gilt zusätzlich:
+
+- Die **Voreinstellung** ist die dokumentierte Auswahl aus der Tabelle oben, nicht das, was historisch gewachsen ist.
+- Ein Weg **zurück zur Voreinstellung** muss erreichbar sein. Wer sich verkonfiguriert hat, darf nicht im eigenen Zustand feststecken.
+- Eine geänderte Voreinstellung erreicht Bestandsnutzer **nur über einen Versionssprung im Speicherschlüssel**. Ohne ihn gilt im Browser weiter die alte Auswahl, und die Änderung wirkt nur für neue Nutzer.
+
+**Zeitangaben in Sammlungen sind Handlungsabstände**, keine Daten: „in 4 Tagen" statt „30.04.2026". Bei abgeschlossenen Objekten entfällt die Einfärbung (siehe 9).
+
+##### Standardsortierung
+
+Folgt der Leitfrage: **Deals nach Frist aufsteigend**, **Referenzen nach Aktualität absteigend**.
+
+##### Auswahl und Fuß
+
+Der Fuß ist in allen Sammlungen identisch: Auswahlzähler · Ergebnisse pro Seite · Blättern.
+
+**Eine Auswahlspalte gibt es nur, wenn es echte Mehrfachaktionen gibt.** Aktionen, die nur bei genau einer ausgewählten Zeile funktionieren, rechtfertigen keine Mehrfachauswahl — dafür genügt der Klick auf die Zeile.
+
+##### Leerzustand
+
+Der Leerzustand nennt den Raum und lädt ein. **Die angebotene Aktion muss der Rolle entsprechen:** Wer nicht anlegen darf, bekommt keinen Anlegen‑Knopf, sondern den Weg, der ihm offensteht.
+
+#### 10.9 Linsen — Objekte ohne eigenen Inhalt
+
+Manche Objekte haben **keine eigenen Attribute**, sondern bestehen aus ihren Beziehungen. Eine Firma in RefStack ist die Summe ihrer Referenzen, Deals, Signale und ihres NDA‑Status — sonst nichts.
+
+Solche Objekte bekommen eine **Linse**, kein Verwaltungsobjekt. Der Unterschied ist nicht kosmetisch: Eine Objektseite lädt dazu ein, Felder zu pflegen. Eine Linse zeigt, was das System bereits weiß.
+
+**Bindende Regel:** *Eine Linse hat keine eigenen bearbeitbaren Felder.* Sie zeigt ausschließlich, was anderswo entsteht.
+
+Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer Linse ist das Signal, dass sie zum Verwaltungsobjekt wird. Dann greift diese Regel, nicht eine Diskussion.
+
+**Aufnahmetest für Inhalte:** Trägt diese Information zur Kernaufgabe des Produkts bei? Bei RefStack: *Hilft sie, einen Beweis zu erzeugen oder zu platzieren?* Was nur beim **Gewinnen** des Deals hilft, gehört ins CRM — was beim **Belegen** hilft, hierher.
+
+**Zustand vor Inhalt:** Wenn ein Zustand die Verwendbarkeit des Inhalts bestimmt — bei der Firma der NDA — steht er darüber und verändert die Darstellung des Inhalts sichtbar, nicht nur als Hinweis daneben.
