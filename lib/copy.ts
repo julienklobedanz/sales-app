@@ -410,8 +410,6 @@ export const COPY = {
     alsoLinkedAccountHint: 'Auch als Account verknüpft',
     ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
     ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
-    tabBuyingCenter: 'Buying Center',
-    buyingCenterTitle: 'Buying Center',
     companyUpdateEmpty: 'Keine Company Updates vorhanden.',
     createDialogNameHint:
       'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
@@ -471,9 +469,6 @@ export const COPY = {
           'Verknüpfe deinen ersten Beweis mit einem offenen Deal — dann taucht hier deine Arbeitsschlange auf.',
         queueNoProof: 'kein Beweis',
         queueWeakProof: 'schwach belegt',
-        meddpiccFixEconomic: 'Economic Buyer ergänzen',
-        meddpiccFixChampion: 'Champion ergänzen',
-        meddpiccFixMetrics: 'Metrics ergänzen',
         queueFindProof: 'Beweis finden',
         queueHotSignal: 'heißes Signal',
         queueFollowUp: 'Nachfassen',

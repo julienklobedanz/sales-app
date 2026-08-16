@@ -6,10 +6,30 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatReferenceDate } from '@/lib/format'
 import { COPY } from '@/lib/copy'
-import type { AccountDetailClientProps } from './account-detail-types'
+
+export type AccountDetailMarketSignals = {
+  championMoves: Array<{
+    id: string
+    personName: string
+    personTitleBefore: string | null
+    personTitleAfter: string | null
+    changeSummary: string
+    detectedAt: string
+    eventKind: 'role_change' | 'news_mention'
+    sourceUrl: string | null
+  }>
+  accountNews: Array<{
+    id: string
+    body: string
+    sourceLabel: string | null
+    sourceUrl: string | null
+    publishedOn: string
+    segment: 'customer' | 'prospect'
+  }>
+}
 
 type Props = {
-  marketSignals: AccountDetailClientProps['marketSignals']
+  marketSignals: AccountDetailMarketSignals
 }
 
 export function AccountDetailMarketSignalsCard({ marketSignals }: Props) {
@@ -17,7 +37,7 @@ export function AccountDetailMarketSignalsCard({ marketSignals }: Props) {
   const [visibleNewsCount, setVisibleNewsCount] = useState(3)
 
   function newsSourceHref(
-    row: AccountDetailClientProps['marketSignals']['accountNews'][number],
+    row: AccountDetailMarketSignals['accountNews'][number],
   ) {
     const url = String(row.sourceUrl ?? '').trim()
     if (url && /^https?:\/\//i.test(url)) return url
@@ -28,7 +48,7 @@ export function AccountDetailMarketSignalsCard({ marketSignals }: Props) {
   }
 
   function championHref(
-    row: AccountDetailClientProps['marketSignals']['championMoves'][number],
+    row: AccountDetailMarketSignals['championMoves'][number],
   ) {
     const url = String(row.sourceUrl ?? '').trim()
     if (row.eventKind === 'news_mention' && url && /^https?:\/\//i.test(url)) return url

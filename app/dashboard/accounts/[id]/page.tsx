@@ -1,17 +1,10 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect, notFound } from 'next/navigation'
+import { accountDetailLoads } from '@/lib/accounts/account-detail-surfaces'
 import { AccountDetailClient } from '../account-detail-client'
-import {
-  getCompanyStrategy,
-  getStakeholders,
-  getContactsByCompanyId,
-  type ExternalContactRow,
-  getReferencesByCompanyId,
-  getActiveDealsByCompanyId,
-} from '../actions'
+import { getReferencesByCompanyId, getActiveDealsByCompanyId } from '../actions'
 import { getNdaAgreementsByCompanyId } from '../nda-actions'
-import { fetchExternalContactsForCompany } from '@/lib/accounts/external-contacts-fetch'
 import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 
 export default async function AccountDetailPage({
@@ -37,120 +30,57 @@ export default async function AccountDetailPage({
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
-  const profileOrgId = profile.organization_id
-
   const orgId = profile.organization_id as string | null | undefined
-  let organizationName: string | null = null
-  if (orgId) {
-    const { data: orgRow } = await supabase
-      .from('organizations')
-      .select('name')
-      .eq('id', orgId)
-      .maybeSingle()
-    organizationName = orgRow?.name?.trim() || null
-  }
 
   const { data: company } = await supabase
     .from('companies')
     .select(
-      'id, name, entity_kind, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id',
+      'id, name, entity_kind, logo_url, website_url, headquarters, industry, description, employee_count, account_status',
     )
     .eq('id', id)
     .single()
 
   if (!company) notFound()
 
-  async function getExternalContactsSafe() {
-    if (!profileOrgId) return []
-    return fetchExternalContactsForCompany(supabase, id, profileOrgId)
+  const closedCareLoads = (
+    [
+      'strategy',
+      'stakeholders',
+      'internalContacts',
+      'externalContacts',
+      'marketSignals',
+    ] as const
+  ).filter((key) => accountDetailLoads(key))
+  if (closedCareLoads.length > 0) {
+    throw new Error(
+      `Account detail still loads care surfaces: ${closedCareLoads.join(', ')}`,
+    )
   }
 
-  const [
-    strategy,
-    stakeholders,
-    internalContacts,
-    references,
-    activeDeals,
-    externalContactsResult,
-    ndaResult,
-    hubspotPortalId,
-  ] = await Promise.all([
-    getCompanyStrategy(id),
-    getStakeholders(id),
-    getContactsByCompanyId(id),
-    getReferencesByCompanyId(id),
-    getActiveDealsByCompanyId(id),
-    getExternalContactsSafe(),
-    getNdaAgreementsByCompanyId(id),
+  const [references, activeDeals, ndaResult, hubspotPortalId] = await Promise.all([
+    accountDetailLoads('references')
+      ? getReferencesByCompanyId(id)
+      : Promise.resolve([]),
+    accountDetailLoads('deals') ? getActiveDealsByCompanyId(id) : Promise.resolve([]),
+    accountDetailLoads('nda')
+      ? getNdaAgreementsByCompanyId(id)
+      : Promise.resolve({ success: true as const, rows: [] }),
     orgId ? getHubSpotPortalIdForOrganization(supabase, orgId) : Promise.resolve(null),
   ])
 
   const ndaAgreements = ndaResult.success ? ndaResult.rows : []
 
-  const [executiveEventsResult, accountNewsResult] = await Promise.all([
-    supabase
-      .from('market_signal_executive_events')
-      .select(
-        'id, person_name, person_title_before, person_title_after, change_summary, detected_at, event_kind, source_url',
-      )
-      .eq('company_id', id)
-      .order('detected_at', { ascending: false })
-      .limit(40),
-    supabase
-      .from('market_signal_account_news')
-      .select('id, body, source_label, source_url, published_on, segment')
-      .eq('company_id', id)
-      .order('published_on', { ascending: false })
-      .limit(40),
-  ])
-
-  const marketSignals = {
-    championMoves: (executiveEventsResult.data ?? []).map((row) => {
-      const ek = row.event_kind ?? 'role_change'
-      return {
-        id: row.id,
-        personName: row.person_name ?? '',
-        personTitleBefore: row.person_title_before ?? null,
-        personTitleAfter: row.person_title_after ?? null,
-        changeSummary: row.change_summary ?? '',
-        detectedAt: row.detected_at ?? '',
-        eventKind:
-          ek === 'news_mention' ? ('news_mention' as const) : ('role_change' as const),
-        sourceUrl: row.source_url ?? null,
-      }
-    }),
-    accountNews: (accountNewsResult.data ?? []).map((row) => {
-      const seg = row.segment ?? 'customer'
-      const segment: 'customer' | 'prospect' =
-        seg === 'prospect' ? 'prospect' : 'customer'
-      return {
-        id: row.id,
-        body: row.body ?? '',
-        sourceLabel: row.source_label ?? null,
-        sourceUrl: row.source_url ?? null,
-        publishedOn: row.published_on ?? '',
-        segment,
-      }
-    }),
-  }
-
   return (
     <div className="px-6 py-6 md:px-10 lg:px-16 xl:px-24">
-      <div className="w-full max-w-6xl mx-auto">
+      <div className="mx-auto w-full max-w-6xl">
         <AccountDetailClient
           company={{
             ...company,
             entity_kind: company.entity_kind === 'partner' ? 'partner' : 'account',
           }}
-          organizationName={organizationName}
-          strategy={strategy}
-          stakeholders={stakeholders}
-          internalContacts={internalContacts}
-          externalContacts={(externalContactsResult ?? []) as ExternalContactRow[]}
           references={references}
           activeDeals={activeDeals}
           hubspotPortalId={hubspotPortalId}
-          marketSignals={marketSignals}
           initialEditOpen={initialEditOpen}
           ndaAgreements={ndaAgreements}
         />

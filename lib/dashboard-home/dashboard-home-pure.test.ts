@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { COPY } from '@/lib/copy'
-
 import {
   computeWinRateMetrics,
   countDueMarketSnoozes,
   dashboardFirstName,
   integrationConnectionStatus,
-  meddpiccAccountAction,
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
 
@@ -47,27 +44,6 @@ describe('countDueMarketSnoozes', () => {
       'market_snooze_until:short',
     ]
     expect(countDueMarketSnoozes(keys, now)).toBe(1)
-  })
-})
-
-describe('meddpiccAccountAction', () => {
-  it('prioritizes economic buyer then champion then goals', () => {
-    expect(
-      meddpiccAccountAction({ hasChampion: true, hasEconomic: false, hasGoals: true })
-        .actionLabel,
-    ).toBe(COPY.dashboard.home.salesRep.meddpiccFixEconomic)
-    expect(
-      meddpiccAccountAction({ hasChampion: false, hasEconomic: true, hasGoals: true })
-        .meddpiccGap,
-    ).toContain('Champion')
-    expect(
-      meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: false })
-        .meddpiccGap,
-    ).toContain('Metrics')
-    expect(
-      meddpiccAccountAction({ hasChampion: true, hasEconomic: true, hasGoals: true })
-        .actionLabel,
-    ).toBe('Send')
   })
 })
 

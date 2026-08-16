@@ -14,7 +14,7 @@ Nicht anfassen außer nötige Anbindung:
 
 ## Ziel
 
-Restliche Lücken so umsetzen, dass die gesamte Note als abgenommen markierbar ist. Accounts folgt [arbeitspaket-accounts-proof-linse.md](./arbeitspaket-accounts-proof-linse.md).
+Restliche Lücken so umsetzen, dass die gesamte Note als abgenommen markierbar ist. Der Accounts-Plan in `arbeitspaket-accounts-proof-linse.md` ist durch S2/S5 überholt und gelöscht.
 
 ```mermaid
 flowchart LR

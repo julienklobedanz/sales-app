@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
+import { salesRepHomeReadsCareTables } from '@/lib/accounts/account-detail-surfaces'
+import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import {
   ACTIVE_DEAL_STATUSES,
@@ -11,7 +13,6 @@ import {
 import {
   countDueMarketSnoozes,
   dashboardFirstName,
-  meddpiccAccountAction,
 } from '@/lib/dashboard-home/dashboard-home-pure'
 
 export async function loadSalesRepDashboardData(
@@ -192,67 +193,20 @@ export async function loadSalesRepDashboardData(
     }
 
     const strategicCompanyIds = Array.from(signalCountByCompany.keys()).slice(0, 12)
-    const [stakeholderRows, strategyRows] = await Promise.all([
-      strategicCompanyIds.length
-        ? supabase
-            .from('stakeholders')
-            .select('company_id, role')
-            .in('company_id', strategicCompanyIds)
-            .limit(2000)
-        : Promise.resolve({ data: [] as Array<{ company_id: string; role: string }> }),
-      strategicCompanyIds.length
-        ? supabase
-            .from('company_strategies')
-            .select('company_id, company_goals, next_steps')
-            .in('company_id', strategicCompanyIds)
-            .limit(2000)
-        : Promise.resolve({
-            data: [] as Array<{
-              company_id: string
-              company_goals: string | null
-              next_steps: string | null
-            }>,
-          }),
-    ])
-
-    const rolesByCompany = new Map<string, Set<string>>()
-    for (const row of (stakeholderRows.data ?? []) as Array<{
-      company_id?: string | null
-      role?: string | null
-    }>) {
-      const companyId = String(row.company_id ?? '')
-      if (!companyId) continue
-      const set = rolesByCompany.get(companyId) ?? new Set<string>()
-      if (row.role) set.add(String(row.role))
-      rolesByCompany.set(companyId, set)
+    if (salesRepHomeReadsCareTables()) {
+      throw new Error('Sales-rep home still reads stakeholders / company_strategies')
     }
-    const strategyByCompany = new Map(
-      (strategyRows.data ?? []).map((row) => [
-        String((row as { company_id?: string | null }).company_id ?? ''),
-        row as { company_goals?: string | null; next_steps?: string | null },
-      ]),
-    )
+
     strategicAccounts = strategicCompanyIds
       .map((companyId) => {
         const signal = signalCountByCompany.get(companyId)
         if (!signal) return null
-        const roles = rolesByCompany.get(companyId) ?? new Set<string>()
-        const strategy = strategyByCompany.get(companyId)
-        const hasChampion = roles.has('champion')
-        const hasEconomic = roles.has('economic_buyer')
-        const hasGoals = Boolean(String(strategy?.company_goals ?? '').trim())
-        const { meddpiccGap, actionLabel } = meddpiccAccountAction({
-          hasChampion,
-          hasEconomic,
-          hasGoals,
-        })
         return {
           companyId,
           companyName: signal.companyName,
           signalSummary: signal.latestSummary.slice(0, 88),
           signalCount24h: signal.count,
-          meddpiccGap,
-          actionLabel,
+          actionLabel: COPY.dashboard.home.salesRep.queueFindProof,
           href: ROUTES.accountsDetail(companyId),
         }
       })

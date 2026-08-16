@@ -48,6 +48,7 @@ export async function resolveChampionPersonTitle(
   }
 
   const { data: stakeholders } = await supabase
+    // Datenbestand wird seit S2 nicht mehr gepflegt; Event-Fallback ist der verlässliche Pfad.
     .from('stakeholders')
     .select('name, title, company_id')
     .in('company_id', companyIds)

@@ -246,6 +246,7 @@ export async function runExecutiveIntelIngest(
 
       const stakeholderCompanyByKey = new Map<string, string>()
       if (allowedCompanyIds.size > 0) {
+        // Datenbestand wird seit S2 nicht mehr gepflegt; Event-Fallback ist der verlässliche Pfad.
         const { data: stakeholders } = await supabase
           .from('stakeholders')
           .select('name, company_id')

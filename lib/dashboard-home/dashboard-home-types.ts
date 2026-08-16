@@ -52,7 +52,6 @@ export type SalesRepDashboardModel = {
     companyName: string
     signalSummary: string
     signalCount24h: number
-    meddpiccGap: string
     actionLabel: string
     href: string
   }>

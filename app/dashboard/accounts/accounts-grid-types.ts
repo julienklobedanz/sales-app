@@ -20,8 +20,6 @@ export type CompanyCard = {
   open_deals_count?: number | null
   contacts_count?: number | null
   reference_count?: number | null
-  stakeholder_count?: number | null
-  strategy_filled?: boolean | null
   signal_count?: number | null
   primary_action?: AccountCardPrimaryAction | null
   secondary_meta?: string | null
