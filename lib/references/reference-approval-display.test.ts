@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { statusTone } from '@/lib/ui/status-tone'
 
 import {
+  formatUsabilityStatement,
   getReferenceApprovalExplanation,
   resolveCustomerWorkflowBadge,
   resolveFreigabestatusCardBadges,
@@ -187,6 +188,37 @@ describe('reference-approval-display', () => {
     expect(badge.label).toBe('Extern freigegeben')
     expect(badge.className).toBe(statusTone.info)
     expect(badge.className).not.toMatch(/border-sky-|bg-orange-50/)
+  })
+
+  it('usability statement uses D6 wording without workflow', () => {
+    expect(
+      formatUsabilityStatement({
+        referenceStatus: 'approved',
+        customerApprovalStatus: null,
+        approvalRequestedAt: null,
+      }).text,
+    ).toBe('Extern nutzbar — Freigabe außerhalb von RefStack')
+  })
+
+  it('usability statement appends NDA and keeps blacklist for every role', () => {
+    const sales = formatUsabilityStatement({
+      referenceStatus: 'approved',
+      customerApprovalStatus: null,
+      approvalRequestedAt: null,
+      isNdaDeal: true,
+      competitorBlacklist: ['Acme Bid', '  ', 'Beta GmbH'],
+    })
+    expect(sales.text).toBe('Extern nutzbar — Freigabe außerhalb von RefStack — unter NDA')
+    expect(sales.blacklist).toEqual(['Acme Bid', 'Beta GmbH'])
+  })
+
+  it('usability statement omits empty blacklist', () => {
+    expect(
+      formatUsabilityStatement({
+        referenceStatus: 'draft',
+        competitorBlacklist: [],
+      }).blacklist,
+    ).toEqual([])
   })
 
   it('readiness state aligns with internal rejected', () => {

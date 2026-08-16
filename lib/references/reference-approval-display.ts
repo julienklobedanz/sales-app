@@ -378,6 +378,48 @@ export function resolveReferenceTitleBadge(
   return resolvePortfolioTitleBadge(input.referenceStatus)
 }
 
+export type UsabilityStatementInput = ReferenceTitleBadgeInput & {
+  isNdaDeal?: boolean | null
+  competitorBlacklist?: readonly string[] | null
+}
+
+export type UsabilityStatement = {
+  text: string
+  blacklist: string[]
+}
+
+function normalizeCompetitorBlacklist(
+  raw: readonly string[] | null | undefined,
+): string[] {
+  return (raw ?? []).map((item) => item.trim()).filter(Boolean)
+}
+
+/**
+ * Nutzbarkeit als eine Aussage (§10.2), inkl. NDA und Sperrliste.
+ * Die Sperrliste ist keine Workflow-Metadate — sie gilt für jede Rolle.
+ */
+export function formatUsabilityStatement(
+  input: UsabilityStatementInput,
+): UsabilityStatement {
+  const badge = resolveReferenceTitleBadge(input)
+  const workflowStarted = Boolean(input.approvalRequestedAt?.trim())
+  const referenceStatus = normalizeReferenceStatus(input.referenceStatus)
+  const nda = Boolean(input.isNdaDeal)
+
+  let text = badge.label
+  if (referenceStatus === 'approved' && !workflowStarted) {
+    text = 'Extern nutzbar — Freigabe außerhalb von RefStack'
+  }
+  if (nda) {
+    text = `${text} — unter NDA`
+  }
+
+  return {
+    text,
+    blacklist: normalizeCompetitorBlacklist(input.competitorBlacklist),
+  }
+}
+
 export function getReferenceApprovalExplanation(input: ReferenceTitleBadgeInput): string {
   const internal = String(input.internalApprovalStatus ?? '').toLowerCase()
   const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()

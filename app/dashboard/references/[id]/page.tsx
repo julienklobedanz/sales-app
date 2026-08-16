@@ -24,26 +24,25 @@ import {
 } from '@/lib/roles/reference-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
-import {
-  resolveReferenceReadinessState,
-  resolveFreigabestatusCardBadges,
-} from '@/lib/references/reference-readiness-state'
-import {
-  buildReferenceHighlightPhrases,
-  extractWorkflowHighlightGlossary,
-} from '@/lib/references/reference-context-highlights'
+import { resolveReferenceReadinessState } from '@/lib/references/reference-readiness-state'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/lib/references/library/assets'
 import { ROUTES } from '@/lib/routes'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import {
   anonymizeText,
-  buildDetailFileRows,
   splitTags,
 } from './reference-detail-helpers'
 import { ReferenceDetailHeader } from './reference-detail-header'
-import { ReferenceDetailMain } from './reference-detail-main'
 import { ReferenceDetailSidebar } from './reference-detail-sidebar'
+import { ReferenceReadinessActions } from './reference-readiness-actions'
+import { deleteReferenceFromDetailPage } from './actions'
+import { ReferenceContentCore } from '@/components/references/reference-content-core'
+import { ReferenceObjectActions } from '@/components/references/reference-object-actions'
+import {
+  contentFilesFromAssets,
+  usabilityFromReference,
+} from '@/lib/references/reference-content-from-row'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,11 +96,13 @@ export default async function ReferenceDetailPage({
       `
       id,
       title,
+      summary,
       industry,
       country,
       status,
       contact_id,
       customer_contact_id,
+      customer_contact,
       customer_approval_status,
       approval_owner_name,
       approval_requester_name,
@@ -175,6 +176,22 @@ export default async function ReferenceDetailPage({
     .maybeSingle()
 
   const isFavorited = Boolean(favorite?.id)
+  let salesContactDisplay: string | null = null
+  let salesContactEmail: string | null = null
+  if (ref.contact_id) {
+    const { data: salesContact } = await supabase
+      .from('contact_persons')
+      .select('first_name, last_name, email')
+      .eq('id', ref.contact_id)
+      .maybeSingle()
+    if (salesContact) {
+      salesContactDisplay =
+        [salesContact.first_name, salesContact.last_name].filter(Boolean).join(' ') ||
+        salesContact.email ||
+        null
+      salesContactEmail = salesContact.email ?? null
+    }
+  }
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
 
@@ -234,8 +251,10 @@ export default async function ReferenceDetailPage({
     : (ref.our_solution ?? null)
   const challengeText = normalizeNarrativeText(challengeTextRaw)
   const solutionText = normalizeNarrativeText(solutionTextRaw)
-  const hasChallenge = Boolean(challengeText?.trim())
-  const hasSolution = Boolean(solutionText?.trim())
+  const summaryTextRaw = isAnonymizedView
+    ? anonymizeText(ref.summary ?? null, companyName)
+    : (ref.summary ?? null)
+  const summaryText = normalizeNarrativeText(summaryTextRaw)
   const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
   const isWithdrawnInternal = internalApproval === 'withdrawn_internal'
   const customerAccessRevoked =
@@ -263,9 +282,6 @@ export default async function ReferenceDetailPage({
     : []
   const internalStatus = String(ref.approval_internal_status ?? '')
   const isNdaDeal = Boolean(ref.is_nda_deal)
-  const ndaDealBadgeClass = isNdaDeal
-    ? 'border-amber-200 bg-amber-50 text-amber-900'
-    : 'border-border bg-muted text-foreground'
 
   const canStartApproval = canStartApprovalWorkflow({
     systemRole,
@@ -278,19 +294,6 @@ export default async function ReferenceDetailPage({
     isApprovalGranted,
   })
   const autoOpenApprovalDialog = qs.startApproval === '1' || qs.startApproval === 'true'
-
-  const workflowStatusBadges = resolveFreigabestatusCardBadges({
-    internalApprovalStatus: internalApproval,
-    customerApprovalStatus: ref.customer_approval_status,
-    referenceStatus: normalizedStatus,
-    approvalRequestedAt: ref.approval_requested_at,
-    approvalScopeNamedMention: ref.approval_scope_named_mention,
-    approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
-    approvalScopeReferenceCall: ref.approval_scope_reference_call,
-    approvalScopeConfidentialSales: ref.approval_scope_confidential_sales,
-    approvalScopeLogoUse: ref.approval_scope_logo_use,
-    referenceIsInternalOnly,
-  })
 
   const readinessState = resolveReferenceReadinessState({
     referenceStatus: normalizedStatus,
@@ -347,107 +350,126 @@ export default async function ReferenceDetailPage({
     internalApprovalStatus: internalApproval,
   })
 
-  let glossaryFromWorkflow: string[] = []
-  if (organizationId) {
-    const { data: orgRow } = await supabase
-      .from('organizations')
-      .select('workflow_settings')
-      .eq('id', organizationId)
-      .maybeSingle()
-    glossaryFromWorkflow = extractWorkflowHighlightGlossary(orgRow?.workflow_settings)
-  }
-  const highlightPhrases = buildReferenceHighlightPhrases({
-    tags,
-    industry: industryLabel,
-    incumbentProvider: ref.incumbent_provider,
-    competitors: ref.competitors,
-    glossary: glossaryFromWorkflow,
-  })
-
   const assetRows = await getReferenceAssetsImpl(id)
-
   const publicBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? ''
-  const detailFileRows = buildDetailFileRows(assetRows, ref.file_path, publicBase)
+  const contentFiles = contentFilesFromAssets({
+    assets: assetRows,
+    legacyFilePath: ref.file_path,
+    publicBase,
+  })
+  const usability = usabilityFromReference({
+    status: normalizedStatus,
+    customer_approval_status: ref.customer_approval_status,
+    approval_internal_status: ref.approval_internal_status,
+    approval_requested_at: ref.approval_requested_at,
+    approval_scope_named_mention: ref.approval_scope_named_mention,
+    approval_scope_anonymous_mention: ref.approval_scope_anonymous_mention,
+    is_nda_deal: isNdaDeal,
+    approval_competitor_blacklist: competitorBlacklist,
+  })
+  const canManageAsAdmin = canManageReferencesAsAdmin(systemRole)
+  const canEdit = !isSalesView
 
   return (
     <div>
       <ReferenceViewedTracker referenceId={id} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+      <div
+        className={
+          isSalesView
+            ? 'space-y-6'
+            : 'grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]'
+        }
+      >
         <div className="space-y-6">
-          <ReferenceDetailHeader
-            title={ref.title}
-            status={ref.status}
-            customerApprovalStatus={ref.customer_approval_status}
-            approvalInternalStatus={ref.approval_internal_status}
-            approvalRequestedAt={ref.approval_requested_at}
-            approvalScopeNamedMention={ref.approval_scope_named_mention}
-            approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
-            headerCompany={headerCompany}
-            companyId={company?.id}
-            isAnonymizedView={isAnonymizedView}
-            industryLabel={industryLabel}
-            employeeMetaLabel={employeeMetaLabel}
-            locationMetaLabel={locationMetaLabel}
-            websiteMetaHref={websiteMetaHref}
-            tags={tags}
-          />
-          <ReferenceDetailMain
-            isSalesView={isSalesView}
-            hasChallenge={hasChallenge}
-            hasSolution={hasSolution}
-            challengeText={challengeText}
-            solutionText={solutionText}
-            highlightPhrases={highlightPhrases}
-            detailFileRows={detailFileRows}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <ReferenceDetailHeader
+              title={ref.title}
+              status={ref.status}
+              customerApprovalStatus={ref.customer_approval_status}
+              approvalInternalStatus={ref.approval_internal_status}
+              approvalRequestedAt={ref.approval_requested_at}
+              approvalScopeNamedMention={ref.approval_scope_named_mention}
+              approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
+              headerCompany={headerCompany}
+              companyId={company?.id}
+              isAnonymizedView={isAnonymizedView}
+              industryLabel={industryLabel}
+              employeeMetaLabel={employeeMetaLabel}
+              locationMetaLabel={locationMetaLabel}
+              websiteMetaHref={websiteMetaHref}
+              tags={tags}
+              isFavorited={isFavorited}
+              favoriteReferenceId={id}
+            />
+            <ReferenceObjectActions
+              referenceId={id}
+              canEdit={canEdit}
+              canDelete={canManageAsAdmin}
+              editHref={canEdit ? ROUTES.references.edit(id) : null}
+              existingSharePath={existingShare?.url ?? null}
+              onDelete={deleteReferenceFromDetailPage.bind(null, id)}
+            >
+              <ReferenceReadinessActions
+                referenceId={id}
+                readiness={readinessState}
+                existingSharePath={existingShare?.url ?? null}
+                canStartApproval={canStartApproval}
+                canInternalApprove={
+                  canApproveInternalReference(functionRole, systemRole, capabilities) &&
+                  internalStatus === 'approved_internal' &&
+                  !staleInternalPending
+                }
+                defaultAccountManagerEmail={defaultAccountManagerEmail}
+                autoOpenApprovalDialog={autoOpenApprovalDialog}
+                approvalContactId={ref.approval_contact_id ?? null}
+                approvalExternalContactId={ref.approval_external_contact_id ?? null}
+                referenceContactId={ref.contact_id ?? null}
+                referenceCustomerContactId={ref.customer_contact_id ?? null}
+                hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
+                canEditCustomerEmail={
+                  customerApprovalFollowUp.canEditCustomerEmail ||
+                  canEditPendingCustomerEmail
+                }
+                canEditCoordinatorEmail={canEditCoordinatorEmail}
+                customerChangeRequestComment={ref.approval_comment}
+              />
+            </ReferenceObjectActions>
+          </div>
+          <ReferenceContentCore
+            surface="internal"
+            summary={summaryText}
+            challenge={challengeText}
+            solution={solutionText}
+            usabilityText={usability.text}
+            competitorBlacklist={usability.blacklist}
+            volumeEur={ref.volume_eur}
+            contractType={ref.contract_type}
+            projectStart={ref.project_start}
+            projectEnd={ref.project_end}
+            projectStatus={ref.project_status}
+            incumbentProvider={ref.incumbent_provider}
+            competitors={ref.competitors}
+            salesContact={salesContactDisplay}
+            salesContactEmail={salesContactEmail}
+            customerContact={ref.customer_contact}
+            files={contentFiles}
+            dateFmt={orgDateFmt}
           />
         </div>
 
-        <ReferenceDetailSidebar
-          referenceId={id}
-          isSalesView={isSalesView}
-          volumeEur={ref.volume_eur}
-          contractType={ref.contract_type}
-          projectStart={ref.project_start}
-          projectEnd={ref.project_end}
-          projectStatus={ref.project_status}
-          orgDateFmt={orgDateFmt}
-          incumbentProvider={ref.incumbent_provider}
-          competitors={ref.competitors}
-          isNdaDeal={isNdaDeal}
-          ndaDealBadgeClass={ndaDealBadgeClass}
-          workflowStatusBadges={workflowStatusBadges}
-          requestedByDisplay={requestedByDisplay}
-          coordinatorDisplay={coordinatorDisplay}
-          approvingCustomerDisplay={approvingCustomerDisplay}
-          delegatedRecipientDisplay={delegatedRecipientDisplay}
-          competitorBlacklist={competitorBlacklist}
-          customerAccessRevoked={customerAccessRevoked}
-          approvalQuoteApproved={ref.approval_quote_approved}
-          approvalQuoteProposed={ref.approval_quote_proposed}
-          approvalConsentFileUrl={ref.approval_consent_file_url}
-          readinessState={readinessState}
-          existingSharePath={existingShare?.url ?? null}
-          canStartApproval={canStartApproval}
-          canInternalApprove={
-            canApproveInternalReference(functionRole, systemRole, capabilities) &&
-            internalStatus === 'approved_internal' &&
-            !staleInternalPending
-          }
-          defaultAccountManagerEmail={defaultAccountManagerEmail}
-          autoOpenApprovalDialog={autoOpenApprovalDialog}
-          approvalContactId={ref.approval_contact_id ?? null}
-          approvalExternalContactId={ref.approval_external_contact_id ?? null}
-          referenceContactId={ref.contact_id ?? null}
-          referenceCustomerContactId={ref.customer_contact_id ?? null}
-          hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
-          canEditCustomerEmail={
-            customerApprovalFollowUp.canEditCustomerEmail || canEditPendingCustomerEmail
-          }
-          canEditCoordinatorEmail={canEditCoordinatorEmail}
-          customerChangeRequestComment={ref.approval_comment}
-          isFavorited={isFavorited}
-          canManageAsAdmin={canManageReferencesAsAdmin(systemRole)}
-        />
+        {isSalesView ? null : (
+          <ReferenceDetailSidebar
+            isSalesView={isSalesView}
+            requestedByDisplay={requestedByDisplay}
+            coordinatorDisplay={coordinatorDisplay}
+            approvingCustomerDisplay={approvingCustomerDisplay}
+            delegatedRecipientDisplay={delegatedRecipientDisplay}
+            customerAccessRevoked={customerAccessRevoked}
+            approvalQuoteApproved={ref.approval_quote_approved}
+            approvalQuoteProposed={ref.approval_quote_proposed}
+            approvalConsentFileUrl={ref.approval_consent_file_url}
+          />
+        )}
       </div>
     </div>
   )
