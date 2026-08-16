@@ -29,9 +29,15 @@ import {
 export function ShareLinkButton({
   referenceId,
   triggerClassName,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  showTriggerButton = true,
 }: {
   referenceId: string
   triggerClassName?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTriggerButton?: boolean
 }) {
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -39,7 +45,12 @@ export function ShareLinkButton({
   const [metaExpiresAt, setMetaExpiresAt] = useState<string | null>(null)
   const [metaHasPassword, setMetaHasPassword] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  function setOpen(next: boolean) {
+    if (controlledOnOpenChange) controlledOnOpenChange(next)
+    if (controlledOpen === undefined) setInternalOpen(next)
+  }
   const [copiedSuccess, setCopiedSuccess] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [burstKey, setBurstKey] = useState(0)
@@ -363,16 +374,24 @@ export function ShareLinkButton({
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className={triggerClassName ? `gap-2 ${triggerClassName}` : 'gap-2'}
-          >
-            <AppIcon icon={LinkIcon} size={16} />
-            Teilen
-          </Button>
-        </PopoverTrigger>
+        {showTriggerButton ? (
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={triggerClassName ? `gap-2 ${triggerClassName}` : 'gap-2'}
+            >
+              <AppIcon icon={LinkIcon} size={16} />
+              Teilen
+            </Button>
+          </PopoverTrigger>
+        ) : (
+          <PopoverTrigger asChild>
+            <button type="button" className="sr-only" aria-hidden tabIndex={-1}>
+              Teilen
+            </button>
+          </PopoverTrigger>
+        )}
         <ShareLinkPopoverPanel
           loading={loading}
           loadError={loadError}

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Shield } from '@hugeicons/core-free-icons'
 import {
   prepareCustomerApproval,
   getApprovalLink,
@@ -13,25 +14,34 @@ import {
   updateApprovalRecipient,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
-import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
+import { canSubmitApprovalRecipient, isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import type { ApprovalContactOption } from '@/lib/references/library/approval-contacts'
 import type { ApproveInternalRecipientOptions } from '@/lib/references/library/approvals'
-import { canSubmitApprovalRecipient } from '@/lib/references/approval-recipient-input'
 import type { ReferenceReadinessState } from '@/lib/references/reference-readiness-state'
-import { cn } from '@/lib/utils'
-import { ReferenceReadinessShowcaseLinks } from './reference-readiness-showcase-links'
-import { ReferenceReadinessActionDialogs } from './reference-readiness/reference-readiness-action-dialogs'
-import { ReferenceReadinessMagicLinkPanel } from './reference-readiness/reference-readiness-magic-link-panel'
+import { Button } from '@/components/ui/button'
 import {
-  ReferenceReadinessPrimaryActions,
-  ReferenceReadinessWorkflowReroute,
-} from './reference-readiness/reference-readiness-primary-actions'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { AppIcon } from '@/lib/icons'
+import { RequestApprovalDialog } from './request-approval-dialog'
+import { ReferenceReadinessActionDialogs } from './reference-readiness/reference-readiness-action-dialogs'
 
 type Props = {
   referenceId: string
   readiness: ReferenceReadinessState
-  /** Aktiver Kundenlink (/p/slug), falls vorhanden */
-  existingSharePath: string | null
   canStartApproval: boolean
   canInternalApprove: boolean
   defaultAccountManagerEmail?: string | null
@@ -49,7 +59,6 @@ type Props = {
 export function ReferenceReadinessActions({
   referenceId,
   readiness,
-  existingSharePath,
   canStartApproval,
   canInternalApprove,
   defaultAccountManagerEmail,
@@ -66,11 +75,13 @@ export function ReferenceReadinessActions({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [changeRequestsDismissed, setChangeRequestsDismissed] = useState(false)
+  const [requestOpen, setRequestOpen] = useState(autoOpenApprovalDialog)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editRecipientOpen, setEditRecipientOpen] = useState(false)
   const [editCoordinatorOpen, setEditCoordinatorOpen] = useState(false)
   const [coordinatorEmail, setCoordinatorEmail] = useState('')
   const [regenerateOpen, setRegenerateOpen] = useState(false)
+  const [changeCommentOpen, setChangeCommentOpen] = useState(false)
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [contacts, setContacts] = useState<ApprovalContactOption[]>([])
   const [contactQuery, setContactQuery] = useState('')
@@ -83,40 +94,38 @@ export function ReferenceReadinessActions({
     selected: selectedContact,
   })
 
-  const showShowcaseSection =
-    readiness.phase === 'approved' && Boolean(existingSharePath?.trim())
-  const showCreateShareHint = readiness.phase === 'approved' && !existingSharePath?.trim()
-
   const visibleChangeRequestComment =
     !changeRequestsDismissed && customerChangeRequestComment?.trim()
       ? customerChangeRequestComment.trim()
       : null
   const showRequestApprovalAgain = hasCustomerChangeRequests && !changeRequestsDismissed
 
-  const showCustomerFollowUpActions =
-    readiness.showMagicLink &&
-    (showRequestApprovalAgain ||
-      canEditCustomerEmail ||
-      Boolean(visibleChangeRequestComment))
+  const primaryIsRequest =
+    readiness.phase === 'request_approval' &&
+    canStartApproval &&
+    readiness.showPrimaryStart
+  const primaryIsPrepareCustomer =
+    readiness.phase === 'prepare_customer' &&
+    canInternalApprove &&
+    readiness.showPrimaryStart
+  const primaryIsWithdrawnRestart =
+    readiness.phase === 'withdrawn' && readiness.showPrimaryStart
+  const showStart = primaryIsRequest || primaryIsPrepareCustomer || primaryIsWithdrawnRestart
+  const startLabel = primaryIsPrepareCustomer
+    ? 'Kundenfreigabe vorbereiten'
+    : primaryIsWithdrawnRestart
+      ? 'Freigabe erneut starten'
+      : 'Freigabe starten'
 
-  const showWorkflowRerouteActions =
-    readiness.showWithdraw &&
-    (canEditCustomerEmail || canEditCoordinatorEmail) &&
-    !readiness.showMagicLink
-
-  const showActions =
-    readiness.showPrimaryStart ||
+  const showMenu =
+    showStart ||
     readiness.showMagicLink ||
     readiness.showRegenerateLink ||
     readiness.showWithdraw ||
-    showShowcaseSection ||
-    showCreateShareHint ||
-    showCustomerFollowUpActions ||
-    showWorkflowRerouteActions
-
-  if (!showActions && !readiness.showStaleHint) {
-    return null
-  }
+    showRequestApprovalAgain ||
+    canEditCustomerEmail ||
+    (canEditCoordinatorEmail && readiness.showWithdraw && !readiness.showMagicLink) ||
+    Boolean(visibleChangeRequestComment)
 
   function prefillFromContacts(opts: ApprovalContactOption[]) {
     const pick = (id: string | null) => {
@@ -176,6 +185,14 @@ export function ReferenceReadinessActions({
   function openEditCoordinatorDialog() {
     setCoordinatorEmail('')
     setEditCoordinatorOpen(true)
+  }
+
+  function onStartSelect() {
+    if (primaryIsPrepareCustomer) {
+      openInternalApproveDialog()
+      return
+    }
+    setRequestOpen(true)
   }
 
   function onConfirmEditCoordinator() {
@@ -317,90 +334,97 @@ export function ReferenceReadinessActions({
     })
   }
 
-  const primaryIsRequest =
-    readiness.phase === 'request_approval' &&
-    canStartApproval &&
-    readiness.showPrimaryStart
-  const primaryIsPrepareCustomer =
-    readiness.phase === 'prepare_customer' &&
-    canInternalApprove &&
-    readiness.showPrimaryStart
-  const primaryIsWithdrawnRestart =
-    readiness.phase === 'withdrawn' && readiness.showPrimaryStart
+  const showCoordinatorEdit =
+    canEditCoordinatorEmail && readiness.showWithdraw && !readiness.showMagicLink
 
   return (
-    <div
-      className={cn(
-        'flex w-full flex-col items-center gap-3 border-t border-border/60 pt-4 transition-all duration-200 ease-out',
-        !showActions && readiness.showStaleHint && 'border-t-0 pt-0',
-      )}
-    >
-      {readiness.showStaleHint ? (
-        <p className="max-w-full text-center text-xs text-muted-foreground leading-relaxed">
-          Referenz ist einsatzbereit — Freigabe-Schritte abgeschlossen.
-        </p>
+    <>
+      {showMenu ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2" disabled={pending}>
+              <AppIcon icon={Shield} size={16} />
+              Freigabe
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {showStart ? (
+              <DropdownMenuItem onSelect={() => onStartSelect()}>
+                {startLabel}
+              </DropdownMenuItem>
+            ) : null}
+            {readiness.showMagicLink ? (
+              <>
+                {showStart ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem onSelect={() => onCopyApprovalLink()}>
+                  Freigabe-Link kopieren
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onOpenApprovalLink()}>
+                  Freigabe-Seite öffnen
+                </DropdownMenuItem>
+                {readiness.showRegenerateLink ? (
+                  <DropdownMenuItem onSelect={() => setRegenerateOpen(true)}>
+                    Neuer Freigabe-Link
+                  </DropdownMenuItem>
+                ) : null}
+              </>
+            ) : null}
+            {showRequestApprovalAgain ? (
+              <DropdownMenuItem onSelect={() => onRequestApprovalAgain()}>
+                Freigabe erneut anfragen
+              </DropdownMenuItem>
+            ) : null}
+            {visibleChangeRequestComment ? (
+              <DropdownMenuItem onSelect={() => setChangeCommentOpen(true)}>
+                Änderungswünsche anzeigen
+              </DropdownMenuItem>
+            ) : null}
+            {canEditCustomerEmail ? (
+              <DropdownMenuItem onSelect={() => openEditRecipientDialog()}>
+                Kunden E-Mail ändern
+              </DropdownMenuItem>
+            ) : null}
+            {showCoordinatorEdit ? (
+              <DropdownMenuItem onSelect={() => openEditCoordinatorDialog()}>
+                Interne Anspr. E-Mail ändern
+              </DropdownMenuItem>
+            ) : null}
+            {readiness.showWithdraw ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onSelect={() => onWithdraw()}>
+                  Anfrage widerrufen
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
       ) : null}
 
-      <ReferenceReadinessPrimaryActions
+      <RequestApprovalDialog
         referenceId={referenceId}
-        readiness={readiness}
-        pending={pending}
-        canInternalApprove={canInternalApprove}
         defaultAccountManagerEmail={defaultAccountManagerEmail}
-        autoOpenApprovalDialog={autoOpenApprovalDialog}
-        primaryIsRequest={primaryIsRequest}
-        primaryIsPrepareCustomer={primaryIsPrepareCustomer}
-        primaryIsWithdrawnRestart={primaryIsWithdrawnRestart}
-        onPrepareCustomer={openInternalApproveDialog}
+        showTriggerButton={false}
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        triggerLabel={startLabel}
       />
 
       {visibleChangeRequestComment ? (
-        <div className="w-full max-w-sm space-y-1.5 text-sm">
-          <p className="text-muted-foreground">Änderungswünsche des Kunden</p>
-          <p className="whitespace-pre-wrap rounded-md border border-amber-200/60 bg-amber-50/50 p-2 text-xs text-amber-950">
-            {visibleChangeRequestComment}
-          </p>
-        </div>
+        <AlertDialog open={changeCommentOpen} onOpenChange={setChangeCommentOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Änderungswünsche des Kunden</AlertDialogTitle>
+              <AlertDialogDescription className="whitespace-pre-wrap">
+                {visibleChangeRequestComment}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction>Schließen</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ) : null}
-
-      <ReferenceReadinessMagicLinkPanel
-        readiness={readiness}
-        pending={pending}
-        showRequestApprovalAgain={showRequestApprovalAgain}
-        canEditCustomerEmail={canEditCustomerEmail}
-        onRequestApprovalAgain={onRequestApprovalAgain}
-        onOpenEditRecipient={openEditRecipientDialog}
-        onCopyApprovalLink={onCopyApprovalLink}
-        onOpenApprovalLink={onOpenApprovalLink}
-        onOpenRegenerate={() => setRegenerateOpen(true)}
-        onWithdraw={onWithdraw}
-      />
-
-      {showShowcaseSection && existingSharePath ? (
-        <ReferenceReadinessShowcaseLinks
-          referenceId={referenceId}
-          publicPreviewPath={existingSharePath}
-        />
-      ) : null}
-
-      {showCreateShareHint ? (
-        <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
-          Für die Kunden-Showcase-Ansicht zuerst unter{' '}
-          <span className="font-medium text-foreground">Aktionen → Teilen</span> einen
-          Kundenlink anlegen.
-        </p>
-      ) : null}
-
-      <ReferenceReadinessWorkflowReroute
-        readiness={readiness}
-        pending={pending}
-        showWorkflowRerouteActions={showWorkflowRerouteActions}
-        canEditCoordinatorEmail={canEditCoordinatorEmail}
-        canEditCustomerEmail={canEditCustomerEmail}
-        onOpenEditCoordinator={openEditCoordinatorDialog}
-        onOpenEditRecipient={openEditRecipientDialog}
-        onWithdraw={onWithdraw}
-      />
 
       <ReferenceReadinessActionDialogs
         pending={pending}
@@ -426,6 +450,6 @@ export function ReferenceReadinessActions({
         setRegenerateOpen={setRegenerateOpen}
         onRegenerateLink={onRegenerateLink}
       />
-    </div>
+    </>
   )
 }

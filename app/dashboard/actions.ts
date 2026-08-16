@@ -111,6 +111,9 @@ export type ReferenceRow = {
   customer_approval_status?: string | null
   approval_scope_named_mention?: boolean | null
   approval_scope_anonymous_mention?: boolean | null
+  approval_competitor_blacklist?: string[]
+  approval_requested_at?: string | null
+  approval_internal_status?: string | null
 }
 
 export type GetDashboardDataResult = {

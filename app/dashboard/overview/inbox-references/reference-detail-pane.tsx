@@ -1,18 +1,20 @@
 'use client'
 
-import * as React from 'react'
+import { StarIcon } from '@hugeicons/core-free-icons'
 
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { ReferenceContentCore } from '@/components/references/reference-content-core'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
-import { formatContractTypeDisplay } from '@/lib/references/contract-type'
-import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
-
 import type { ReferenceAssetRow } from '@/app/dashboard/actions'
+import { toggleFavorite } from '@/app/dashboard/actions'
+import { AppIcon } from '@/lib/icons'
+import {
+  contentFilesFromAssets,
+  usabilityFromReference,
+} from '@/lib/references/reference-content-from-row'
+
 import type { ConceptReferenceRow } from './types'
 import { splitTags } from './types'
 
@@ -23,6 +25,7 @@ export function ReferenceDetailPane({
   assets,
   assetsLoading,
   detailLoading,
+  onAssetsChange,
 }: {
   selectedRef: ConceptReferenceRow | null
   isAdmin: boolean
@@ -38,6 +41,7 @@ export function ReferenceDetailPane({
   assets: ReferenceAssetRow[]
   assetsLoading: boolean
   detailLoading: boolean
+  onAssetsChange?: (assets: ReferenceAssetRow[]) => void
 }) {
   if (!selectedRef) {
     return (
@@ -65,40 +69,12 @@ export function ReferenceDetailPane({
             </div>
             <Skeleton className="h-6 w-28 rounded-full" />
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Skeleton className="h-6 w-16 rounded-md" />
-            <Skeleton className="h-6 w-20 rounded-md" />
-            <Skeleton className="h-6 w-14 rounded-md" />
-          </div>
         </div>
         <ScrollArea className="flex-1">
-          <div className="p-6 space-y-6">
-            <section className="space-y-3">
-              <Skeleton className="h-4 w-28" />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="rounded-lg border bg-background p-3">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="mt-2 h-4 w-24" />
-                  </div>
-                ))}
-              </div>
-            </section>
-            <Separator />
-            <section className="space-y-3">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-20 w-full" />
-            </section>
-            <Separator />
-            <section className="space-y-3">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-20 w-full" />
-            </section>
-            <Separator />
-            <section className="space-y-3">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-16 w-full" />
-            </section>
+          <div className="space-y-6 p-6">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-24 w-full" />
           </div>
         </ScrollArea>
       </div>
@@ -112,7 +88,8 @@ export function ReferenceDetailPane({
   const customerDisplay =
     selectedRef.customer_contact ||
     (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(' ') : null) ||
-    '—'
+    null
+  const usability = usabilityFromReference(selectedRef)
 
   return (
     <div className="flex h-full flex-col">
@@ -132,257 +109,95 @@ export function ReferenceDetailPane({
               )}
             </div>
             <div className="min-w-0">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2">
                 <div className="text-lg font-semibold leading-snug break-words">
                   {selectedRef.title}
                 </div>
+                <form action={toggleFavorite.bind(null, selectedRef.id)}>
+                  <button
+                    type="submit"
+                    className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label={
+                      selectedRef.is_favorited ? 'Favorit entfernen' : 'Favorisieren'
+                    }
+                  >
+                    <AppIcon
+                      icon={StarIcon}
+                      size={16}
+                      className={
+                        selectedRef.is_favorited ? 'text-foreground' : 'opacity-80'
+                      }
+                    />
+                  </button>
+                </form>
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
                 {selectedRef.status === 'anonymized'
                   ? 'Anonymisierter Kunde'
-                  : selectedRef.company_name}{' '}
+                  : selectedRef.company_name}
               </div>
             </div>
           </div>
-
           <div className="shrink-0 pt-0.5">
             <ReferenceStatusBadge
               status={selectedRef.status}
               customerApprovalStatus={selectedRef.customer_approval_status}
+              approvalInternalStatus={selectedRef.approval_internal_status}
+              approvalRequestedAt={selectedRef.approval_requested_at}
+              approvalScopeNamedMention={selectedRef.approval_scope_named_mention}
+              approvalScopeAnonymousMention={selectedRef.approval_scope_anonymous_mention}
             />
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tags.length ? (
-            tags.map((t) => (
+        {tags.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {tags.map((t) => (
               <Badge key={t} variant="secondary" className="rounded-md">
                 {t}
               </Badge>
-            ))
-          ) : (
-            <span className="text-sm text-muted-foreground">—</span>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-6 space-y-6">
-          <section className="space-y-2">
-            <div className="text-sm font-semibold">Projektdetails</div>
-            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Volumen</div>
-                <div className="mt-1 font-medium tabular-nums">
-                  {selectedRef.volume_eur != null && selectedRef.volume_eur !== ''
-                    ? formatReferenceVolume(selectedRef.volume_eur)
-                    : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Vertragsart</div>
-                <div className="mt-1 font-medium">
-                  {formatContractTypeDisplay(selectedRef.contract_type) || '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Projektstart</div>
-                <div className="mt-1 font-medium">
-                  {selectedRef.project_start
-                    ? formatReferenceDate(selectedRef.project_start, 'de-DE')
-                    : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Projektende</div>
-                <div className="mt-1 font-medium">
-                  {selectedRef.project_end
-                    ? formatProjectEndWithDurationDe({
-                        project_start: selectedRef.project_start,
-                        project_end: selectedRef.project_end,
-                        project_status: selectedRef.project_status,
-                        formatEndDate: (iso) => formatReferenceDate(iso, 'de-DE'),
-                      })
-                    : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Akt. Dienstleister</div>
-                <div className="mt-1 font-medium">
-                  {selectedRef.incumbent_provider ?? '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border bg-background p-3">
-                <div className="text-xs text-muted-foreground">Wettbewerber</div>
-                <div className="mt-1 font-medium">{selectedRef.competitors ?? '—'}</div>
-              </div>
-            </div>
-          </section>
-
-          <Separator />
-
-          <section className="space-y-7">
-            <div className="space-y-3">
-              <div className="text-sm font-semibold">Herausforderung</div>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {selectedRef.customer_challenge ?? '—'}
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="text-sm font-semibold">Unsere Lösung</div>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {selectedRef.our_solution ?? '—'}
-              </p>
-            </div>
-          </section>
-
-          <Separator />
-
-          <section className="space-y-3">
-            <div className="text-sm font-semibold">Kontakte</div>
-            <div className="grid grid-cols-1 gap-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  Interner Ansprechpartner
-                </div>
-                <div className="font-medium">
-                  {selectedRef.contact_display ||
-                    selectedRef.contact_email ||
-                    'Nicht zugewiesen'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Kundenansprechpartner</div>
-                <div className="font-medium">{customerDisplay}</div>
-                {ext?.email ? (
-                  <div className="text-xs text-muted-foreground">{ext.email}</div>
-                ) : null}
-                {ext?.role ? (
-                  <div className="text-xs text-muted-foreground">{ext.role}</div>
-                ) : null}
-              </div>
-            </div>
-          </section>
-
-          <Separator />
-
-          <section className="space-y-3">
-            <div className="text-sm font-semibold">Dateien</div>
-            {assetsLoading ? (
-              <div className="rounded-lg border border-dashed p-4">
-                <div className="space-y-3">
-                  <Skeleton className="h-4 w-40" />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Skeleton className="h-4 w-48 max-w-[60%]" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                      <Skeleton className="h-8 w-20 rounded-md" />
-                    </div>
-                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Skeleton className="h-4 w-56 max-w-[70%]" />
-                        <Skeleton className="h-3 w-28" />
-                      </div>
-                      <Skeleton className="h-8 w-20 rounded-md" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : assets.length === 0 && !selectedRef.file_path ? (
-              <div className="text-muted-foreground bg-muted/10 flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs">
-                <span>📎</span>
-                <p>Keine Dateien vorhanden.</p>
-              </div>
-            ) : (
-              <Tabs defaultValue="sales" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="sales">Sales</TabsTrigger>
-                  <TabsTrigger value="contract">Verträge</TabsTrigger>
-                  <TabsTrigger value="other">Sonstiges</TabsTrigger>
-                </TabsList>
-                {(['sales', 'contract', 'other'] as const).map((cat) => {
-                  const legacyFile =
-                    cat === 'other' && assets.length === 0 && selectedRef.file_path
-                      ? {
-                          path: selectedRef.file_path,
-                          name: selectedRef.file_path.split('/').pop() ?? 'Dokument',
-                          isLegacy: true as const,
-                        }
-                      : null
-                  const assetsInCat = assets.filter((a) => a.category === cat)
-                  const hasLegacy = !!legacyFile
-                  const hasItems = assetsInCat.length > 0 || hasLegacy
-                  return (
-                    <TabsContent key={cat} value={cat} className="mt-2">
-                      {!hasItems ? (
-                        <p className="text-muted-foreground py-4 text-center text-sm">
-                          Keine Dateien in dieser Kategorie.
-                        </p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {legacyFile ? (
-                            <li className="flex items-center justify-between gap-2 rounded-lg border p-3">
-                              <div className="min-w-0">
-                                <div className="truncate text-sm">{legacyFile.name}</div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  Legacy Datei
-                                </div>
-                              </div>
-                            </li>
-                          ) : null}
-                          {assetsInCat.map((asset) => (
-                            <li
-                              key={asset.id}
-                              className="flex items-center justify-between gap-2 rounded-lg border p-3"
-                            >
-                              <div className="min-w-0">
-                                <div className="truncate text-sm">
-                                  {asset.file_name ||
-                                    asset.file_path.split('/').pop() ||
-                                    'Dokument'}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  {formatReferenceDate(asset.created_at, 'de-DE')}
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </TabsContent>
-                  )
-                })}
-              </Tabs>
-            )}
-          </section>
-
-          <Separator />
-
-          <section className="space-y-2">
-            <div className="text-sm font-semibold">Historie</div>
-            <div className="grid grid-cols-1 gap-2 text-sm">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Erstellt</span>
-                <span className="font-medium">
-                  {formatReferenceDate(selectedRef.created_at, 'de-DE')}
-                </span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Letzte Änderung</span>
-                <span className="font-medium">
-                  {selectedRef.updated_at
-                    ? formatReferenceDate(selectedRef.updated_at, 'de-DE')
-                    : '—'}
-                </span>
-              </div>
-              {isAdmin ? (
-                <p className="text-xs text-muted-foreground">
-                  (Admin-Ansicht: Aktionen sind oben in der Leiste minimal gehalten.)
-                </p>
-              ) : null}
-            </div>
-          </section>
+        <div className="p-6">
+          <ReferenceContentCore
+            surface="internal"
+            summary={selectedRef.summary}
+            challenge={selectedRef.customer_challenge}
+            solution={selectedRef.our_solution}
+            usabilityText={usability.text}
+            competitorBlacklist={usability.blacklist}
+            volumeEur={selectedRef.volume_eur}
+            contractType={selectedRef.contract_type}
+            projectStart={selectedRef.project_start}
+            projectEnd={selectedRef.project_end}
+            projectStatus={selectedRef.project_status}
+            incumbentProvider={selectedRef.incumbent_provider}
+            competitors={selectedRef.competitors}
+            salesContact={selectedRef.contact_display}
+            salesContactEmail={selectedRef.contact_email}
+            customerContact={customerDisplay}
+            customerContactEmail={ext?.email}
+            customerContactRole={ext?.role}
+            files={contentFilesFromAssets({
+              assets,
+              legacyFilePath: selectedRef.file_path,
+            })}
+            filesLoading={assetsLoading}
+            canEditFileCategory={isAdmin}
+            onFilesChange={(next) => {
+              onAssetsChange?.(
+                assets.map((asset) => {
+                  const match = next.find((file) => file.assetId === asset.id)
+                  return match?.category
+                    ? { ...asset, category: match.category }
+                    : asset
+                }),
+              )
+            }}
+          />
         </div>
       </ScrollArea>
     </div>

@@ -192,6 +192,9 @@ export async function getDashboardDataImpl(
       project_end: r.project_end,
       duration_months,
       is_nda_deal: r.is_nda_deal,
+      approval_competitor_blacklist: r.approval_competitor_blacklist ?? [],
+      approval_requested_at: r.approval_requested_at ?? null,
+      approval_internal_status: r.approval_internal_status ?? null,
     }
   })
 

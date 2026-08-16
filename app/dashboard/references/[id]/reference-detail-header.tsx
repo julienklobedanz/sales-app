@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Globe, MapPinIcon, Users } from '@hugeicons/core-free-icons'
+import { Building2, Globe, MapPinIcon, StarIcon, Users } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { ReferenceStatusWithHint } from '@/components/reference-status-with-hint'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { toggleFavorite } from '@/app/dashboard/actions'
 
 type ReferenceDetailHeaderProps = {
   title: string
@@ -22,6 +23,8 @@ type ReferenceDetailHeaderProps = {
   locationMetaLabel: string | null
   websiteMetaHref: string | null
   tags: string[]
+  isFavorited?: boolean
+  favoriteReferenceId?: string
 }
 
 export function ReferenceDetailHeader({
@@ -40,6 +43,8 @@ export function ReferenceDetailHeader({
   locationMetaLabel,
   websiteMetaHref,
   tags,
+  isFavorited = false,
+  favoriteReferenceId,
 }: ReferenceDetailHeaderProps) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -54,7 +59,24 @@ export function ReferenceDetailHeader({
             approvalScopeAnonymousMention={approvalScopeAnonymousMention}
           />
         </div>
-        <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>{title}</h1>
+        <div className="flex flex-wrap items-start gap-2">
+          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} min-w-0 break-words`}>{title}</h1>
+          {favoriteReferenceId ? (
+            <form action={toggleFavorite.bind(null, favoriteReferenceId)}>
+              <button
+                type="submit"
+                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label={isFavorited ? 'Favorit entfernen' : 'Favorisieren'}
+              >
+                <AppIcon
+                  icon={StarIcon}
+                  size={16}
+                  className={isFavorited ? 'text-foreground' : 'opacity-80'}
+                />
+              </button>
+            </form>
+          ) : null}
+        </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           {headerCompany ? (
             isAnonymizedView || !companyId ? (

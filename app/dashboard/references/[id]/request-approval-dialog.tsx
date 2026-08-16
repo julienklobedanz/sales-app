@@ -32,6 +32,9 @@ export function RequestApprovalDialog({
   triggerClassName = 'w-full',
   triggerLabel = 'Freigabe anfordern',
   autoOpen = false,
+  showTriggerButton = true,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   referenceId: string
   /** Vorausfüllung aus Account-Metadaten, falls hinterlegt */
@@ -42,9 +45,17 @@ export function RequestApprovalDialog({
   triggerClassName?: string
   triggerLabel?: string
   autoOpen?: boolean
+  showTriggerButton?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(autoOpen)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  function setOpen(next: boolean) {
+    if (controlledOnOpenChange) controlledOnOpenChange(next)
+    if (controlledOpen === undefined) setInternalOpen(next)
+  }
   const [loading, setLoading] = useState(false)
   const [accountManagerEmail, setAccountManagerEmail] = useState('')
   const [message, setMessage] = useState('')
@@ -54,11 +65,6 @@ export function RequestApprovalDialog({
     setAccountManagerEmail((defaultAccountManagerEmail ?? '').trim())
     setMessage('')
   }, [open, defaultAccountManagerEmail])
-
-  useEffect(() => {
-    if (!autoOpen) return
-    setOpen(true)
-  }, [autoOpen])
 
   async function onSubmit() {
     const emailTrimmed = accountManagerEmail.trim()
@@ -97,18 +103,20 @@ export function RequestApprovalDialog({
 
   return (
     <>
-      <Button
-        id={triggerId}
-        type="button"
-        variant={triggerVariant}
-        className={triggerClassName}
-        onClick={() => setOpen(true)}
-      >
-        {triggerIcon ? (
-          <span className="mr-2 inline-flex items-center">{triggerIcon}</span>
-        ) : null}
-        {triggerLabel}
-      </Button>
+      {showTriggerButton ? (
+        <Button
+          id={triggerId}
+          type="button"
+          variant={triggerVariant}
+          className={triggerClassName}
+          onClick={() => setOpen(true)}
+        >
+          {triggerIcon ? (
+            <span className="mr-2 inline-flex items-center">{triggerIcon}</span>
+          ) : null}
+          {triggerLabel}
+        </Button>
+      ) : null}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>

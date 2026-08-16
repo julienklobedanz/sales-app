@@ -4,7 +4,6 @@ import * as React from 'react'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { StarIcon } from '@hugeicons/core-free-icons'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -32,18 +31,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 
 import {
   getReferenceAssets,
-  toggleFavorite,
   type ReferenceAssetRow,
 } from '@/app/dashboard/actions'
-import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
-import { ShareLinkButton } from '@/app/dashboard/references/[id]/share-link-button'
+import { ReferenceObjectActions } from '@/components/references/reference-object-actions'
+import { ROUTES } from '@/lib/routes'
 
 import type { ConceptReferenceRow } from './types'
 import { splitTags } from './types'
@@ -412,28 +409,20 @@ export function InboxReferencesConceptClient({
             <div className="p-3">
               <div className="flex items-center justify-end gap-2">
                 {selected ? (
-                  <>
-                    <form action={toggleFavorite.bind(null, selected.id)}>
-                      <Button type="submit" variant="outline" size="sm" className="gap-2">
-                        <AppIcon
-                          icon={StarIcon}
-                          size={16}
-                          className={
-                            selected.is_favorited
-                              ? 'text-amber-500 dark:text-amber-400'
-                              : 'text-muted-foreground opacity-80'
-                          }
-                        />
-                        {selected.is_favorited ? 'Favorit' : 'Favorisieren'}
+                  <ReferenceObjectActions
+                    referenceId={selected.id}
+                    canEdit={isAdmin}
+                    editHref={isAdmin ? ROUTES.references.edit(selected.id) : null}
+                    existingSharePath={null}
+                  >
+                    {isAdmin ? (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`${ROUTES.references.detail(selected.id)}?startApproval=1`}>
+                          Freigabe
+                        </Link>
                       </Button>
-                    </form>
-                    <div className="hidden sm:block">
-                      <PdfExportDialog referenceId={selected.id} />
-                    </div>
-                    <div className="hidden sm:block">
-                      <ShareLinkButton referenceId={selected.id} />
-                    </div>
-                  </>
+                    ) : null}
+                  </ReferenceObjectActions>
                 ) : (
                   <div className="text-xs text-muted-foreground">
                     Wähle links eine Referenz aus.
@@ -449,6 +438,7 @@ export function InboxReferencesConceptClient({
                 externalContacts={externalContacts}
                 assets={assets}
                 assetsLoading={assetsLoading}
+                onAssetsChange={setAssets}
                 detailLoading={detailLoading}
               />
             </div>

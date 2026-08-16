@@ -74,6 +74,9 @@ const REFERENCE_ROWS_SELECT = `
       project_start,
       project_end,
       is_nda_deal,
+      approval_competitor_blacklist,
+      approval_requested_at,
+      approval_internal_status,
       companies ( name, logo_url ),
       contact_persons!references_contact_id_fkey ( email, first_name, last_name )
     `
@@ -86,7 +89,7 @@ const REFERENCE_ROWS_SELECT_NO_CONTACT = `
     created_at, updated_at,
     company_id, contact_id, customer_contact_id, customer_contact, file_path, tags,
     project_status, project_start, project_end,
-    is_nda_deal,
+    is_nda_deal, approval_competitor_blacklist, approval_requested_at, approval_internal_status,
     companies ( name, logo_url )
   `
 
@@ -98,6 +101,7 @@ const REFERENCE_ROWS_SELECT_MINIMAL = `
     created_at, updated_at,
     company_id, contact_id, file_path, tags,
     project_status, project_start, project_end,
+    approval_competitor_blacklist, approval_requested_at, approval_internal_status,
     companies ( name, logo_url )
   `
 
@@ -139,6 +143,9 @@ export type CachedOrgReferenceRow = {
   project_start: string | null
   project_end: string | null
   is_nda_deal: boolean
+  approval_competitor_blacklist: string[]
+  approval_requested_at: string | null
+  approval_internal_status: string | null
   companies: unknown
   contact_persons?: unknown
 }
@@ -173,6 +180,9 @@ function toCachedOrgReferenceRow(row: {
   project_start: string | null
   project_end: string | null
   is_nda_deal?: boolean | null
+  approval_competitor_blacklist?: string[] | null
+  approval_requested_at?: string | null
+  approval_internal_status?: string | null
   companies: unknown
   contact_persons?: unknown
 }): CachedOrgReferenceRow {
@@ -206,6 +216,9 @@ function toCachedOrgReferenceRow(row: {
     project_start: row.project_start,
     project_end: row.project_end,
     is_nda_deal: row.is_nda_deal ?? false,
+    approval_competitor_blacklist: row.approval_competitor_blacklist ?? [],
+    approval_requested_at: row.approval_requested_at ?? null,
+    approval_internal_status: row.approval_internal_status ?? null,
     companies: row.companies,
     contact_persons: row.contact_persons,
   }
