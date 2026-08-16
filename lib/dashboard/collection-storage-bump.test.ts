@@ -14,6 +14,13 @@ import {
   DEAL_INITIAL_COLUMN_VISIBILITY,
 } from '@/app/dashboard/deals/deals-table-constants'
 import { normalizeDealColumnOrder } from '@/app/dashboard/deals/use-deals-table-columns-state'
+import {
+  ACCOUNT_COLUMN_KEYS,
+  ACCOUNT_COLUMNS_STORAGE_KEY,
+  ACCOUNT_COLUMN_SIZING_STORAGE_KEY,
+  ACCOUNT_COLUMN_VISIBLE_STORAGE_KEY,
+  ACCOUNT_DEFAULT_VISIBLE,
+} from '@/lib/accounts/account-collection-columns'
 
 describe('S3 column storage bump', () => {
   it('uses new keys and does not read v1/v2 predecessors', () => {
@@ -22,6 +29,13 @@ describe('S3 column storage bump', () => {
     expect(COLUMN_SIZING_STORAGE_KEY).toBe('dashboard-overview-column-sizing-v2')
     expect(DEAL_COLUMNS_STORAGE_KEY).toBe('refstack:deals:column-order-v3')
     expect(DEAL_COLUMN_SIZING_STORAGE_KEY).toBe('refstack:deals:column-sizing-v2')
+    expect(ACCOUNT_COLUMNS_STORAGE_KEY).toBe('refstack:accounts:column-order-v1')
+    expect(ACCOUNT_COLUMN_VISIBLE_STORAGE_KEY).toBe(
+      'refstack:accounts:column-visible-v1',
+    )
+    expect(ACCOUNT_COLUMN_SIZING_STORAGE_KEY).toBe(
+      'refstack:accounts:column-sizing-v1',
+    )
   })
 
   it('defaults follow the documented visible columns', () => {
@@ -52,5 +66,22 @@ describe('S3 column storage bump', () => {
     expect(normalized).not.toContain('match')
     expect(normalized).not.toContain('reference_count')
     expect(new Set(normalized)).toEqual(new Set(DEAL_DEFAULT_COLUMN_ORDER))
+  })
+
+  it('defaults accounts columns to the documented Leitfrage', () => {
+    expect(ACCOUNT_DEFAULT_VISIBLE.company).toBe(true)
+    expect(ACCOUNT_DEFAULT_VISIBLE.proofs).toBe(true)
+    expect(ACCOUNT_DEFAULT_VISIBLE.deals).toBe(true)
+    expect(ACCOUNT_DEFAULT_VISIBLE.nda).toBe(true)
+    expect(ACCOUNT_DEFAULT_VISIBLE.industry).toBe(false)
+    expect(ACCOUNT_DEFAULT_VISIBLE.headquarters).toBe(false)
+    expect(ACCOUNT_COLUMN_KEYS).toEqual([
+      'company',
+      'proofs',
+      'deals',
+      'nda',
+      'industry',
+      'headquarters',
+    ])
   })
 })

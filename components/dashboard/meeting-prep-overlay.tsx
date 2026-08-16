@@ -46,7 +46,7 @@ export function MeetingPrepOverlayDialog({
   title: string
   snapshot: MeetingPrepSnapshot | null
 }) {
-  const c = COPY.dashboard.home.salesLeader.meetingPrep
+  const c = COPY.accounts.lens.briefing
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,6 +97,40 @@ export function MeetingPrepOverlayDialog({
                 </ul>
               </section>
             ) : null}
+
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {c.sectionReferences}
+              </h3>
+              {snapshot.references.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">{c.noReferences}</p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {snapshot.references.map((ref) => (
+                    <li
+                      key={ref.id}
+                      className={cn(
+                        'rounded-lg border px-3 py-2',
+                        ref.similarity >= 0.47
+                          ? 'border-border'
+                          : 'border-dashed border-muted-foreground/40',
+                      )}
+                    >
+                      <Link
+                        href={ref.href}
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {ref.title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(ref.similarity * 100)} % Match
+                        {ref.snippet ? ` · ${ref.snippet}` : ''}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -163,40 +197,6 @@ export function MeetingPrepOverlayDialog({
               </section>
             ) : null}
 
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {c.sectionReferences}
-              </h3>
-              {snapshot.references.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">{c.noReferences}</p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {snapshot.references.map((ref) => (
-                    <li
-                      key={ref.id}
-                      className={cn(
-                        'rounded-lg border px-3 py-2',
-                        ref.similarity >= 0.47
-                          ? 'border-border'
-                          : 'border-dashed border-muted-foreground/40',
-                      )}
-                    >
-                      <Link
-                        href={ref.href}
-                        className="text-sm font-medium hover:underline"
-                      >
-                        {ref.title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(ref.similarity * 100)} % Match
-                        {ref.snippet ? ` · ${ref.snippet}` : ''}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
             {snapshot.signalReferencePairs.length > 0 ? (
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -256,7 +256,7 @@ export function MeetingPrepCompanyPicker({
   onPick: (hit: CompanySearchHit) => void
   onCancel: () => void
 }) {
-  const c = COPY.dashboard.home.salesLeader.meetingPrep
+  const c = COPY.accounts.lens.briefing
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent className="sm:max-w-md" overlayClassName="bg-black/60">

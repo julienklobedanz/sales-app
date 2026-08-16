@@ -77,4 +77,34 @@ describe('collectionToolbarSlotFillForRole', () => {
       expect(fill['collection-view']).toBe('empty')
     }
   })
+
+  it('füllt Accounts × sales_rep: primary leer, view gefüllt', () => {
+    const fill = collectionToolbarSlotFillForRole({
+      collection: 'accounts',
+      functionRole: 'sales_rep',
+      systemRole: MEMBER,
+    })
+    expect(fill['collection-primary']).toBe('empty')
+    expect(fill['collection-view']).toBe('filled')
+    expect(fill['collection-filter-primary']).toBe('filled')
+    expect(fill['collection-columns']).toBe('filled')
+    expect(Object.keys(fill)).toEqual([...COLLECTION_TOOLBAR_SLOT_IDS])
+  })
+
+  it('füllt Accounts × AM/Admin: primary gefüllt, view gefüllt', () => {
+    expect(
+      collectionToolbarSlotFillForRole({
+        collection: 'accounts',
+        functionRole: 'account_manager',
+        systemRole: MEMBER,
+      })['collection-primary'],
+    ).toBe('filled')
+    expect(
+      collectionToolbarSlotFillForRole({
+        collection: 'accounts',
+        functionRole: 'sales_leader',
+        systemRole: 'admin',
+      })['collection-view'],
+    ).toBe('filled')
+  })
 })

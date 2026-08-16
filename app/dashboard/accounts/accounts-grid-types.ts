@@ -21,6 +21,7 @@ export type CompanyCard = {
   contacts_count?: number | null
   reference_count?: number | null
   signal_count?: number | null
+  latest_signal_summary?: string | null
   primary_action?: AccountCardPrimaryAction | null
   secondary_meta?: string | null
   sort_urgency_at?: string | null

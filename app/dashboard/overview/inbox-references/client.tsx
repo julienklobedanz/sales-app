@@ -17,11 +17,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CollectionReadLayout } from '@/components/dashboard/collection-read-layout'
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable'
+  buildCollectionObjectUrl,
+  useCollectionObjectSelection,
+} from '@/lib/dashboard/use-collection-object-selection'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
@@ -52,25 +52,6 @@ type StatusFilter = 'all' | ConceptReferenceRow['status'] | 'approval_pending'
 function referenceRowShowsApprovalPending(ref: ConceptReferenceRow): boolean {
   if (String(ref.customer_approval_status ?? '').toLowerCase() === 'pending') return true
   return String(ref.status ?? '').toLowerCase() === 'pending'
-}
-
-function useSelectedId() {
-  const params = useSearchParams()
-  return params.get('id')
-}
-
-function buildUrl(
-  pathname: string,
-  searchParams: URLSearchParams,
-  patch: Record<string, string | null>,
-) {
-  const next = new URLSearchParams(searchParams)
-  for (const [k, v] of Object.entries(patch)) {
-    if (v === null) next.delete(k)
-    else next.set(k, v)
-  }
-  const qs = next.toString()
-  return qs ? `${pathname}?${qs}` : pathname
 }
 
 function InboxRow({
@@ -169,9 +150,11 @@ export function InboxReferencesConceptClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const selectedId = useSelectedId()
-
   const data = useMemo(() => references, [references])
+  const { selectedId, selected, hrefFor } = useCollectionObjectSelection({
+    items: data,
+    autoSelect: true,
+  })
 
   const [globalFilter, setGlobalFilter] = useState('')
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -241,7 +224,6 @@ export function InboxReferencesConceptClient({
   })
 
   const rows = table.getRowModel().rows
-  const selected = selectedId ? (data.find((d) => d.id === selectedId) ?? null) : null
 
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assets, setAssets] = useState<ReferenceAssetRow[]>([])
@@ -275,176 +257,148 @@ export function InboxReferencesConceptClient({
     }
   }, [selected])
 
-  // Wenn eine ungültige ID in der URL steht, räumen wir sie auf (und vermeiden „leeres Detail“).
-  React.useEffect(() => {
-    if (!selectedId) return
-    if (data.length === 0) return
-    if (selected) return
-    router.replace(buildUrl(pathname, searchParams, { id: null }))
-  }, [selectedId, selected, data.length, router, pathname, searchParams])
-
-  // Default: wenn keine Auswahl in der URL steht, wähle das erste Element automatisch.
-  React.useEffect(() => {
-    if (selectedId) return
-    if (data.length === 0) return
-    const first = data[0]
-    if (!first?.id) return
-    router.replace(buildUrl(pathname, searchParams, { id: first.id }))
-  }, [selectedId, data, router, pathname, searchParams])
-
   const statusValue =
     (table.getColumn('status')?.getFilterValue() as StatusFilter | undefined) ?? 'all'
   const sortKey = (sorting[0]?.id as SortKey | undefined) ?? 'created_at'
   const sortDir = sorting[0]?.desc ? 'desc' : 'asc'
 
-  const rootClass =
-    variant === 'embedded'
-      ? 'flex min-h-[480px] h-[min(calc(100svh-11rem),56rem)] flex-col gap-2'
-      : 'flex h-[calc(100svh-7rem)] flex-col gap-4 p-4'
-
   return (
-    <div className={rootClass}>
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="min-h-0 flex-1 rounded-lg border bg-background"
-      >
-        <ResizablePanel defaultSize="42%" minSize={28}>
-          <div className="flex h-full flex-col">
-            <div className="border-b p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  placeholder="Suchen…"
-                  className="h-9 min-w-[220px] flex-1"
-                />
+    <CollectionReadLayout
+      variant={variant}
+      list={
+        <>
+          <div className="border-b p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                placeholder="Suchen…"
+                className="h-9 min-w-[220px] flex-1"
+              />
 
+              <Select
+                value={`${sortKey}:${sortDir}`}
+                onValueChange={(v) => {
+                  const [id, dir] = v.split(':') as [SortKey, 'asc' | 'desc']
+                  setSorting([{ id, desc: dir === 'desc' }])
+                }}
+              >
+                <SelectTrigger className="h-9" aria-label="Sortierung">
+                  <SelectValue placeholder="Sortieren" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at:desc">Neueste zuerst</SelectItem>
+                  <SelectItem value="created_at:asc">Älteste zuerst</SelectItem>
+                  <SelectItem value="title:asc">Titel A→Z</SelectItem>
+                  <SelectItem value="title:desc">Titel Z→A</SelectItem>
+                  <SelectItem value="company_name:asc">Account A→Z</SelectItem>
+                  <SelectItem value="company_name:desc">Account Z→A</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {variant === 'standalone' ? (
                 <Select
-                  value={`${sortKey}:${sortDir}`}
+                  value={statusValue}
                   onValueChange={(v) => {
-                    const [id, dir] = v.split(':') as [SortKey, 'asc' | 'desc']
-                    setSorting([{ id, desc: dir === 'desc' }])
+                    const col = table.getColumn('status')
+                    if (!col) return
+                    col.setFilterValue(v === 'all' ? undefined : v)
                   }}
                 >
-                  <SelectTrigger className="h-9" aria-label="Sortierung">
-                    <SelectValue placeholder="Sortieren" />
+                  <SelectTrigger className="h-9" aria-label="Status Filter">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="created_at:desc">Neueste zuerst</SelectItem>
-                    <SelectItem value="created_at:asc">Älteste zuerst</SelectItem>
-                    <SelectItem value="title:asc">Titel A→Z</SelectItem>
-                    <SelectItem value="title:desc">Titel Z→A</SelectItem>
-                    <SelectItem value="company_name:asc">Account A→Z</SelectItem>
-                    <SelectItem value="company_name:desc">Account Z→A</SelectItem>
+                    <SelectItem value="all">Alle Status</SelectItem>
+                    <SelectItem value="draft">Entwurf</SelectItem>
+                    <SelectItem value="internal_only">Intern</SelectItem>
+                    <SelectItem value="approval_pending">
+                      Freigabe ausstehend
+                    </SelectItem>
+                    <SelectItem value="approved">Freigegeben</SelectItem>
+                    <SelectItem value="anonymized">Anonymisiert</SelectItem>
                   </SelectContent>
                 </Select>
-
-                {variant === 'standalone' ? (
-                  <Select
-                    value={statusValue}
-                    onValueChange={(v) => {
-                      const col = table.getColumn('status')
-                      if (!col) return
-                      col.setFilterValue(v === 'all' ? undefined : v)
-                    }}
-                  >
-                    <SelectTrigger className="h-9" aria-label="Status Filter">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Status</SelectItem>
-                      <SelectItem value="draft">Entwurf</SelectItem>
-                      <SelectItem value="internal_only">Intern</SelectItem>
-                      <SelectItem value="approval_pending">
-                        Freigabe ausstehend
-                      </SelectItem>
-                      <SelectItem value="approved">Freigegeben</SelectItem>
-                      <SelectItem value="anonymized">Anonymisiert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : null}
-              </div>
-
-              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                <div>{rows.length} Treffer</div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2"
-                  onClick={() => {
-                    setGlobalFilter('')
-                    setColumnFilters([])
-                    setSorting([{ id: 'created_at', desc: true }])
-                    router.push(buildUrl(pathname, searchParams, { id: null }))
-                  }}
-                >
-                  Reset
-                </Button>
-              </div>
+              ) : null}
             </div>
 
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-2">
-                {rows.map((r) => {
-                  const item = r.original
-                  const href = buildUrl(pathname, searchParams, { id: item.id })
-                  return (
-                    <InboxRow
-                      key={item.id}
-                      item={item}
-                      active={item.id === selectedId}
-                      href={href}
-                    />
+            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+              <div>{rows.length} Treffer</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => {
+                  setGlobalFilter('')
+                  setColumnFilters([])
+                  setSorting([{ id: 'created_at', desc: true }])
+                  router.push(
+                    buildCollectionObjectUrl(pathname, searchParams, { id: null }),
                   )
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        <ResizablePanel defaultSize="58%" minSize={38}>
-          <div className="flex h-full flex-col">
-            <div className="p-3">
-              <div className="flex items-center justify-end gap-2">
-                {selected ? (
-                  <ReferenceObjectActions
-                    referenceId={selected.id}
-                    canEdit={isAdmin}
-                    editHref={isAdmin ? ROUTES.references.edit(selected.id) : null}
-                    existingSharePath={null}
-                  >
-                    {isAdmin ? (
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`${ROUTES.references.detail(selected.id)}?startApproval=1`}>
-                          Freigabe
-                        </Link>
-                      </Button>
-                    ) : null}
-                  </ReferenceObjectActions>
-                ) : (
-                  <div className="text-xs text-muted-foreground">
-                    Wähle links eine Referenz aus.
-                  </div>
-                )}
-              </div>
-            </div>
-            <Separator />
-            <div className="flex-1 min-h-0">
-              <ReferenceDetailPane
-                selectedRef={selected}
-                isAdmin={isAdmin}
-                externalContacts={externalContacts}
-                assets={assets}
-                assetsLoading={assetsLoading}
-                onAssetsChange={setAssets}
-                detailLoading={detailLoading}
-              />
+                }}
+              >
+                Reset
+              </Button>
             </div>
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-2">
+              {rows.map((r) => {
+                const item = r.original
+                return (
+                  <InboxRow
+                    key={item.id}
+                    item={item}
+                    active={item.id === selectedId}
+                    href={hrefFor(item.id)}
+                  />
+                )
+              })}
+            </div>
+          </ScrollArea>
+        </>
+      }
+      pane={
+        <>
+          <div className="p-3">
+            <div className="flex items-center justify-end gap-2">
+              {selected ? (
+                <ReferenceObjectActions
+                  referenceId={selected.id}
+                  canEdit={isAdmin}
+                  editHref={isAdmin ? ROUTES.references.edit(selected.id) : null}
+                  existingSharePath={null}
+                >
+                  {isAdmin ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`${ROUTES.references.detail(selected.id)}?startApproval=1`}>
+                        Freigabe
+                      </Link>
+                    </Button>
+                  ) : null}
+                </ReferenceObjectActions>
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  Wähle links eine Referenz aus.
+                </div>
+              )}
+            </div>
+          </div>
+          <Separator />
+          <div className="min-h-0 flex-1">
+            <ReferenceDetailPane
+              selectedRef={selected}
+              isAdmin={isAdmin}
+              externalContacts={externalContacts}
+              assets={assets}
+              assetsLoading={assetsLoading}
+              onAssetsChange={setAssets}
+              detailLoading={detailLoading}
+            />
+          </div>
+        </>
+      }
+    />
   )
 }

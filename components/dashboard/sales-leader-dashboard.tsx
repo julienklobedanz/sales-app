@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { LeaderCallQueueSection } from '@/components/dashboard/leader-call-queue-section'
-import { SalesLeaderMeetingPrepSection } from '@/components/dashboard/sales-leader-meeting-prep-section'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { cn } from '@/lib/utils'
@@ -123,13 +122,7 @@ export function SalesLeaderDashboard({
 
       <LeaderCallQueueSection rows={data.callQueue ?? []} thin={thin} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <SalesLeaderMeetingPrepSection
-          sessions={data.meetingPrepSessions ?? []}
-          thin={thin}
-        />
-
-        <DashboardSectionCard title={c.covPipeTitle} description={c.covPipeDescription}>
+      <DashboardSectionCard title={c.covPipeTitle} description={c.covPipeDescription}>
           {thin || data.coveragePipeline.length === 0 ? (
             <HonestEmpty
               title={c.covPipeEmptyTitle}
@@ -154,7 +147,6 @@ export function SalesLeaderDashboard({
             </div>
           )}
         </DashboardSectionCard>
-      </div>
 
       <DashboardSectionCard
         title={c.signalRiskTitle}
