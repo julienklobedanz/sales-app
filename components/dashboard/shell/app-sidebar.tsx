@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, Handshake } from 'lucide-react'
@@ -121,10 +121,11 @@ function DealsNavSection({
 }) {
   const dealsActive = Boolean(pathname?.startsWith(ROUTES.deals.root))
   const [open, setOpen] = useState(dealsActive)
-
-  useEffect(() => {
+  const [wasDealsActive, setWasDealsActive] = useState(dealsActive)
+  if (dealsActive !== wasDealsActive) {
+    setWasDealsActive(dealsActive)
     if (dealsActive) setOpen(true)
-  }, [dealsActive])
+  }
 
   const dealsIcon = (
     <Handshake className="size-4 shrink-0" strokeWidth={dealsActive ? 2.5 : 2} />

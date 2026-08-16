@@ -149,11 +149,13 @@ export function DashboardOverview({
   const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
-  const [referenceLayout, setReferenceLayout] = useState<ReferenceLayoutMode>(() =>
-    searchParams.get('view') === 'match' ? 'match' : 'table',
-  )
+  const [listMode, setListMode] = useState<'table' | 'inbox'>('table')
+  const wantMatch = searchParams.get('view') === 'match'
+  const referenceLayout: ReferenceLayoutMode = wantMatch ? 'match' : listMode
   const libraryMode = useReferenceLibraryMode()
-  const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
+  const [showExpiredCertificates, setShowExpiredCertificates] = useState(() =>
+    loadShowExpiredCertificatesFromStorage(),
+  )
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
   const canViewComplianceSegment = canViewComplianceReferenceSegment(
@@ -201,7 +203,6 @@ export function DashboardOverview({
 
   useLayoutEffect(() => {
     syncReferenceLibraryModeFromStorage()
-    setShowExpiredCertificates(loadShowExpiredCertificatesFromStorage())
   }, [])
 
   const handleLibraryModeChange = useCallback((mode: ReferenceLibraryMode) => {
@@ -210,24 +211,18 @@ export function DashboardOverview({
 
   const handleReferenceLayoutChange = useCallback(
     (mode: ReferenceLayoutMode) => {
-      setReferenceLayout(mode)
       const next = new URLSearchParams(searchParams.toString())
-      if (mode === 'match') next.set('view', 'match')
-      else next.delete('view')
+      if (mode === 'match') {
+        next.set('view', 'match')
+      } else {
+        if (!wantMatch) setListMode(mode)
+        next.delete('view')
+      }
       const qs = next.toString()
       router.replace(qs ? `?${qs}` : '?', { scroll: false })
     },
-    [router, searchParams],
+    [router, searchParams, wantMatch],
   )
-
-  useEffect(() => {
-    const wantMatch = searchParams.get('view') === 'match'
-    setReferenceLayout((prev) => {
-      if (wantMatch) return 'match'
-      if (prev === 'match') return 'table'
-      return prev
-    })
-  }, [searchParams])
 
   useEffect(() => {
     if (!canViewComplianceSegment && libraryMode === 'certificates') {
