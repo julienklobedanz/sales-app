@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { asReferenceStatus, asTableUpdate } from '@/lib/supabase/db-types'
@@ -119,8 +120,7 @@ export async function withdrawApprovalRequestImpl(
     .update({ status: 'rejected' })
     .eq('reference_id', referenceId)
     .eq('status', 'pending')
-  revalidatePath(ROUTES.references.detail(referenceId))
-  revalidatePath(ROUTES.references.root)
+  revalidateReferenceInternalPaths(referenceId)
   revalidatePath(ROUTES.home)
   await revalidateOrgCachesForReference(referenceId)
   return { success: true }
@@ -252,7 +252,6 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     .in('status', ['approved', 'rejected'])
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.references.detail(referenceId))
-  revalidatePath(ROUTES.references.root)
+  revalidateReferenceInternalPaths(referenceId)
   await revalidateOrgCachesForReference(referenceId)
 }

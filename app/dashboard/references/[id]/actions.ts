@@ -12,6 +12,7 @@ import {
 import { asReferenceStatus, asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -36,19 +37,19 @@ export async function deleteReferenceFromDetailPage(id: string) {
 export async function prepareCustomerApprovalFromDetail(referenceId: string) {
   const result = await prepareCustomerApproval(referenceId)
   if (result.success) {
-    revalidatePath(ROUTES.references.detail(referenceId))
+    revalidateReferenceInternalPaths(referenceId)
   }
   return result
 }
 
 export async function resendApprovalFromDetail(referenceId: string) {
   await resendClientApprovalEmail(referenceId)
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
 }
 
 export async function withdrawApprovalFromDetail(referenceId: string) {
   await withdrawApprovalRequest(referenceId)
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
 }
 
 export async function getApprovalLinkFromDetail(referenceId: string) {
@@ -320,7 +321,6 @@ export async function createAnonymizedReferenceVersion(
     }
   }
 
-  revalidatePath(ROUTES.references.root)
-  revalidatePath(ROUTES.references.detail(inserted.id))
+  revalidateReferenceInternalPaths(inserted.id)
   return { success: true, referenceId: inserted.id }
 }

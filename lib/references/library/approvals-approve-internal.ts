@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { ensureApprovalRecipientFromInputImpl } from '@/lib/references/library/approval-contacts'
@@ -163,7 +164,7 @@ export async function prepareCustomerApprovalImpl(
   }
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
   revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(referenceId)
   return { success: true, customerEmailSent, recipientEmail: contactEmail }

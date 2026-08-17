@@ -1,8 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { ensureApprovalRecipientFromInputImpl } from '@/lib/references/library/approval-contacts'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
@@ -193,7 +192,7 @@ export async function updateApprovalRecipientImpl(
     }
   }
 
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
   return { success: true, customerEmailSent }
 }
 
@@ -289,6 +288,6 @@ export async function updateApprovalCoordinatorImpl(
     referenceId,
   })
 
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
   return { success: true, emailSent }
 }

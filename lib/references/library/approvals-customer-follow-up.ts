@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
@@ -227,7 +228,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidateReferenceInternalPaths(referenceId)
   revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(referenceId)
   return {

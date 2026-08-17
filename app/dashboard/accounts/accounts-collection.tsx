@@ -108,7 +108,7 @@ export function AccountsCollection({
     [companies, search, ndaFilter, favoritesOnly, industryFilter, locationFilter, referencesFilter],
   )
 
-  const { selectedId, selected, hrefFor } = useCollectionObjectSelection({
+  const { selectedId, selected, hrefFor, clearSelection } = useCollectionObjectSelection({
     items: filtered,
     autoSelect: layout === 'inbox',
   })
@@ -239,6 +239,8 @@ export function AccountsCollection({
           {toolbar}
           {layout === 'inbox' ? (
             <CollectionReadLayout
+              hasSelection={Boolean(selectedId)}
+              onBack={clearSelection}
               list={<div className="min-h-0 flex-1 overflow-auto p-2">{table}</div>}
               pane={
                 <AccountLensPane

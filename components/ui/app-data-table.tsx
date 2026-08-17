@@ -41,6 +41,7 @@ import { DataTablePagination, COLLECTION_PAGE_SIZE_OPTIONS } from '@/components/
 import { DataTableViewOptions } from '@/components/ui/data-table-view-options'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { referencesReadHref } from '@/lib/references/references-list-view'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -267,7 +268,7 @@ export function AppDataTable<TData, TValue>({
           const rawId = (row.original as { id?: string }).id
           if (!rawId) return null
           return tableVariant === 'references'
-            ? ROUTES.references.detail(rawId)
+            ? referencesReadHref(rawId)
             : tableVariant === 'deals'
               ? ROUTES.deals.detail(rawId)
               : null
@@ -302,7 +303,7 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = ROUTES.references.detail(anyRow.id)
+                  window.location.href = referencesReadHref(anyRow.id)
                 }
               }}
             >

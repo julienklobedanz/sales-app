@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
@@ -39,8 +38,9 @@ import {
   getReferenceAssets,
   type ReferenceAssetRow,
 } from '@/app/dashboard/actions'
-import { ReferenceObjectActions } from '@/components/references/reference-object-actions'
-import { ROUTES } from '@/lib/routes'
+import { loadReferenceInternalFrameSupplement } from '@/app/dashboard/references/[id]/load-internal-frame-supplement'
+import type { OrgDateDisplayFormat } from '@/lib/format'
+import type { ReferenceInternalFrameSupplement } from '@/lib/references/reference-internal-frame-supplement'
 
 import type { ConceptReferenceRow } from './types'
 import { splitTags } from './types'
@@ -130,12 +130,20 @@ function InboxRow({
 
 export function InboxReferencesConceptClient({
   references,
-  isAdmin,
+  selectionPool,
+  canEdit,
+  canDelete,
+  isSalesView,
+  orgDateFmt,
   externalContacts,
   variant = 'standalone',
 }: {
   references: ConceptReferenceRow[]
-  isAdmin: boolean
+  selectionPool: ConceptReferenceRow[]
+  canEdit: boolean
+  canDelete: boolean
+  isSalesView: boolean
+  orgDateFmt: OrgDateDisplayFormat
   variant?: 'standalone' | 'embedded'
   externalContacts: {
     id: string
@@ -150,11 +158,33 @@ export function InboxReferencesConceptClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const data = useMemo(() => references, [references])
-  const { selectedId, selected, hrefFor } = useCollectionObjectSelection({
+  const inboundId = searchParams.get('id')
+  const arrivedWithIdRef = useRef(Boolean(inboundId))
+  const firstSelectedIdRef = useRef<string | null>(null)
+  const hasLeftInitialSelectionRef = useRef(false)
+  const data = useMemo(() => {
+    if (!inboundId) return references
+    if (references.some((row) => row.id === inboundId)) return references
+    const extra = selectionPool.find((row) => row.id === inboundId)
+    return extra ? [...references, extra] : references
+  }, [references, selectionPool, inboundId])
+  const { selectedId, selected, hrefFor, clearSelection } = useCollectionObjectSelection({
     items: data,
     autoSelect: true,
   })
+  if (selectedId && firstSelectedIdRef.current === null) {
+    firstSelectedIdRef.current = selectedId
+  }
+  if (
+    selectedId &&
+    firstSelectedIdRef.current &&
+    selectedId !== firstSelectedIdRef.current
+  ) {
+    hasLeftInitialSelectionRef.current = true
+  }
+  const autoOpenApprovalDialog =
+    searchParams.get('startApproval') === '1' ||
+    searchParams.get('startApproval') === 'true'
 
   const [globalFilter, setGlobalFilter] = useState('')
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -227,7 +257,10 @@ export function InboxReferencesConceptClient({
 
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assets, setAssets] = useState<ReferenceAssetRow[]>([])
-  const [detailLoading, setDetailLoading] = useState(false)
+  const [supplement, setSupplement] = useState<ReferenceInternalFrameSupplement | null>(
+    null,
+  )
+  const [supplementReady, setSupplementReady] = useState(false)
 
   React.useEffect(() => {
     let cancelled = false
@@ -235,19 +268,26 @@ export function InboxReferencesConceptClient({
       if (!selected) {
         setAssets([])
         setAssetsLoading(false)
-        setDetailLoading(false)
+        setSupplement(null)
+        setSupplementReady(false)
         return
       }
-      setDetailLoading(true)
       setAssetsLoading(true)
+      setAssets([])
+      setSupplementReady(false)
+      setSupplement(null)
       try {
-        const a = await getReferenceAssets(selected.id)
+        const [a, extra] = await Promise.all([
+          getReferenceAssets(selected.id),
+          loadReferenceInternalFrameSupplement(selected.id),
+        ])
         if (cancelled) return
         setAssets(a)
+        setSupplement(extra)
       } finally {
         if (!cancelled) {
           setAssetsLoading(false)
-          setDetailLoading(false)
+          setSupplementReady(true)
         }
       }
     }
@@ -265,6 +305,8 @@ export function InboxReferencesConceptClient({
   return (
     <CollectionReadLayout
       variant={variant}
+      hasSelection={Boolean(selectedId)}
+      onBack={clearSelection}
       list={
         <>
           <div className="border-b p-4">
@@ -360,44 +402,23 @@ export function InboxReferencesConceptClient({
         </>
       }
       pane={
-        <>
-          <div className="p-3">
-            <div className="flex items-center justify-end gap-2">
-              {selected ? (
-                <ReferenceObjectActions
-                  referenceId={selected.id}
-                  canEdit={isAdmin}
-                  editHref={isAdmin ? ROUTES.references.edit(selected.id) : null}
-                  existingSharePath={null}
-                >
-                  {isAdmin ? (
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={`${ROUTES.references.detail(selected.id)}?startApproval=1`}>
-                        Freigabe
-                      </Link>
-                    </Button>
-                  ) : null}
-                </ReferenceObjectActions>
-              ) : (
-                <div className="text-xs text-muted-foreground">
-                  Wähle links eine Referenz aus.
-                </div>
-              )}
-            </div>
-          </div>
-          <Separator />
-          <div className="min-h-0 flex-1">
-            <ReferenceDetailPane
-              selectedRef={selected}
-              isAdmin={isAdmin}
-              externalContacts={externalContacts}
-              assets={assets}
-              assetsLoading={assetsLoading}
-              onAssetsChange={setAssets}
-              detailLoading={detailLoading}
-            />
-          </div>
-        </>
+        <ReferenceDetailPane
+          selectedRef={selected}
+          supplement={supplement}
+          supplementReady={supplementReady}
+          canEdit={canEdit}
+          canDelete={canDelete}
+          isSalesView={isSalesView}
+          orgDateFmt={orgDateFmt}
+          autoOpenApprovalDialog={autoOpenApprovalDialog}
+          arrivedWithId={arrivedWithIdRef.current}
+          firstSelectedId={firstSelectedIdRef.current}
+          hasLeftInitialSelection={hasLeftInitialSelectionRef.current}
+          externalContacts={externalContacts}
+          assets={assets}
+          assetsLoading={assetsLoading}
+          onAssetsChange={setAssets}
+        />
       }
     />
   )
