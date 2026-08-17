@@ -5,13 +5,16 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import { ROUTES } from '@/lib/routes'
+import { buildDealAusschreibungSummary } from '@/lib/deals/deal-ausschreibung-summary'
+import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
+import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
 import { getDealWithReferences } from '../actions'
 import { listDealDocuments } from '../document-actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
-import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
-import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
+import { DealAusschreibungSummaryCard } from '../cockpit/deal-ausschreibung-summary-card'
+import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
 import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
@@ -96,6 +99,18 @@ async function DealDetailPageContent({
     .eq('organization_id', orgId)
     .order('full_name')
 
+  const rfpData = isRfpDeal(deal)
+    ? await loadDealRfpCockpitData(supabase, orgId, id, {
+        title: deal.title,
+        industry: deal.industry,
+        volume: deal.volume,
+      })
+    : null
+  const showVerdict = Boolean(rfpData?.hasAnalysis)
+  const summary = isRfpDeal(deal)
+    ? buildDealAusschreibungSummary({ documentCount: documents.length, data: rfpData })
+    : null
+
   return (
     <DealCockpitClient
       deal={deal}
@@ -109,23 +124,23 @@ async function DealDetailPageContent({
           </Suspense>
         ) : undefined
       }
-      rfpBlock={
-        deal.is_rfp_mode ? (
-          <Suspense fallback={<DealRfpCockpitSkeleton />}>
-            <DealRfpCockpitBlock
+      verdict={
+        showVerdict && rfpData ? (
+          <div className="mb-6">
+            <DealRfpRecommendationBanner
+              data={rfpData}
               dealId={id}
-              orgId={orgId}
-              deal={deal}
               documents={documents}
-              canManageDocuments={canManageDocuments}
-              dealContext={{
-                title: deal.title,
-                industry: deal.industry,
-                volume: deal.volume,
-              }}
+              canManage={canManageDocuments}
+              showEngineMetrics={false}
             />
-          </Suspense>
-        ) : undefined
+          </div>
+        ) : null
+      }
+      ausschreibungSummary={
+        summary ? (
+          <DealAusschreibungSummaryCard dealId={id} summary={summary} />
+        ) : null
       }
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}

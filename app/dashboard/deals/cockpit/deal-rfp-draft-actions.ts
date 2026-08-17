@@ -1,10 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
-import { ROUTES } from '@/lib/routes'
+import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type UpdateDealRfpDraftAnswerResult =
@@ -66,6 +64,6 @@ export async function updateDealRfpDraftAnswer(params: {
 
   if (updateError) return { success: false, error: updateError.message }
 
-  revalidatePath(ROUTES.deals.detail(dealId))
+  revalidateDealWorkspacePaths(dealId)
   return { success: true }
 }

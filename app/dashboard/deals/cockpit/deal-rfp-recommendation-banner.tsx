@@ -84,11 +84,13 @@ export function DealRfpRecommendationBanner({
   dealId,
   documents,
   canManage,
+  showEngineMetrics = true,
 }: {
   data: DealRfpCockpitData
   dealId: string
   documents: DealDocumentRow[]
   canManage: boolean
+  showEngineMetrics?: boolean
 }) {
   const { recommendation, analyzedAt, isStale, hasAnalysis } = data
   const showReanalyzeCta = isStale || !hasAnalysis
@@ -199,23 +201,25 @@ export function DealRfpRecommendationBanner({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-3 border-t border-black/5 pt-3 dark:border-white/10">
-            <CompactMetric
-              label={COPY.deals.cockpit.metricAngebotsReife}
-              value={reifeValue}
-              tone={reifeTone}
-            />
-            <CompactMetric
-              label={COPY.deals.cockpit.metricEligibility}
-              value={eligibilityValue}
-              tone={eligibilityTone}
-            />
-            <CompactMetric
-              label={COPY.deals.cockpit.metricIcpFit}
-              value={icpValue}
-              tone={icpTone}
-            />
-          </div>
+          {showEngineMetrics ? (
+            <div className="grid grid-cols-3 gap-3 border-t border-black/5 pt-3 dark:border-white/10">
+              <CompactMetric
+                label={COPY.deals.cockpit.metricAngebotsReife}
+                value={reifeValue}
+                tone={reifeTone}
+              />
+              <CompactMetric
+                label={COPY.deals.cockpit.metricEligibility}
+                value={eligibilityValue}
+                tone={eligibilityTone}
+              />
+              <CompactMetric
+                label={COPY.deals.cockpit.metricIcpFit}
+                value={icpValue}
+                tone={icpTone}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
       {isStale ? (

@@ -258,6 +258,10 @@ export const COPY = {
       downloadDeadlinesIcs: 'ICS',
       downloadDeadlinesIcsAria: 'Alle Termine als Kalenderdatei (.ics) herunterladen',
       downloadDeadlinesIcsEmpty: 'Keine Termine mit festem Datum zum Kalender-Export.',
+      openWorkspace: 'Arbeitsbereich öffnen',
+      metricDrafts: 'Entwürfe',
+      metricRisks: 'Risiken',
+      metricDocuments: 'Dokumente',
       rfpBlockTitle: 'Ausschreibung',
       rfpBlockSubtitle: 'Metriken und Eignungs-Check aus der letzenden RFP-Analyse.',
       rfpBlockEmpty:

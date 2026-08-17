@@ -8,14 +8,13 @@ import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
 import { DealDocumentsSection } from './deal-documents-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealDeadlinesCard } from './deal-deadlines-card'
-import { DealDeadlineMilestoneChips } from './deal-deadline-milestone-chips'
 import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
+import { DealRfpHashBridge } from './deal-rfp-hash-bridge'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
 import type { OrgDateDisplayFormat } from '@/lib/format'
-import { COPY } from '@/lib/copy'
 import type { DealReferenceSuggestion } from '@/lib/deals/suggest-deal-reference-matches'
 import { suggestReferencesForDealAction } from '../actions'
 import { DealReferenceSuggestionsRefreshProvider } from './deal-reference-suggestions-refresh'
@@ -30,7 +29,8 @@ export function DealCockpitClient({
   deadlines,
   documents,
   canManageDocuments,
-  rfpBlock,
+  verdict,
+  ausschreibungSummary,
   briefingButton,
   hubspotPortalId = null,
   orgDateDisplayFormat = 'de-DE',
@@ -42,13 +42,14 @@ export function DealCockpitClient({
   deadlines: DealDeadlineRow[]
   documents: DealDocumentRow[]
   canManageDocuments: boolean
-  rfpBlock?: ReactNode
+  verdict?: ReactNode
+  ausschreibungSummary?: ReactNode
   briefingButton?: ReactNode
   hubspotPortalId?: string | null
   orgDateDisplayFormat?: OrgDateDisplayFormat
   initialReferenceSuggestions?: DealReferenceSuggestion[]
 }) {
-  const showRfpBlock = isRfpDeal(deal)
+  const showRfp = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
   const [referenceSuggestions, setReferenceSuggestions] = useState(
     initialReferenceSuggestions,
@@ -66,44 +67,28 @@ export function DealCockpitClient({
   return (
     <DealReferenceSuggestionsRefreshProvider refresh={refreshReferenceSuggestions}>
       <div>
+        <DealRfpHashBridge
+          dealId={deal.id}
+          isRfpDeal={showRfp}
+          surface="deal-page"
+        />
         <DealCockpitHeader
           deal={deal}
           companies={companies}
           orgProfiles={orgProfiles}
           canManageDocuments={canManageDocuments}
-          briefingButton={showRfpBlock ? briefingButton : undefined}
+          briefingButton={showRfp ? briefingButton : undefined}
         />
 
-        {showRfpBlock ? (
-          <DealDeadlineMilestoneChips
-            deadlines={deadlines}
-            dealStatus={deal.status}
-            orgDateDisplayFormat={orgDateDisplayFormat}
-            className="mb-4"
-          />
-        ) : null}
+        {verdict}
 
-        {/* Deadlines (~60%) | Deal-Fakten (~40%) */}
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-          <div className="min-w-0 lg:col-span-3">
-            <DealDeadlinesCard
-              dealId={deal.id}
-              dealTitle={deal.title}
-              deadlines={deadlines}
-              orgDateDisplayFormat={orgDateDisplayFormat}
-              showMilestoneChipsAbove={showRfpBlock}
-            />
-          </div>
-          <div className="min-w-0 lg:col-span-2">
-            <DealFactsCard
-              deal={deal}
-              companies={companies}
-              orgProfiles={orgProfiles}
-              canManage={canManageDocuments}
-              hubspotPortalId={hubspotPortalId}
-              orgDateDisplayFormat={orgDateDisplayFormat}
-            />
-          </div>
+        <div className="mb-6">
+          <DealDeadlinesCard
+            dealId={deal.id}
+            dealTitle={deal.title}
+            deadlines={deadlines}
+            orgDateDisplayFormat={orgDateDisplayFormat}
+          />
         </div>
 
         <DealProofSection
@@ -113,16 +98,17 @@ export function DealCockpitClient({
           onReferenceSuggestionsChange={setReferenceSuggestions}
         />
 
-        {showRfpBlock && rfpBlock ? (
-          <section
-            id="ausschreibung"
-            className="mb-6 space-y-4 border-t border-border/70 pt-8"
-          >
-            <h2 className="text-base font-semibold">
-              {COPY.deals.cockpit.rfpBlockTitle}
-            </h2>
-            {rfpBlock}
-          </section>
+        {showRfp ? (
+          documents.length > 0 && ausschreibungSummary ? (
+            ausschreibungSummary
+          ) : (
+            <DealDocumentsSection
+              dealId={deal.id}
+              documents={documents}
+              canManage={canManageDocuments}
+              isRfpMode
+            />
+          )
         ) : (
           <>
             <DealDocumentsSection
@@ -136,6 +122,15 @@ export function DealCockpitClient({
             </div>
           </>
         )}
+
+        <DealFactsCard
+          deal={deal}
+          companies={companies}
+          orgProfiles={orgProfiles}
+          canManage={canManageDocuments}
+          hubspotPortalId={hubspotPortalId}
+          orgDateDisplayFormat={orgDateDisplayFormat}
+        />
 
         <DealSmartMatchDrawer
           deal={deal}

@@ -1,11 +1,7 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
 import { formatCrmStageLabel } from '@/lib/crm/format-crm-stage-label'
-import {
-  formatDealVolume,
-  formatReferenceDate,
-  type OrgDateDisplayFormat,
-} from '@/lib/format'
+import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 import { COPY } from '@/lib/copy'
 
 export type DealFactsDeal = {
@@ -35,9 +31,7 @@ export function buildDealFactRows(
     : '—'
 
   const textRows: Array<Extract<DealFactRow, { kind: 'text' }>> = [
-    { kind: 'text', label: 'Account', value: deal.company_name ?? '—' },
     { kind: 'text', label: 'Branche', value: industry },
-    { kind: 'text', label: 'Volumen', value: formatDealVolume(deal.volume) },
     { kind: 'text', label: 'Close', value: closeDate },
     {
       kind: 'text',

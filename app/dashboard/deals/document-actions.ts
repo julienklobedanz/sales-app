@@ -1,7 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import {
   buildDealDocumentStoragePath,
@@ -12,7 +10,7 @@ import {
   type DealDocumentKind,
 } from '@/lib/deals/deal-document-kinds'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
-import { ROUTES } from '@/lib/routes'
+import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -146,7 +144,7 @@ function assertCanManageDeal(
 }
 
 function revalidateDealPage(dealId: string) {
-  revalidatePath(ROUTES.deals.detail(dealId), 'page')
+  revalidateDealWorkspacePaths(dealId)
 }
 
 export async function listDealDocuments(
