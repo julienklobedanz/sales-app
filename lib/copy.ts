@@ -345,7 +345,7 @@ export const COPY = {
       draftsCancelEdit: 'Abbrechen',
       draftsSaveSuccess: 'Antwort gespeichert.',
       draftsSaveFailed: 'Antwort konnte nicht gespeichert werden.',
-      draftsCoveredCount: '{covered}/{total} belegt',
+      draftsCoveredCount: '{covered}/{total} bereit',
       draftsGapsCount: '{count} Lücken',
       briefingDialogTitle: 'Executive Briefing',
       briefingDialogDescription:
