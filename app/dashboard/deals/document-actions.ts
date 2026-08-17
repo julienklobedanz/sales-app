@@ -144,7 +144,7 @@ function assertCanManageDeal(
 }
 
 function revalidateDealPage(dealId: string) {
-  revalidateDealWorkspacePaths(dealId)
+  revalidateDealWorkspacePaths(dealId, 'dokumente')
 }
 
 export async function listDealDocuments(

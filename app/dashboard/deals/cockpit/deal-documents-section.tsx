@@ -39,6 +39,7 @@ export function DealDocumentsSection({
   isRfpMode = false,
   rfpHasAnalysis = false,
   rfpAnalysisStale = false,
+  forceExpanded = false,
 }: {
   dealId: string
   documents: DealDocumentRow[]
@@ -46,6 +47,7 @@ export function DealDocumentsSection({
   isRfpMode?: boolean
   rfpHasAnalysis?: boolean
   rfpAnalysisStale?: boolean
+  forceExpanded?: boolean
 }) {
   const router = useRouter()
   const refreshReferenceSuggestions = useDealReferenceSuggestionsRefresh()
@@ -69,7 +71,9 @@ export function DealDocumentsSection({
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(
-    () => isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis,
+    () =>
+      forceExpanded ||
+      (isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis),
   )
 
   async function handleUpload() {
@@ -183,72 +187,97 @@ export function DealDocumentsSection({
   }
 
   const title = `${COPY.deals.cockpit.documentsTitle} · ${documents.length}`
+  const list =
+    documents.length === 0 ? (
+      <CardContent className="pt-0">
+        <p
+          className={cn(
+            'text-sm text-muted-foreground',
+            !forceExpanded && 'pl-7',
+          )}
+        >
+          {COPY.deals.cockpit.documentsEmpty}
+        </p>
+      </CardContent>
+    ) : (
+      <CardContent className="pt-0">
+        <DealDocumentsList
+          dealId={dealId}
+          documents={documents}
+          canManage={canManage}
+          isRfpMode={isRfpMode}
+          rfpHasAnalysis={rfpHasAnalysis}
+          rfpAnalysisStale={rfpAnalysisStale}
+          analyzingId={analyzingId}
+          downloadPendingId={downloadPendingId}
+          onAnalyze={(doc) => void handleAnalyze(doc)}
+          onDownload={(doc) => void handleDownload(doc)}
+          onRenameRequest={(doc) => {
+            setRenameTarget(doc)
+            setRenameValue(doc.file_name)
+          }}
+          onKindChange={(doc, kind) => void handleKindChange(doc, kind)}
+          onDeleteRequest={setDeleteTarget}
+          onAnalyzed={() => void refreshReferenceSuggestions?.()}
+        />
+      </CardContent>
+    )
 
   return (
     <>
       <Card id="dokumente" className="mb-6 scroll-mt-24">
-        <Collapsible open={expanded} onOpenChange={setExpanded}>
-          <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
-              >
-                <AppIcon
-                  icon={ArrowRight01Icon}
-                  size={16}
-                  className={cn(
-                    'shrink-0 text-muted-foreground transition-transform',
-                    expanded && 'rotate-90',
-                  )}
-                />
-                <CardTitle className="text-base">{title}</CardTitle>
-              </button>
-            </CollapsibleTrigger>
-            {canManage ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setUploadOpen(true)}
-              >
-                <AppIcon icon={CirclePlus} size={16} className="mr-1" />
-                {COPY.deals.cockpit.documentsUpload}
-              </Button>
-            ) : null}
-          </CardHeader>
-          {documents.length === 0 ? (
-            <CardContent className="pt-0">
-              <p className="pl-7 text-sm text-muted-foreground">
-                {COPY.deals.cockpit.documentsEmpty}
-              </p>
-            </CardContent>
-          ) : (
-            <CollapsibleContent>
-              <CardContent className="pt-0">
-                <DealDocumentsList
-                  dealId={dealId}
-                  documents={documents}
-                  canManage={canManage}
-                  isRfpMode={isRfpMode}
-                  rfpHasAnalysis={rfpHasAnalysis}
-                  rfpAnalysisStale={rfpAnalysisStale}
-                  analyzingId={analyzingId}
-                  downloadPendingId={downloadPendingId}
-                  onAnalyze={(doc) => void handleAnalyze(doc)}
-                  onDownload={(doc) => void handleDownload(doc)}
-                  onRenameRequest={(doc) => {
-                    setRenameTarget(doc)
-                    setRenameValue(doc.file_name)
-                  }}
-                  onKindChange={(doc, kind) => void handleKindChange(doc, kind)}
-                  onDeleteRequest={setDeleteTarget}
-                  onAnalyzed={() => void refreshReferenceSuggestions?.()}
-                />
-              </CardContent>
-            </CollapsibleContent>
-          )}
-        </Collapsible>
+        {forceExpanded ? (
+          <>
+            <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
+              <CardTitle className="text-base">{title}</CardTitle>
+              {canManage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                  {COPY.deals.cockpit.documentsUpload}
+                </Button>
+              ) : null}
+            </CardHeader>
+            {list}
+          </>
+        ) : (
+          <Collapsible open={expanded} onOpenChange={setExpanded}>
+            <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                  <AppIcon
+                    icon={ArrowRight01Icon}
+                    size={16}
+                    className={cn(
+                      'shrink-0 text-muted-foreground transition-transform',
+                      expanded && 'rotate-90',
+                    )}
+                  />
+                  <CardTitle className="text-base">{title}</CardTitle>
+                </button>
+              </CollapsibleTrigger>
+              {canManage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                  {COPY.deals.cockpit.documentsUpload}
+                </Button>
+              ) : null}
+            </CardHeader>
+            {documents.length === 0 ? list : <CollapsibleContent>{list}</CollapsibleContent>}
+          </Collapsible>
+        )}
       </Card>
 
       <DealDocumentUploadDialog

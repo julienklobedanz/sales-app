@@ -18,6 +18,18 @@ describe('routeExcludesDashboardContentPadding', () => {
     )
   })
 
+  it('bleed layout for deal workspace so the rail can fill the height', () => {
+    expect(
+      routeExcludesDashboardContentPadding('/dashboard/deals/abc/ausschreibung'),
+    ).toBe(true)
+    expect(
+      routeExcludesDashboardContentPadding(
+        '/dashboard/deals/abc/ausschreibung/dokumente',
+      ),
+    ).toBe(true)
+    expect(routeExcludesDashboardContentPadding('/dashboard/deals/abc')).toBe(false)
+  })
+
   it('default padded layout for other dashboard routes', () => {
     expect(routeExcludesDashboardContentPadding(ROUTES.references.root)).toBe(false)
     expect(routeExcludesDashboardContentPadding('/dashboard/deals')).toBe(false)
@@ -33,10 +45,10 @@ describe('detailRouteNeedsBottomPadding', () => {
     expect(detailRouteNeedsBottomPadding(ROUTES.references.root)).toBe(false)
   })
 
-  it('true for deal detail and workspace, false for request/new', () => {
+  it('true for deal detail, false for workspace/request/new', () => {
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc')).toBe(true)
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc/ausschreibung')).toBe(
-      true,
+      false,
     )
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/new')).toBe(false)
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/request/new')).toBe(false)

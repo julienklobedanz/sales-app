@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
 import type { DealAusschreibungSummary } from '@/lib/deals/deal-ausschreibung-summary'
-import { dealWorkspaceHref } from '@/lib/deals/deal-workspace-href'
+import { dealWorkspaceLandingHref } from '@/lib/deals/deal-workspace-href'
 
 export function DealAusschreibungSummaryCard({
   dealId,
@@ -17,7 +17,9 @@ export function DealAusschreibungSummaryCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
         <Button type="button" size="sm" asChild>
-          <Link href={dealWorkspaceHref(dealId)}>{COPY.deals.cockpit.openWorkspace}</Link>
+          <Link href={dealWorkspaceLandingHref(dealId)}>
+            {COPY.deals.cockpit.openWorkspace}
+          </Link>
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

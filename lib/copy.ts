@@ -240,7 +240,7 @@ export const COPY = {
       deadlinesAllTitle: 'Alle Fristen',
       deadlinesEmpty: 'Keine Termine',
       ausschreibungNavDokumente: 'Dokumente',
-      ausschreibungNavUrteil: 'Urteil',
+      ausschreibungNavSteckbrief: 'Steckbrief',
       ausschreibungNavStammdaten: 'Stammdaten',
       ausschreibungNavLose: 'Lose',
       ausschreibungNavEignung: 'Eignung',
@@ -266,6 +266,8 @@ export const COPY = {
       rfpBlockSubtitle: 'Metriken und Eignungs-Check aus der letzenden RFP-Analyse.',
       rfpBlockEmpty:
         'Lade eine Ausschreibung unter Dokumente hoch und starte die Analyse von dort.',
+      steckbriefEmpty: 'Noch kein Steckbrief — starte die Analyse unter Dokumente.',
+      lotsEmpty: 'Keine Lose in dieser Ausschreibung.',
       rfpAnalyzeCta: 'Zu Dokumenten',
       rfpReanalyzeHint: 'Neu analysieren empfohlen',
       documentsAnalyze: 'Analysieren',
@@ -345,8 +347,6 @@ export const COPY = {
       draftsSaveFailed: 'Antwort konnte nicht gespeichert werden.',
       draftsCoveredCount: '{covered}/{total} belegt',
       draftsGapsCount: '{count} Lücken',
-      draftsShowAll: 'Alle {count} Entwürfe anzeigen',
-      draftsShowFewer: 'Weniger anzeigen',
       briefingDialogTitle: 'Executive Briefing',
       briefingDialogDescription:
         'Kompakte Bid-Zusammenfassung für interne Freigabe (Management, ohne Qualification Call).',

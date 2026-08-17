@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { ROUTES } from '@/lib/routes'
 import {
   DEAL_RFP_HASH_IDS,
+  dealWorkspaceAreaHref,
   dealWorkspaceHref,
   dealWorkspaceLandingHref,
+  parseDealWorkspaceAreaFromPathname,
   resolveDealRfpHash,
   resolveDealWorkspaceAccess,
 } from './deal-workspace-href'
@@ -15,8 +17,11 @@ describe('deal workspace href', () => {
     expect(dealWorkspaceHref('deal-1')).not.toContain('#')
   })
 
-  it('landet nach Promote auf der Unterroute, nicht auf der Deal-Seite', () => {
-    expect(dealWorkspaceLandingHref('deal-1')).toBe(dealWorkspaceHref('deal-1'))
+  it('landet nach Promote auf /dokumente, nicht auf der Deal-Seite', () => {
+    expect(dealWorkspaceLandingHref('deal-1')).toBe(
+      '/dashboard/deals/deal-1/ausschreibung/dokumente',
+    )
+    expect(dealWorkspaceLandingHref('deal-1')).not.toBe(dealWorkspaceHref('deal-1'))
     expect(dealWorkspaceLandingHref('deal-1')).not.toBe(ROUTES.deals.detail('deal-1'))
   })
 })
@@ -50,17 +55,21 @@ describe('resolveDealWorkspaceAccess', () => {
   })
 })
 
-describe('resolveDealRfpHash', () => {
-  const sixAnchors = [
-    'urteil',
-    'stammdaten',
-    'lose',
-    'eligCard',
-    'risks',
-    'drafts',
-    'dokumente',
-  ] as const
+describe('parseDealWorkspaceAreaFromPathname', () => {
+  it('liest den Bereich aus der Unterroute', () => {
+    expect(
+      parseDealWorkspaceAreaFromPathname(
+        '/dashboard/deals/deal-1/ausschreibung/entwuerfe',
+      ),
+    ).toBe('entwuerfe')
+    expect(
+      parseDealWorkspaceAreaFromPathname('/dashboard/deals/deal-1/ausschreibung'),
+    ).toBeNull()
+    expect(parseDealWorkspaceAreaFromPathname('/dashboard/deals/deal-1')).toBeNull()
+  })
+})
 
+describe('resolveDealRfpHash', () => {
   it('kennt die sechs Anker plus ausschreibung und notice-hero', () => {
     expect([...DEAL_RFP_HASH_IDS]).toEqual([
       'urteil',
@@ -81,26 +90,31 @@ describe('resolveDealRfpHash', () => {
         hash: '#urteil',
         isRfpDeal: true,
         current: 'workspace',
+        currentArea: 'dokumente',
         dealId: 'deal-1',
       }),
     ).toEqual({ href: `${ROUTES.deals.detail('deal-1')}#urteil` })
   })
 
-  it.each(sixAnchors.filter((id) => id !== 'urteil'))(
-    'schickt #%s von der Deal-Seite in den Arbeitsbereich',
-    (id) => {
-      expect(
-        resolveDealRfpHash({
-          hash: `#${id}`,
-          isRfpDeal: true,
-          current: 'deal-page',
-          dealId: 'deal-1',
-        }),
-      ).toEqual({ href: `${dealWorkspaceHref('deal-1')}#${id}` })
-    },
-  )
+  it.each([
+    ['stammdaten', 'stammdaten'],
+    ['lose', 'lose'],
+    ['eligCard', 'eignung'],
+    ['risks', 'risiken'],
+    ['drafts', 'entwuerfe'],
+    ['dokumente', 'dokumente'],
+  ] as const)('schickt #%s von der Deal-Seite auf /%s', (hash, area) => {
+    expect(
+      resolveDealRfpHash({
+        hash: `#${hash}`,
+        isRfpDeal: true,
+        current: 'deal-page',
+        dealId: 'deal-1',
+      }),
+    ).toEqual({ href: dealWorkspaceAreaHref('deal-1', area) })
+  })
 
-  it('schickt #ausschreibung ohne Fragment in den Arbeitsbereich', () => {
+  it('schickt #ausschreibung auf den Default-Bereich', () => {
     expect(
       resolveDealRfpHash({
         hash: '#ausschreibung',
@@ -108,10 +122,10 @@ describe('resolveDealRfpHash', () => {
         current: 'deal-page',
         dealId: 'deal-1',
       }),
-    ).toEqual({ href: dealWorkspaceHref('deal-1') })
+    ).toEqual({ href: dealWorkspaceLandingHref('deal-1') })
   })
 
-  it('schickt #notice-hero in den Arbeitsbereich', () => {
+  it('schickt #notice-hero auf den Steckbrief', () => {
     expect(
       resolveDealRfpHash({
         hash: '#notice-hero',
@@ -119,7 +133,7 @@ describe('resolveDealRfpHash', () => {
         current: 'deal-page',
         dealId: 'deal-1',
       }),
-    ).toEqual({ href: `${dealWorkspaceHref('deal-1')}#notice-hero` })
+    ).toEqual({ href: dealWorkspaceAreaHref('deal-1', 'steckbrief') })
   })
 
   it('bleibt ohne RFP-Modus auf der Deal-Seite — keine Schleife', () => {
@@ -133,12 +147,13 @@ describe('resolveDealRfpHash', () => {
     ).toBeNull()
   })
 
-  it('ändert nichts, wenn die Fläche schon stimmt', () => {
+  it('ändert nichts, wenn der Bereich schon stimmt', () => {
     expect(
       resolveDealRfpHash({
         hash: '#drafts',
         isRfpDeal: true,
         current: 'workspace',
+        currentArea: 'entwuerfe',
         dealId: 'deal-1',
       }),
     ).toBeNull()
@@ -150,5 +165,17 @@ describe('resolveDealRfpHash', () => {
         dealId: 'deal-1',
       }),
     ).toBeNull()
+  })
+
+  it('wechselt den Bereich, wenn der Anker auf eine andere Fläche zeigt', () => {
+    expect(
+      resolveDealRfpHash({
+        hash: '#drafts',
+        isRfpDeal: true,
+        current: 'workspace',
+        currentArea: 'dokumente',
+        dealId: 'deal-1',
+      }),
+    ).toEqual({ href: dealWorkspaceAreaHref('deal-1', 'entwuerfe') })
   })
 })

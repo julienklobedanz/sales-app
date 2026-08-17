@@ -45,7 +45,15 @@ export function DealRfpNoticeHero({
     metaParts.length === 0 &&
     briefing.domainTags.length === 0
   ) {
-    return null
+    return (
+      <Card id="notice-hero" className="border-border/80 bg-muted/20">
+        <CardContent className="py-5">
+          <p className="text-sm text-muted-foreground">
+            {COPY.deals.cockpit.steckbriefEmpty}
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
