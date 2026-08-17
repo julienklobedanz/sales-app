@@ -13,7 +13,7 @@ import {
 } from '@/lib/format'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { projectYearFromDates } from '@/lib/references/project-year'
-import { ROUTES } from '@/lib/routes'
+import { referencesReadHref } from '@/lib/references/references-list-view'
 
 import type { ReferenceRow } from '../actions'
 import {
@@ -50,7 +50,7 @@ export function renderReferenceColumnCell(
         <TableDataCell className="min-w-0" style={widthStyle}>
           <TableTitleHoverContent
             title={ref.title}
-            href={ROUTES.references.detail(ref.id)}
+            href={referencesReadHref(ref.id)}
             previewLabel="Projekt-Zusammenfassung"
             previewText={summaryText}
             emptyPreviewText="Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden."

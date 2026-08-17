@@ -8,7 +8,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { resetReferencesAfterCustomerAccessRevoke } from '@/lib/references/reset-after-customer-access-revoke'
-import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { publicPortfolioUnlockCookieName } from '@/lib/public-portfolio-cookie'
 import { log } from '@/lib/observability/logger'
 import { writeAuditLog } from '@/lib/audit/log-audit'
@@ -623,7 +623,7 @@ export async function revokePortfolioAccess(params: {
       details: params.details,
     })
     for (const referenceId of referenceIds) {
-      revalidatePath(ROUTES.references.detail(referenceId))
+      revalidateReferenceInternalPaths(referenceId)
     }
   }
 

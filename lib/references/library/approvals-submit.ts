@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
@@ -243,7 +244,7 @@ export async function submitForApprovalImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.references.detail(id))
+  revalidateReferenceInternalPaths(id)
   revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(id)
   return {

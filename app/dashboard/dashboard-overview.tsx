@@ -6,7 +6,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ReferenceRow } from './actions'
 import { ROUTES } from '@/lib/routes'
-import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
+import {
+  isSalesAppView,
+  userCanCreateReference,
+  userCanEditReference,
+  canManageReferencesAsAdmin,
+} from '@/lib/roles/reference-access'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { deleteReference, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-types'
@@ -49,12 +54,13 @@ import {
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
 import type { ReferenceColumnKey } from './overview/reference-table-column-types'
-import { useReferenceDetailSheet } from './overview/use-reference-detail-sheet'
 import { useReferenceOverviewColumns } from './overview/use-reference-overview-columns'
 import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { toast } from 'sonner'
 import type { OrgDateDisplayFormat } from '@/lib/format'
+import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { referencesReadHref } from '@/lib/references/references-list-view'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
@@ -73,14 +79,6 @@ const InboxReferencesConceptClient = dynamic(
       />
     ),
   },
-)
-
-const ReferenceDetailSheet = dynamic(
-  () =>
-    import('./overview/reference-detail-sheet').then((m) => ({
-      default: m.ReferenceDetailSheet,
-    })),
-  { ssr: false, loading: () => null },
 )
 
 // --- Hauptkomponente ---
@@ -165,23 +163,12 @@ export function DashboardOverview({
   )
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const {
-    selectedRef,
-    setSelectedRef,
-    sheetOpen,
-    setSheetOpen,
-    detailAssets,
-    setDetailAssets,
-    detailAssetsLoading,
-    handleReferenceSheetOpenChange,
-  } = useReferenceDetailSheet()
-  const {
     setComplianceUploadOpen,
     setComplianceBulkUploadOpen,
     setBulkImportOpen,
     setBulkImportGroups,
     addBulkImportFiles,
     setNewRefModalOpen,
-    setShareLinkPopoverRef,
     setBulkDeleteConfirmOpen,
     selectedRefIds,
     setSelectedRefIds,
@@ -375,7 +362,7 @@ export function DashboardOverview({
   }
 
   const openDetail = (ref: ReferenceRow) => {
-    router.push(ROUTES.references.detail(ref.id))
+    router.push(referencesReadHref(ref.id))
   }
 
   const toggleCart = (refId: string, e?: React.MouseEvent) => {
@@ -402,8 +389,6 @@ export function DashboardOverview({
     toast.promise(deleteReference(id), {
       loading: 'Lösche Referenz...',
       success: () => {
-        setSheetOpen(false)
-        setSelectedRef(null)
         router.refresh()
         return 'Referenz erfolgreich gelöscht'
       },
@@ -632,28 +617,20 @@ export function DashboardOverview({
         ) : (
           <InboxReferencesConceptClient
             references={filteredReferences}
-            isAdmin={isSystemAdmin(profile.systemRole)}
+            selectionPool={initialReferences}
+            canEdit={userCanEditReference(
+              profile.functionRole,
+              profile.systemRole,
+              profile.capabilities,
+            )}
+            canDelete={canManageReferencesAsAdmin(profile.systemRole)}
+            isSalesView={salesAppView}
+            orgDateFmt={normalizeOrgDateDisplayFormat(orgDateDisplayFormat)}
             externalContacts={externalContacts}
             variant="embedded"
           />
         )}
       </div>
-
-      <ReferenceDetailSheet
-        open={sheetOpen}
-        onOpenChange={handleReferenceSheetOpenChange}
-        selectedRef={selectedRef}
-        profile={profile}
-        externalContacts={externalContacts}
-        detailAssets={detailAssets}
-        detailAssetsLoading={detailAssetsLoading}
-        setDetailAssets={setDetailAssets}
-        normalizeTagLabel={normalizeTagLabel}
-        onToggleFavorite={handleToggleFavorite}
-        onOpenShareLink={setShareLinkPopoverRef}
-        onDelete={handleDelete}
-        orgDateDisplayFormat={orgDateDisplayFormat}
-      />
 
       {renderDialogs({
         profile,

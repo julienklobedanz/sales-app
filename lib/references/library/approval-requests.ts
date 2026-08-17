@@ -7,6 +7,7 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
+import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { log } from '@/lib/observability/logger'
@@ -134,7 +135,7 @@ export async function reviewRequestImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.references.detail(approval.reference_id))
+  revalidateReferenceInternalPaths(approval.reference_id)
   revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(approval.reference_id)
 }

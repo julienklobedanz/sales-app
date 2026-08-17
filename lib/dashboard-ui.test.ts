@@ -27,7 +27,7 @@ describe('routeExcludesDashboardContentPadding', () => {
 
 describe('detailRouteNeedsBottomPadding', () => {
   it('true for evidence and deal detail, not new/list', () => {
-    expect(detailRouteNeedsBottomPadding(ROUTES.references.detail('abc'))).toBe(true)
+    expect(detailRouteNeedsBottomPadding(ROUTES.references.detail('abc'))).toBe(false)
     expect(detailRouteNeedsBottomPadding(ROUTES.references.edit('abc'))).toBe(true)
     expect(detailRouteNeedsBottomPadding(ROUTES.references.new)).toBe(false)
     expect(detailRouteNeedsBottomPadding(ROUTES.references.root)).toBe(false)

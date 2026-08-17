@@ -9,8 +9,15 @@ const storageKey = (referenceId: string) => `refstack:reference_viewed:${referen
  * Ein `reference_viewed` pro Browser-Tab-Session und Referenz (kein Doppelzähler bei
  * React Strict Mode oder Reload).
  */
-export function ReferenceViewedTracker({ referenceId }: { referenceId: string }) {
+export function ReferenceViewedTracker({
+  referenceId,
+  enabled = true,
+}: {
+  referenceId: string
+  enabled?: boolean
+}) {
   useEffect(() => {
+    if (!enabled) return
     try {
       const key = storageKey(referenceId)
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) return
@@ -19,7 +26,7 @@ export function ReferenceViewedTracker({ referenceId }: { referenceId: string })
       // sessionStorage nicht verfügbar
     }
     void logReferenceViewed(referenceId)
-  }, [referenceId])
+  }, [referenceId, enabled])
 
   return null
 }
