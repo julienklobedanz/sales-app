@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { dealWorkspaceLandingHref } from '@/lib/deals/deal-workspace-href'
 import { COPY } from '@/lib/copy'
 
 import { setDealRfpMode } from '../actions'
@@ -23,7 +24,7 @@ export function DealCockpitPromoteCard({ dealId }: { dealId: string }) {
         return
       }
       toast.success('Deal als Ausschreibung markiert.')
-      router.refresh()
+      router.push(dealWorkspaceLandingHref(dealId))
     } finally {
       setPending(false)
     }

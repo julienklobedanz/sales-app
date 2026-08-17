@@ -12,7 +12,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Collapsible,
   CollapsibleContent,
@@ -81,7 +81,7 @@ function DeadlineTimelineMarker({
       <div
         className={cn(
           'z-[1] size-2.5 shrink-0 rounded-full border-2 bg-background ring-2 ring-card',
-          tone === 'past' && 'border-destructive/70 bg-destructive/15',
+          tone === 'past' && 'border-muted-foreground/40 bg-muted',
           tone === 'today' && 'border-amber-500 bg-amber-400/30',
           tone === 'future' && 'border-primary/60 bg-primary/10',
         )}
@@ -104,16 +104,13 @@ export function DealDeadlinesCard({
   dealTitle,
   deadlines,
   orgDateDisplayFormat = 'de-DE',
-  showMilestoneChipsAbove = false,
 }: {
   dealId: string
   dealTitle: string
   deadlines: DealDeadlineRow[]
   orgDateDisplayFormat?: OrgDateDisplayFormat
-  /** Wenn Chips unter dem Header stehen, kompakte eingeklappte Card. */
-  showMilestoneChipsAbove?: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<DealDeadlineRow | null>(null)
 
@@ -130,12 +127,7 @@ export function DealDeadlinesCard({
   const headline = next
     ? formatNextDeadlineHeadline(next, { dateDisplayFormat: orgDateDisplayFormat })
     : null
-  const activeCount = sorted.filter((d) => !d.suppressed_at).length
   const exportableForIcs = useMemo(() => dealDeadlinesExportableForIcs(sorted), [sorted])
-  const collapsedAllTitle =
-    activeCount > 0
-      ? `${COPY.deals.cockpit.deadlinesAllTitle} · ${activeCount}`
-      : COPY.deals.cockpit.deadlinesEmpty
 
   function handleDownloadIcs() {
     if (exportableForIcs.length === 0) {
@@ -162,16 +154,7 @@ export function DealDeadlinesCard({
                   className={`shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
                 />
                 <div className="min-w-0">
-                  {showMilestoneChipsAbove ? (
-                    <CardTitle
-                      className={cn(
-                        'text-base',
-                        activeCount === 0 && 'font-normal text-muted-foreground',
-                      )}
-                    >
-                      {collapsedAllTitle}
-                    </CardTitle>
-                  ) : headline ? (
+                  {headline ? (
                     <>
                       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {COPY.deals.cockpit.nextDeadlineLabel}
@@ -252,8 +235,13 @@ export function DealDeadlinesCard({
                         tone={deadlineMarkerTone(d)}
                       />
                       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 border-b border-dashed border-border/80 py-3 last:border-b-0">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium">{rowParts.labelDate}</div>
+                      <div
+                        className={cn(
+                          'min-w-0 flex-1',
+                          deadlineMarkerTone(d) === 'past' && 'opacity-60',
+                        )}
+                      >
+                        <div className="text-sm font-medium">{rowParts.labelDate}</div>
                           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                             <Badge variant="outline" className="text-[10px]">
                               {d.source === 'manual' ? 'Manuell' : 'RFP'}

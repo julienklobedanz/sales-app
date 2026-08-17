@@ -33,8 +33,11 @@ describe('detailRouteNeedsBottomPadding', () => {
     expect(detailRouteNeedsBottomPadding(ROUTES.references.root)).toBe(false)
   })
 
-  it('true for deal detail, false for request/new', () => {
+  it('true for deal detail and workspace, false for request/new', () => {
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc')).toBe(true)
+    expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc/ausschreibung')).toBe(
+      true,
+    )
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/new')).toBe(false)
     expect(detailRouteNeedsBottomPadding('/dashboard/deals/request/new')).toBe(false)
   })

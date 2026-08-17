@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { ROUTES } from '@/lib/routes'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
@@ -167,7 +168,7 @@ export async function setDealRfpModeImpl(
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath(ROUTES.deals.detail(dealId))
+  revalidateDealWorkspacePaths(dealId)
   return { success: true }
 }
 

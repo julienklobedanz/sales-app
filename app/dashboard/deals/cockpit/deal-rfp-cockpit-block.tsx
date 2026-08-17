@@ -12,7 +12,6 @@ import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-
 import { DealRfpAusschreibungNav } from './deal-rfp-ausschreibung-nav'
 import { DealRfpDraftsSection } from './deal-rfp-drafts-section'
 import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
-import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
 import { DealRfpRisksSection } from './deal-rfp-risks-section'
 import { DealRfpStammdatenSection } from './deal-rfp-stammdaten-section'
 import { DealDocumentsSection } from './deal-documents-section'
@@ -102,12 +101,6 @@ export async function DealRfpCockpitBlock({
         </Card>
       ) : (
         <>
-          <DealRfpRecommendationBanner
-            data={data}
-            dealId={dealId}
-            documents={documents}
-            canManage={canManageDocuments}
-          />
           <DealRfpStammdatenSection data={data} />
           <DealRfpLotsSection lots={data.tenderLots} />
           <DealRfpEligibilitySection data={data} />

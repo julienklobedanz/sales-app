@@ -5,6 +5,7 @@ import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
+import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
 import { extractRfpPlainTextFromFile } from '@/lib/document-text'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -286,6 +287,8 @@ export async function POST(req: NextRequest) {
     organizationId: orgId,
     timelineItems: analyzed.snapshot.timelineItems ?? [],
   })
+
+  revalidateDealWorkspacePaths(dealId)
 
   return NextResponse.json({
     success: true,

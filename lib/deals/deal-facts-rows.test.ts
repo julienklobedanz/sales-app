@@ -55,6 +55,12 @@ describe('buildDealFactRows', () => {
     expect(link?.href).toContain('12345')
   })
 
+  it('omits identity fields that live in the header', () => {
+    const rows = buildDealFactRows(base)
+    expect(rows.some((r) => r.label === 'Account')).toBe(false)
+    expect(rows.some((r) => r.label === 'Volumen')).toBe(false)
+  })
+
   it('omits empty placeholder rows', () => {
     const rows = buildDealFactRows({
       company_name: 'Apple',
@@ -64,6 +70,6 @@ describe('buildDealFactRows', () => {
       account_manager_name: null,
       sales_manager_name: 'Sam Sales',
     })
-    expect(rows.map((r) => r.label)).toEqual(['Account', COPY.roles.salesManager])
+    expect(rows.map((r) => r.label)).toEqual([COPY.roles.salesManager])
   })
 })
