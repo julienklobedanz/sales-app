@@ -64,6 +64,6 @@ export async function updateDealRfpDraftAnswer(params: {
 
   if (updateError) return { success: false, error: updateError.message }
 
-  revalidateDealWorkspacePaths(dealId)
+  revalidateDealWorkspacePaths(dealId, 'entwuerfe')
   return { success: true }
 }

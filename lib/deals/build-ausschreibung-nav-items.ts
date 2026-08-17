@@ -1,13 +1,29 @@
 import { COPY } from '@/lib/copy'
+import type { DealWorkspaceArea } from '@/lib/deals/deal-workspace-areas'
+import { dealWorkspaceAreaHref } from '@/lib/deals/deal-workspace-href'
 
 export type AusschreibungNavItem = {
-  id: string
+  id: DealWorkspaceArea
   href: string
   label: string
   count?: string | null
 }
 
+/**
+ * Unterschiedliche Zählweise, absichtlich:
+ * Dokumente zeigen immer eine Zahl, auch 0: Ohne Dokument passiert im
+ * Arbeitsbereich nichts, die 0 ist der Handlungsaufruf.
+ * Alle anderen Bereiche zeigen bei 0 keine Zahl: „nichts gefunden“ ist kein
+ * Aufruf, sondern Rauschen.
+ * §10.7: Die Zahlen zeigen, wo Arbeit liegt — nicht, dass überall eine steht.
+ */
+function countOrNull(value: number): string | null {
+  return value > 0 ? String(value) : null
+}
+
 export function buildAusschreibungNavItems(input: {
+  dealId: string
+  documentCount: number
   stammdatenCount: number
   eligibilityCount: number
   risksCount: number
@@ -16,49 +32,57 @@ export function buildAusschreibungNavItems(input: {
   lotsCount?: number
   showAnalysisLinks: boolean
 }): AusschreibungNavItem[] {
-  const items: AusschreibungNavItem[] = [
+  const href = (area: DealWorkspaceArea) =>
+    dealWorkspaceAreaHref(input.dealId, area)
+
+  const dokumente: AusschreibungNavItem = {
+    id: 'dokumente',
+    href: href('dokumente'),
+    label: COPY.deals.cockpit.ausschreibungNavDokumente,
+    count: String(input.documentCount), // immer, auch 0 — siehe countOrNull
+  }
+
+  if (!input.showAnalysisLinks) return [dokumente]
+
+  return [
     {
-      id: 'dokumente',
-      href: '#dokumente',
-      label: COPY.deals.cockpit.ausschreibungNavDokumente,
+      id: 'steckbrief',
+      href: href('steckbrief'),
+      label: COPY.deals.cockpit.ausschreibungNavSteckbrief,
     },
-  ]
-
-  if (!input.showAnalysisLinks) return items
-
-  items.push(
-    { id: 'urteil', href: '#urteil', label: COPY.deals.cockpit.ausschreibungNavUrteil },
+    dokumente,
     {
       id: 'stammdaten',
-      href: '#stammdaten',
+      href: href('stammdaten'),
       label: COPY.deals.cockpit.ausschreibungNavStammdaten,
-      count: input.stammdatenCount > 0 ? String(input.stammdatenCount) : null,
+      count: countOrNull(input.stammdatenCount),
     },
     {
       id: 'lose',
-      href: '#lose',
+      href: href('lose'),
       label: COPY.deals.cockpit.ausschreibungNavLose,
-      count: (input.lotsCount ?? 0) > 0 ? String(input.lotsCount) : null,
+      count: countOrNull(input.lotsCount ?? 0),
     },
     {
-      id: 'eligCard',
-      href: '#eligCard',
+      id: 'eignung',
+      href: href('eignung'),
       label: COPY.deals.cockpit.ausschreibungNavEignung,
-      count: input.eligibilityCount > 0 ? String(input.eligibilityCount) : null,
+      count: countOrNull(input.eligibilityCount),
     },
     {
-      id: 'risks',
-      href: '#risks',
+      id: 'risiken',
+      href: href('risiken'),
       label: COPY.deals.cockpit.ausschreibungNavRisiken,
-      count: input.risksCount > 0 ? String(input.risksCount) : null,
+      count: countOrNull(input.risksCount),
     },
     {
-      id: 'drafts',
-      href: '#drafts',
+      id: 'entwuerfe',
+      href: href('entwuerfe'),
       label: COPY.deals.cockpit.ausschreibungNavDrafts,
-      count: input.draftsTotal > 0 ? `${input.draftsCovered}/${input.draftsTotal}` : null,
+      count:
+        input.draftsTotal > 0
+          ? `${input.draftsCovered}/${input.draftsTotal}`
+          : null,
     },
-  )
-
-  return items
+  ]
 }

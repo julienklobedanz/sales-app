@@ -12,11 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
 import { AiDraftSheet } from '@/app/dashboard/deals/components/ai-draft-sheet'
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
@@ -34,8 +29,6 @@ import { cn } from '@/lib/utils'
 import { updateDealRfpDraftAnswer } from './deal-rfp-draft-actions'
 
 export { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
-
-const VISIBLE_DRAFTS_DEFAULT = 5
 
 export function draftStatusLabel(status: 'ready' | 'draft' | 'gap'): string {
   if (status === 'ready') return COPY.deals.cockpit.draftsStatusReady
@@ -74,8 +67,6 @@ export function DealRfpDraftsSection({
 }) {
   const showSection = data.hasAnalysis && !data.isStale
   const [rows, setRows] = useState(data.draftRows)
-  const [sectionExpanded, setSectionExpanded] = useState(false)
-  const [showAllDrafts, setShowAllDrafts] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftText, setDraftText] = useState('')
@@ -88,10 +79,6 @@ export function DealRfpDraftsSection({
   }, [data.draftRows])
 
   const sortedRows = useMemo(() => sortDraftRowsByCriticality(rows), [rows])
-  const visibleRows = useMemo(
-    () => (showAllDrafts ? sortedRows : sortedRows.slice(0, VISIBLE_DRAFTS_DEFAULT)),
-    [showAllDrafts, sortedRows],
-  )
 
   if (!showSection) return null
 
@@ -180,48 +167,20 @@ export function DealRfpDraftsSection({
   return (
     <>
       <Card id="drafts" className="scroll-mt-24 shadow-sm">
-        <Collapsible
-          open={sectionExpanded}
-          onOpenChange={(open) => {
-            setSectionExpanded(open)
-            if (!open) {
-              setShowAllDrafts(false)
-              setExpandedId(null)
-              setEditingId(null)
-            }
-          }}
-        >
-          <CardHeader className="pb-3">
-            <CollapsibleTrigger asChild>
-              <button type="button" className="flex w-full items-start gap-2 text-left">
-                <AppIcon
-                  icon={ArrowRight01Icon}
-                  size={16}
-                  className={cn(
-                    'mt-0.5 shrink-0 text-muted-foreground transition-transform',
-                    sectionExpanded && 'rotate-90',
-                  )}
-                />
-                <div className="min-w-0">
-                  <CardTitle className="text-base">{sectionTitle}</CardTitle>
-                  {sectionExpanded ? (
-                    <CardDescription className="mt-1">
-                      {coveredLabel}
-                      {gapsLabel ? ` · ${gapsLabel}` : ''}
-                    </CardDescription>
-                  ) : null}
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="relative p-0">
-              <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-red-500/[0.06] via-amber-500/[0.04] to-emerald-500/[0.06]"
-                aria-hidden
-              />
-              <ul className="relative divide-y divide-border/60">
-                {visibleRows.map((row) => {
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{sectionTitle}</CardTitle>
+          <CardDescription>
+            {coveredLabel}
+            {gapsLabel ? ` · ${gapsLabel}` : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="relative p-0">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-red-500/[0.06] via-amber-500/[0.04] to-emerald-500/[0.06]"
+            aria-hidden
+          />
+          <ul className="relative divide-y divide-border/60">
+            {sortedRows.map((row) => {
                   const status = draftRowStatus(row)
                   const expanded = expandedId === row.id
                   const editing = editingId === row.id
@@ -365,28 +324,8 @@ export function DealRfpDraftsSection({
                     </li>
                   )
                 })}
-              </ul>
-              {sortedRows.length > VISIBLE_DRAFTS_DEFAULT ? (
-                <div className="relative border-t border-border/60 px-4 py-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowAllDrafts((v) => !v)}
-                  >
-                    {showAllDrafts
-                      ? COPY.deals.cockpit.draftsShowFewer
-                      : COPY.deals.cockpit.draftsShowAll.replace(
-                          '{count}',
-                          String(sortedRows.length),
-                        )}
-                  </Button>
-                </div>
-              ) : null}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
+          </ul>
+        </CardContent>
       </Card>
 
       {activeKi ? (

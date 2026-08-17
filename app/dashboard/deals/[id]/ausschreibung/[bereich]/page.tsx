@@ -1,0 +1,111 @@
+import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
+
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
+import {
+  isDealWorkspaceArea,
+  type DealWorkspaceArea,
+} from '@/lib/deals/deal-workspace-areas'
+import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
+import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
+
+import { DealRfpCockpitSkeleton } from '../../../cockpit/deal-rfp-cockpit-skeleton'
+import { DealWorkspaceLayout } from '../../../cockpit/deal-workspace-layout'
+import { DealWorkspaceAreaContent } from '../../../cockpit/deal-workspace-area-content'
+import { loadDealWorkspaceContext } from '../load-deal-workspace-context'
+
+export default function DealWorkspaceAreaPage({
+  params,
+}: {
+  params: Promise<{ id: string; bereich: string }>
+}) {
+  return (
+    <Suspense fallback={<DealDetailSkeleton />}>
+      <DealWorkspaceAreaPageContent params={params} />
+    </Suspense>
+  )
+}
+
+async function DealWorkspaceAreaPageContent({
+  params,
+}: {
+  params: Promise<{ id: string; bereich: string }>
+}) {
+  const { id, bereich } = await params
+  if (!isDealWorkspaceArea(bereich)) notFound()
+
+  const { orgId, deal, canManageDocuments, documents } =
+    await loadDealWorkspaceContext(id)
+
+  return (
+    <Suspense fallback={<DealRfpCockpitSkeleton />}>
+      <DealWorkspaceAreaLoaded
+        dealId={id}
+        orgId={orgId}
+        deal={deal}
+        documents={documents}
+        canManageDocuments={canManageDocuments}
+        area={bereich}
+      />
+    </Suspense>
+  )
+}
+
+async function DealWorkspaceAreaLoaded({
+  dealId,
+  orgId,
+  deal,
+  documents,
+  canManageDocuments,
+  area,
+}: {
+  dealId: string
+  orgId: string
+  deal: Awaited<ReturnType<typeof loadDealWorkspaceContext>>['deal']
+  documents: Awaited<ReturnType<typeof loadDealWorkspaceContext>>['documents']
+  canManageDocuments: boolean
+  area: DealWorkspaceArea
+}) {
+  const supabase = await createServerSupabaseClient()
+  const data = await loadDealRfpCockpitData(supabase, orgId, dealId, {
+    title: deal.title,
+    industry: deal.industry,
+    volume: deal.volume,
+  })
+
+  const draftsCovered = data
+    ? data.draftRows.filter((row) => Boolean(row.reference)).length
+    : 0
+  const risksCount = data?.risks
+    ? data.risks.redFlags.length + data.risks.smeOpenCount
+    : 0
+
+  return (
+    <DealWorkspaceLayout
+      dealId={dealId}
+      dealTitle={deal.title}
+      currentArea={area}
+      items={buildAusschreibungNavItems({
+        dealId,
+        documentCount: documents.length,
+        stammdatenCount: data?.stammdatenRows.length ?? 0,
+        eligibilityCount: data?.eligibilityAssessment?.criteria.length ?? 0,
+        risksCount,
+        draftsCovered,
+        draftsTotal: data?.draftRows.length ?? 0,
+        lotsCount: data?.tenderLots.length ?? 0,
+        showAnalysisLinks: Boolean(data),
+      })}
+    >
+      <DealWorkspaceAreaContent
+        area={area}
+        dealId={dealId}
+        deal={deal}
+        documents={documents}
+        canManageDocuments={canManageDocuments}
+        data={data}
+      />
+    </DealWorkspaceLayout>
+  )
+}
