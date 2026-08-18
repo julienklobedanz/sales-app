@@ -135,7 +135,7 @@ export function CommandCenter({ greetingName }: Props) {
 
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-white py-3.5 pl-3 pr-4 shadow-md transition-all focus-within:border-border focus-within:ring-2 focus-within:ring-slate-950/10">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-border bg-card py-3.5 pl-3 pr-4 shadow-md transition-all focus-within:border-border focus-within:ring-2 focus-within:ring-slate-950/10">
               <Search className="ml-1 size-5 shrink-0 text-muted-foreground" aria-hidden />
               <input
                 ref={inputRef}

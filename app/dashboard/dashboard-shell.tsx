@@ -42,7 +42,7 @@ function MobileMenuButton() {
       type="button"
       variant="outline"
       size="icon"
-      className="fixed left-4 top-4 z-40 size-9 bg-white shadow-sm md:hidden"
+      className="fixed left-4 top-4 z-40 size-9 bg-card shadow-sm md:hidden"
       onClick={() => setOpenMobile(true)}
       aria-label="Menü öffnen"
     >

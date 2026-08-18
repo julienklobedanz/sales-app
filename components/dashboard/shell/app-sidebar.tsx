@@ -170,7 +170,10 @@ function DealsNavSection({
           }}
         >
           <ChevronDown
-            className={cn('size-4 transition-transform duration-150', open && 'rotate-180')}
+            className={cn(
+              'size-4 transition-transform duration-150',
+              open && 'rotate-180',
+            )}
           />
         </button>
       </div>
@@ -178,7 +181,9 @@ function DealsNavSection({
       {open ? (
         <ul className="ml-3 space-y-0.5 border-l border-border/60 py-0.5 pl-2">
           {mySidebarDeals.length === 0 ? (
-            <li className="px-2 py-1.5 text-xs text-muted-foreground">{COPY.nav.dealsMineEmpty}</li>
+            <li className="px-2 py-1.5 text-xs text-muted-foreground">
+              {COPY.nav.dealsMineEmpty}
+            </li>
           ) : (
             mySidebarDeals.map((deal) => {
               const active = pathname === deal.href
@@ -192,7 +197,9 @@ function DealsNavSection({
                       active && 'shell-nav-subitem-active',
                     )}
                     title={
-                      deal.companyName ? `${deal.title} · ${deal.companyName}` : deal.title
+                      deal.companyName
+                        ? `${deal.title} · ${deal.companyName}`
+                        : deal.title
                     }
                   >
                     <span className="truncate">{deal.title}</span>
@@ -292,7 +299,7 @@ export function AppSidebar({
       >
         {!collapsed ? (
           <Link href={ROUTES.home} className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--shell-nav-active-border)] text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--shell-nav-active-border)] text-primary-foreground">
               <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
             </div>
             <span className="truncate text-sm font-semibold tracking-tight text-[#2D1B4E]">

@@ -47,7 +47,7 @@ export function TableBulkActionsBar({
       role="region"
       aria-label="Bulk-Aktionen"
     >
-      <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-border bg-white p-3 shadow-lg">
+      <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-border bg-card p-3 shadow-lg">
         <p className="px-2 text-sm font-medium text-muted-foreground">
           {selectedCount} ausgewählt
         </p>

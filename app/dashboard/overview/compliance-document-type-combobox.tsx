@@ -123,7 +123,7 @@ export function ComplianceDocumentTypeCombobox({
                 : 'Dokumenttypen werden geladen…'
             }
             disabled={disabled}
-            className="h-10 rounded-lg border bg-white pr-9 shadow-sm"
+            className="h-10 rounded-lg border bg-card pr-9 shadow-sm"
             autoComplete="off"
             aria-expanded={open}
             aria-haspopup="listbox"

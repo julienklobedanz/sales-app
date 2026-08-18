@@ -202,7 +202,7 @@ export function DealRfpRecommendationBanner({
           </div>
 
           {showEngineMetrics ? (
-            <div className="grid grid-cols-3 gap-3 border-t border-black/5 pt-3 dark:border-white/10">
+            <div className="grid grid-cols-3 gap-3 border-t border-border pt-3">
               <CompactMetric
                 label={COPY.deals.cockpit.metricAngebotsReife}
                 value={reifeValue}

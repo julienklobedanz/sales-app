@@ -50,7 +50,7 @@ export function AccountsMoreFiltersMenu(props: {
           type="button"
           variant="outline"
           size="toolbar"
-          className={cn('w-full bg-white', active && 'border-primary/40 text-primary')}
+          className={cn('w-full bg-card', active && 'border-primary/40 text-primary')}
         >
           {COPY.dashboard.moreFilters}
         </Button>

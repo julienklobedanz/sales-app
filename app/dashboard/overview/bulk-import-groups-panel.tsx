@@ -70,8 +70,8 @@ export function BulkImportGroupsPanel({
   handleDocumentsDrop: (event: DragEvent<HTMLDivElement>, toGroupId: string) => void
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-white">
-      <div className="flex shrink-0 gap-3 border-b border-border bg-white px-3 py-2">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex shrink-0 gap-3 border-b border-border bg-card px-3 py-2">
         <div className="size-4 shrink-0" aria-hidden />
         <div className={cn(BULK_IMPORT_ROW_GRID_CLASS, BULK_IMPORT_HEADER_CLASS)}>
           <span>Kunde</span>
@@ -80,7 +80,7 @@ export function BulkImportGroupsPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-card">
         {groups.map((group) => {
           const previewPending = isGroupPreviewPending(group)
           const suspiciousTitle = isSuspiciousBulkImportProjectName(group.projectName)
@@ -89,7 +89,7 @@ export function BulkImportGroupsPanel({
           return (
             <div
               key={group.id}
-              className="flex items-center gap-3 border-b border-border bg-white px-3 py-2.5 last:border-b-0"
+              className="flex items-center gap-3 border-b border-border bg-card px-3 py-2.5 last:border-b-0"
             >
               <Checkbox
                 className="self-center"

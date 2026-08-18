@@ -23,7 +23,7 @@ export function MatchResultSkeleton({ count = 4 }: { count?: number }) {
 export function CommandCenterResultsSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Suche läuft">
-      <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="border-b border-border bg-muted/50 px-4 py-2">
           <div className="h-3 w-32 animate-pulse rounded bg-accent" />
         </div>
@@ -36,7 +36,7 @@ export function CommandCenterResultsSkeleton() {
           ))}
         </div>
       </section>
-      <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="border-b border-border bg-muted/50 px-4 py-2">
           <div className="h-3 w-28 animate-pulse rounded bg-accent" />
         </div>

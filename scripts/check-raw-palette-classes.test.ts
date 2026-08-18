@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   countPaletteHits,
+  countWhiteBlackHits,
   isExcludedPath,
+  isWhiteBlackAllowlisted,
   zoneFor,
 } from './check-raw-palette-classes.mjs'
 
@@ -26,7 +28,34 @@ describe('isExcludedPath', () => {
 describe('countPaletteHits', () => {
   it('counts family-NNN tokens and ignores semantic utilities', () => {
     expect(countPaletteHits('bg-slate-50 text-red-600 from-emerald-500/[0.06]')).toBe(3)
-    expect(countPaletteHits('text-muted-foreground bg-status-success border-border')).toBe(0)
+    expect(
+      countPaletteHits('text-muted-foreground bg-status-success border-border'),
+    ).toBe(0)
+  })
+})
+
+describe('countWhiteBlackHits', () => {
+  it('counts white/black utilities including opacity modifiers', () => {
+    expect(countWhiteBlackHits('bg-white text-white bg-black/60 border-white/10')).toBe(4)
+  })
+
+  it('ignores semantic tokens', () => {
+    expect(
+      countWhiteBlackHits(
+        'bg-card bg-background text-primary-foreground text-destructive-foreground text-status-success-foreground',
+      ),
+    ).toBe(0)
+  })
+})
+
+describe('isWhiteBlackAllowlisted', () => {
+  it('allows brand panel, QR well, and leftover raw-palette text-white', () => {
+    expect(isWhiteBlackAllowlisted('components/auth-brand-panel.tsx')).toBe(true)
+    expect(
+      isWhiteBlackAllowlisted('components/dashboard/settings-totp-mfa-card.tsx'),
+    ).toBe(true)
+    expect(isWhiteBlackAllowlisted('app/onboarding/steps/workspace-step.tsx')).toBe(true)
+    expect(isWhiteBlackAllowlisted('lib/ui/status-tone.ts')).toBe(false)
   })
 })
 

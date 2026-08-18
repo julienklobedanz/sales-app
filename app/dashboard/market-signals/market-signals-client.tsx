@@ -266,7 +266,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 <button
                   type="button"
                   aria-label={COPY.marketSignals.filterAccount}
-                  className="flex h-10 w-[200px] shrink-0 items-center justify-between gap-2 rounded-lg border border-input bg-white px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] hover:bg-white focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="flex h-10 w-[200px] shrink-0 items-center justify-between gap-2 rounded-lg border border-input bg-card px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] hover:bg-card focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   <span className="min-w-0 truncate text-left">
                     {selectedAccountName}

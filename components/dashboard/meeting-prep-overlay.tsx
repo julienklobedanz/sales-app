@@ -52,7 +52,7 @@ export function MeetingPrepOverlayDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="flex max-h-[min(90vh,720px)] max-w-3xl flex-col gap-0 overflow-hidden p-0"
-        overlayClassName="bg-black/60"
+        overlayClassName="bg-foreground/60"
         showCloseButton
       >
         <DialogHeader className="border-b border-border px-6 py-4 text-left">
@@ -259,7 +259,7 @@ export function MeetingPrepCompanyPicker({
   const c = COPY.accounts.lens.briefing
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent className="sm:max-w-md" overlayClassName="bg-black/60">
+      <DialogContent className="sm:max-w-md" overlayClassName="bg-foreground/60">
         <DialogHeader>
           <DialogTitle>{c.pickAccountTitle}</DialogTitle>
           <DialogDescription>{c.pickAccountDescription}</DialogDescription>
