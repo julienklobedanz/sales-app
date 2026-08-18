@@ -56,6 +56,9 @@
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.9",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -63,6 +66,7 @@
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "happy-dom": "^20.11.2",
     "knip": "^6.31.0",
     "prettier": "^3.6.2",
     "shadcn": "^4.1.1",
