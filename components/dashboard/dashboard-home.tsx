@@ -35,7 +35,7 @@ type StepDef = {
 const STEPS: StepDef[] = [
   {
     id: 'hasAccounts',
-    label: '1. Zielkunden importieren: Verbinde dein CRM oder lege Accounts manuell an.',
+    label: '1. Zielkunden anlegen: Lege Accounts manuell an oder importiere sie.',
     href: ROUTES.accounts,
   },
   {
@@ -158,7 +158,9 @@ export function DashboardHome({
               startDemoTransition(async () => {
                 const result = await deleteDemoSeedAction()
                 if (!result.success) {
-                  toast.error(result.error ?? 'Beispieldaten konnten nicht gelöscht werden.')
+                  toast.error(
+                    result.error ?? 'Beispieldaten konnten nicht gelöscht werden.',
+                  )
                   return
                 }
                 toast.success('Beispieldaten entfernt.')

@@ -11,7 +11,6 @@ import { StickySaveBar } from './sticky-save-bar'
 import { ProfileTab } from './tabs/profile-tab'
 import { WorkspaceTab } from './tabs/workspace-tab'
 import { AdminTab } from './tabs/admin-tab'
-import { IntegrationsTab } from './tabs/integrations-tab'
 import { WorkflowTab } from './tabs/workflow-tab'
 import type {
   RegisterSettingsTab,
@@ -27,7 +26,6 @@ export function SettingsTabs({
   org,
   teamMembers,
   auditLogs,
-  hubspotIntegration,
   rolesPermissions,
 }: {
   devRolePreviewEnabled?: boolean
@@ -105,13 +103,6 @@ export function SettingsTabs({
     timestamp: string
     user_id: string | null
   }>
-  hubspotIntegration?: {
-    configured: boolean
-    connected: boolean
-    canManage: boolean
-    externalAccountId: string | null
-    lastSyncAt: string | null
-  }
   rolesPermissions: RolesPermissionsSettings
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile')
@@ -189,7 +180,6 @@ export function SettingsTabs({
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="profile">Persönlich</TabsTrigger>
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
-        <TabsTrigger value="integrations">Verbindungen</TabsTrigger>
         <TabsTrigger value="process">Prozess</TabsTrigger>
       </TabsList>
 
@@ -203,7 +193,6 @@ export function SettingsTabs({
         rolesPermissions={rolesPermissions}
         register={registerTab}
       />
-      <IntegrationsTab hubspotIntegration={hubspotIntegration} />
       {/* Same tab value: both panels render under Prozess */}
       <WorkflowTab org={org} register={registerTab} />
       <AdminTab

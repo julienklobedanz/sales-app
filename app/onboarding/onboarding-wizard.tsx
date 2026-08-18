@@ -1,12 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { OnboardingShell, type OnboardingTransition } from './components/onboarding-shell'
 import { WorkspaceStep, type WorkspaceStepValue } from './steps/workspace-step'
-import { CrmConnectStep } from './steps/crm-connect-step'
 import {
   TeamStep,
   type TeamInviteRow,
@@ -32,18 +31,15 @@ export function OnboardingWizard({
   inviteOrganizationName,
   initialFullName,
   userEmail,
-  hubspotConfigured,
   hasOrganization,
 }: {
   inviteToken: string | null
   inviteOrganizationName: string | null
   initialFullName: string
   userEmail: string
-  hubspotConfigured: boolean
   hasOrganization: boolean
 }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const isInvite = Boolean(inviteToken && inviteOrganizationName)
 
   const nameParts = splitFullName(initialFullName)
@@ -69,31 +65,6 @@ export function OnboardingWizard({
 
   const stepMeta = ONBOARDING_STEP_META[step] ?? ONBOARDING_STEP_META[0]
   const brandMeta = ONBOARDING_BRAND_META[step] ?? ONBOARDING_BRAND_META[0]
-
-  React.useEffect(() => {
-    const connected = searchParams.get('crm_connected')
-    const provider = searchParams.get('crm_provider')
-    if (connected === 'success' && provider === 'hubspot') {
-      toast.success('HubSpot erfolgreich verbunden.')
-      if (workspaceCompleted) setStep(1)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      const query = params.toString()
-      router.replace(query ? `${ROUTES.onboarding}?${query}` : ROUTES.onboarding, {
-        scroll: false,
-      })
-    } else if (connected === 'error' && provider === 'hubspot') {
-      toast.error('HubSpot-Verbindung fehlgeschlagen.')
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      const query = params.toString()
-      router.replace(query ? `${ROUTES.onboarding}?${query}` : ROUTES.onboarding, {
-        scroll: false,
-      })
-    }
-  }, [searchParams, router, workspaceCompleted])
 
   const runTransition = React.useCallback(
     (mode: 'forward' | 'complete', nextStep: number | null, after?: () => void) => {
@@ -130,7 +101,7 @@ export function OnboardingWizard({
     if (nextStep > 0 && !workspaceCompleted) return
     if (nextStep === step) return
 
-    if (step === 2 && nextStep < 2) {
+    if (step === 1 && nextStep < 1) {
       setInvites((current) => normalizeTeamInvitesOnBack(current))
     }
 
@@ -253,13 +224,6 @@ export function OnboardingWizard({
       ) : null}
 
       {step === 1 ? (
-        <CrmConnectStep
-          hubspotConfigured={hubspotConfigured}
-          onSkip={() => runTransition('forward', 2)}
-        />
-      ) : null}
-
-      {step === 2 ? (
         <TeamStep
           invites={invites}
           onChange={setInvites}

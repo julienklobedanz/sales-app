@@ -25,11 +25,6 @@ import {
 import { isContractEndWithinWarningWindow } from '@/lib/accounts/contract-end'
 import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
 import { syncComputedAccountStatuses } from '@/lib/accounts/sync-computed-account-statuses'
-import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
-import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
-import { syncHubSpotWonDealsForOrganization } from '@/lib/crm/sync-hubspot-won-deals'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 type CompanyRow = {
   id: string
@@ -45,7 +40,6 @@ type CompanyRow = {
   linked_account_id?: string | null
   account_status?: string | null
   account_status_source?: string | null
-  crm_account_id?: string | null
 }
 
 export default async function AccountsPage({
@@ -72,7 +66,7 @@ export default async function AccountsPage({
   if (!orgId) redirect(ROUTES.onboarding)
 
   const extendedSelect =
-    'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id'
+    'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, account_status_source'
 
   let companies: CompanyRow[] | null = null
 
@@ -92,7 +86,7 @@ export default async function AccountsPage({
       const withFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, account_status, crm_account_id',
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, account_status',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -113,7 +107,6 @@ export default async function AccountsPage({
           linked_account_id: null,
           account_status: null,
           account_status_source: null,
-          crm_account_id: null,
         }))
       } else {
         companies = (withFav.data ?? []).map((c) => ({
@@ -128,7 +121,7 @@ export default async function AccountsPage({
       const withoutFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id',
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id, account_status, account_status_source',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -137,7 +130,7 @@ export default async function AccountsPage({
       const withoutSource = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, crm_account_id',
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status',
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -213,32 +206,7 @@ export default async function AccountsPage({
     }
   }
 
-  const { systemRole } = parseProfileRoles(profile)
-  const isAdmin = isSystemAdmin(systemRole)
-  const hubspotConfigured = isHubSpotConfigured()
-  const hubspotStatus =
-    isAdmin && profile.organization_id
-      ? await getOrganizationCrmConnectionPublicStatus(
-          supabase,
-          profile.organization_id,
-          'hubspot',
-        )
-      : { connected: false, externalAccountId: null, lastSyncAt: null }
-
-  if (hubspotStatus.connected && isAdmin) {
-    try {
-      await syncHubSpotWonDealsForOrganization(supabase, orgId, 'hubspot')
-    } catch {
-      // Won-Sync blockiert die Übersicht nicht.
-    }
-  }
-
-  const [
-    dealsRows,
-    refRows,
-    executiveSignalRows,
-    newsSignalRows,
-  ] = await Promise.all([
+  const [dealsRows, refRows, executiveSignalRows, newsSignalRows] = await Promise.all([
     companyIds.length
       ? supabase
           .from('deals')
@@ -366,7 +334,6 @@ export default async function AccountsPage({
         id: c.id,
         account_status: c.account_status ?? null,
         account_status_source: c.account_status_source ?? null,
-        crm_account_id: c.crm_account_id ?? null,
         entity_kind: c.entity_kind ?? 'account',
       })),
       dealsData,
@@ -550,19 +517,11 @@ export default async function AccountsPage({
   return (
     <div className="flex flex-col space-y-6">
       {listView === 'partner' ? (
-        <AccountsGrid
-          companies={enrichedCompanies}
-          hubspotConfigured={hubspotConfigured}
-          hubspotConnected={hubspotStatus.connected}
-          canConnectCrm={isAdmin && hubspotConfigured}
-        />
+        <AccountsGrid companies={enrichedCompanies} />
       ) : (
         <AccountsCollection
           companies={accountCompanies}
           lensPayload={lensPayload}
-          hubspotConfigured={hubspotConfigured}
-          hubspotConnected={hubspotStatus.connected}
-          canConnectCrm={isAdmin && hubspotConfigured}
           layout={layout}
         />
       )}

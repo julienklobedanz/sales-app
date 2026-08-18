@@ -5,9 +5,6 @@ import { ROUTES } from '@/lib/routes'
 import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 import { DealsPageSkeleton } from '@/components/dashboard/deals-page-skeleton'
-import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
-import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
-import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 
 export const dynamic = 'force-dynamic'
@@ -29,11 +26,6 @@ async function DealsPageContent() {
   if (!orgId) redirect(ROUTES.onboarding)
 
   const supabase = await createServerSupabaseClient()
-  const isAdmin = isSystemAdmin(effective.systemRole)
-  const hubspotConfigured = isHubSpotConfigured()
-  const hubspotStatus = isAdmin
-    ? await getOrganizationCrmConnectionPublicStatus(supabase, orgId, 'hubspot')
-    : { connected: false, externalAccountId: null, lastSyncAt: null }
 
   const [deals, companiesRes, orgProfilesRes] = await Promise.all([
     getDeals(),
@@ -55,9 +47,6 @@ async function DealsPageContent() {
         deals={deals}
         companies={companiesRes.data ?? []}
         orgProfiles={orgProfilesRes.data ?? []}
-        hubspotConfigured={hubspotConfigured}
-        hubspotConnected={hubspotStatus.connected}
-        canConnectCrm={isAdmin && hubspotConfigured}
       />
     </div>
   )

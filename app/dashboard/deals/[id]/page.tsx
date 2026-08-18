@@ -15,7 +15,6 @@ import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
 import { DealAusschreibungSummaryCard } from '../cockpit/deal-ausschreibung-summary-card'
 import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
-import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -62,7 +61,6 @@ async function DealDetailPageContent({
   if (!deal) notFound()
 
   const deadlines = await listDealDeadlines(supabase, id)
-  const hubspotPortalId = await getHubSpotPortalIdForOrganization(supabase, orgId)
 
   const { data: orgRow } = await supabase
     .from('organizations')
@@ -138,13 +136,10 @@ async function DealDetailPageContent({
         ) : null
       }
       ausschreibungSummary={
-        summary ? (
-          <DealAusschreibungSummaryCard dealId={id} summary={summary} />
-        ) : null
+        summary ? <DealAusschreibungSummaryCard dealId={id} summary={summary} /> : null
       }
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
-      hubspotPortalId={hubspotPortalId}
       orgDateDisplayFormat={orgDateDisplayFormat}
       initialReferenceSuggestions={initialReferenceSuggestions}
     />

@@ -6,7 +6,7 @@ export const ACTIVE_CUSTOMER_WON_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000
 
 export type DealStatusInput = {
   status: string
-  /** Close-Datum aus CRM (expiry_date) oder Fallback */
+  /** Close-Datum (`expiry_date`) oder Fallback */
   closedOn: string | null
   /** Vertrags-/Renewal-Ende (nicht Closing) */
   contractEndDate?: string | null
@@ -18,20 +18,10 @@ export type ReferenceExpiryInput = {
 }
 
 export type ComputeAccountStatusInput = {
-  crmAccountId: string | null
   deals: DealStatusInput[]
   references: ReferenceExpiryInput[]
   now?: Date
 }
-
-const OPEN_PIPELINE_STATUSES = new Set([
-  'in_negotiation',
-  'rfp_phase',
-  'on_hold',
-  'reference_sought',
-  'in_approval',
-  'reference_found',
-])
 
 function parseClosedOn(iso: string | null | undefined): Date | null {
   if (!iso?.trim()) return null
@@ -70,7 +60,7 @@ function latestWonDate(deals: DealStatusInput[]): Date | null {
 }
 
 /**
- * Berechnet den Account-Status aus CRM-/Deal-/Referenz-Signalen.
+ * Berechnet den Account-Status aus Deal- und Referenz-Signalen.
  * Priorität: At Risk (Referenz oder Vertragsende ≤9 Monate) → Aktiver Kunde → Ehemaliger → Target.
  */
 export function computeAccountStatusFromSignals(
@@ -94,15 +84,6 @@ export function computeAccountStatusFromSignals(
     })
     if (!hasNewerWon) return 'former_customer'
   }
-
-  const hasOpenPipeline = input.deals.some((d) => OPEN_PIPELINE_STATUSES.has(d.status))
-  if (hasOpenPipeline) return 'target'
-
-  const hasCrmLink = Boolean(input.crmAccountId?.trim())
-  const hasAnyDeal = input.deals.length > 0
-  if (!hasCrmLink && !hasAnyDeal) return 'target'
-
-  if (hasCrmLink || hasAnyDeal) return 'target'
 
   return 'target'
 }

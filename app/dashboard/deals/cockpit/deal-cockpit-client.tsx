@@ -32,7 +32,6 @@ export function DealCockpitClient({
   verdict,
   ausschreibungSummary,
   briefingButton,
-  hubspotPortalId = null,
   orgDateDisplayFormat = 'de-DE',
   initialReferenceSuggestions = [],
 }: {
@@ -45,7 +44,6 @@ export function DealCockpitClient({
   verdict?: ReactNode
   ausschreibungSummary?: ReactNode
   briefingButton?: ReactNode
-  hubspotPortalId?: string | null
   orgDateDisplayFormat?: OrgDateDisplayFormat
   initialReferenceSuggestions?: DealReferenceSuggestion[]
 }) {
@@ -67,11 +65,7 @@ export function DealCockpitClient({
   return (
     <DealReferenceSuggestionsRefreshProvider refresh={refreshReferenceSuggestions}>
       <div>
-        <DealRfpHashBridge
-          dealId={deal.id}
-          isRfpDeal={showRfp}
-          surface="deal-page"
-        />
+        <DealRfpHashBridge dealId={deal.id} isRfpDeal={showRfp} surface="deal-page" />
         <DealCockpitHeader
           deal={deal}
           companies={companies}
@@ -128,7 +122,6 @@ export function DealCockpitClient({
           companies={companies}
           orgProfiles={orgProfiles}
           canManage={canManageDocuments}
-          hubspotPortalId={hubspotPortalId}
           orgDateDisplayFormat={orgDateDisplayFormat}
         />
 

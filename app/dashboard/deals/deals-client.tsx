@@ -1,11 +1,9 @@
 'use client'
 
-import { useMemo, useRef, useState, useCallback } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-import-preview-dialog'
-import { CrmOnboardingEmptyState } from '@/app/dashboard/components/crm-onboarding-empty-state'
 import { CollectionPrimaryAction } from '@/components/dashboard/collection-primary-action'
 import { CollectionToolbar } from '@/components/dashboard/collection-toolbar'
 import { AppDataTable } from '@/components/ui/app-data-table'
@@ -19,15 +17,14 @@ import {
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { DataTableViewOptions } from '@/components/ui/data-table-view-options'
-import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { useRole } from '@/hooks/useRole'
 import { collectionToolbarSlotFill } from '@/lib/dashboard/collection-toolbar-slots'
 import { COPY } from '@/lib/copy'
-import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 import { importDealsFromXlsx } from './actions'
 import { DealsCreateDialog } from './deals-create-dialog'
+import { DealsOnboardingEmptyState } from './deals-onboarding-empty-state'
 import { buildDealsTableColumns } from './deals-table-columns'
 import {
   DEAL_DEFAULT_COLUMN_ORDER,
@@ -43,26 +40,15 @@ type Props = {
   deals: DealRow[]
   companies: { id: string; name: string }[]
   orgProfiles: { id: string; full_name: string | null }[]
-  hubspotConfigured?: boolean
-  hubspotConnected?: boolean
-  canConnectCrm?: boolean
 }
 
-export function DealsClientContent({
-  deals,
-  companies,
-  orgProfiles,
-  hubspotConfigured = false,
-  hubspotConnected = false,
-  canConnectCrm = false,
-}: Props) {
+export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
   const router = useRouter()
   const { systemRole, functionRole } = useRole()
   const canImportDeals = !profileIsSalesRestricted(systemRole, functionRole)
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
-  const [crmImportOpen, setCrmImportOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
   const [columnResetKey, setColumnResetKey] = useState(0)
@@ -73,14 +59,6 @@ export function DealsClientContent({
     setColumnSizing,
     resetColumnsToDefault,
   } = useDealsTableColumnsState()
-
-  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
-
-  useCrmOAuthCallback({
-    canConnectCrm,
-    hubspotConnected,
-    onOpenImport: openCrmImport,
-  })
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -131,25 +109,11 @@ export function DealsClientContent({
   if (showDealsOnboarding) {
     return (
       <>
-        <CrmOnboardingEmptyState
-          variant="deals"
+        <DealsOnboardingEmptyState
           onCreateManual={() => setCreateOpen(true)}
           canCreateManual
-          hubspotConfigured={hubspotConfigured}
-          hubspotConnected={hubspotConnected}
-          canConnectCrm={canConnectCrm}
-          onHubSpotClick={() => {
-            if (hubspotConnected) {
-              setCrmImportOpen(true)
-            } else {
-              window.location.href = getHubSpotConnectHref('deals')
-            }
-          }}
         />
         {createDealDialog}
-        {canConnectCrm ? (
-          <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
-        ) : null}
       </>
     )
   }
@@ -244,9 +208,6 @@ export function DealsClientContent({
         />
       </TooltipProvider>
       {createDealDialog}
-      {canConnectCrm ? (
-        <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
-      ) : null}
     </div>
   )
 }

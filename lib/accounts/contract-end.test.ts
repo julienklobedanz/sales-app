@@ -4,17 +4,11 @@ import {
   contractEndPrimaryTone,
   formatContractEndRelativeLabel,
   isContractEndWithinWarningWindow,
-  resolveHubSpotContractEndProperty,
 } from './contract-end'
 
 const now = new Date('2026-07-15T12:00:00Z')
 
 describe('contract-end helpers', () => {
-  it('resolves property override and default', () => {
-    expect(resolveHubSpotContractEndProperty(null)).toBe('contract_end_date')
-    expect(resolveHubSpotContractEndProperty('  renewal_date  ')).toBe('renewal_date')
-  })
-
   it('detects warning window of 9 months', () => {
     expect(isContractEndWithinWarningWindow('2027-03-15', now)).toBe(true)
     expect(isContractEndWithinWarningWindow('2027-08-01', now)).toBe(false)

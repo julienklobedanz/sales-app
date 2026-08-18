@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -8,8 +8,6 @@ import { AppDataTable } from '@/components/ui/app-data-table'
 import { CollectionReadLayout } from '@/components/dashboard/collection-read-layout'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useRole } from '@/hooks/useRole'
-import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
-import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { accountsReadHref } from '@/lib/accounts/accounts-list-view'
 import type { AccountsNdaFilter } from '@/lib/accounts/account-collection-columns'
@@ -23,7 +21,6 @@ import { buildAccountsTableColumns } from './accounts-table-columns'
 import { AccountLensPane, type AccountLensPayload } from './account-lens-pane'
 import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-empty-state'
 import { AccountsImportDialog } from './components/accounts-import-dialog'
-import { CrmImportPreviewDialog } from './components/crm-import-preview-dialog'
 import { CreateAccountDialog } from './create-account-dialog'
 import { useAccountsTableColumnsState } from './use-accounts-table-columns-state'
 import type { CompanyCard, ReferencesFilter } from './accounts-grid-types'
@@ -31,16 +28,10 @@ import type { CompanyCard, ReferencesFilter } from './accounts-grid-types'
 export function AccountsCollection({
   companies,
   lensPayload,
-  hubspotConfigured = false,
-  hubspotConnected = false,
-  canConnectCrm = false,
   layout,
 }: {
   companies: CompanyCard[]
   lensPayload: AccountLensPayload | null
-  hubspotConfigured?: boolean
-  hubspotConnected?: boolean
-  canConnectCrm?: boolean
   layout: ReferenceLayoutMode
 }) {
   const router = useRouter()
@@ -57,7 +48,6 @@ export function AccountsCollection({
   const [referencesFilter, setReferencesFilter] = useState<ReferencesFilter>('any')
   const [createOpen, setCreateOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
-  const [crmImportOpen, setCrmImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
   const [columnResetKey, setColumnResetKey] = useState(0)
   const {
@@ -69,13 +59,6 @@ export function AccountsCollection({
     setColumnSizing,
     resetColumnsToDefault,
   } = useAccountsTableColumnsState()
-
-  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
-  useCrmOAuthCallback({
-    canConnectCrm,
-    hubspotConnected,
-    onOpenImport: openCrmImport,
-  })
 
   const industryOptions = useMemo(() => {
     const ids = new Set<string>()
@@ -105,7 +88,15 @@ export function AccountsCollection({
         locationFilter,
         referencesFilter,
       }),
-    [companies, search, ndaFilter, favoritesOnly, industryFilter, locationFilter, referencesFilter],
+    [
+      companies,
+      search,
+      ndaFilter,
+      favoritesOnly,
+      industryFilter,
+      locationFilter,
+      referencesFilter,
+    ],
   )
 
   const { selectedId, selected, hrefFor, clearSelection } = useCollectionObjectSelection({
@@ -212,28 +203,10 @@ export function AccountsCollection({
   return (
     <TooltipProvider delayDuration={300}>
       {showOnboarding ? (
-        <>
-          <AccountsOnboardingEmptyState
-            onCreateManual={() => setCreateOpen(true)}
-            canCreateManual={canCreateAccount}
-            hubspotConfigured={hubspotConfigured}
-            hubspotConnected={hubspotConnected}
-            canConnectCrm={canConnectCrm}
-            onConnectHubSpot={() => {
-              window.location.href = getHubSpotConnectHref('accounts')
-            }}
-            onHubSpotClick={() => {
-              if (hubspotConnected) {
-                setCrmImportOpen(true)
-              } else {
-                window.location.href = getHubSpotConnectHref('accounts')
-              }
-            }}
-          />
-          {canCreateAccount ? (
-            <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
-          ) : null}
-        </>
+        <AccountsOnboardingEmptyState
+          onCreateManual={() => setCreateOpen(true)}
+          canCreateManual={canCreateAccount}
+        />
       ) : (
         <div className="space-y-5">
           {toolbar}
@@ -263,10 +236,6 @@ export function AccountsCollection({
         entityKind="account"
         importing={importing}
         onImport={handleBulkImport}
-      />
-      <CrmImportPreviewDialog
-        open={crmImportOpen}
-        onOpenChange={setCrmImportOpen}
       />
     </TooltipProvider>
   )

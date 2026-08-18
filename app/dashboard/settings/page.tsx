@@ -18,8 +18,6 @@ import {
 } from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
-import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
-import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { parseOrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 import { uiLocaleFromApiSettings } from '@/lib/i18n/ui-locale'
 import { parseOrganizationBillingSettings } from '@/lib/organizations/billing-settings'
@@ -221,15 +219,6 @@ export default async function SettingsPage() {
     ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
   const isAdmin = isSystemAdmin(serverRoles.systemRole)
-  const hubspotConfigured = isHubSpotConfigured()
-  const hubspotStatus =
-    isAdmin && organizationId
-      ? await getOrganizationCrmConnectionPublicStatus(
-          supabase,
-          organizationId,
-          'hubspot',
-        )
-      : { connected: false, externalAccountId: null, lastSyncAt: null }
   const auditLogs: AuditLogRow[] =
     isAdmin && organizationId
       ? (
@@ -309,18 +298,13 @@ export default async function SettingsPage() {
               apiKeyMask: apiSettingsParsed.apiKeyMask,
               useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,
             },
-            workflowSettings: parseOrganizationWorkflowSettings(orgRow?.workflow_settings),
+            workflowSettings: parseOrganizationWorkflowSettings(
+              orgRow?.workflow_settings,
+            ),
             capabilitySettings,
           }}
           teamMembers={teamMembers}
           auditLogs={auditLogs}
-          hubspotIntegration={{
-            configured: hubspotConfigured,
-            connected: hubspotStatus.connected,
-            canManage: isAdmin,
-            externalAccountId: hubspotStatus.externalAccountId,
-            lastSyncAt: hubspotStatus.lastSyncAt,
-          }}
           rolesPermissions={apiSettingsParsed.rolesPermissions}
         />
       </Suspense>

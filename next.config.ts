@@ -23,7 +23,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'cdn.brandfetch.io', pathname: '/**' },
       { protocol: 'https', hostname: 'asset.brandfetch.io', pathname: '/**' },
       { protocol: 'https', hostname: 'images.brandfetch.io', pathname: '/**' },
-      { protocol: 'https', hostname: 'logo.clearbit.com', pathname: '/**' },
     ],
   },
 }

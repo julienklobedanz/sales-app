@@ -50,8 +50,6 @@ const RECOMMENDED = ['REFERENCE_MANAGER_EMAIL', 'SUPABASE_SERVICE_ROLE_KEY']
 
 const OPTIONAL_BY_SCOPE = [
   'OPENAI_API_KEY',
-  'HUBSPOT_CLIENT_ID',
-  'HUBSPOT_CLIENT_SECRET',
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'VAPID_SUBJECT',
@@ -78,11 +76,6 @@ function printGroup(title, names) {
 printGroup('Required for launch baseline', REQUIRED)
 printGroup('Recommended for core product flows', RECOMMENDED)
 printGroup('Optional depending on enabled features', OPTIONAL_BY_SCOPE)
-
-console.log(
-  '\nHubSpot CRM Sync (optional): HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET + SUPABASE_SERVICE_ROLE_KEY',
-)
-console.log('Setup: docs/hubspot-crm-sync-setup.md')
 
 const missingRequired = REQUIRED.filter((key) => !isSet(key))
 if (missingRequired.length > 0) {

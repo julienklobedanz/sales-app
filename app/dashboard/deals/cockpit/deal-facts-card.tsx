@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { PencilEdit01Icon } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
@@ -23,19 +22,16 @@ export function DealFactsCard({
   companies,
   orgProfiles,
   canManage = false,
-  hubspotPortalId = null,
   orgDateDisplayFormat = 'de-DE',
 }: {
   deal: DealWithReferences
   companies: Company[]
   orgProfiles: OrgProfile[]
   canManage?: boolean
-  hubspotPortalId?: string | null
   orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
   const [editOpen, setEditOpen] = useState(false)
   const rows = buildDealFactRows(deal, {
-    hubspotPortalId,
     dateDisplayFormat: orgDateDisplayFormat,
   })
 
@@ -68,18 +64,9 @@ export function DealFactsCard({
           {rows.map((row) => (
             <div key={row.label} className="flex justify-between gap-3 text-sm">
               <span className="shrink-0 text-muted-foreground">{row.label}</span>
-              {row.kind === 'link' ? (
-                <Link
-                  href={row.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="max-w-[60%] truncate text-right font-medium text-primary hover:underline"
-                >
-                  {row.linkLabel}
-                </Link>
-              ) : (
-                <span className="max-w-[60%] truncate text-right font-medium">{row.value}</span>
-              )}
+              <span className="max-w-[60%] truncate text-right font-medium">
+                {row.value}
+              </span>
             </div>
           ))}
         </CardContent>
