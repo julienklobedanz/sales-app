@@ -99,7 +99,7 @@ export function AccountsCollectionToolbar({
             value={ndaFilter}
             onValueChange={(value) => onNdaFilterChange(value as AccountsNdaFilter)}
           >
-            <SelectTrigger className="h-10 w-full bg-white" aria-label="NDA">
+            <SelectTrigger className="h-10 w-full bg-card" aria-label="NDA">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -132,7 +132,7 @@ export function ReferenceLibraryToolbar({
 
   const statusSelect = (
     <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-      <SelectTrigger className="w-full rounded-lg border bg-white shadow-sm data-[size=default]:h-10">
+      <SelectTrigger className="w-full rounded-lg border bg-card shadow-sm data-[size=default]:h-10">
         <SelectValue placeholder={COPY.dashboard.tooltipStatus} />
       </SelectTrigger>
       <SelectContent>
@@ -154,7 +154,7 @@ export function ReferenceLibraryToolbar({
             <ToolbarSearchField
               variant="dashboard"
               wrapperClassName="min-w-0 w-full"
-              className="bg-white"
+              className="bg-card"
               placeholder={
                 isReferencesLibrary
                   ? COPY.dashboard.searchReferencesPlaceholder

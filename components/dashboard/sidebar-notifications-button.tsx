@@ -27,8 +27,7 @@ const triggerClassName =
 
 function typeChipClass(kind: DashboardNotificationItem['typeKind']) {
   if (kind === 'move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
-  if (kind === 'executive')
-    return 'bg-primary/10 text-primary border-0'
+  if (kind === 'executive') return 'bg-primary/10 text-primary border-0'
   if (kind === 'company') return 'bg-muted text-foreground border-0'
   if (kind === 'approval')
     return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
@@ -66,7 +65,7 @@ const NotificationTrigger = forwardRef<
       {unreadCount > 0 ? (
         <span
           className={cn(
-            'absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive font-bold text-white',
+            'absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive font-bold text-destructive-foreground',
             compact
               ? 'h-3.5 min-w-3.5 px-0.5 text-[9px]'
               : 'h-4 min-w-4 px-1 text-[10px]',
@@ -373,7 +372,11 @@ export function SidebarNotificationsSection({
     async function refreshInbox() {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
       try {
-        const next = await getInboxNotificationsForLayout(userId, systemRole, functionRole)
+        const next = await getInboxNotificationsForLayout(
+          userId,
+          systemRole,
+          functionRole,
+        )
         setNotifications(next)
       } catch {
         // offline / transient — keep current list

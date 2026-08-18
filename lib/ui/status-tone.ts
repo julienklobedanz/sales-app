@@ -25,11 +25,11 @@ export const statusToneText = {
 
 /** Solid fill for compact recommendation chips. */
 export const statusToneFill = {
-  success: 'bg-status-success text-white',
-  warning: 'bg-status-warning text-white',
-  danger: 'bg-status-danger text-white',
-  info: 'bg-status-info text-white',
-  muted: 'bg-muted-foreground/80 text-white',
+  success: 'bg-status-success text-status-success-foreground',
+  warning: 'bg-status-warning text-status-warning-foreground',
+  danger: 'bg-status-danger text-status-danger-foreground',
+  info: 'bg-status-info text-status-info-foreground',
+  muted: 'bg-muted-foreground/80 text-primary-foreground',
 } as const
 
 export type StatusTone = keyof typeof statusTone

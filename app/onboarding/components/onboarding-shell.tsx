@@ -47,7 +47,7 @@ export function OnboardingShell({
           transition === 'idle' && 'translate-x-0 translate-y-0 opacity-100',
         )}
       >
-        <div className="flex flex-col items-center justify-center bg-white/75 px-8 py-10 backdrop-blur-xl lg:px-16">
+        <div className="flex flex-col items-center justify-center bg-background/75 px-8 py-10 backdrop-blur-xl lg:px-16">
           <div className="flex w-full max-w-sm flex-col gap-6 text-left">
             <div className="flex items-center justify-between gap-4">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">

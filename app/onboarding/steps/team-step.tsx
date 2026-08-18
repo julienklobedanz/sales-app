@@ -61,7 +61,7 @@ export function removeLastInviteRow(invites: TeamInviteRow[]): TeamInviteRow[] {
 }
 
 const fieldClass =
-  'h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-foreground shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
+  'h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-foreground shadow-sm transition-all focus:border-transparent focus:bg-background focus:outline-none focus:ring-2 focus:ring-blue-600'
 
 const selectTriggerClass = `${fieldClass} !h-11 data-[size=default]:!h-11 flex items-center justify-between`
 

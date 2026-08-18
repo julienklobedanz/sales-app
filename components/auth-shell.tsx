@@ -12,7 +12,7 @@ type AuthShellProps = {
 
 /** Formularspalte bleibt immer hell — unabhängig vom globalen Dark Mode. */
 const AUTH_FORM_COLUMN_CLASS =
-  'relative flex min-h-screen flex-col items-center justify-center bg-white px-8 py-10 text-foreground lg:px-16 dark:bg-white dark:text-foreground [&_[data-slot=input]]:border-border [&_[data-slot=input]]:bg-white [&_[data-slot=input]]:text-foreground [&_[data-slot=input]]:shadow-sm [&_[data-slot=input]]:placeholder:text-muted-foreground dark:[&_[data-slot=input]]:border-border dark:[&_[data-slot=input]]:bg-white dark:[&_[data-slot=input]]:text-foreground dark:[&_[data-slot=input]]:placeholder:text-muted-foreground [&_[data-slot=label]]:text-foreground dark:[&_[data-slot=label]]:text-foreground [&_.bg-border]:bg-accent dark:[&_.bg-border]:bg-accent'
+  'relative flex min-h-screen flex-col items-center justify-center bg-background px-8 py-10 text-foreground lg:px-16 dark:bg-background dark:text-foreground [&_[data-slot=input]]:border-border [&_[data-slot=input]]:bg-background [&_[data-slot=input]]:text-foreground [&_[data-slot=input]]:shadow-sm [&_[data-slot=input]]:placeholder:text-muted-foreground dark:[&_[data-slot=input]]:border-border dark:[&_[data-slot=input]]:bg-background dark:[&_[data-slot=input]]:text-foreground dark:[&_[data-slot=input]]:placeholder:text-muted-foreground [&_[data-slot=label]]:text-foreground dark:[&_[data-slot=label]]:text-foreground [&_.bg-border]:bg-accent dark:[&_.bg-border]:bg-accent'
 
 export function AuthShell({ children, brandContent, topRightLink }: AuthShellProps) {
   return (

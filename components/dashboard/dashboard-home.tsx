@@ -200,7 +200,7 @@ export function DashboardHome({
           size="icon"
           variant="outline"
           onClick={() => setHelpExpanded(true)}
-          className="fixed bottom-6 right-6 z-40 size-11 rounded-full border-border bg-white shadow-md hover:bg-muted"
+          className="fixed bottom-6 right-6 z-40 size-11 rounded-full border-border bg-card shadow-md hover:bg-muted"
           aria-label="Erste Schritte anzeigen"
         >
           <HelpCircle className="size-5 text-muted-foreground" aria-hidden />
@@ -222,7 +222,7 @@ function ChecklistCard({
   return (
     <div
       className={cn(
-        'relative mx-auto max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm',
+        'relative mx-auto max-w-xl rounded-2xl border border-border bg-card p-6 shadow-sm',
         className ?? 'mt-12',
       )}
     >

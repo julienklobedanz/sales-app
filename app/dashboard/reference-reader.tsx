@@ -11,7 +11,7 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
   const companyDisplay = isAnonymized ? 'Anonymisierter Kunde' : reference.company_name
 
   return (
-    <article className="w-full rounded-2xl border border-border bg-white p-6 text-foreground shadow-sm">
+    <article className="w-full rounded-2xl border border-border bg-card p-6 text-foreground shadow-sm">
       <div className="flex items-start gap-3">
         {isAnonymized ? (
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50">

@@ -60,7 +60,7 @@ function HomepageGroupSection({
   if (count === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <p className={SECTION_HEADING_CLASS}>
         {label} ({count})
       </p>

@@ -39,7 +39,7 @@ export function DealWorkspaceRail({
   return (
     <nav
       aria-label={COPY.deals.cockpit.rfpBlockTitle}
-      className="sticky top-0 flex h-full w-[4.25rem] shrink-0 flex-col border-r border-border bg-white py-3 dark:bg-card md:w-52"
+      className="sticky top-0 flex h-full w-[4.25rem] shrink-0 flex-col border-r border-border bg-card py-3 md:w-52"
     >
       <ul className="flex flex-col gap-0.5 px-1.5 md:px-2">
         {items.map((item) => {

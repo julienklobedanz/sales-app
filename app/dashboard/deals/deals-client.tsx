@@ -160,7 +160,7 @@ export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
                     onChange={setQuery}
                     placeholder={COPY.deals.searchPlaceholder}
                     wrapperClassName="min-w-0 w-full"
-                    className="bg-white"
+                    className="bg-card"
                   />
                 ),
                 'collection-filter-primary': (
@@ -169,7 +169,7 @@ export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
                     onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
                   >
                     <SelectTrigger
-                      className="w-full rounded-lg border bg-white shadow-sm data-[size=default]:h-10"
+                      className="w-full rounded-lg border bg-card shadow-sm data-[size=default]:h-10"
                       data-row-nav-ignore
                     >
                       <SelectValue />

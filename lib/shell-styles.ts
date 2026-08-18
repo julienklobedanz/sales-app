@@ -7,8 +7,7 @@ export const shellOuterClass =
   'flex h-svh w-full min-h-0 flex-col bg-[color:var(--shell-outer)] p-3'
 
 /** Flex-Zeile: Gap zwischen Sidebar- und Content-Insel (Lavendel scheint durch). */
-export const shellFrameClass =
-  'flex h-full min-h-0 w-full flex-1 items-stretch gap-3'
+export const shellFrameClass = 'flex h-full min-h-0 w-full flex-1 items-stretch gap-3'
 
 /** Weiße Insel mit abgerundeten Ecken — ohne grauen Außenrand. */
 export const shellPanelClass =
@@ -20,11 +19,11 @@ export const shellMainPanelClass = `${shellPanelClass} h-full min-h-0 min-w-0 fl
 
 /** Inhalt im weißen Hauptpanel — kein pt-14 auf Desktop, kein grauer Hintergrund. */
 export const SHELL_CONTENT_AREA_CLASS =
-  'shell-page-content flex min-h-0 min-w-0 w-full flex-1 flex-col gap-6 bg-white px-5 py-5 pt-14 md:px-8 md:py-7 md:pt-7'
+  'shell-page-content flex min-h-0 min-w-0 w-full flex-1 flex-col gap-6 bg-background px-5 py-5 pt-14 md:px-8 md:py-7 md:pt-7'
 
 /** Detail/Wizard-Seiten im weißen Panel ohne Shell-Padding. */
 export const SHELL_CONTENT_BLEED_CLASS =
-  'shell-page-content flex min-h-0 w-full flex-1 flex-col bg-white'
+  'shell-page-content flex min-h-0 w-full flex-1 flex-col bg-background'
 
 /** Primär-CTA — nutzt --shell-btn-* (auch in Dialog-Portalen). */
 export const BRAND_PRIMARY_BUTTON_CLASS = 'brand-primary-button'

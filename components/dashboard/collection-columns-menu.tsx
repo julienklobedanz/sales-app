@@ -23,7 +23,7 @@ export function CollectionColumnsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="toolbar" className="w-full bg-white">
+        <Button type="button" variant="outline" size="toolbar" className="w-full bg-card">
           {COPY.dashboard.columnsButton}
         </Button>
       </DropdownMenuTrigger>
