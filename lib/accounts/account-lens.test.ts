@@ -8,6 +8,7 @@ import {
   accountLensLoads,
   accountLensSectionPresence,
   isAccountLensLoadKey,
+  salesRepHomeReadsCareTables,
 } from './account-lens'
 
 describe('account lens (§10.9)', () => {
@@ -82,5 +83,9 @@ describe('account lens (§10.9)', () => {
         latestSignalSummary: 'Wechsel im Vorstand',
       }),
     ).toBe(true)
+  })
+
+  it('hält die Sales-Rep-Startseite von Pflege-Tabellen fern', () => {
+    expect(salesRepHomeReadsCareTables()).toBe(false)
   })
 })

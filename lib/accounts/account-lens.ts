@@ -22,6 +22,14 @@ export const ACCOUNT_LENS_CARE_KEYS = [
 
 export type AccountLensCareKey = (typeof ACCOUNT_LENS_CARE_KEYS)[number]
 
+/**
+ * Sales-Rep-Startseite liest keine Pflege-Tabellen
+ * (`stakeholders`, `company_strategies` — die Care-Keys der Linse).
+ */
+export function salesRepHomeReadsCareTables(): boolean {
+  return false
+}
+
 export const ACCOUNT_LENS_LOAD_KEYS = [
   'deals',
   'references',
