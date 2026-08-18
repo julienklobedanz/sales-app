@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useLayoutEffect, useTransition, useCallback } from 'react'
+import { useState, useMemo, useLayoutEffect, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { bulkCreateCompaniesFromSheet, toggleCompanyFavorite } from './actions'
 import { COPY } from '@/lib/copy'
@@ -8,7 +8,6 @@ import { ROUTES } from '@/lib/routes'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
 import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-empty-state'
-import { CrmImportPreviewDialog } from './components/crm-import-preview-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   parseAccountsListView,
@@ -20,8 +19,6 @@ import {
   useAccountsListView,
 } from '@/lib/accounts/accounts-list-view-store'
 import { type AccountEntityKind } from '@/lib/accounts/account-entity'
-import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
-import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { toast } from 'sonner'
 import { AccountGridCard } from './accounts-grid-cards'
 import { AccountsGridDeleteDialog } from './accounts-grid-delete-dialog'
@@ -40,17 +37,7 @@ import type {
 
 export type { CompanyCard } from './accounts-grid-types'
 
-export function AccountsGrid({
-  companies,
-  hubspotConfigured = false,
-  hubspotConnected = false,
-  canConnectCrm = false,
-}: {
-  companies: CompanyCard[]
-  hubspotConfigured?: boolean
-  hubspotConnected?: boolean
-  canConnectCrm?: boolean
-}) {
+export function AccountsGrid({ companies }: { companies: CompanyCard[] }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -63,7 +50,6 @@ export function AccountsGrid({
   const [createOpen, setCreateOpen] = useState(false)
   const [createPartnerOpen, setCreatePartnerOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
-  const [crmImportOpen, setCrmImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
   const [sortMode, setSortMode] = useState<SortMode>('activity')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -74,14 +60,6 @@ export function AccountsGrid({
   const [favoriteSaving, setFavoriteSaving] = useState<Record<string, boolean>>({})
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
-
-  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
-
-  useCrmOAuthCallback({
-    canConnectCrm,
-    hubspotConnected,
-    onOpenImport: openCrmImport,
-  })
 
   useLayoutEffect(() => {
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
@@ -216,19 +194,6 @@ export function AccountsGrid({
           <AccountsOnboardingEmptyState
             onCreateManual={() => setCreateOpen(true)}
             canCreateManual={canManage}
-            hubspotConfigured={hubspotConfigured}
-            hubspotConnected={hubspotConnected}
-            canConnectCrm={canConnectCrm}
-            onConnectHubSpot={() => {
-              window.location.href = getHubSpotConnectHref('accounts')
-            }}
-            onHubSpotClick={() => {
-              if (hubspotConnected) {
-                setCrmImportOpen(true)
-              } else {
-                window.location.href = getHubSpotConnectHref('accounts')
-              }
-            }}
           />
           {canManage ? (
             <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
@@ -313,9 +278,6 @@ export function AccountsGrid({
         setDeleteTarget={setDeleteTarget}
         setDeleting={setDeleting}
       />
-      {canConnectCrm ? (
-        <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
-      ) : null}
     </TooltipProvider>
   )
 }

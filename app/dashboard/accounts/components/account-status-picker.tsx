@@ -145,7 +145,7 @@ export function AccountStatusPicker({
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={!status} onSelect={() => void handleSelect(null)}>
-          Status zurücksetzen (CRM-Regeln)
+          Status neu berechnen
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

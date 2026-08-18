@@ -7,7 +7,7 @@ Kurz-Dokument für **Design-Partner / kontrollierten Piloten**. Aus dem aktuelle
 ## 1. Pilot-Scope festlegen (1 Seite, verbindlich)
 
 - [ ] **In-Scope** (empfohlen für Pilot v1): Referenzen (Evidence), Freigabe-Flow, Share-Links, PDF/PPTX-Export, Accounts, Deals, Match/Request, Rollen (Admin / Sales / Account Manager), Basis-Einstellungen.
-- [ ] **Out-of-Scope oder „Beta“ kennzeichnen**: Marktsignale (siehe Punkt 8), CRM-Sync (Salesforce/HubSpot nur Platzhalter), SSO „Salesforce Login“ auf Login-Seite.
+- [ ] **Out-of-Scope oder „Beta“ kennzeichnen**: Marktsignale (siehe Punkt 8), SSO „Salesforce Login“ auf Login-Seite.
 - [ ] **Erfolgskriterien**: z. B. „10 Referenzen angelegt, 3 Freigaben durchgespielt, 2 Share-Links mit Kunde getestet“.
 
 ---

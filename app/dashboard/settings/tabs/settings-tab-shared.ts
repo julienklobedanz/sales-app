@@ -8,8 +8,8 @@ export const SETTINGS_DANGER_ZONE_CLASS =
 export const SETTINGS_DANGER_ZONE_CLASS_COMPACT =
   'rounded-xl border border-red-300 bg-red-50/50 p-4 shadow-sm'
 
-/** Canonical settings tabs (4). Legacy query params map onto these. */
-export type SettingsTabId = 'profile' | 'workspace' | 'integrations' | 'process'
+/** Canonical settings tabs (3). Legacy query params map onto these. */
+export type SettingsTabId = 'profile' | 'workspace' | 'process'
 
 export type SettingsTabHandlers = {
   dirty: boolean
@@ -23,7 +23,7 @@ export type RegisterSettingsTab = (
   partKey?: string,
 ) => void
 
-/** Maps old ?tab= values and synonyms onto the 4-tab IA. */
+/** Maps old ?tab= values and synonyms onto the 3-tab IA. */
 export function resolveSettingsTabId(raw: string | null): SettingsTabId | null {
   if (!raw) return null
   switch (raw) {
@@ -39,7 +39,7 @@ export function resolveSettingsTabId(raw: string | null): SettingsTabId | null {
     case 'integrations':
     case 'connections':
     case 'verbindungen':
-      return 'integrations'
+      return 'workspace'
     case 'process':
     case 'prozess':
     case 'workflow':

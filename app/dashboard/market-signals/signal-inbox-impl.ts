@@ -50,8 +50,7 @@ async function getAuthedOrgContext() {
   return {
     supabase,
     user,
-    orgId:
-      profile?.organization_id ?? null,
+    orgId: profile?.organization_id ?? null,
   }
 }
 
@@ -120,7 +119,10 @@ export async function addMarketSignalToDealImpl(args: {
       .order('updated_at', { ascending: false })
       .limit(2)
     if (refErr) return { success: false, error: refErr.message }
-    referenceIds = (refRows ?? []).map((r) => r.id).filter(Boolean).slice(0, 2)
+    referenceIds = (refRows ?? [])
+      .map((r) => r.id)
+      .filter(Boolean)
+      .slice(0, 2)
   }
 
   if (!referenceIds.length) {
@@ -247,25 +249,5 @@ export async function markMarketSignalOutcomeImpl(args: {
   ])
   if (!result.success) return { success: false, error: result.error }
   revalidatePath(ROUTES.marketSignals)
-  return { success: true }
-}
-
-export async function logMarketSignalQuickActionImpl(args: {
-  signalKey: string
-  channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention'
-}): Promise<{ success: true } | { success: false; error: string }> {
-  const { user, orgId } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  void writeAuditLog({
-    orgId,
-    action: 'market_signal_quick_action',
-    entityId: args.signalKey,
-    actionDetails: {
-      channel: args.channel,
-      userId: user.id,
-      at: new Date().toISOString(),
-    },
-  })
   return { success: true }
 }

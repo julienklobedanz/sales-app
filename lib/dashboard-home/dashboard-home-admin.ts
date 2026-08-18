@@ -14,7 +14,6 @@ import { loadReferenceKpis } from '@/lib/dashboard-home/dashboard-home-queries'
 import {
   computeWinRateMetrics,
   dashboardFirstName,
-  integrationConnectionStatus,
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
 import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
@@ -67,10 +66,7 @@ export async function loadAdminDashboardData(
     dataFreshnessMinutes: null,
     apiCreditUsedPercent: null,
     apiHealth: 'stable',
-    integrations: [
-      { name: 'HubSpot', status: 'warning' },
-      { name: 'Salesforce', status: 'warning' },
-    ],
+    integrations: [],
   }
   let newsIngestHealth: AdminDashboardModel['newsIngestHealth'] = {
     lastRunAt: null,
@@ -258,30 +254,13 @@ export async function loadAdminDashboardData(
     const dataFreshnessMinutes =
       latestTs > 0 ? Math.max(0, Math.round((Date.now() - latestTs) / 60000)) : null
 
-    const integrationSettings =
-      workflowSettings.integration_settings &&
-      typeof workflowSettings.integration_settings === 'object'
-        ? (workflowSettings.integration_settings as Record<string, unknown>)
-        : {}
-    const integrationStatus = (key: string) =>
-      integrationConnectionStatus(integrationSettings[key])
-    const integrations: AdminDashboardModel['systemUsage']['integrations'] = [
-      { name: 'HubSpot', status: integrationStatus('hubspot') },
-      { name: 'Salesforce', status: integrationStatus('salesforce') },
-    ]
-    const hasDown = integrations.some((i) => i.status === 'down')
-    const hasWarn = integrations.some((i) => i.status === 'warning')
-    const apiHealth: 'stable' | 'warning' | 'critical' = hasDown
-      ? 'critical'
-      : hasWarn
-        ? 'warning'
-        : 'stable'
+    const integrations: AdminDashboardModel['systemUsage']['integrations'] = []
     systemUsage = {
       activeUsers: wau7d,
       activeSeats: activeSeats + pendingInvites,
       dataFreshnessMinutes,
       apiCreditUsedPercent,
-      apiHealth,
+      apiHealth: 'stable',
       integrations,
     }
 

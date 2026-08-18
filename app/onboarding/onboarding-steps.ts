@@ -1,14 +1,9 @@
-export const ONBOARDING_STEP_COUNT = 3
+export const ONBOARDING_STEP_COUNT = 2
 
 export const ONBOARDING_STEP_META = [
   {
     title: 'Richte deinen Workspace ein',
     subtitle: 'Lass uns mit den Basics starten.',
-  },
-  {
-    title: 'Importiere und spiegele deine Zielkunden',
-    subtitle:
-      'Verbinde dein CRM, um Accounts und offene Opportunities vollautomatisch in RefStack zu importieren und mit aktuellen News zu Kunden und Stakeholdern anzureichern.',
   },
   {
     title: 'Lade dein Team ein',
@@ -25,12 +20,6 @@ export const ONBOARDING_BRAND_META = [
       'Infos über eure Stakeholder',
       'News über eure Kunden und deren Executives',
     ],
-  },
-  {
-    title: 'Nie wieder Datensätze händisch pflegen.',
-    description:
-      'Unser CRM-Sync zieht relevante Accounts und Stakeholder in wenigen Sekunden.',
-    bullets: [] as string[],
   },
   {
     title: 'Gemeinsam Deals schneller closen.',

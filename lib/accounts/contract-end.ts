@@ -4,16 +4,7 @@ export const CONTRACT_END_WARNING_MONTHS = 9
 /** Innerhalb dieses Fensters: Primary-Zeile rot statt amber. */
 export const CONTRACT_END_CRITICAL_DAYS = 180
 
-export const DEFAULT_HUBSPOT_CONTRACT_END_PROPERTY = 'contract_end_date'
-
 const MS_PER_DAY = 24 * 60 * 60 * 1000
-
-export function resolveHubSpotContractEndProperty(
-  orgOverride: string | null | undefined,
-): string {
-  const trimmed = orgOverride?.trim()
-  return trimmed || DEFAULT_HUBSPOT_CONTRACT_END_PROPERTY
-}
 
 export function contractEndWarningDays(
   months: number = CONTRACT_END_WARNING_MONTHS,

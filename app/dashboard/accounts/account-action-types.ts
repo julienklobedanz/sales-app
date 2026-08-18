@@ -116,10 +116,6 @@ export type AccountDealRow = {
   volume: string | null
   status: string
   expiry_date: string | null
-  salesforce_opportunity_id?: string | null
-  crm_opportunity_id?: string | null
-  crm_source?: string | null
-  crm_synced_at?: string | null
   created_at: string
   updated_at: string | null
 }

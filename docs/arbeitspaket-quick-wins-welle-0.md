@@ -9,7 +9,6 @@
 ## Vorab lesen (für die Coding-Session)
 
 - **Konventionen zuerst:** `docs/ai-coding-agent-guide.md` (Scope-Disziplin, Design-Tokens, zentrale Badge-Komponenten, deutsche UI-Copy) — bei UI zusätzlich `docs/design-system.md`.
-- **Für T5 (HubSpot):** `docs/hubspot-crm-sync-setup.md` ist die maßgebliche Setup-Anleitung.
 - **Überholt:** rollenbezogene Teile von `docs/arbeitspakete-freigabe-rollen-settings-deals.md` (alte `admin`/`sales`-Annahme) — nicht als Zielbild nehmen.
 - **Code vor Edit lesen**; **Vault nicht** heranziehen (außerhalb Repo).
 - Jede Aufgabe einzeln umsetzen + Tests grün halten (55 Tests vorhanden).
@@ -53,12 +52,9 @@
 
 ---
 
-## T5 (F1) — HubSpot-OAuth scharfschalten
+## T5 (F1) — HubSpot-OAuth scharfschalten — **obsolet**
 
-**Problem:** `[verifiziert]` Integration ist **vollständig im Code** (`/api/integrations/hubspot/connect|callback|discover|import|status`), aber die produktive OAuth-Konfiguration ist offen.
-**Soll:** Schritte aus **`docs/hubspot-crm-sync-setup.md`** durchführen (HubSpot-App/Client-ID+Secret, Redirect-URI, Scopes, Env-Variablen), dann Connect→Import in einer Org testen.
-**Charakter:** überwiegend **Ops/Config**, kaum Code. Nur-Admin-Gate (`profiles.role='admin'`) bleibt vorerst; nach Welle 1 auf `system_role` umstellen (nicht hier).
-**Akzeptanz:** Eine Org kann HubSpot verbinden; Discovery + Import legen Accounts/Deals an; Status-Route zeigt „verbunden".
+Die CRM-Anbindung (HubSpot-OAuth, Import, Sync) wurde entfernt. Sie war nie in Betrieb (null Verbindungen, null `crm_*`-IDs). Nicht scharfschalten, keine Setup-Doku mehr.
 
 ---
 

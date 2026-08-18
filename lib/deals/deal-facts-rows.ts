@@ -1,6 +1,4 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
-import { formatCrmStageLabel } from '@/lib/crm/format-crm-stage-label'
 import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 import { COPY } from '@/lib/copy'
 
@@ -11,26 +9,24 @@ export type DealFactsDeal = {
   expiry_date: string | null
   account_manager_name: string | null
   sales_manager_name: string | null
-  crm_stage?: string | null
-  crm_opportunity_id?: string | null
-  crm_source?: string | null
-  salesforce_opportunity_id?: string | null
 }
 
-export type DealFactRow =
-  | { kind: 'text'; label: string; value: string }
-  | { kind: 'link'; label: string; href: string; linkLabel: string }
+export type DealFactRow = {
+  kind: 'text'
+  label: string
+  value: string
+}
 
 export function buildDealFactRows(
   deal: DealFactsDeal,
-  options?: { hubspotPortalId?: string | null; dateDisplayFormat?: OrgDateDisplayFormat },
+  options?: { dateDisplayFormat?: OrgDateDisplayFormat },
 ): DealFactRow[] {
   const industry = deal.industry ? formatIndustryDisplay(deal.industry) : '—'
   const closeDate = deal.expiry_date
     ? formatReferenceDate(deal.expiry_date, options?.dateDisplayFormat)
     : '—'
 
-  const textRows: Array<Extract<DealFactRow, { kind: 'text' }>> = [
+  const textRows: DealFactRow[] = [
     { kind: 'text', label: 'Branche', value: industry },
     { kind: 'text', label: 'Close', value: closeDate },
     {
@@ -44,28 +40,5 @@ export function buildDealFactRows(
       value: deal.sales_manager_name ?? '—',
     },
   ]
-  const rows: DealFactRow[] = textRows.filter(
-    (row) => row.value.trim() !== '' && row.value !== '—',
-  )
-
-  if (!dealHasCrmSync(deal)) {
-    return rows
-  }
-
-  const stageLabel = formatCrmStageLabel(deal.crm_stage)
-  if (stageLabel) {
-    rows.push({ kind: 'text', label: COPY.deals.cockpit.crmStage, value: stageLabel })
-  }
-
-  const crmLink = buildCrmDealUrl(deal, { hubspotPortalId: options?.hubspotPortalId })
-  if (crmLink && crmLink.href !== '#') {
-    rows.push({
-      kind: 'link',
-      label: COPY.deals.cockpit.crmOpportunity,
-      href: crmLink.href,
-      linkLabel: COPY.deals.cockpit.openInCrm(crmLink.label),
-    })
-  }
-
-  return rows
+  return textRows.filter((row) => row.value.trim() !== '' && row.value !== '—')
 }

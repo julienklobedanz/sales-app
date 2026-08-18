@@ -12,7 +12,6 @@ export type CompanyStatusSyncRow = {
   id: string
   account_status: string | null
   account_status_source: string | null
-  crm_account_id: string | null
   entity_kind: string | null
 }
 
@@ -66,7 +65,6 @@ export async function syncComputedAccountStatuses(
     const companyRefs = refsByCompany.get(company.id) ?? []
 
     const computed = computeAccountStatusFromSignals({
-      crmAccountId: company.crm_account_id,
       deals: companyDeals.map((d) => ({
         status: d.status,
         closedOn: dealClosedOnForStatus(d),
@@ -88,8 +86,7 @@ export async function syncComputedAccountStatuses(
             .eq('id', company.id)
         }
       } else {
-        effectiveStatus[company.id] =
-          company.account_status as AccountStatusValue | null
+        effectiveStatus[company.id] = company.account_status as AccountStatusValue | null
       }
       continue
     }

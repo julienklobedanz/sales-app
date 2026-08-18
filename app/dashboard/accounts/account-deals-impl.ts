@@ -20,9 +20,7 @@ export async function getActiveDealsByCompanyIdImpl(
 
   const { data } = await supabase
     .from('deals')
-    .select(
-      'id, title, volume, status, expiry_date, salesforce_opportunity_id, crm_opportunity_id, crm_source, crm_synced_at, created_at, updated_at',
-    )
+    .select('id, title, volume, status, expiry_date, created_at, updated_at')
     .eq('organization_id', orgId)
     .eq('company_id', companyId)
     .not('status', 'in', '("won","lost")')

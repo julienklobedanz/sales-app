@@ -4,14 +4,11 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { OnboardingWizard } from './onboarding-wizard'
-import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { parseInviteRpcJson } from '@/lib/invites/parse-invite-rpc'
 
 type Props = {
   searchParams: Promise<{
     invite?: string
-    crm_connected?: string
-    crm_provider?: string
   }>
 }
 
@@ -58,7 +55,6 @@ export default async function OnboardingPage({ searchParams }: Props) {
         inviteOrganizationName={inviteOrganizationName}
         initialFullName={initialFullName}
         userEmail={user.email ?? ''}
-        hubspotConfigured={isHubSpotConfigured()}
         hasOrganization={Boolean(profile?.organization_id)}
       />
     </Suspense>

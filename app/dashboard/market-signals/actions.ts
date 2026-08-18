@@ -16,7 +16,6 @@ import {
 } from './watchlist-impl'
 import {
   addMarketSignalToDealImpl,
-  logMarketSignalQuickActionImpl,
   markMarketSignalNotificationsReadImpl,
   markMarketSignalOutcomeImpl,
   markMarketSignalsIrrelevantImpl,
@@ -178,13 +177,6 @@ export async function markMarketSignalOutcome(args: {
   stage: 'outreach' | 'meeting' | 'opportunity'
 }): Promise<{ success: true } | { success: false; error: string }> {
   return markMarketSignalOutcomeImpl(args)
-}
-
-export async function logMarketSignalQuickAction(args: {
-  signalKey: string
-  channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention'
-}): Promise<{ success: true } | { success: false; error: string }> {
-  return logMarketSignalQuickActionImpl(args)
 }
 
 /**
