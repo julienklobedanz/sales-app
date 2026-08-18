@@ -6,8 +6,6 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
 import { SETTINGS_CARD_CLASS } from './settings-tab-shared'
-import { WorkflowSimulationPanel } from './workflow-simulation-panel'
-import type { WorkflowSettingsShape, WorkflowSimulationItem } from './workflow-types'
 
 export function WorkflowFreigabeSettingsCard({
   linkExpiryDays,
@@ -24,8 +22,6 @@ export function WorkflowFreigabeSettingsCard({
   onEscalationAfterDaysChange,
   autoNotifyRequesterOnEscalation,
   onAutoNotifyRequesterOnEscalationChange,
-  liveSettings,
-  simulation,
 }: {
   linkExpiryDays: string
   onLinkExpiryDaysChange: (value: string) => void
@@ -41,28 +37,6 @@ export function WorkflowFreigabeSettingsCard({
   onEscalationAfterDaysChange: (value: string) => void
   autoNotifyRequesterOnEscalation: boolean
   onAutoNotifyRequesterOnEscalationChange: (value: boolean) => void
-  liveSettings: WorkflowSettingsShape
-  simulation: {
-    workflowSimulation: WorkflowSimulationItem[]
-    simulationSandboxEnabled: boolean
-    setSimulationSandboxEnabled: (value: boolean) => void
-    simRequireInternalApproval: boolean
-    setSimRequireInternalApproval: (value: boolean) => void
-    simReminder1Days: string
-    setSimReminder1Days: (value: string) => void
-    simReminder2Days: string
-    setSimReminder2Days: (value: string) => void
-    simEscalationAfterDays: string
-    setSimEscalationAfterDays: (value: string) => void
-    simLinkExpiryDays: string
-    setSimLinkExpiryDays: (value: string) => void
-    simAutoNotifyRequesterOnEscalation: boolean
-    setSimAutoNotifyRequesterOnEscalation: (value: boolean) => void
-    simAutoAllowDelegation: boolean
-    setSimAutoAllowDelegation: (value: boolean) => void
-    runWorkflowSimulation: () => void
-    resetWorkflowSandbox: () => void
-  }
 }) {
   return (
     <div className={SETTINGS_CARD_CLASS}>
@@ -143,7 +117,9 @@ export function WorkflowFreigabeSettingsCard({
         </div>
 
         <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">5. Abschluss & Transparenz</p>
+          <p className="text-sm font-semibold text-foreground">
+            5. Abschluss & Transparenz
+          </p>
           <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
             <div>
               <p className="text-sm font-medium">
@@ -167,8 +143,6 @@ export function WorkflowFreigabeSettingsCard({
             </p>
           </div>
         </div>
-
-        <WorkflowSimulationPanel liveSettings={liveSettings} {...simulation} />
       </CardContent>
     </div>
   )

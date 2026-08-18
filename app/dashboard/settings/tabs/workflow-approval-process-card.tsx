@@ -29,21 +29,3 @@ export function WorkflowApprovalProcessCard() {
     </div>
   )
 }
-
-export function WorkflowAutomationCard() {
-  return (
-    <div className={SETTINGS_CARD_CLASS}>
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-base">Automation</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 px-0 pb-0">
-        <div className="rounded-md border border-border p-3 text-sm">
-          Marktsignal Kategorie X → Push-Nachricht an Owner
-        </div>
-        <div className="rounded-md border border-border p-3 text-sm">
-          Approval überfällig → Eskalation an Requester
-        </div>
-      </CardContent>
-    </div>
-  )
-}
