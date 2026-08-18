@@ -6,6 +6,7 @@ import { COPY } from '@/lib/copy'
 import { dealWorkspaceAreaHref } from '@/lib/deals/deal-workspace-href'
 import type { DealWorkspaceArea } from '@/lib/deals/deal-workspace-areas'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
+import type { DealWorkspaceRiskEntry } from '@/lib/deals/deal-workspace-risk-entry'
 import type { DealWithReferences } from '../types'
 import type { DealDocumentRow } from '../document-actions'
 
@@ -63,6 +64,7 @@ export function DealWorkspaceAreaContent({
   documents,
   canManageDocuments,
   data,
+  riskEntries = [],
 }: {
   area: DealWorkspaceArea
   dealId: string
@@ -70,6 +72,7 @@ export function DealWorkspaceAreaContent({
   documents: DealDocumentRow[]
   canManageDocuments: boolean
   data: DealRfpCockpitData | null
+  riskEntries?: DealWorkspaceRiskEntry[]
 }) {
   if (area === 'dokumente') {
     return (
@@ -116,8 +119,15 @@ export function DealWorkspaceAreaContent({
     case 'eignung':
       return <DealRfpEligibilitySection data={data} />
     case 'risiken':
-      return <DealRfpRisksSection data={data} />
+      return (
+        <DealRfpRisksSection
+          entries={riskEntries}
+          visible={data.hasAnalysis && !data.isStale && Boolean(data.risks)}
+        />
+      )
     case 'entwuerfe':
-      return <DealRfpDraftsSection data={data} deal={deal} />
+      return data.hasAnalysis && !data.isStale ? (
+        <DealRfpDraftsSection rows={data.draftRows} />
+      ) : null
   }
 }

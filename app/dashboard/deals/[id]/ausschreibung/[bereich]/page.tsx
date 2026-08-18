@@ -5,15 +5,19 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import {
   isDealWorkspaceArea,
+  isDealWorkspaceEntryArea,
   type DealWorkspaceArea,
 } from '@/lib/deals/deal-workspace-areas'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
+import { buildDealWorkspaceRiskEntries } from '@/lib/deals/deal-workspace-risk-entry'
 import { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
 
 import { DealRfpCockpitSkeleton } from '../../../cockpit/deal-rfp-cockpit-skeleton'
 import { DealWorkspaceLayout } from '../../../cockpit/deal-workspace-layout'
 import { DealWorkspaceAreaContent } from '../../../cockpit/deal-workspace-area-content'
+import { DealRisksEntryPanel } from '../../../cockpit/deal-risks-entry-panel'
+import { DealDraftsEntryPanel } from '../../../cockpit/deal-drafts-entry-panel'
 import { loadDealWorkspaceContext } from '../load-deal-workspace-context'
 
 export default function DealWorkspaceAreaPage({
@@ -83,11 +87,32 @@ async function DealWorkspaceAreaLoaded({
     ? data.risks.redFlags.length + data.risks.smeOpenCount
     : 0
 
+  const analysisLive = Boolean(data?.hasAnalysis && !data?.isStale)
+  const riskEntries =
+    data && analysisLive
+      ? buildDealWorkspaceRiskEntries({
+          redFlags: data.risks?.redFlags ?? [],
+          requestedEvidenceGaps: data.requestedEvidenceGaps,
+          smeGroups: data.risks?.smeGroups ?? [],
+        })
+      : []
+  const draftRows = data && analysisLive ? data.draftRows : []
+  const entries =
+    area === 'risiken' ? riskEntries : area === 'entwuerfe' ? draftRows : []
+  const panel =
+    area === 'risiken' ? (
+      <DealRisksEntryPanel entries={riskEntries} />
+    ) : area === 'entwuerfe' ? (
+      <DealDraftsEntryPanel rows={draftRows} deal={deal} />
+    ) : undefined
+
   return (
     <DealWorkspaceLayout
       dealId={dealId}
       dealTitle={deal.title}
       currentArea={area}
+      entries={isDealWorkspaceEntryArea(area) ? entries.map((entry) => ({ id: entry.id })) : []}
+      panel={panel}
       items={buildAusschreibungNavItems({
         dealId,
         documentCount: documents.length,
@@ -107,6 +132,7 @@ async function DealWorkspaceAreaLoaded({
         documents={documents}
         canManageDocuments={canManageDocuments}
         data={data}
+        riskEntries={riskEntries}
       />
     </DealWorkspaceLayout>
   )
