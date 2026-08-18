@@ -2,7 +2,11 @@ import type { DealDeskDraftRow } from '@/lib/deal-desk/deal-analysis-types'
 
 export type DraftRowStatus = 'ready' | 'draft' | 'gap'
 
-export function draftRowStatus(row: DealDeskDraftRow): DraftRowStatus {
+/** Strukturelles Minimum — Summary-Zeile und Desk-Zeile teilen dieselbe Definition. */
+export function draftRowStatus(row: {
+  reference?: unknown
+  answer?: string | null
+}): DraftRowStatus {
   if (!row.reference) return 'gap'
   if (row.answer?.trim()) return 'ready'
   return 'draft'

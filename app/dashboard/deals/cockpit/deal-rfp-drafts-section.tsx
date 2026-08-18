@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ArrowRight01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
@@ -65,6 +66,7 @@ export function DealRfpDraftsSection({
   data: DealRfpCockpitData
   deal: DealWithReferences
 }) {
+  const router = useRouter()
   const showSection = data.hasAnalysis && !data.isStale
   const [rows, setRows] = useState(data.draftRows)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -83,8 +85,8 @@ export function DealRfpDraftsSection({
   if (!showSection) return null
 
   const dealContext = buildDealContextForAiDraft(deal)
-  const covered = rows.filter((d) => Boolean(d.reference)).length
-  const gaps = rows.length - covered
+  const covered = rows.filter((d) => draftRowStatus(d) === 'ready').length
+  const gaps = rows.filter((d) => draftRowStatus(d) === 'gap').length
 
   function toggleExpand(id: string) {
     setExpandedId((prev) => {
@@ -126,6 +128,7 @@ export function DealRfpDraftsSection({
       )
       setEditingId(null)
       toast.success(COPY.deals.cockpit.draftsSaveSuccess)
+      router.refresh()
     } finally {
       setSaving(false)
     }

@@ -1,7 +1,8 @@
 import { eligibilityVerdictLabel } from '@/lib/deals/compare-eligibility-criteria'
 import type { EligibilityAssessment } from '@/lib/deals/eligibility-criteria-schema'
+import { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
 
-type SummaryDraftRow = { reference?: unknown }
+type SummaryDraftRow = { reference?: unknown; answer?: string | null }
 type SummaryRisks = { redFlags: unknown[]; smeOpenCount: number }
 
 export type DealAusschreibungSummary = {
@@ -25,7 +26,7 @@ export function buildDealAusschreibungSummary(input: {
   const data = input.data
   const hasAnalysis = Boolean(data?.hasAnalysis && !data.isStale)
   const draftsCovered = data
-    ? data.draftRows.filter((row) => Boolean(row.reference)).length
+    ? data.draftRows.filter((row) => draftRowStatus(row) === 'ready').length
     : 0
   const draftsTotal = data?.draftRows.length ?? 0
   const risksCount = data?.risks

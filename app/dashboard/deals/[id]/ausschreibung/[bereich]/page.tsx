@@ -9,6 +9,7 @@ import {
 } from '@/lib/deals/deal-workspace-areas'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
+import { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
 
 import { DealRfpCockpitSkeleton } from '../../../cockpit/deal-rfp-cockpit-skeleton'
 import { DealWorkspaceLayout } from '../../../cockpit/deal-workspace-layout'
@@ -74,8 +75,9 @@ async function DealWorkspaceAreaLoaded({
     volume: deal.volume,
   })
 
+  // Leiste zählt bereit/gesamt — sonst bleibt die Zahl beim Speichern stehen.
   const draftsCovered = data
-    ? data.draftRows.filter((row) => Boolean(row.reference)).length
+    ? data.draftRows.filter((row) => draftRowStatus(row) === 'ready').length
     : 0
   const risksCount = data?.risks
     ? data.risks.redFlags.length + data.risks.smeOpenCount
