@@ -121,9 +121,9 @@ export function ShowcaseMultiPortfolio({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)]">
       <nav aria-label="Referenzen in diesem Portfolio" className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {references.length} Referenzen
-        </p>
+        </h2>
         <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
           {references.map((ref, index) => {
             const active = ref.id === selected.id

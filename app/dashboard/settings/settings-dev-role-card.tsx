@@ -81,8 +81,8 @@ export function SettingsDevRoleCard({
         </Card>
       </dl>
 
-      <div className="space-y-2">
-        <p className="text-sm font-medium">{COPY.settings.roleSwitcherPickLabel}</p>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{COPY.settings.roleSwitcherPickLabel}</legend>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {DEV_ROLE_PRESETS.map((preset) => {
             const active = devRolePreviewKey(effective) === devRolePreviewKey(preset)
@@ -103,7 +103,7 @@ export function SettingsDevRoleCard({
             )
           })}
         </div>
-      </div>
+      </fieldset>
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
         <Button

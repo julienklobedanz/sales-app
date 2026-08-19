@@ -319,7 +319,7 @@ Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer
 
 ### 11) Bausteine: wie ein Gegenstand innen aufgebaut ist
 
-§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis. Eingeführt 19.08.2026.
+§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis, Überschrift. Eingeführt 19.08.2026.
 
 #### 11.1 Die Karte
 
@@ -364,3 +364,30 @@ Eine Kartenfläche, nicht mehrere. `bg-muted/20`, `/30` und `/40` sind keine Kar
 **Hinweis** (`components/ui/hinweis.tsx`): `rounded-md border p-2 text-xs`. `tone`: `muted` (Default) · `destructive` · `warning` (Status-Tokens, keine Roh-Palette). Kein `role="alert"` von selbst.
 
 **Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 1: Warnung mit Zähler (CI `::warning`). Phase 2 (`--fail` / `ENCLOSURE_GUARD_FAIL=1`) erst nach §11.3 — die verbleibenden Treffer sind Felder, Chrome, Logos und gestrichelte Leerflächen. Leerflächen nicht auf die Allowlist, sonst verschwinden sie aus §11.3.
+
+#### 11.2 Überschriften
+
+**Nicht jedes fette `<p>` ist eine Überschrift.** Erkennung: *Führt das einen Abschnitt an, dessen Inhalt darunter dazugehört?* Nur dann ein Heading. Sonst:
+
+| Was | Erkennbar an | Element |
+|---|---|---|
+| **Überschrift** | führt einen Abschnitt an | `h1` / `h2` / `h3` · oder `legend` in `fieldset` |
+| **Beschriftung** | benennt ein Feld oder einen Wert daneben | bleibt Text; Umbau §11.4 |
+| **Wert** | hervorgehobener Inhalt (Name, Zahl, Zeilentitel) | `<p>` / `<span>` |
+| **Betonung** | ein Satz oder Status, kein Abschnitt | `<p>` |
+
+`CardTitle` (§11.1) bleibt die Kartenüberschrift. Dieser Abschnitt gilt **neben** der Karte.
+
+**Ebenen** (mit §11.1):
+
+- **`h1` — die Seite.** Genau eines sichtbar. Nicht in der Karte. `DASHBOARD_PAGE_TITLE_CLASS` ist Optik, nicht Semantik.
+- **`h2` — Abschnitt der Seite oder Objekt unter dem Seiten-h1.** Identisch mit dem `CardTitle`-Default. Eine Abschnittsüberschrift neben Karten ist `h2`, nie `h3` und nie `h1`.
+- **`h3` — unter einem h2.** `CardTitle as="h3"` in Karte-in-Karte, oder ein Unterabschnitt unter einem Nicht-Karten-h2. Tiefer nicht.
+- **Dialog / Sheet / Popover:** `DialogTitle` / `SheetTitle`. Kein rohes `h3` als Dialogtitel.
+- **`fieldset` / `legend`:** wo die Zeile eine Gruppe von Feldern oder Optionen beschriftet, nicht einen Seitenabschnitt.
+
+Karten-h2 und Seiten-h2 sind Geschwister. Konkurrenz entsteht nur, wenn zwei `h1` sichtbar sind oder ein `h2` die Seite spielt.
+
+**`h1`:** eine sichtbare Arbeitsfläche, ein `h1`. Exklusive Render-Zweige derselben Route zählen als eins. Objekt in einer Pane unter der Sammlung: `h2` (wie die Account-Linse), nicht ein zweites `h1`. Token-Seiten, deren einziger Gegenstand eine Karte ist: `h1` **über** der Karte, nicht `CardTitle as="h1"`.
+
+**Kein Klassen-Wächter.** `font-semibold` auf `<p>` ist nach der Klassifikation meist richtig. Die Regel halten diese Dokumentation und Outline-Tests (`getByRole('heading', { level })`) für repräsentative Sichten.

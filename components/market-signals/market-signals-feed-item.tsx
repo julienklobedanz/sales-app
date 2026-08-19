@@ -276,9 +276,9 @@ export function MarketSignalsOutreachDialog({
             className="min-h-[280px] font-mono text-sm"
           />
           <Hinweis className="p-3">
-            <p className="text-xs font-semibold text-foreground">
+            <h3 className="text-xs font-semibold text-foreground">
               {COPY.marketSignals.outreachMatchingRefsTitle}
-            </p>
+            </h3>
             <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
               {COPY.marketSignals.outreachMatchingRefsHint}
             </p>

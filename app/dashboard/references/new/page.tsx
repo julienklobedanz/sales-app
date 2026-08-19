@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { userCanCreateReference } from '@/lib/roles/reference-access'
 
@@ -63,6 +64,7 @@ export default async function NewReferencePage() {
             Zurück zu {COPY.nav.references}
           </Button>
         </Link>
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Referenz anlegen</h1>
         <ReferenceForm
           companies={companies ?? []}
           contacts={contacts ?? []}

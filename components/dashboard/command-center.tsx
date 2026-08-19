@@ -129,9 +129,9 @@ export function CommandCenter({ greetingName }: Props) {
   return (
     <div className="flex min-h-[min(70vh,640px)] flex-col pb-16">
       <div className="mx-auto mt-12 flex w-full max-w-3xl flex-col items-center px-4 text-center sm:mt-16 md:mt-20">
-        <h2 className="mb-6 text-xl font-medium tracking-tight text-foreground">
+        <h1 className="mb-6 text-xl font-medium tracking-tight text-foreground">
           Wie kann RefStack dir heute helfen, {firstName}?
-        </h2>
+        </h1>
 
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -170,9 +170,9 @@ export function CommandCenter({ greetingName }: Props) {
 
         {visibleSuggestions.length > 0 ? (
           <div className="mt-5 w-full text-left">
-            <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3 className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {draft.trim() ? 'Vorschläge' : 'Beispielanfragen'}
-            </p>
+            </h3>
             <div className="flex flex-wrap items-center justify-center gap-2.5">
               {visibleSuggestions.map((s) => (
                 <button

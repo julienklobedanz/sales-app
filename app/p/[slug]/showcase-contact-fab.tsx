@@ -60,7 +60,7 @@ export function ShowcaseContactFab({
         className="w-[260px] px-3 py-2.5"
       >
         <div className="space-y-2">
-          <p className="text-xs font-medium text-foreground">Kontakt</p>
+          <h3 className="text-xs font-medium text-foreground">Kontakt</h3>
           <div className="flex items-center gap-1.5 text-xs text-foreground">
             <AppIcon icon={Phone} size={14} className="shrink-0 text-muted-foreground" />
             {phone ? (
