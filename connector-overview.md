@@ -74,7 +74,7 @@ refstack/
 ```
 
 **Schlüssel-Dependencies (package.json):**
-`next`, `react`, `@supabase/ssr`, `@supabase/supabase-js`, `openai`, `pdf-parse`, `jszip`, `lucide-react`, `radix-ui`, `next-themes`, `date-fns`
+`next`, `react`, `@supabase/ssr`, `@supabase/supabase-js`, `openai`, `pdf-parse`, `jszip`, `lucide-react`, `radix-ui`, `date-fns`
 
 ---
 

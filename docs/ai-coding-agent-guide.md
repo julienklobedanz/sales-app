@@ -32,7 +32,7 @@
 Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 
 - **Farben:** Keine Hardcodes wie `slate-500`, `zinc-900`, `red-600` in App-Screens. Semantische Tokens: `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-muted`, `bg-accent`, `text-primary`, `text-destructive`, …
-- **Theme:** Über **`next-themes`** / bestehende Provider – kein zweites, paralleles Theme-System erfinden.
+- **Theme:** Ein Theme (hell). Kein `dark:`, kein `next-themes`, kein zweites Theme-System.
 - **Neue UI-Varianten:** In `components/ui/*` (z. B. `cva`), nicht als lange `className`-Ketten nur in einer Page.
 - **Status:** Zentrale Badge-Komponenten nutzen, keine neuen Ad-hoc-Chips für dieselben Domänen:
   - `components/reference-status-badge.tsx`

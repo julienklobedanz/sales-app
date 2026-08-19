@@ -2,9 +2,8 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
 import { Check } from 'lucide-react'
-import { LogOut, Moon, SettingsIcon, Sun } from '@hugeicons/core-free-icons'
+import { LogOut, SettingsIcon } from '@hugeicons/core-free-icons'
 
 import {
   clearDevPreviewRole,
@@ -53,7 +52,6 @@ export function DashboardUserMenu({
 }) {
   const router = useRouter()
   const hydrated = useHydrated()
-  const { resolvedTheme, setTheme } = useTheme()
   const { systemRole, functionRole } = useRole()
   const [roleSwitchPending, startRoleSwitch] = useTransition()
 
@@ -152,16 +150,6 @@ export function DashboardUserMenu({
         </>
       ) : null}
       <DropdownMenuGroup>
-        <DropdownMenuItem
-          onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-        >
-          {resolvedTheme === 'dark' ? (
-            <AppIcon icon={Sun} size={16} className="mr-2" />
-          ) : (
-            <AppIcon icon={Moon} size={16} className="mr-2" />
-          )}
-          Theme umschalten
-        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => router.push(ROUTES.settings)}>
           <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
           Account

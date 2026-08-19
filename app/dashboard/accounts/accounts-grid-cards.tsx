@@ -36,10 +36,10 @@ function primaryLineClass(primary: AccountCardPrimaryAction): string {
     return 'line-clamp-2 text-xs font-normal leading-snug text-muted-foreground'
   }
   if (primary.tone === 'danger') {
-    return 'line-clamp-2 text-sm font-normal leading-snug text-red-600/80 dark:text-red-400/75'
+    return 'line-clamp-2 text-sm font-normal leading-snug text-red-600/80'
   }
   if (primary.tone === 'warning') {
-    return 'line-clamp-2 text-sm font-normal leading-snug text-amber-700/85 dark:text-amber-400/80'
+    return 'line-clamp-2 text-sm font-normal leading-snug text-amber-700/85'
   }
   return 'line-clamp-2 text-xs font-normal leading-snug text-muted-foreground'
 }
@@ -117,7 +117,7 @@ function AccountCardBody({
                     size={12}
                     className={
                       company.is_favorite
-                        ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                        ? 'text-amber-500 [&_path]:fill-current'
                         : 'text-muted-foreground'
                     }
                   />
@@ -309,7 +309,7 @@ export function AccountGridCard({
                     size={14}
                     className={
                       company.is_favorite
-                        ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                        ? 'text-amber-500 [&_path]:fill-current'
                         : 'text-muted-foreground'
                     }
                   />

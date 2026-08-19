@@ -296,10 +296,10 @@ export function deadlineCountdownBadgeClass(days: number): string {
     return 'inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground'
   }
   if (days < 3) {
-    return 'inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-red-700 dark:bg-red-950/40 dark:text-red-300'
+    return 'inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-red-700'
   }
   if (days < 10) {
-    return 'inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-amber-800 dark:bg-amber-950/40 dark:text-amber-200'
+    return 'inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-amber-800'
   }
   return 'inline-flex rounded-full bg-muted/80 px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground'
 }

@@ -21,8 +21,8 @@ export function NdaStatusBadge({
       <span
         className={
           subtle
-            ? `block text-left text-emerald-700/80 dark:text-emerald-400/80 ${sizeClass}`
-            : `inline-flex shrink-0 items-center rounded-full border border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 ${sizeClass}`
+            ? `block text-left text-emerald-700/80 ${sizeClass}`
+            : `inline-flex shrink-0 items-center rounded-full border border-emerald-200/80 bg-emerald-50 text-emerald-800 ${sizeClass}`
         }
       >
         {compact || subtle ? 'NDA ✓' : 'NDA aktiv'}
@@ -34,8 +34,8 @@ export function NdaStatusBadge({
       <span
         className={
           subtle
-            ? `block text-left text-amber-700/80 dark:text-amber-400/80 ${sizeClass}`
-            : `inline-flex shrink-0 items-center rounded-full border border-amber-200/80 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200 ${sizeClass}`
+            ? `block text-left text-amber-700/80 ${sizeClass}`
+            : `inline-flex shrink-0 items-center rounded-full border border-amber-200/80 bg-amber-50 text-amber-900 ${sizeClass}`
         }
       >
         {compact || subtle ? 'NDA läuft ab' : 'NDA läuft ab'}

@@ -55,12 +55,12 @@ export function smeTopicBadgeClass(topic: string): string {
     return 'bg-primary/10 text-primary'
   }
   if (/security|sicherheit|compliance|iso/.test(t)) {
-    return 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200'
+    return 'bg-sky-100 text-sky-800'
   }
   if (/pricing|finance|preis|kosten/.test(t)) {
-    return 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
+    return 'bg-amber-100 text-amber-900'
   }
-  return 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200'
+  return 'bg-blue-100 text-blue-800'
 }
 
 export function DealRfpRisksSection({

@@ -42,7 +42,7 @@ export function AccountStatusBadge({
       <Badge
         variant="outline"
         className={cn(
-          'shrink-0 border-sky-200/80 bg-sky-50 text-[10px] font-medium text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-100',
+          'shrink-0 border-sky-200/80 bg-sky-50 text-[10px] font-medium text-sky-900',
           className,
         )}
       >

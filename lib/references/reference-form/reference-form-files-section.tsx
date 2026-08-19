@@ -84,7 +84,7 @@ export function ReferenceFormFilesSection({
             </OptionalLabel>
             <input type="hidden" name="incumbent_provider" value={incumbentProvider} />
             <div className="relative">
-              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
+              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
                 {incumbentProvider
                   .split(/[;,]+/)
                   .map((s) => s.trim())
@@ -201,7 +201,7 @@ export function ReferenceFormFilesSection({
             </OptionalLabel>
             <div className="relative">
               <input type="hidden" name="competitors" value={competitors} />
-              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
+              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
                 {competitors
                   .split(/[;,]+/)
                   .map((s) => s.trim())

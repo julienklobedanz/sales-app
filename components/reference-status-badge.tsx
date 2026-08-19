@@ -14,22 +14,6 @@ type Props = {
 const pill =
   'inline-flex w-fit shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium'
 
-const darkVariants: Record<string, string> = {
-  Widerrufen: 'dark:border-border dark:bg-muted/40 dark:text-muted-foreground',
-  Gesperrt: '',
-  Abgelehnt: '',
-  'Intern abgelehnt': '',
-  'Frist abgelaufen': '',
-  'Freigabe ausstehend': '',
-  Freigegeben: '',
-  'Extern freigegeben': '',
-  'Interne Prüfung ausstehend': '',
-  'Intern freigegeben': '',
-  Intern: 'dark:border-border dark:bg-muted/40 dark:text-muted-foreground',
-  Anonymisiert: 'dark:border-border dark:bg-muted/40 dark:text-foreground',
-  Entwurf: 'dark:border-border dark:bg-muted/40 dark:text-foreground',
-}
-
 export function ReferenceStatusBadge({
   status,
   customerApprovalStatus,
@@ -50,7 +34,7 @@ export function ReferenceStatusBadge({
 
   return (
     <span
-      className={cn(pill, badge.className, darkVariants[badge.label], className)}
+      className={cn(pill, badge.className, className)}
       role="status"
     >
       {badge.label}

@@ -32,7 +32,7 @@ function riskPillClass(tone: 'gap' | 'warn' | 'ok') {
     'text-[11px]',
     tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
     tone === 'warn' &&
-      'border-amber-300/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
+      'border-amber-300/60 bg-amber-50 text-amber-900',
     tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive',
   )
 }

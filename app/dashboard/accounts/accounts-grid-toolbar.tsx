@@ -116,7 +116,7 @@ export function AccountsGridToolbar({
                 size={16}
                 className={
                   favoritesOnly
-                    ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                    ? 'text-amber-500 [&_path]:fill-current'
                     : 'text-muted-foreground'
                 }
               />

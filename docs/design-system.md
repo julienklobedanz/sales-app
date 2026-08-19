@@ -2,12 +2,13 @@
 
 Ziel: **Fully aligned UI** durch zentrale Tokens + konsistente UI-Primitives + klare Regeln, wo Styles/Copy hingehören.
 
-### 1) Tokens & Theme (Farben, Radius, Dark Mode)
+### 1) Tokens & Theme (Farben, Radius)
 
 - **Primäre Token-Quelle**: `app/globals.css`
   - CSS-Variablen wie `--background`, `--foreground`, `--primary`, `--muted`, `--accent`, `--destructive`, `--border`, `--ring`, …
-  - `.dark` überschreibt diese Variablen → Dark Mode läuft über Tokens.
+  - Ein Theme: hell. `.theme-shell` setzt die Fläche; es gibt kein `.dark` und keine `dark:`-Varianten.
   - `@import "shadcn/tailwind.css";` + `@theme inline { --color-* ... }` verdrahtet Tokens für Tailwind/Utilities.
+- **Wächter:** `npm run check:dark` (`scripts/check-dark-variants.mjs`). Phase 2 (`--fail`): CI bricht ab, wenn `\bdark:` unter `app/`, `components/` oder `lib/` vorkommt — inklusive `components/ui`.
 
 ### 2) UI‑Primitives (Shadcn)
 
@@ -58,7 +59,7 @@ Damit Status‑Chips überall gleich “wirken”, nutzen wir `Badge`‑Variants
 > **Korrektur 14.08.2026.** Die frühere Fassung behauptete, ein Sweep habe „die letzten offensichtlichen Stellen bereinigt". Das trifft nicht zu: Eine Zählung am 14.08. findet **815 Raw‑Paletten‑Klassen** außerhalb von `components/ui` (app 528 / components ohne `ui/` 209 / lib 78). `components/ui` selbst: 15 — die einzige erlaubte Zone. Die Regel gilt weiter, sie wird nur nicht eingehalten. Abbauplan: [`arbeitspaket-ui-konsistenz.md`](./arbeitspaket-ui-konsistenz.md).
 
 - **Keine Raw‑Tailwind‑Paletten** in App‑Screens (`green-600`, `slate-*`, `zinc-*`, …): semantische Utilities (`text-primary`, `text-muted-foreground`, `bg-muted`, `border-border`, `text-destructive`, …) oder UI‑Variants nutzen. Bei neuen Features gleich Tokens verwenden.
-- **`components/` (App‑Ebene, nicht `ui/`):** Eigenes Markup nutzt durchgängig semantische Klassen (`auth-shell`, Status‑Badges, `SupportTicketModal`, …). Generierte **Shadcn‑Primitives** unter `components/ui/*` dürfen `dark:`‑Varianten und z. B. **Overlay‑Scrims** (`bg-black/50` / `bg-black/80`) sowie `text-white` auf **destructive**‑Buttons enthalten – das sind etablierte Muster; nur bei gezieltem Theme‑Tuning anfassen (visuell testen).
+- **`components/` (App‑Ebene, nicht `ui/`):** Eigenes Markup nutzt durchgängig semantische Klassen (`auth-shell`, Status‑Badges, `SupportTicketModal`, …). Generierte **Shadcn‑Primitives** unter `components/ui/*` dürfen z. B. **Overlay‑Scrims** (`bg-black/50` / `bg-black/80`) sowie `text-white` auf **destructive**‑Buttons enthalten – das sind etablierte Muster; nur bei gezieltem Theme‑Tuning anfassen (visuell testen). `dark:` ist verboten.
 - **Copy:** wiederkehrende Labels weiter über `lib/copy.ts` (`COPY`) führen; Rollen/Nav sind dort bereits vorhanden.
 - **Badges:** Status über die zentralen `*StatusBadge`‑Komponenten; Variant‑Semantik siehe Abschnitt 5.
 
