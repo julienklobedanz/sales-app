@@ -76,9 +76,9 @@ export function DealRfpNoticeHero({
         ) : null}
         {bullets.length > 0 ? (
           <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {COPY.deals.cockpit.noticeExecutiveSummaryTitle}
-            </p>
+            </h3>
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-foreground/90">
               {bullets.map((b) => (
                 <li key={b.slice(0, 64)}>{b}</li>

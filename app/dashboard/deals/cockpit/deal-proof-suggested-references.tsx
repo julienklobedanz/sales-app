@@ -48,9 +48,9 @@ export function DealProofSuggestedReferences({
 
   return (
     <div className="mb-4 space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">
+      <h3 className="text-xs font-medium text-muted-foreground">
         {COPY.deals.cockpit.proofSuggestedTitle}
-      </p>
+      </h3>
       <ul className="space-y-2">
         {suggestions.map((s) => (
           <li

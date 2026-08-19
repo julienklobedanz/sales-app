@@ -207,9 +207,9 @@ export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) 
         }
       >
         <div>
-          <p className="text-sm font-medium text-foreground">
+          <h3 className="text-sm font-medium text-foreground">
             Zwei-Faktor-Authentifizierung (TOTP)
-          </p>
+          </h3>
           {loading || verifiedFactor ? (
             <p
               className={

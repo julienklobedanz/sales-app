@@ -272,13 +272,13 @@ export function ReferenceContentCore({
         <div className="space-y-7">
           {show('challenge') && challenge?.trim() ? (
             <div className="space-y-2">
-              <div className="text-sm font-semibold">Herausforderung</div>
+              <h3 className="text-sm font-semibold">Herausforderung</h3>
               <ReferenceNarrativeBody text={challenge} />
             </div>
           ) : null}
           {show('solution') && solution?.trim() ? (
             <div className="space-y-2">
-              <div className="text-sm font-semibold">Unsere Lösung</div>
+              <h3 className="text-sm font-semibold">Unsere Lösung</h3>
               <ReferenceNarrativeBody text={solution} />
             </div>
           ) : null}
@@ -287,7 +287,7 @@ export function ReferenceContentCore({
 
       {projectCells.length > 0 ? (
         <section className="space-y-2">
-          <div className="text-sm font-semibold">Projektdetails</div>
+          <h3 className="text-sm font-semibold">Projektdetails</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {projectCells.map((cell) => (
               <DetailCell key={cell.id} label={cell.label} value={cell.value} />
@@ -298,7 +298,7 @@ export function ReferenceContentCore({
 
       {show('customerContact') || show('salesContact') ? (
         <section className="space-y-3">
-          <div className="text-sm font-semibold">Kontakte</div>
+          <h3 className="text-sm font-semibold">Kontakte</h3>
           <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             {show('salesContact') ? (
               <ContactBlock
@@ -321,14 +321,14 @@ export function ReferenceContentCore({
 
       {filesLoading ? (
         <section className="space-y-3">
-          <div className="text-sm font-semibold">Dateien</div>
+          <h3 className="text-sm font-semibold">Dateien</h3>
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
             Dateien werden geladen…
           </div>
         </section>
       ) : show('files') && files && files.length > 0 ? (
         <section className="space-y-3">
-          <div className="text-sm font-semibold">Dateien</div>
+          <h3 className="text-sm font-semibold">Dateien</h3>
           <Tabs defaultValue="sales" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               {FILE_CATEGORIES.map((cat) => (

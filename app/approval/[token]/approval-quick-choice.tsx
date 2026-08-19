@@ -46,11 +46,11 @@ export function ApprovalQuickChoice({
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-semibold text-foreground">
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-semibold text-foreground">
         Wofür dürfen wir Ihre Referenz nutzen?
-      </p>
-      <div className="flex flex-col gap-2" role="group" aria-label="Freigabe-Typ">
+      </legend>
+      <div className="flex flex-col gap-2">
         {QUICK_APPROVAL_CARDS.map((card) => {
           const active = value === card.id
           const tone = TONE_STYLES[card.tone]
@@ -85,6 +85,6 @@ export function ApprovalQuickChoice({
           )
         })}
       </div>
-    </div>
+    </fieldset>
   )
 }

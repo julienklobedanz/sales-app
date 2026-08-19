@@ -8,6 +8,7 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import {
   DEAL_WORKSPACE_ENTRY_PARAM,
   dealWorkspaceLayoutChrome,
@@ -102,6 +103,9 @@ export function DealWorkspaceLayout({
           <span className="px-2">/</span>
           <span className="text-foreground">{COPY.deals.cockpit.rfpBlockTitle}</span>
         </nav>
+        <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} px-5 pt-2 md:px-8`}>
+          {dealTitle}
+        </h1>
         {showPanel ? (
           <div className="flex min-h-0 flex-1">
             {showList ? (

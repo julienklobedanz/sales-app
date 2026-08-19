@@ -192,9 +192,9 @@ export function SettingsCapabilityProfile({
         </div>
 
         <div className="border-t border-border pt-3">
-          <p className="mb-2 text-sm font-medium">
+          <h3 className="mb-2 text-sm font-medium">
             {COPY.settings.capabilityProfile.icpTitle}
-          </p>
+          </h3>
           <div className="grid gap-2.5 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="icp-industry" className="text-xs">

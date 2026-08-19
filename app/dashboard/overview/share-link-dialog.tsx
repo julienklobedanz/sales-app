@@ -5,7 +5,7 @@ import { CopyIcon, ExternalLink, LinkIcon, Loader } from '@hugeicons/core-free-i
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { AppIcon } from '@/lib/icons'
 
@@ -67,7 +67,9 @@ export function ShareLinkDialog({
         <div className="flex flex-col">
           <div className="preview-modal-scroll overflow-y-auto p-8 md:p-8 lg:p-8">
             <div className="mx-auto w-full max-w-4xl space-y-6">
-              <h3 className="text-lg font-semibold">Kundenlink erstellen</h3>
+              <DialogHeader>
+                <DialogTitle className="text-lg">Kundenlink erstellen</DialogTitle>
+              </DialogHeader>
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">

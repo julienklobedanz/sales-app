@@ -18,15 +18,17 @@ import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-refer
 function InvalidLink() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
-      <Card className="max-w-md text-center">
-        <CardHeader>
-          <CardTitle>Link ungültig</CardTitle>
-          <CardDescription>
-            Dieser Link ist nicht mehr gültig oder wurde bereits verwendet. Bitte wenden
-            Sie sich bei Rückfragen an Ihren Ansprechpartner.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="w-full max-w-md space-y-4 text-center">
+        <h1 className="text-xl font-semibold tracking-tight">Link ungültig</h1>
+        <Card>
+          <CardHeader>
+            <CardDescription>
+              Dieser Link ist nicht mehr gültig oder wurde bereits verwendet. Bitte wenden
+              Sie sich bei Rückfragen an Ihren Ansprechpartner.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     </div>
   )
 }

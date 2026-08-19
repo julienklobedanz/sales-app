@@ -60,7 +60,7 @@ export function ReferenceDetailHeader({
           />
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} min-w-0 break-words`}>{title}</h1>
+          <h2 className={`${DASHBOARD_PAGE_TITLE_CLASS} min-w-0 break-words`}>{title}</h2>
           {favoriteReferenceId ? (
             <form action={toggleFavorite.bind(null, favoriteReferenceId)}>
               <button
