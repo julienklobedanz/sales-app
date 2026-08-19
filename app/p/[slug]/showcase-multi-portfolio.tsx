@@ -73,8 +73,8 @@ function releaseDisplay(value: string): ReactNode {
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium tabular-nums">{value}</span>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium tabular-nums">{value}</dd>
     </div>
   )
 }
@@ -248,6 +248,7 @@ export function ShowcaseMultiPortfolio({
                 <CardTitle className="text-base">Projektdetails</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
+                <dl className="space-y-2">
                 <DetailRow
                   label="Volumen"
                   value={releaseDisplay(releaseVolume(selected.volume_eur))}
@@ -294,6 +295,7 @@ export function ShowcaseMultiPortfolio({
                   label="Mitarbeiter"
                   value={releaseDisplay(releaseEmployees(selected.employee_count))}
                 />
+                </dl>
 
                 {kpisInDetails.length ? (
                   <>

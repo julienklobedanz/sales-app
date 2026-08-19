@@ -23,7 +23,7 @@ const BAR_BODY_CLASS = 'w-full bg-card px-5 py-3.5'
 
 function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boolean }) {
   return (
-    <div
+    <dl
       className={cn(
         'grid min-w-0 flex-1 grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3',
         'xl:grid-cols-5',
@@ -32,18 +32,18 @@ function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boo
     >
       {items.map((item) => (
         <div key={item.label} className="min-w-0 space-y-1">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {item.label}
-          </p>
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          </dt>
+          <dd className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             {item.icon ? (
               <span className="shrink-0 text-muted-foreground/80">{item.icon}</span>
             ) : null}
             <span className="min-w-0 truncate tabular-nums">{item.value}</span>
-          </p>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   )
 }
 

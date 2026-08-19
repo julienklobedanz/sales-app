@@ -11,8 +11,8 @@ import { Card, CardTitle } from '@/components/ui/card'
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border/50 py-2 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-right text-sm font-medium text-foreground">{value}</span>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-right text-sm font-medium text-foreground">{value}</dd>
     </div>
   )
 }
@@ -126,13 +126,13 @@ export function ShowcaseProjectDetails({
       <Card className="sticky top-32 p-6">
         <CardTitle>Projektdetails</CardTitle>
 
-        <div>
+        <dl>
           {rows
             .filter((r) => r.show)
             .map((r) => (
               <DetailRow key={r.label} label={r.label} value={r.value} />
             ))}
-        </div>
+        </dl>
 
         <ShowcaseActionButtons
           slug={slug}

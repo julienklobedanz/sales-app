@@ -61,14 +61,18 @@ export function DealFactsCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          {rows.map((row) => (
-            <div key={row.label} className="flex justify-between gap-3 text-sm">
-              <span className="shrink-0 text-muted-foreground">{row.label}</span>
-              <span className="max-w-[60%] truncate text-right font-medium">
-                {row.value}
-              </span>
-            </div>
-          ))}
+          {rows.length > 0 ? (
+            <dl className="space-y-2">
+              {rows.map((row) => (
+                <div key={row.label} className="flex justify-between gap-3 text-sm">
+                  <dt className="shrink-0 text-muted-foreground">{row.label}</dt>
+                  <dd className="max-w-[60%] truncate text-right font-medium">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
         </CardContent>
       </Card>
 

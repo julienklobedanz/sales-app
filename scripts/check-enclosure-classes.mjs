@@ -5,6 +5,7 @@
  *
  * Phase 1 (default): print the count and exit 0.
  * Phase 2: `node scripts/check-enclosure-classes.mjs --fail` (or ENCLOSURE_GUARD_FAIL=1).
+ * CI runs with `--fail` after §11.3.
  *
  * Excludes: components/ui, tests, documented allowlist, rounded-full,
  * border-input, border-transparent, border-0.
@@ -27,18 +28,50 @@ const CLASS_PATTERNS = [
 
 /**
  * Lasting exceptions — not the migration backlog.
- * Skeletons / loading.tsx and dropzones until a Dropzone primitive exists.
+ * Dropzones until a Dropzone primitive exists. Chrome, fields and logo tiles
+ * after §11.3: not empty surfaces, not enclosure primitives.
  */
 export const ENCLOSURE_ALLOWLIST = new Set([
-  'components/dashboard/settings-totp-mfa-card.tsx',
+  // chrome
   'components/dashboard/collection-read-layout.tsx',
+  'components/dashboard/shell/app-sidebar.tsx',
+  'components/dashboard/sidebar-notifications-button.tsx',
+  'components/dashboard/command-center.tsx',
+  'components/dashboard/dashboard-user-menu.tsx',
+  'components/table/table-bulk-actions-bar.tsx',
   'app/dashboard/overview/references-data-table.tsx',
   'app/dashboard/overview/compliance-documents-table.tsx',
+  'app/dashboard/overview/reference-library-toolbar.tsx',
+  'app/dashboard/overview/bulk-import-groups-panel.tsx',
+  'app/dashboard/overview/compliance-bulk-groups-panel.tsx',
+  'app/dashboard/overview/trash-dialog.tsx',
+  'app/dashboard/dashboard-overview.tsx',
+  'app/dashboard/deals/deals-client.tsx',
+  'app/dashboard/settings/sticky-save-bar.tsx',
+  // dropzone until primitive
   'app/dashboard/deals/cockpit/deal-document-dropzone.tsx',
   'app/dashboard/accounts/components/nda-pdf-dropzone.tsx',
   'app/dashboard/accounts/components/accounts-import-dialog.tsx',
   'app/dashboard/overview/bulk-import-dropzone.tsx',
   'app/dashboard/overview/compliance-multi-pdf-dropzone.tsx',
+  'app/dashboard/references/components/reference-onboarding-empty-state.tsx',
+  'lib/references/reference-form/reference-form-files-section.tsx',
+  'lib/references/reference-form/reference-form-fields.tsx',
+  // field
+  'app/dashboard/accounts/components/company-name-suggest-field.tsx',
+  'app/dashboard/references/[id]/approval-contact-suggest-field.tsx',
+  'app/dashboard/overview/compliance-document-type-combobox.tsx',
+  'app/dashboard/overview/share-link-dialog.tsx',
+  'app/dashboard/references/[id]/pdf-export-dialog.tsx',
+  'app/dashboard/settings/market-signals/newsrooms-card.tsx',
+  'app/dashboard/settings/settings-export-templates-card.tsx',
+  'app/onboarding/steps/workspace-step.tsx',
+  // logo
+  'components/dashboard/settings-totp-mfa-card.tsx',
+  'app/p/[slug]/showcase-multi-portfolio.tsx',
+  'app/dashboard/deals/cockpit/deal-proof-section.tsx',
+  'app/dashboard/overview/inbox-references/client.tsx',
+  'app/dashboard/overview/compliance-document-type-icon.tsx',
 ])
 
 const SCAN_ROOTS = ['app', 'components', 'lib']
@@ -181,7 +214,7 @@ function main() {
   if (process.env.GITHUB_ACTIONS === 'true') {
     const level = fail && result.total > 0 ? 'error' : 'warning'
     console.log(
-      `::${level} title=§11.1 enclosure guard::${result.total} after allowlist (app ${result.byZone.app}, components ${result.byZone.components}, lib ${result.byZone.lib}). Phase 1 warning until the surface PRs land.`,
+      `::${level} title=§11.1 enclosure guard::${result.total} after allowlist (app ${result.byZone.app}, components ${result.byZone.components}, lib ${result.byZone.lib}). Phase 2 fail after §11.3.`,
     )
   }
 

@@ -85,7 +85,7 @@ export function WatchlistCompaniesPanel({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Accounts durchsuchen"
-              className="h-10 rounded-xl border-border/70 bg-card pl-10"
+              className="h-10 rounded-xl border-input bg-card pl-10"
             />
           </div>
           <Button
@@ -107,7 +107,7 @@ export function WatchlistCompaniesPanel({
               aria-pressed={onlyWatched}
               onClick={() => setOnlyWatched((v) => !v)}
               className={cn(
-                'h-10 rounded-xl border px-3 text-sm font-medium transition-colors',
+                'h-10 rounded-xl border-input px-3 text-sm font-medium transition-colors',
                 onlyWatched
                   ? 'border-foreground/20 bg-foreground text-background'
                   : 'border-border/70 bg-card text-muted-foreground hover:text-foreground',
@@ -155,7 +155,7 @@ export function WatchlistCompaniesPanel({
         </div>
 
         {filteredCompanies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
             <p className="max-w-md text-sm text-muted-foreground">{emptyMessage}</p>
             {onlyWatched ? (
               <Button
@@ -245,7 +245,7 @@ export function WatchlistCompaniesPanel({
               onSelectSuggestion={onAddCompanySuggestion}
               disabled={addPending || isPending}
               placeholder="Firma suchen oder neu anlegen …"
-              className="h-10 rounded-xl border-border/60"
+              className="h-10 rounded-xl border-input"
               autoFocus
             />
           </DialogContent>

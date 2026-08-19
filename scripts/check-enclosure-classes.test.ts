@@ -5,6 +5,7 @@ import {
   isAllowlisted,
   isExcludedPath,
   isFilteredClassString,
+  scanRepo,
   zoneFor,
 } from './check-enclosure-classes.mjs'
 
@@ -60,9 +61,19 @@ describe('isAllowlisted', () => {
     expect(isAllowlisted('app/dashboard/deals/cockpit/deal-document-dropzone.tsx')).toBe(
       true,
     )
+    expect(
+      isAllowlisted('app/dashboard/references/components/reference-onboarding-empty-state.tsx'),
+    ).toBe(true)
+    expect(isAllowlisted('components/dashboard/shell/app-sidebar.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/match-result-skeleton.tsx')).toBe(true)
     expect(isAllowlisted('app/dashboard/settings/loading.tsx')).toBe(true)
     expect(isAllowlisted('app/dashboard/deals/page.tsx')).toBe(false)
+  })
+})
+
+describe('scanRepo', () => {
+  it('phase 2: no rounded+border hits outside the allowlist', () => {
+    expect(scanRepo().total).toBe(0)
   })
 })
 

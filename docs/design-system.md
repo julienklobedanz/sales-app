@@ -319,7 +319,7 @@ Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer
 
 ### 11) Bausteine: wie ein Gegenstand innen aufgebaut ist
 
-§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis, Überschrift. Eingeführt 19.08.2026.
+§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis, Überschrift, Leerzustand, Faktzeile. Eingeführt 19.08.2026.
 
 #### 11.1 Die Karte
 
@@ -363,7 +363,7 @@ Eine Kartenfläche, nicht mehrere. `bg-muted/20`, `/30` und `/40` sind keine Kar
 
 **Hinweis** (`components/ui/hinweis.tsx`): `rounded-md border p-2 text-xs`. `tone`: `muted` (Default) · `destructive` · `warning` (Status-Tokens, keine Roh-Palette). Kein `role="alert"` von selbst.
 
-**Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 1: Warnung mit Zähler (CI `::warning`). Phase 2 (`--fail` / `ENCLOSURE_GUARD_FAIL=1`) erst nach §11.3 — die verbleibenden Treffer sind Felder, Chrome, Logos und gestrichelte Leerflächen. Leerflächen nicht auf die Allowlist, sonst verschwinden sie aus §11.3.
+**Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 2 (`--fail`): CI bricht ab, wenn der Zähler über der Allowlist liegt. Dauerhafte Ausnahmen: Dropzones (bis ein eigenes Bauteil existiert), Chrome, Logo-Fallbacks. Felder nutzen `border-input` und fallen so aus dem Raster.
 
 #### 11.2 Überschriften
 
@@ -391,3 +391,46 @@ Karten-h2 und Seiten-h2 sind Geschwister. Konkurrenz entsteht nur, wenn zwei `h1
 **`h1`:** eine sichtbare Arbeitsfläche, ein `h1`. Exklusive Render-Zweige derselben Route zählen als eins. Objekt in einer Pane unter der Sammlung: `h2` (wie die Account-Linse), nicht ein zweites `h1`. Token-Seiten, deren einziger Gegenstand eine Karte ist: `h1` **über** der Karte, nicht `CardTitle as="h1"`.
 
 **Kein Klassen-Wächter.** `font-semibold` auf `<p>` ist nach der Klassifikation meist richtig. Die Regel halten diese Dokumentation und Outline-Tests (`getByRole('heading', { level })`) für repräsentative Sichten.
+
+#### 11.3 Leerzustand eines Bausteins
+
+§10.8 bleibt der Leerzustand der **Sammlung**: Er nennt den Raum, lädt ein, und die Aktion entspricht der Rolle. Dieser Abschnitt gilt **neben** der Sammlung — für die leere Karte, die leere Liste in einem Bereich, den Slot ohne Inhalt.
+
+**Erkennung:** *Ist das der Zustand eines Gegenstands, der hier hingehört, aber fehlt?* Nicht: *steht `border-dashed` in der Klasse?*
+
+| Was | Erkennbar an | Darstellung |
+|---|---|---|
+| **Sammlung leer** | keine Objekte dieses Typs | §10.8 — unangetastet |
+| **Filter leer** | die Menge existiert, die aktuelle Suche trifft nichts | Schale bleibt, Satz „Keine Treffer“, keine Dropzone |
+| **Baustein leer, Schale bleibt** | Slot ist Teil der Seitengrammatik (Home-Karte, navigierbarer Bereich, Linsen-Kern) | Schale rendern, innen ein Satz; Aktion nur wenn die Rolle sie darf |
+| **Baustein leer, Abschnitt entfällt** | optionaler Kontext des Objekts (§10.2) | nicht rendern, kein „—“ |
+| **Dropzone** | hier kann etwas abgelegt werden | gestrichelt — Bedeutungsträger nur hier |
+| **Laden** | Warten, nicht leer | Satz ohne Extra-Rahmen |
+
+**Gestrichelt** heißt *hier kann etwas hin*. Bei einem leeren Baustein ist es eine geliehene Dropzone-Optik ohne Ablageziel — Rahmen ohne Gegenstand (§11.1). Provisorien („noch nicht verknüpft“) ebenfalls ohne Gestricheltes.
+
+Drei Aussagen, keine Vereinheitlichung: Filter „Keine Treffer“ · noch nie „Noch keine {Gegenstand}“ · Formular optional „Keine Angabe“.
+
+`HonestEmpty` bleibt der Aufrufer für Home-Karten und trägt **keine** Extra-Einfassung. Tabellen-, KPI- und Identitäts-`—` (feste Spalte, festes Raster) sind keine Felder mit Gedankenstrich im Sinne von §10.2.
+
+#### 11.4 Schlüssel-Wert
+
+**Nicht jedes Label über einem Wert ist eine Faktzeile.** Erkennung: *Benennen Schlüssel und Wert denselben Fakt eines Gegenstands?* Nur dann eine Beschreibungsliste. Sonst:
+
+| Was | Erkennbar an | Element |
+|---|---|---|
+| **Faktzeile** | Label + Wert eines Objekts | `<dl>` / `<dt>` / `<dd>` |
+| **Metrik** | Zahl mit Kicker in festem Raster | `<p>` über `<p>` |
+| **Spalten-Kicker** | 10px über einer Tabellenzelle | `<p>` |
+| **Switch-Zeile** | Beschriftung eines Controls | `<Label>` oder `<p>` |
+| **Eyebrow** | kleine Zeile über einem Titel | `<p>` |
+| **Gruppenlabel** | 10px-Label in einer Ergebniskarte | Text, kein Heading |
+| **Formularfeld** | benennt ein Input | `<Label>` — keine zusätzliche Regel |
+
+Kein Bauteil. Eine Zeile fasst nichts ein. Markup wie in den Stammdaten (WHATWG: `div`-Wrapper in `dl` sind zulässig):
+
+- Gestapelt: `dt` oben, `dd` darunter (Raster)
+- Inline: dieselbe `dl`, `div` mit `flex justify-between` (Deal-Fakten)
+- Ein Paar in einer Menge: Teil derselben `dl`, nicht eine Mini-Karte
+
+**Kein Klassen-Wächter.** `text-xs uppercase` trifft Eyebrows und Metriken. Die Regel halten diese Dokumentation und Outline-Tests (`getByRole('term')`) für repräsentative Sichten.

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardTitle } from '@/components/ui/card'
+import { CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import {
   DEV_ROLE_PRESETS,
@@ -63,22 +63,22 @@ export function SettingsDevRoleCard({
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <Card className="px-3 py-2">
+        <div className="min-w-0">
           <dt className="text-muted-foreground">
             {COPY.settings.roleSwitcherStoredLabel}
           </dt>
-          <CardTitle as="h3" className="mt-1 text-sm font-medium">
+          <dd className="mt-1 text-sm font-medium">
             {formatDevRolePreviewLabel(serverRoles)}
-          </CardTitle>
-        </Card>
-        <Card className="px-3 py-2">
+          </dd>
+        </div>
+        <div className="min-w-0">
           <dt className="text-muted-foreground">
             {COPY.settings.roleSwitcherActiveLabel}
           </dt>
-          <CardTitle as="h3" className="mt-1 text-sm font-medium">
+          <dd className="mt-1 text-sm font-medium">
             {formatDevRolePreviewLabel(effective)}
-          </CardTitle>
-        </Card>
+          </dd>
+        </div>
       </dl>
 
       <fieldset className="space-y-2">

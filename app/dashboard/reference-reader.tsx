@@ -15,7 +15,7 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
     <Card className="w-full p-6 text-foreground">
       <div className="flex items-start gap-3">
         {isAnonymized ? (
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
             <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
           </div>
         ) : (

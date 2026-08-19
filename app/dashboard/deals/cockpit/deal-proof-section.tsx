@@ -138,7 +138,7 @@ export function DealProofSection({
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0 pl-7">
             {linkedSorted.length === 0 ? (
-              <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center">
+              <div className="py-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   {COPY.deals.cockpit.proofEmpty}
                 </p>
