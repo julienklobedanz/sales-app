@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import { COPY } from '@/lib/copy'
 import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'
 import { AppIcon, type AppIconProps } from '@/lib/icons'
@@ -61,9 +62,9 @@ export function RoleDashboardShell({
       </div>
 
       {thin && thinBannerText ? (
-        <div className="rounded-xl border border-amber-300/60 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <Hinweis tone="warning" className="px-3.5 py-2.5">
           {thinBannerText}
-        </div>
+        </Hinweis>
       ) : null}
 
       <div className="flex flex-col gap-4">{children}</div>

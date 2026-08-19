@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import {
   DEV_ROLE_PRESETS,
@@ -56,24 +57,28 @@ export function SettingsDevRoleCard({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">
+        <CardTitle as="h3" className="text-lg font-semibold tracking-tight">
           {COPY.settings.roleSwitcherCardTitle}
-        </h2>
+        </CardTitle>
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <div className="rounded-lg border bg-muted/30 px-3 py-2">
+        <Card className="px-3 py-2">
           <dt className="text-muted-foreground">
             {COPY.settings.roleSwitcherStoredLabel}
           </dt>
-          <dd className="mt-1 font-medium">{formatDevRolePreviewLabel(serverRoles)}</dd>
-        </div>
-        <div className="rounded-lg border bg-muted/30 px-3 py-2">
+          <CardTitle as="h3" className="mt-1 text-sm font-medium">
+            {formatDevRolePreviewLabel(serverRoles)}
+          </CardTitle>
+        </Card>
+        <Card className="px-3 py-2">
           <dt className="text-muted-foreground">
             {COPY.settings.roleSwitcherActiveLabel}
           </dt>
-          <dd className="mt-1 font-medium">{formatDevRolePreviewLabel(effective)}</dd>
-        </div>
+          <CardTitle as="h3" className="mt-1 text-sm font-medium">
+            {formatDevRolePreviewLabel(effective)}
+          </CardTitle>
+        </Card>
       </dl>
 
       <div className="space-y-2">

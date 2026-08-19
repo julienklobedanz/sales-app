@@ -2,6 +2,7 @@
 
 import { MatchResultSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-card'
+import { Hinweis } from '@/components/ui/hinweis'
 import type { MatchReferenceHit } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { dealContextString } from '@/app/dashboard/smart-match/smart-match-shell-helpers'
@@ -53,8 +54,8 @@ export function SmartMatchResults({
 
   /* Ehrlicher Leerzustand statt Fake-Treffer (Proof over Promise) */
   return (
-    <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[13.5px] text-destructive">
+    <Hinweis tone="destructive" className="px-4 py-3 text-[13.5px]">
       ⚠ Keine passenden Referenzen für diese Anfrage gefunden.
-    </div>
+    </Hinweis>
   )
 }

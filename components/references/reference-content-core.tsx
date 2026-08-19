@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import {
   Select,
   SelectContent,
@@ -47,10 +49,10 @@ const FILE_CATEGORY_LABEL: Record<(typeof FILE_CATEGORIES)[number], string> = {
 
 function DetailCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-background p-3">
+    <Card className="gap-1 p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-medium">{value}</div>
-    </div>
+      <div className="text-sm font-medium">{value}</div>
+    </Card>
   )
 }
 
@@ -243,9 +245,9 @@ export function ReferenceContentCore({
   return (
     <div className="space-y-6">
       {show('summary') && summary?.trim() ? (
-        <p className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-base font-medium leading-relaxed text-foreground">
+        <Hinweis className="px-4 py-3 text-base font-medium leading-relaxed text-foreground">
           {summary.trim()}
-        </p>
+        </Hinweis>
       ) : null}
 
       {show('usabilityStatement') && usabilityText?.trim() ? (
@@ -350,10 +352,8 @@ export function ReferenceContentCore({
                   ) : (
                     <ul className="space-y-2">
                       {assetsInCat.map((file) => (
-                        <li
-                          key={file.key}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"
-                        >
+                        <li key={file.key}>
+                          <Card className="flex flex-wrap items-center justify-between gap-2 p-3">
                           <div className="min-w-0">
                             <div className="truncate text-sm">{file.name}</div>
                             {file.createdAt ? (
@@ -406,6 +406,7 @@ export function ReferenceContentCore({
                               </Button>
                             ) : null}
                           </div>
+                          </Card>
                         </li>
                       ))}
                     </ul>

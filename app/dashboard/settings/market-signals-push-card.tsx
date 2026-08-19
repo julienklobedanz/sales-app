@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { Notification01Icon } from '@hugeicons/core-free-icons'
@@ -87,7 +88,7 @@ export function MarketSignalsPushCard() {
   }
 
   return (
-    <div className="rounded-lg border border-border px-3 py-2">
+    <Card className="px-3 py-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium">Browser registrieren (Web Push)</p>
@@ -106,6 +107,6 @@ export function MarketSignalsPushCard() {
           {pending ? COPY.settings.pushEnablePending : COPY.settings.pushEnable}
         </Button>
       </div>
-    </div>
+    </Card>
   )
 }

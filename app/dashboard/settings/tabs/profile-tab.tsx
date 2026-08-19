@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -57,11 +57,7 @@ import { MarketSignalsPushCard } from '../market-signals-push-card'
 import { updateProfileNotificationSettings } from '../settings-consolidation-actions'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
-import {
-  SETTINGS_CARD_CLASS_COMPACT,
-  SETTINGS_DANGER_ZONE_CLASS_COMPACT,
-  type RegisterSettingsTab,
-} from './settings-tab-shared'
+import { type RegisterSettingsTab } from './settings-tab-shared'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
 
 type ProfileTabProps = {
@@ -188,7 +184,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
   return (
     <TabsContent value="profile">
       <div className="space-y-4">
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <SettingsProfileCard
             userEmail={profile.userEmail}
             firstName={profile.firstName}
@@ -202,14 +198,14 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
             saveSignal={profileSaveSignal}
             onDirtyChange={setProfileCardDirty}
           />
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <CardHeader className="px-0 pt-0 pb-0">
             <CardTitle className="text-sm font-semibold">Benachrichtigungen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 px-0 pb-0 pt-2">
-            <div className="rounded-lg border">
+            <div>
               <Table className="min-w-[480px]">
                 <TableHeader>
                   <TableRow>
@@ -342,9 +338,9 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
 
             <MarketSignalsPushCard />
           </CardContent>
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <CardHeader className="px-0 pt-0 pb-0">
             <CardTitle className="text-sm font-semibold">Passwort ändern</CardTitle>
           </CardHeader>
@@ -395,18 +391,18 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               </div>
             </form>
           </CardContent>
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <CardHeader className="px-0 pt-0 pb-0">
             <CardTitle className="text-sm font-semibold">Sicherheit (2FA)</CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 pt-2">
             <SettingsTotpMfaCard compact />
           </CardContent>
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <CardHeader className="px-0 pt-0 pb-0">
             <CardTitle className="text-sm font-semibold">Aktive Sessions</CardTitle>
           </CardHeader>
@@ -478,9 +474,9 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               </AlertDialog>
             </div>
           </CardContent>
-        </div>
+        </Card>
 
-        <div className={SETTINGS_DANGER_ZONE_CLASS_COMPACT}>
+        <Card className="border-destructive">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-destructive">
@@ -557,7 +553,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </Card>
       </div>
     </TabsContent>
   )

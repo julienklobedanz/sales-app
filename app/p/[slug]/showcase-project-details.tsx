@@ -6,6 +6,7 @@ import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-disp
 import type { ManageApprovalStatusSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
 import type { PublicReference } from '../actions'
 import { ShowcaseActionButtons } from './showcase-action-buttons'
+import { Card, CardTitle } from '@/components/ui/card'
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -122,8 +123,8 @@ export function ShowcaseProjectDetails({
 
   return (
     <aside className="min-w-0">
-      <div className="sticky top-32 rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="mb-4 font-semibold text-foreground">Projektdetails</h3>
+      <Card className="sticky top-32 p-6">
+        <CardTitle>Projektdetails</CardTitle>
 
         <div>
           {rows
@@ -142,7 +143,7 @@ export function ShowcaseProjectDetails({
           manageMode={manageMode}
           manageApprovalStatus={manageApprovalStatus}
         />
-      </div>
+      </Card>
     </aside>
   )
 }

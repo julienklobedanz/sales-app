@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { Mail, Phone } from '@hugeicons/core-free-icons'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AppIcon } from '@/lib/icons'
 
@@ -34,12 +35,13 @@ export function ShowcaseContactFab({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2.5 text-left shadow-lg transition-colors hover:bg-muted/40"
-          aria-label="Kontaktinformationen anzeigen"
-        >
+      <Card className="p-0 shadow-lg">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
+            aria-label="Kontaktinformationen anzeigen"
+          >
           <Avatar size="default">
             {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
             <AvatarFallback>{initials}</AvatarFallback>
@@ -49,7 +51,8 @@ export function ShowcaseContactFab({
             <p className="truncate text-xs text-muted-foreground">{position}</p>
           </div>
         </button>
-      </PopoverTrigger>
+        </PopoverTrigger>
+      </Card>
       <PopoverContent
         align="end"
         side="top"

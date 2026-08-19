@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { Option } from '@/components/ui/option'
 
 type PdfTemplate = 'one_pager' | 'anonymized'
 
@@ -131,15 +132,15 @@ export function PdfExportDialog({
           </DialogHeader>
           <div className="grid gap-2">
             {TEMPLATE_OPTIONS.map((opt) => (
-              <button
+              <Option
                 key={opt.key}
+                data-selected={template === opt.key ? 'true' : undefined}
+                className="p-0"
+              >
+              <button
                 type="button"
                 onClick={() => setTemplate(opt.key)}
-                className={`rounded-lg border p-3 text-left transition ${
-                  template === opt.key
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:bg-muted/40'
-                }`}
+                className="w-full p-3 text-left transition hover:bg-muted/40"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -161,6 +162,7 @@ export function PdfExportDialog({
                   </div>
                 </div>
               </button>
+              </Option>
             ))}
           </div>
           <DialogFooter>

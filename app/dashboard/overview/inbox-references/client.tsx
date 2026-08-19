@@ -16,6 +16,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CollectionReadLayout } from '@/components/dashboard/collection-read-layout'
 import {
@@ -66,10 +67,11 @@ function InboxRow({
   const tags = splitTags(item.tags)
 
   return (
+    <Card className="gap-0 p-0">
     <Link
       href={href}
       className={cn(
-        'block rounded-lg border px-3 py-2 transition-colors',
+        'block px-3 py-2 transition-colors',
         'hover:bg-muted/50',
         active ? 'bg-muted border-foreground/15' : 'bg-background',
       )}
@@ -125,6 +127,7 @@ function InboxRow({
         ) : null}
       </div>
     </Link>
+    </Card>
   )
 }
 

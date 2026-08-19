@@ -155,7 +155,7 @@ export function DealProofSection({
             ) : (
               <div className="space-y-2">
                 {linkedSorted.map((ref) => (
-                  <div key={ref.id} className="group/proof rounded-lg border p-3">
+                  <Card key={ref.id} className="group/proof p-3">
                     <div className="flex items-start gap-3">
                       {ref.logo_url ? (
                         <img
@@ -171,12 +171,14 @@ export function DealProofSection({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0">
+                            <CardTitle as="h3" className="min-w-0 text-base font-medium">
                             <Link
                               href={ROUTES.references.edit(ref.id)}
-                              className="block truncate font-medium hover:underline"
+                              className="block truncate hover:underline"
                             >
                               {ref.title}
                             </Link>
+                            </CardTitle>
                             <div className="truncate text-xs text-muted-foreground">
                               {ref.company_name}
                               {typeof ref.similarity_score === 'number'
@@ -228,7 +230,7 @@ export function DealProofSection({
                         ) : null}
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}

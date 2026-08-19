@@ -10,6 +10,7 @@ import {
   updateCompanyNewsroomUrls,
 } from '@/app/dashboard/market-signals/actions'
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -118,11 +119,11 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
   }
 
   return (
-    <aside className="flex max-h-[min(70vh,720px)] flex-col rounded-2xl border border-border/70 bg-card">
+    <Card className="flex max-h-[min(70vh,720px)] flex-col gap-0 p-0">
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
-        <h2 className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+        <CardTitle className="min-w-0 flex-1 text-sm">
           Newsrooms
-        </h2>
+        </CardTitle>
         <span className="text-xs text-muted-foreground tabular-nums">
           {stats.withUrls}/{stats.total}
         </span>
@@ -221,6 +222,6 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
           })}
         </ul>
       )}
-    </aside>
+    </Card>
   )
 }

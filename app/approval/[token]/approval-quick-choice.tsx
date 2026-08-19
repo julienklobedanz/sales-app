@@ -3,6 +3,7 @@
 import { Check } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { Option } from '@/components/ui/option'
 import {
   QUICK_APPROVAL_CARDS,
   type QuickApprovalCardTone,
@@ -54,16 +55,17 @@ export function ApprovalQuickChoice({
           const active = value === card.id
           const tone = TONE_STYLES[card.tone]
           return (
-            <button
+            <Option
               key={card.id}
+              data-selected={active ? 'true' : undefined}
+              className={cn('p-4', active ? tone.active : tone.idle)}
+            >
+            <button
               type="button"
               aria-pressed={active}
               disabled={disabled}
               onClick={() => handleToggle(card.id)}
-              className={cn(
-                'relative w-full rounded-xl border-2 p-4 text-left transition-all duration-200',
-                active ? tone.active : tone.idle,
-              )}
+              className="relative w-full text-left transition-all duration-200"
             >
               <span
                 className={cn(
@@ -79,6 +81,7 @@ export function ApprovalQuickChoice({
                 {card.description}
               </p>
             </button>
+            </Option>
           )
         })}
       </div>

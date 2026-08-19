@@ -5,6 +5,7 @@ import { Search, UserPlus } from 'lucide-react'
 
 import { CompanyNameSuggestField } from '@/app/dashboard/accounts/components/company-name-suggest-field'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -125,10 +126,10 @@ export function WatchlistExecutivesPanel({
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {filteredStakeholders.map((row) => (
-            <div
+            <Card
               key={row.key}
               className={cn(
-                'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
+                'flex-row items-center gap-3 p-3 transition-opacity duration-200',
                 row.isFollowing ? 'opacity-100' : 'opacity-50',
               )}
             >
@@ -156,7 +157,7 @@ export function WatchlistExecutivesPanel({
                 onCheckedChange={(checked) => toggleStakeholder(row, checked)}
                 aria-label={`${row.personName} überwachen`}
               />
-            </div>
+            </Card>
           ))}
         </div>
       )}

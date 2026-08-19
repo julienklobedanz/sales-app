@@ -10,6 +10,7 @@ import {
   SquareLock02Icon,
 } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -118,7 +119,7 @@ export function ShareLinkPopoverPanel({
             </p>
           )}
           {viewSessions.length > 0 ? (
-            <div className="space-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+            <Hinweis className="space-y-1 px-3 py-2">
               <p className="text-xs font-medium text-muted-foreground">
                 Letzte Ansichten
               </p>
@@ -142,7 +143,7 @@ export function ShareLinkPopoverPanel({
                   )
                 })}
               </ul>
-            </div>
+            </Hinweis>
           ) : null}
           <div className="grid grid-cols-4 gap-2">
             <Button
@@ -236,18 +237,18 @@ export function ShareLinkPopoverPanel({
             </Button>
           </div>
 
-          <div className="space-y-2 rounded-lg border border-amber-200/90 bg-amber-50/60 px-3 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
+          <Hinweis tone="warning" className="space-y-2 px-3 py-3">
             <div className="flex items-start gap-2">
               <AppIcon
                 icon={Shield}
                 size={18}
-                className="mt-0.5 shrink-0 text-amber-800 dark:text-amber-200"
+                className="mt-0.5 shrink-0"
               />
               <div className="min-w-0 space-y-1">
-                <p className="text-xs font-semibold text-amber-950 dark:text-amber-100">
+                <p className="text-xs font-semibold">
                   Nur für die freigebende Person (Sperrrecht)
                 </p>
-                <p className="text-xs leading-relaxed text-amber-900/85 dark:text-amber-100/85">
+                <p className="text-xs leading-relaxed">
                   Dieser zweite Link zeigt dieselbe Kundenansicht, ermöglicht aber das
                   sofortige Sperren. Nicht an Kolleginnen weitergeben, die nur die
                   Referenz sehen sollen.
@@ -298,7 +299,7 @@ export function ShareLinkPopoverPanel({
                 </p>
               </div>
             )}
-          </div>
+          </Hinweis>
         </div>
       ) : (
         <div className="text-sm text-muted-foreground">Link wird vorbereitet ...</div>

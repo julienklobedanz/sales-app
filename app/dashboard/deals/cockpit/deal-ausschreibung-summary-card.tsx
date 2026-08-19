@@ -46,7 +46,7 @@ export function DealAusschreibungSummaryCard({
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+    <div className="min-w-0 px-3 py-2.5">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>

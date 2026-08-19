@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,11 +31,7 @@ import type { OrganizationBillingSettings } from '@/lib/organizations/billing-se
 import type { RolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
-import {
-  SETTINGS_CARD_CLASS_COMPACT,
-  SETTINGS_DANGER_ZONE_CLASS_COMPACT,
-  type RegisterSettingsTab,
-} from './settings-tab-shared'
+import { type RegisterSettingsTab } from './settings-tab-shared'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
 
 type WorkspaceTabProps = {
@@ -121,7 +118,7 @@ export function WorkspaceTab({
   return (
     <TabsContent value="workspace">
       <div className="space-y-4">
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <SettingsWorkspaceCard
             organizationId={org.id}
             organizationName={org.name}
@@ -138,25 +135,25 @@ export function WorkspaceTab({
             saveSignal={workspaceSaveSignal}
             onDirtyChange={setWorkspaceCardDirty}
           />
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS_COMPACT}>
+        <Card>
           <SettingsTeamCard initialMembers={teamMembers} />
-        </div>
+        </Card>
 
         <div className={`grid gap-4 ${isServerAdmin ? 'lg:grid-cols-2' : ''}`}>
           {isServerAdmin ? (
-            <div className={SETTINGS_CARD_CLASS_COMPACT}>
+            <Card>
               <SettingsRolesPermissionsCard initialSettings={rolesPermissions} />
-            </div>
+            </Card>
           ) : null}
           {isServerAdmin ? (
-            <div className={SETTINGS_CARD_CLASS_COMPACT}>
+            <Card>
               <SettingsBillingCard
                 subscriptionStatus={org.subscriptionStatus}
                 subscriptionId={org.subscriptionId}
               />
-            </div>
+            </Card>
           ) : null}
         </div>
 
@@ -170,7 +167,7 @@ export function WorkspaceTab({
         ) : null}
 
         {isServerAdmin ? (
-          <div className={SETTINGS_DANGER_ZONE_CLASS_COMPACT}>
+          <Card className="border-destructive">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-destructive">
@@ -255,7 +252,7 @@ export function WorkspaceTab({
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-          </div>
+          </Card>
         ) : null}
       </div>
     </TabsContent>

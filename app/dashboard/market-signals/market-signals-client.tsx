@@ -14,6 +14,7 @@ import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbo
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { triggerMarketSignalsIngestForMyOrg } from '@/app/dashboard/market-signals/actions'
 import type { MarketSignalsPageModel } from '@/app/dashboard/market-signals/data'
 import { COPY } from '@/lib/copy'
@@ -312,65 +313,37 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
               </PopoverContent>
             </Popover>
 
-            <div
-              role="tablist"
-              aria-label="Sortierung"
-              className="inline-flex h-10 shrink-0 items-stretch gap-0.5 rounded-lg border border-border/80 bg-muted/40 p-0.5"
+            <Tabs
+              value={sort}
+              onValueChange={(next) => setSort(next as FeedSort)}
             >
+              <TabsList aria-label="Sortierung">
               {(
                 [
                   { id: 'relevance' as const, label: COPY.marketSignals.sortRelevance },
                   { id: 'date' as const, label: COPY.marketSignals.sortDate },
                 ] as const
-              ).map((option) => {
-                const selected = sort === option.id
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => setSort(option.id)}
-                    className={cn(
-                      'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
-                      selected
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                )
-              })}
-            </div>
+              ).map((option) => (
+                <TabsTrigger key={option.id} value={option.id}>
+                  {option.label}
+                </TabsTrigger>
+              ))}
+              </TabsList>
+            </Tabs>
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div
-                role="tablist"
-                aria-label="Signal-Typ"
-                className="inline-flex h-10 shrink-0 items-stretch gap-0.5 rounded-lg border border-border/80 bg-muted/40 p-0.5"
+              <Tabs
+                value={typeFilter}
+                onValueChange={(next) => setTypeFilter(next as SignalTypeFilter)}
               >
-                {SIGNAL_TYPE_FILTERS.map((filter) => {
-                  const selected = typeFilter === filter.id
-                  return (
-                    <button
-                      key={filter.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      onClick={() => setTypeFilter(filter.id)}
-                      className={cn(
-                        'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
-                        selected
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
-                      )}
-                    >
-                      {filter.label}
-                    </button>
-                  )
-                })}
-              </div>
+                <TabsList aria-label="Signal-Typ">
+                {SIGNAL_TYPE_FILTERS.map((filter) => (
+                  <TabsTrigger key={filter.id} value={filter.id}>
+                    {filter.label}
+                  </TabsTrigger>
+                ))}
+                </TabsList>
+              </Tabs>
 
               <div
                 className="inline-flex h-10 shrink-0 items-center gap-2"

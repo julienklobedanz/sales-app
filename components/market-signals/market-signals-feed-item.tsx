@@ -6,7 +6,9 @@ import { Building2, ExternalLink, MoreHorizontal } from '@hugeicons/core-free-ic
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Hinweis } from '@/components/ui/hinweis'
 import {
   Dialog,
   DialogContent,
@@ -68,12 +70,13 @@ export function MarketSignalsFeedItem({
     : null
 
   return (
-    <li
-      className={cn(
-        'rounded-xl border p-4 shadow-sm transition-opacity',
-        unread ? 'border-border/70 bg-card' : 'border-border/40 bg-muted/25 opacity-45',
-      )}
-    >
+    <li>
+      <Card
+        className={cn(
+          'p-4 transition-opacity',
+          unread ? undefined : 'opacity-45',
+        )}
+      >
       <div className="flex gap-3.5">
         <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted/40">
           {item.companyLogoUrl ? (
@@ -227,6 +230,7 @@ export function MarketSignalsFeedItem({
           </div>
         </div>
       </div>
+      </Card>
     </li>
   )
 }
@@ -271,7 +275,7 @@ export function MarketSignalsOutreachDialog({
             disabled={loading}
             className="min-h-[280px] font-mono text-sm"
           />
-          <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+          <Hinweis className="p-3">
             <p className="text-xs font-semibold text-foreground">
               {COPY.marketSignals.outreachMatchingRefsTitle}
             </p>
@@ -311,7 +315,7 @@ export function MarketSignalsOutreachDialog({
                 })}
               </ul>
             )}
-          </div>
+          </Hinweis>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

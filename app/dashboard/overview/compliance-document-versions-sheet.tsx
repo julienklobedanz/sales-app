@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -427,12 +428,12 @@ function VersionCard({
   const isCurrent = variant === 'current'
 
   return (
-    <div
+    <Card
       className={cn(
-        'rounded-xl border p-3.5',
+        'p-3.5',
         isCurrent
           ? 'border-primary/35 bg-primary/[0.06] shadow-sm shadow-primary/5'
-          : 'border-border/70 bg-muted/20',
+          : 'bg-card',
         focused && 'ring-2 ring-primary/25',
       )}
     >
@@ -510,6 +511,6 @@ function VersionCard({
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

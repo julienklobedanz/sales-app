@@ -6,6 +6,8 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import {
   Dialog,
@@ -17,7 +19,6 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
-import { cn } from '@/lib/utils'
 import type {
   CompanySearchHit,
   MeetingPrepSnapshot,
@@ -107,15 +108,9 @@ export function MeetingPrepOverlayDialog({
               ) : (
                 <ul className="mt-2 space-y-2">
                   {snapshot.references.map((ref) => (
-                    <li
-                      key={ref.id}
-                      className={cn(
-                        'rounded-lg border px-3 py-2',
-                        ref.similarity >= 0.47
-                          ? 'border-border'
-                          : 'border-dashed border-muted-foreground/40',
-                      )}
-                    >
+                    <li key={ref.id}>
+                      {ref.similarity >= 0.47 ? (
+                        <Card className="px-3 py-2">
                       <Link
                         href={ref.href}
                         className="text-sm font-medium hover:underline"
@@ -126,6 +121,21 @@ export function MeetingPrepOverlayDialog({
                         {Math.round(ref.similarity * 100)} % Match
                         {ref.snippet ? ` · ${ref.snippet}` : ''}
                       </p>
+                        </Card>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-muted-foreground/40 px-3 py-2">
+                      <Link
+                        href={ref.href}
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {ref.title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(ref.similarity * 100)} % Match
+                        {ref.snippet ? ` · ${ref.snippet}` : ''}
+                      </p>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -164,14 +174,13 @@ export function MeetingPrepOverlayDialog({
               ) : (
                 <ul className="mt-2 space-y-2">
                   {snapshot.signals.map((s) => (
-                    <li
-                      key={s.id}
-                      className="rounded-lg border border-border/70 px-3 py-2 text-sm"
-                    >
+                    <li key={s.id}>
+                      <Card className="px-3 py-2 text-sm">
                       <p>{s.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatPrepDate(s.dateIso)}
                       </p>
+                      </Card>
                     </li>
                   ))}
                 </ul>
@@ -185,12 +194,11 @@ export function MeetingPrepOverlayDialog({
                 </h3>
                 <ul className="mt-2 space-y-2">
                   {snapshot.newsRisks.map((r) => (
-                    <li
-                      key={r.id}
-                      className="rounded-lg border border-amber-200/80 bg-amber-50/50 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/20"
-                    >
+                    <li key={r.id}>
+                      <Hinweis tone="warning" className="px-3 py-2 text-sm">
                       <p className="font-medium">{r.headline}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{r.detail}</p>
+                      </Hinweis>
                     </li>
                   ))}
                 </ul>

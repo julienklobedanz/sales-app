@@ -280,7 +280,7 @@ export function AccountGridCard({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <Card className="group relative h-full overflow-visible rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
+        <Card className="group relative h-full overflow-visible transition-all duration-200 hover:border-primary/20 hover:shadow-md">
           {canManage && isPartnerView ? (
             <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
               <AccountsToolbarTooltip

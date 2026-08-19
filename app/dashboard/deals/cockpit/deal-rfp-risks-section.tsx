@@ -91,11 +91,11 @@ export function DealRfpRisksSection({
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 pt-0 xl:grid-cols-3">
-          <div className="rounded-lg border border-border/60 p-3">
-            <p className="mb-2 text-sm font-medium">
+          <Card className="p-3">
+            <CardTitle as="h3" className="mb-2 text-sm font-medium">
               {COPY.deals.cockpit.risksGeneralTitle}
               {flags.length > 0 ? ` · ${flags.length}` : ''}
-            </p>
+            </CardTitle>
             {flags.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {COPY.deals.cockpit.risksGeneralEmpty}
@@ -139,13 +139,13 @@ export function DealRfpRisksSection({
                 })}
               </ul>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-lg border border-border/60 p-3">
-            <p className="mb-2 text-sm font-medium">
+          <Card className="p-3">
+            <CardTitle as="h3" className="mb-2 text-sm font-medium">
               {COPY.deals.cockpit.risksRequestedEvidenceTitle}
               {evidence.length > 0 ? ` · ${evidence.length}` : ''}
-            </p>
+            </CardTitle>
             {evidence.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {COPY.deals.cockpit.risksRequestedEvidenceEmpty}
@@ -188,15 +188,15 @@ export function DealRfpRisksSection({
                 })}
               </ul>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-lg border border-border/60 p-3">
-            <p className="mb-2 text-sm font-medium">
+          <Card className="p-3">
+            <CardTitle as="h3" className="mb-2 text-sm font-medium">
               {COPY.deals.cockpit.risksOpenPointsTitle}
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 · {sme.length}
               </span>
-            </p>
+            </CardTitle>
             {sme.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {COPY.deals.cockpit.risksOpenPointsEmpty}
@@ -239,7 +239,7 @@ export function DealRfpRisksSection({
                 })}
               </ul>
             )}
-          </div>
+          </Card>
         </CardContent>
       </Card>
     </div>

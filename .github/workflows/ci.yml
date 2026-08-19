@@ -88,6 +88,9 @@ jobs:
       - name: Palette guard (phase 1 warning)
         run: npm run check:palette
 
+      - name: Enclosure guard (phase 1 warning)
+        run: npm run check:enclosures
+
       - name: Lint
         run: npm run lint
 

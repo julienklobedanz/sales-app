@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -62,12 +63,9 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
         </p>
       </div>
       {state?.error && (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
+        <Hinweis tone="destructive" role="alert" className="px-3 py-2 text-sm">
           {state.error}
-        </div>
+        </Hinweis>
       )}
       {state?.success && (
         <p className="text-sm text-primary" role="status">

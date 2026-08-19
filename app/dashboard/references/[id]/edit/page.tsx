@@ -14,6 +14,7 @@ import {
   DASHBOARD_PAGE_SUBTITLE_CLASS,
   DASHBOARD_PAGE_TITLE_CLASS,
 } from '@/lib/dashboard-ui'
+import { Hinweis } from '@/components/ui/hinweis'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { userCanEditReference } from '@/lib/roles/reference-access'
 
@@ -188,9 +189,9 @@ export default async function EditReferencePage({
           </p>
         </div>
         {fromDeskId ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+          <Hinweis className="px-4 py-3 text-sm">
             <p className="font-medium">Nächster Schritt: Freigabe</p>
-            <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
+            <p className="mt-1 leading-relaxed">
               Nach dem Speichern startest du den Freigabeprozess ausschließlich in der
               Referenz-Detailansicht unter <strong>Freigabestatus</strong> („Freigabe
               anfordern“).
@@ -198,7 +199,7 @@ export default async function EditReferencePage({
             <Button asChild variant="outline" size="sm" className="mt-3 bg-background">
               <Link href={ROUTES.references.detail(id)}>Zur Detailansicht</Link>
             </Button>
-          </div>
+          </Hinweis>
         ) : null}
         <ReferenceForm
           companies={companies ?? []}

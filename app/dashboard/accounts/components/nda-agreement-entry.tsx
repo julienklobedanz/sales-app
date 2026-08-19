@@ -5,6 +5,7 @@ import { Download, Loader, Trash2, UploadIcon } from '@hugeicons/core-free-icons
 
 import { AppIcon } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
@@ -48,7 +49,8 @@ export function NdaAgreementEntry({
   const hasFile = Boolean(row.file_storage_path)
 
   return (
-    <li className="rounded-xl border border-border/70 bg-card/50">
+    <li>
+      <Card className="gap-0 p-0">
       <div className="p-3">
         <div className="flex items-start gap-2">
           <span
@@ -181,6 +183,7 @@ export function NdaAgreementEntry({
           />
         </div>
       ) : null}
+      </Card>
     </li>
   )
 }

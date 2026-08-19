@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
 import {
   ShowcaseManageInsightBar,
   type ManageInsightSummary,
@@ -16,8 +17,7 @@ type CaseDataItem = {
   icon?: ReactNode
 }
 
-const BAR_SHELL_CLASS =
-  'w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300'
+const BAR_SHELL_CLASS = 'w-full overflow-hidden transition-all duration-300'
 
 const BAR_BODY_CLASS = 'w-full bg-card px-5 py-3.5'
 
@@ -110,9 +110,10 @@ export function ApprovalCaseDataBar({
   )
 
   const renderBarShell = (floating: boolean) => (
-    <div
+    <Card
       className={cn(
         BAR_SHELL_CLASS,
+        'p-0 gap-0',
         isGlass &&
           'border-border/60 bg-background/95 shadow-md backdrop-blur-md supports-[backdrop-filter]:bg-background/90',
       )}
@@ -155,7 +156,7 @@ export function ApprovalCaseDataBar({
       >
         {barContent(floating)}
       </div>
-    </div>
+    </Card>
   )
 
   return (
