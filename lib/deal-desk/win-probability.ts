@@ -45,13 +45,13 @@ export function winProbabilityBreakdownTooltip(
 }
 
 export function winProbabilityRingClass(tone: WinProbabilityTone): string {
-  if (tone === 'go') return 'text-emerald-600 dark:text-emerald-400'
-  if (tone === 'caution') return 'text-amber-500 dark:text-amber-400'
-  return 'text-red-600 dark:text-red-400'
+  if (tone === 'go') return 'text-emerald-600'
+  if (tone === 'caution') return 'text-amber-500'
+  return 'text-red-600'
 }
 
 export function winProbabilityValueClass(tone: WinProbabilityTone): string {
-  if (tone === 'go') return 'text-emerald-700 dark:text-emerald-300'
-  if (tone === 'caution') return 'text-amber-700 dark:text-amber-300'
-  return 'text-red-700 dark:text-red-300'
+  if (tone === 'go') return 'text-emerald-700'
+  if (tone === 'caution') return 'text-amber-700'
+  return 'text-red-700'
 }

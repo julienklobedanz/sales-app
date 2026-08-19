@@ -122,7 +122,7 @@ export function CompanyNameSuggestField({
                   aria-selected={false}
                   className={cn(
                     'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground',
-                    isExisting && 'bg-emerald-50/50 dark:bg-emerald-950/20',
+                    isExisting && 'bg-emerald-50/50',
                   )}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
@@ -146,7 +146,7 @@ export function CompanyNameSuggestField({
                   <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
                   {isExisting ? (
                     <Check
-                      className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      className="size-4 shrink-0 text-emerald-600"
                       aria-label={COPY.accounts.createDialogSuggestLocal}
                     />
                   ) : (
@@ -163,7 +163,7 @@ export function CompanyNameSuggestField({
               className={cn(
                 'px-3 py-2 text-xs',
                 searchHint
-                  ? 'text-amber-800 dark:text-amber-200'
+                  ? 'text-amber-800'
                   : 'text-muted-foreground',
               )}
             >

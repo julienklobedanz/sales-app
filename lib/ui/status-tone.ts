@@ -11,7 +11,7 @@ export const statusTone = {
     'border-status-danger-border bg-status-danger-muted text-status-danger-foreground',
   info: 'border-status-info-border bg-status-info-muted text-status-info-foreground',
   neutral:
-    'border-border/80 bg-muted/50 text-muted-foreground dark:border-border dark:bg-muted/30',
+    'border-border/80 bg-muted/50 text-muted-foreground',
 } as const
 
 /** Text-only status color (metrics, scores). */

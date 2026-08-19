@@ -97,7 +97,7 @@ export function newsHeadline(row: AccountNewsRow) {
 }
 
 export function badgeClass(badge: MarketSignalBadge) {
-  if (badge === 'Move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
+  if (badge === 'Move') return 'bg-blue-600/10 text-blue-700 border-0'
   if (badge === 'Executive')
     return 'bg-primary/10 text-primary border-0'
   return 'bg-muted text-foreground border-0'

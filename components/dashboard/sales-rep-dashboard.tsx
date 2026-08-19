@@ -190,7 +190,7 @@ export function SalesRepDashboard({
                                   ? ROUTES.accountsDetail(deal.company_id)
                                   : ROUTES.matchWithDeal(deal.id)
                               }
-                              className="shrink-0 rounded-full border border-amber-300/80 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
+                              className="shrink-0 rounded-full border border-amber-300/80 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
                             >
                               {c.coverageSignalBadge}
                             </Link>

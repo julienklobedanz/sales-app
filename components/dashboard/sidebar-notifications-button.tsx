@@ -26,12 +26,12 @@ const triggerClassName =
   'relative flex items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 function typeChipClass(kind: DashboardNotificationItem['typeKind']) {
-  if (kind === 'move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
+  if (kind === 'move') return 'bg-blue-600/10 text-blue-700 border-0'
   if (kind === 'executive') return 'bg-primary/10 text-primary border-0'
   if (kind === 'company') return 'bg-muted text-foreground border-0'
   if (kind === 'approval')
-    return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
-  if (kind === 'nda') return 'bg-amber-600/10 text-amber-800 dark:text-amber-300 border-0'
+    return 'bg-emerald-600/10 text-emerald-700 border-0'
+  if (kind === 'nda') return 'bg-amber-600/10 text-amber-800 border-0'
   return 'bg-muted text-muted-foreground border-0'
 }
 

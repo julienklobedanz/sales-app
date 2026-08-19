@@ -148,7 +148,7 @@ export function ReferenceFormStorySection({
         <div className="space-y-2">
           <OptionalLabel htmlFor="tags-input">Tags</OptionalLabel>
           <input type="hidden" name="tags" value={tags.join(' ')} />
-          <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30 disabled:cursor-not-allowed disabled:opacity-50">
+          <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50">
             {tags.map((tag) => (
               <span
                 key={tag}

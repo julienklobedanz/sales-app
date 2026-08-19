@@ -96,7 +96,7 @@ export function ApprovalContactSuggestField({
                 {s.email ? (
                   <span className="text-xs text-muted-foreground">{s.email}</span>
                 ) : (
-                  <span className="text-xs text-amber-700 dark:text-amber-400">
+                  <span className="text-xs text-amber-700">
                     Keine E-Mail — bitte Adresse manuell eintragen
                   </span>
                 )}

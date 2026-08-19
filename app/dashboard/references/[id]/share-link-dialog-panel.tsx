@@ -195,13 +195,13 @@ export function ShareLinkPopoverPanel({
                 variant="outline"
                 className={`w-full transition-all duration-200 ${
                   copiedSuccess
-                    ? 'scale-105 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/15 dark:text-emerald-200'
+                    ? 'scale-105 border-emerald-300 bg-emerald-50 text-emerald-700'
                     : ''
                 }`}
                 onClick={() => onCopyUrl(url)}
               >
                 {copiedSuccess ? (
-                  <CheckIcon className="mr-1 h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  <CheckIcon className="mr-1 h-4 w-4 text-emerald-600" />
                 ) : (
                   <AppIcon icon={CopyIcon} size={16} className="mr-1" />
                 )}

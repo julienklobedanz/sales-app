@@ -31,7 +31,6 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      suppressHydrationWarning
       className={cn('font-sans', manropeHeading.variable, inter.variable)}
     >
       <body className={`${geistMono.variable} antialiased`}>

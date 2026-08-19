@@ -121,7 +121,7 @@ export function ApprovalCaseDataBar({
       {revokeMode ? (
         <div
           className={cn(
-            'flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400',
+            'flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-600',
             isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25',
           )}
         >
@@ -137,7 +137,7 @@ export function ApprovalCaseDataBar({
                 href={prospectPreviewHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200"
+                className="underline underline-offset-2 hover:text-amber-800"
               >
                 So sehen Empfänger Ihre Referenz
               </Link>

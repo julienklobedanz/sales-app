@@ -81,7 +81,7 @@ export function NdaAgreementEntry({
                 {row.file_name}
               </p>
             ) : !hasFile && canManage ? (
-              <p className="mt-1 text-[11px] text-amber-700/90 dark:text-amber-400/90">
+              <p className="mt-1 text-[11px] text-amber-700/90">
                 Noch kein PDF hochgeladen
               </p>
             ) : null}

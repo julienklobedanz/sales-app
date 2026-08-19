@@ -44,11 +44,11 @@ export function PortfolioUnlockGate({ slug }: { slug: string }) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/25 p-6">
       <Card className="w-full max-w-md p-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent dark:bg-slate-800">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent">
             <AppIcon
               icon={SquareLock02Icon}
               size={22}
-              className="text-foreground dark:text-slate-200"
+              className="text-foreground"
             />
           </div>
           <div>

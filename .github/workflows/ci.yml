@@ -91,6 +91,9 @@ jobs:
       - name: Enclosure guard (phase 2)
         run: npm run check:enclosures
 
+      - name: Dark variant guard (phase 2)
+        run: npm run check:dark
+
       - name: Lint
         run: npm run lint
 
