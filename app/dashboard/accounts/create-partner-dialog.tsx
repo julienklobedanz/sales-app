@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Hinweis } from '@/components/ui/hinweis'
 import {
   Select,
   SelectContent,
@@ -219,7 +220,7 @@ export function CreatePartnerDialog({
             </Select>
           </div>
 
-          <div className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 p-3">
+          <Hinweis className="flex items-start gap-2 p-3">
             <Checkbox
               id="partner-also-account"
               checked={alsoCreateAccount}
@@ -238,7 +239,7 @@ export function CreatePartnerDialog({
                 beide Einträge.
               </p>
             </div>
-          </div>
+          </Hinweis>
         </div>
 
         <DialogFooter className="mt-2">

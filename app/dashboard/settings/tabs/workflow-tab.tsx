@@ -1,9 +1,9 @@
 'use client'
 
 import { TabsContent } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
 
 import { SettingsExportTemplatesCard } from '../settings-export-templates-card'
-import { SETTINGS_CARD_CLASS } from './settings-tab-shared'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
 import { useWorkflowSettings } from './use-workflow-settings'
 import { WorkflowApprovalProcessCard } from './workflow-approval-process-card'
@@ -27,12 +27,12 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
     <TabsContent value="process">
       <div className="space-y-6">
         <WorkflowApprovalProcessCard />
-        <div className={SETTINGS_CARD_CLASS}>
+        <Card className="p-6">
           <SettingsExportTemplatesCard
             organizationId={org.id}
             initial={org.exportSettings}
           />
-        </div>
+        </Card>
         <WorkflowFreigabeSettingsCard
           linkExpiryDays={settings.linkExpiryDays}
           onLinkExpiryDaysChange={settings.setLinkExpiryDays}

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
+import { Group } from '@/components/ui/group'
 import { Cancel01Icon, Loader, Save, Upload, User } from '@hugeicons/core-free-icons'
 import { requestEmailChange, updateProfile } from './actions'
 import { AppIcon } from '@/lib/icons'
@@ -264,7 +265,7 @@ export function SettingsProfileCard({
                 </p>
               ) : null}
               {emailEditing ? (
-                <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-[1fr_1fr_auto]">
+                <Group className="grid w-full gap-2 p-2.5 sm:grid-cols-[1fr_1fr_auto]">
                   <div className="space-y-1">
                     <Label htmlFor="newEmail" className="text-xs">
                       Neue E-Mail
@@ -317,7 +318,7 @@ export function SettingsProfileCard({
                       {emailPending ? 'Senden …' : 'Link senden'}
                     </Button>
                   </div>
-                </div>
+                </Group>
               ) : null}
             </div>
             <div className="space-y-1">

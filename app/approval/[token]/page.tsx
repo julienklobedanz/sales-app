@@ -331,10 +331,10 @@ export default async function ApprovalPage({
           </section>
 
           <aside className="min-w-0">
-            <div className="sticky top-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="mb-6 text-lg font-semibold text-foreground">
+            <Card className="sticky top-6 p-6">
+              <CardTitle className="mb-6 text-lg">
                 {approved ? 'Ihre Freigabe' : 'Ihre Entscheidung'}
-              </h2>
+              </CardTitle>
               <ApprovalDecisionForm
                 token={token}
                 mode={approved ? 'approved' : 'pending'}
@@ -347,7 +347,7 @@ export default async function ApprovalPage({
                 initialReferenceGiverName={referenceGiverName}
                 initialReferenceGiverTitle={referenceGiverTitle}
               />
-            </div>
+            </Card>
           </aside>
         </div>
       </div>

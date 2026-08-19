@@ -22,6 +22,7 @@ import {
   type ManageInsightSummary,
 } from './showcase-manage-insight-bar'
 import { resolveApprovalEditUrlForManageView } from '@/lib/references/resolve-approval-edit-url-for-manage'
+import { Card } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,24 +89,24 @@ export default async function PublicPortfolioPage({
     if (result.reason === 'expired') {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center p-24">
-          <div className="mx-auto max-w-md rounded-2xl border bg-card/80 p-8 text-center shadow-sm">
+          <Card className="mx-auto max-w-md p-8 text-center">
             <h1 className="text-lg font-semibold text-foreground">Link abgelaufen</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Die Gültigkeitsdauer dieses Kundenlinks ist abgelaufen. Bitte den
               RefStack-Nutzer um einen neuen Link.
             </p>
-          </div>
+          </Card>
         </div>
       )
     }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="mx-auto max-w-md rounded-2xl border bg-card/80 p-8 text-center shadow-sm">
+        <Card className="mx-auto max-w-md p-8 text-center">
           <h1 className="text-lg font-semibold text-foreground">Link nicht verfügbar</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Dieser Link wurde deaktiviert oder existiert nicht.
           </p>
-        </div>
+        </Card>
       </div>
     )
   }
@@ -260,9 +261,9 @@ export default async function PublicPortfolioPage({
             {result.references.length > 0 ? (
               <ShowcaseMultiPortfolio references={result.references} />
             ) : (
-              <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
+              <Card className="p-10 text-center text-sm text-muted-foreground">
                 Für diesen Link sind aktuell keine Referenzen sichtbar.
-              </div>
+              </Card>
             )}
           </div>
         </div>

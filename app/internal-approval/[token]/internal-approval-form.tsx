@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ROUTES } from '@/lib/routes'
@@ -129,9 +131,7 @@ export function InternalApprovalForm({
           </p>
         ) : null}
         {message?.trim() ? (
-          <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs text-foreground">
-            {message.trim()}
-          </p>
+          <Hinweis className="whitespace-pre-wrap text-foreground">{message.trim()}</Hinweis>
         ) : null}
       </div>
 
@@ -139,11 +139,14 @@ export function InternalApprovalForm({
         Intern freigeben
       </Button>
 
-      <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
+      <Card>
+        <CardHeader className="p-0">
+          <CardTitle as="h3" className="text-sm font-medium">
             An andere Person delegieren
-          </p>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 p-0 pt-3">
+        <div className="space-y-1">
           <p className="text-xs leading-relaxed text-muted-foreground">
             Die neue Person erhält eine E-Mail mit einem eigenen Link zur internen
             Freigabe. Ihr Link verliert danach die Gültigkeit.
@@ -171,7 +174,8 @@ export function InternalApprovalForm({
         >
           Delegieren
         </Button>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

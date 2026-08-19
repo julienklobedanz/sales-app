@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -254,7 +255,7 @@ export function SettingsTeamCard({
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-sm font-semibold tracking-tight">Team</h2>
+        <CardTitle className="text-sm">Team</CardTitle>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -290,7 +291,7 @@ export function SettingsTeamCard({
             Noch keine Mitglieder. Lade jemanden per E-Mail ein.
           </p>
         ) : (
-          <div className="rounded-lg border">
+          <Card className="gap-0 overflow-hidden p-0">
             <TooltipProvider>
               <Table>
               <TableHeader>
@@ -410,7 +411,7 @@ export function SettingsTeamCard({
               </TableBody>
               </Table>
             </TooltipProvider>
-          </div>
+          </Card>
         )}
       </div>
     </div>

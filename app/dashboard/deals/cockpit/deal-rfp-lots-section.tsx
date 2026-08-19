@@ -30,19 +30,19 @@ export function DealRfpLotsSection({ lots }: { lots: TenderLot[] }) {
             const valueLabel = formatLotValue(lot)
             const key = lot.lotId ?? `${lot.title}-${index}`
             return (
-              <div
+              <Card
                 key={key}
-                className="space-y-1.5 rounded-lg border border-border/80 bg-card px-4 py-3"
+                className="space-y-1.5 px-4 py-3"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-semibold">
+                  <CardTitle as="h3" className="text-sm">
                     {lot.lotId ? (
                       <span className="mr-2 font-mono text-xs text-muted-foreground">
                         {lot.lotId}
                       </span>
                     ) : null}
                     {lot.title}
-                  </h3>
+                  </CardTitle>
                   {valueLabel ? (
                     <span className="text-sm font-medium tabular-nums text-foreground">
                       {valueLabel}
@@ -54,7 +54,7 @@ export function DealRfpLotsSection({ lots }: { lots: TenderLot[] }) {
                     {lot.description}
                   </p>
                 ) : null}
-              </div>
+              </Card>
             )
           })}
         </CardContent>

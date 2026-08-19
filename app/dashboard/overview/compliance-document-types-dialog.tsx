@@ -12,6 +12,7 @@ import {
 } from '@/app/dashboard/settings/compliance-document-type-actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -136,10 +137,8 @@ export function ComplianceDocumentTypesDialog({
           ) : (
             <ul className="max-h-[min(360px,50vh)] space-y-2 overflow-y-auto pr-1">
               {sortedTypes.map((t) => (
-                <li
-                  key={t.id ?? t.slug}
-                  className="flex items-center gap-2 rounded-lg border border-border/70 bg-card px-3 py-2"
-                >
+                <li key={t.id ?? t.slug}>
+                  <Card className="flex-row items-center gap-2 px-3 py-2">
                   {editingId === t.id ? (
                     <>
                       <Input
@@ -221,6 +220,7 @@ export function ComplianceDocumentTypesDialog({
                       ) : null}
                     </>
                   )}
+                  </Card>
                 </li>
               ))}
             </ul>

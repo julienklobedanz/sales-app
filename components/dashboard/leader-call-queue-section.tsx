@@ -10,6 +10,7 @@ import {
   HonestEmpty,
 } from '@/components/dashboard/dashboard-home-primitives'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import {
@@ -97,12 +98,10 @@ function LeaderCallQueueRow({
             {c.callQueueColReference}
           </p>
           {row.referenceTitle ? (
-            <div
+            <Card
               className={cn(
-                'rounded-md border px-2.5 py-2',
-                row.perfectReference
-                  ? 'border-border/80 bg-background'
-                  : 'border-dashed border-muted-foreground/35 bg-muted/10 italic text-muted-foreground',
+                'px-2.5 py-2',
+                !row.perfectReference && 'italic text-muted-foreground',
               )}
             >
               <Link
@@ -122,7 +121,7 @@ function LeaderCallQueueRow({
                   {row.referencePersonMatch ? ` · ${c.callQueueRefPersonHint}` : ''}
                 </p>
               ) : null}
-            </div>
+            </Card>
           ) : (
             <p className="text-sm text-muted-foreground">{c.callQueueNoRef}</p>
           )}

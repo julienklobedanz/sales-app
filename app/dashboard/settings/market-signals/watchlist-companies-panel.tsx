@@ -14,6 +14,7 @@ import {
 import { CompanyNameSuggestField } from '@/app/dashboard/accounts/components/company-name-suggest-field'
 import type { CompanySearchSuggestion } from '@/app/dashboard/references/new/actions'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -182,10 +183,10 @@ export function WatchlistCompaniesPanel({
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {filteredCompanies.map((company) => (
-              <div
+              <Card
                 key={company.id}
                 className={cn(
-                  'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
+                  'flex-row items-center gap-3 p-3 transition-opacity duration-200',
                   company.isFollowing ? 'opacity-100' : 'opacity-50',
                 )}
               >
@@ -221,7 +222,7 @@ export function WatchlistCompaniesPanel({
                   onCheckedChange={(checked) => toggleCompany(company.id, checked)}
                   aria-label={`${company.name} überwachen`}
                 />
-              </div>
+              </Card>
             ))}
           </div>
         )}

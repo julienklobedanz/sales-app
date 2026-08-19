@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -114,17 +115,17 @@ export function SettingsRolesPermissionsCard({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">
+        <CardTitle className="text-lg tracking-tight">
           {COPY.settings.rolesPermissions.title}
-        </h2>
+        </CardTitle>
       </div>
 
-      <div className="rounded-lg border bg-muted/20 p-4">
+      <Card className="p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium">
+            <CardTitle as="h3" className="text-sm font-medium">
               {COPY.settings.rolesPermissions.salesSeesDraftsLabel}
-            </p>
+            </CardTitle>
             <p className="text-xs text-muted-foreground">
               {COPY.settings.rolesPermissions.salesSeesDraftsHint}
             </p>
@@ -135,17 +136,17 @@ export function SettingsRolesPermissionsCard({
             disabled={pending}
           />
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-4">
         <h3 className="text-sm font-medium">
           {COPY.settings.rolesPermissions.visibilityMatrixTitle}
         </h3>
         {FUNCTION_ROLES.map((role) => (
-          <div key={role} className="rounded-lg border p-4">
-            <p className="mb-3 text-sm font-medium">
+          <Card key={role} className="p-4">
+            <CardTitle as="h3" className="mb-3 text-sm font-medium">
               {COPY.roleDimensions.functionRoles[role]}
-            </p>
+            </CardTitle>
             <div className="flex flex-col gap-3">
               {ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES.map((cap) => {
                 const checked = (capMatrix[role] ?? []).includes(cap)
@@ -164,7 +165,7 @@ export function SettingsRolesPermissionsCard({
                 )
               })}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 

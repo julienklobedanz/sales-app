@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,7 +24,8 @@ import {
   updateWorkspaceReferenceHighlightGlossary,
   updateWorkspaceSecurityCompliance,
 } from '../settings-consolidation-actions'
-import { SETTINGS_CARD_CLASS, type RegisterSettingsTab } from './settings-tab-shared'
+import { type RegisterSettingsTab } from './settings-tab-shared'
+import { Group } from '@/components/ui/group'
 import { useRegisterSettingsTab } from './use-register-settings-tab'
 import { COPY } from '@/lib/copy'
 
@@ -248,41 +249,41 @@ export function AdminTab({
   return (
     <TabsContent value="process">
       <div className="space-y-6">
-        <div className={SETTINGS_CARD_CLASS}>
+        <Card className="p-6">
           <CardHeader className="space-y-2 px-0 pt-0">
             <CardTitle className="text-base">Entwicklung / API-Keys</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 px-0 pb-0 pt-1">
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <Card className="flex-row items-center justify-between p-4">
               <div>
-                <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
+                <CardTitle as="h3" className="text-sm font-medium">Workspace Branding (opt-in)</CardTitle>
               </div>
               <Switch
                 checked={useWorkspaceBranding}
                 onCheckedChange={setUseWorkspaceBranding}
                 disabled={!roleSwitcher.isServerAdmin}
               />
-            </div>
-            <div className="rounded-lg border border-border p-4">
-              <p className="text-sm font-medium">Workspace API Key</p>
+            </Card>
+            <Card className="p-4">
+              <CardTitle as="h3" className="text-sm font-medium">Workspace API Key</CardTitle>
               <Input
                 value={apiKeyMask}
                 onChange={(e) => setApiKeyMask(e.target.value)}
                 className="mt-3 bg-muted"
               />
-            </div>
+            </Card>
             {devRolePreviewEnabled ? (
-              <div className={SETTINGS_CARD_CLASS}>
+              <Card className="p-6">
                 <SettingsDevRoleCard
                   serverRoles={roleSwitcher.serverRoles}
                   previewRoles={roleSwitcher.previewRoles}
                 />
-              </div>
+              </Card>
             ) : null}
           </CardContent>
-        </div>
+        </Card>
 
-        <div className={SETTINGS_CARD_CLASS}>
+        <Card className="p-6">
           <CardHeader className="space-y-2 px-0 pt-0">
             <CardTitle className="text-base">Security & Compliance</CardTitle>
           </CardHeader>
@@ -309,21 +310,21 @@ export function AdminTab({
                 className={!roleSwitcher.isServerAdmin ? 'bg-muted' : ''}
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <Card className="flex-row items-center justify-between p-4">
               <div>
-                <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
+                <CardTitle as="h3" className="text-sm font-medium">Passwort für neue Links erzwingen</CardTitle>
               </div>
               <Switch
                 checked={publicLinkReqPwNew}
                 onCheckedChange={setPublicLinkReqPwNew}
                 disabled={!roleSwitcher.isServerAdmin}
               />
-            </div>
+            </Card>
           </CardContent>
-        </div>
+        </Card>
 
         {roleSwitcher.isServerAdmin ? (
-          <div className={SETTINGS_CARD_CLASS}>
+          <Card className="p-6">
             <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Referenztext-Hervorhebungen</CardTitle>
             </CardHeader>
@@ -342,17 +343,17 @@ export function AdminTab({
                 />
               </div>
             </CardContent>
-          </div>
+          </Card>
         ) : null}
 
         {roleSwitcher.isServerAdmin ? (
-          <div className={SETTINGS_CARD_CLASS}>
+          <Card className="p-6">
             <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Audit Log</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 px-0 pb-0 pt-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <div className="flex items-center gap-1 rounded-md border border-border p-1">
+                <Group>
                   {(
                     [
                       ['all', 'Alle'],
@@ -371,7 +372,7 @@ export function AdminTab({
                       {label}
                     </Button>
                   ))}
-                </div>
+                </Group>
                 <Input
                   value={auditSearch}
                   onChange={(e) => setAuditSearch(e.target.value)}
@@ -430,7 +431,7 @@ export function AdminTab({
                 </TableBody>
               </Table>
             </CardContent>
-          </div>
+          </Card>
         ) : null}
       </div>
     </TabsContent>

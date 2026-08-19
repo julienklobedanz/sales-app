@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hinweis } from '@/components/ui/hinweis'
 import {
   Select,
   SelectContent,
@@ -178,9 +179,9 @@ export function EditDealDialog({
               <Label>Status</Label>
               {status === 'won' || status === 'lost' ? (
                 <>
-                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
+                  <Hinweis className="px-3 py-2 text-sm font-medium">
                     {DEAL_STATUS_LABELS[status]}
-                  </div>
+                  </Hinweis>
                   <p className="text-xs text-muted-foreground">
                     Abschluss Gewonnen/Verloren läuft über „Ausgang festhalten“ in der
                     Seitenleiste (inkl. Feedback & Ereignis).

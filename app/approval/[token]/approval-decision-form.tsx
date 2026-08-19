@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CheckIcon } from '@/components/ui/check-icon'
 import { toast } from 'sonner'
@@ -272,7 +273,7 @@ export function ApprovalDecisionForm({
 
       {grantsApproval ? (
         <>
-          <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+          <Card className="flex flex-row items-start gap-3 p-4">
             <Checkbox
               id="reference-calls"
               checked={referenceCallsEnabled}
@@ -287,9 +288,9 @@ export function ApprovalDecisionForm({
               Gerne stehe ich für Referenzanrufe anderer Kunden von {workspaceLabel} zur
               Verfügung.
             </Label>
-          </div>
+          </Card>
 
-          <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+          <Card className="space-y-4 p-4">
             <div className="flex items-start gap-3">
               <Checkbox
                 id="consent-release"
@@ -324,7 +325,7 @@ export function ApprovalDecisionForm({
                 <ApprovalRequiredMark />
               </Label>
             </div>
-          </div>
+          </Card>
         </>
       ) : null}
 

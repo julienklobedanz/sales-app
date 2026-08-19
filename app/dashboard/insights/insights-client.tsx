@@ -32,7 +32,9 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
           <Card key={k.label}>
             <CardHeader className="pb-1">
               <CardDescription>{k.label}</CardDescription>
-              <CardTitle className="text-2xl tabular-nums">{k.value}</CardTitle>
+              <CardTitle as="div" className="text-2xl tabular-nums">
+                {k.value}
+              </CardTitle>
             </CardHeader>
           </Card>
         ))}
@@ -99,7 +101,7 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
               <Link
                 key={ref.id}
                 href={ROUTES.references.detail(ref.id)}
-                className="flex justify-between gap-2 rounded-md border border-border/70 px-3 py-2 text-sm hover:bg-muted/40"
+                className="flex justify-between gap-2 px-3 py-2 text-sm hover:bg-muted/40"
               >
                 <span className="truncate font-medium">{ref.title}</span>
                 <span className="shrink-0 text-muted-foreground">

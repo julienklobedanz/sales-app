@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Mail, Phone } from '@hugeicons/core-free-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AppIcon } from '@/lib/icons'
 
@@ -33,12 +34,13 @@ export function ShareOwnerContactCard({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="w-full rounded-xl border border-border/80 bg-card/95 px-3 py-2 text-left shadow-sm transition-colors hover:bg-muted/35"
-          aria-label="Kontaktinformationen anzeigen"
-        >
+      <Card className="p-0">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="w-full px-3 py-2 text-left transition-colors hover:bg-muted/35"
+            aria-label="Kontaktinformationen anzeigen"
+          >
           <div className="flex items-start gap-3">
             <Avatar size="lg">
               {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
@@ -49,8 +51,9 @@ export function ShareOwnerContactCard({
               <p className="truncate text-xs text-muted-foreground">{position}</p>
             </div>
           </div>
-        </button>
-      </PopoverTrigger>
+          </button>
+        </PopoverTrigger>
+      </Card>
       <PopoverContent
         align="end"
         sideOffset={10}

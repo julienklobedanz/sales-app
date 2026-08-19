@@ -7,6 +7,7 @@ import { Cancel01Icon, FileText, PencilEdit01Icon } from '@hugeicons/core-free-i
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
 import { AppIcon } from '@/lib/icons'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { isSuspiciousBulkImportProjectName } from '@/lib/references/bulk-import-preview-utils'
 import { cn } from '@/lib/utils'
@@ -70,7 +71,7 @@ export function BulkImportGroupsPanel({
   handleDocumentsDrop: (event: DragEvent<HTMLDivElement>, toGroupId: string) => void
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+    <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
       <div className="flex shrink-0 gap-3 border-b border-border bg-card px-3 py-2">
         <div className="size-4 shrink-0" aria-hidden />
         <div className={cn(BULK_IMPORT_ROW_GRID_CLASS, BULK_IMPORT_HEADER_CLASS)}>
@@ -224,6 +225,6 @@ export function BulkImportGroupsPanel({
           )
         })}
       </div>
-    </div>
+    </Card>
   )
 }

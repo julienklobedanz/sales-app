@@ -5,6 +5,7 @@ import { ClipboardCopy, Download, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import {
   Dialog,
   DialogContent,
@@ -113,9 +114,9 @@ export function DealExecutiveBriefingDialog({
             {COPY.deals.cockpit.briefingDialogDescription}
           </DialogDescription>
         </DialogHeader>
-        <pre className="max-h-[min(50vh,400px)] overflow-y-auto rounded-xl border border-border bg-muted p-4 text-xs leading-relaxed whitespace-pre-wrap text-foreground">
+        <Hinweis className="max-h-[min(50vh,400px)] overflow-y-auto p-4 text-xs leading-relaxed whitespace-pre-wrap text-foreground">
           {briefing}
-        </pre>
+        </Hinweis>
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Schließen

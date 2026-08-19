@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { LinkIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { AppIcon } from '@/lib/icons'
 import {
@@ -243,14 +244,14 @@ export function ShareLinkButton({
 
       toast.custom(
         () => (
-          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white px-4 py-3 shadow-lg dark:border-emerald-500/35 dark:from-emerald-500/15 dark:to-background">
-            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+          <Hinweis tone="muted" className="px-4 py-3 shadow-lg">
+            <p className="text-sm font-semibold text-foreground">
               Link kopiert!
             </p>
-            <p className="mt-0.5 text-xs text-emerald-800/90 dark:text-emerald-100/80">
+            <p className="mt-0.5 text-xs">
               Bereit zum Teilen mit dem Kunden.
             </p>
-          </div>
+          </Hinweis>
         ),
         { duration: 2800 },
       )

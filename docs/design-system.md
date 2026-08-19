@@ -12,7 +12,7 @@ Ziel: **Fully aligned UI** durch zentrale Tokens + konsistente UI-Primitives + k
 ### 2) UI‑Primitives (Shadcn)
 
 - **Komponenten‑Library**: `components/ui/*`
-  - Beispiele: `button.tsx`, `badge.tsx`, `card.tsx`, `input.tsx`, `select.tsx`, `dialog.tsx`, …
+  - Beispiele: `button.tsx`, `badge.tsx`, `card.tsx`, `group.tsx`, `option.tsx`, `hinweis.tsx`, `input.tsx`, `select.tsx`, `dialog.tsx`, …
   - **Button `size="toolbar"`:** einheitliche Höhe/Abstände für Aktionen **über** `AppDataTable` (Filter, Spalten, Primäraktion).
   - **`ToolbarSearchField`** (`components/ui/toolbar-search-field.tsx`): Suchfeld mit Icon; `variant="list"` (h-10, `AppDataTable`) oder `variant="dashboard"` (h-11, Übersicht/Accounts). Konstanten: `lib/table-toolbar.ts` (`TABLE_TOOLBAR.list` / `.dashboard`).
   - **Tabellen (TanStack):** `app-data-table.tsx` (`AppDataTable`) ist die gemeinsame Basis für Listen (Referenzen, Deals); `tableVariant` (`evidence` | `deals` | `default`) schaltet das jeweilige Kontextmenü (`COPY.evidence.*` / `COPY.deals.*`); `DataTable` in `data-table.ts` ist ein Alias.
@@ -314,3 +314,53 @@ Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer
 **Aufnahmetest für Inhalte:** Trägt diese Information zur Kernaufgabe des Produkts bei? Bei RefStack: *Hilft sie, einen Beweis zu erzeugen oder zu platzieren?* Was nur beim **Gewinnen** des Deals hilft, gehört ins CRM — was beim **Belegen** hilft, hierher.
 
 **Zustand vor Inhalt:** Wenn ein Zustand die Verwendbarkeit des Inhalts bestimmt — bei der Firma der NDA — steht er darüber und verändert die Darstellung des Inhalts sichtbar, nicht nur als Hinweis daneben.
+
+---
+
+### 11) Bausteine: wie ein Gegenstand innen aufgebaut ist
+
+§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis. Eingeführt 19.08.2026.
+
+#### 11.1 Die Karte
+
+**Eine Karte ist ein Bauteil, kein Klassenbündel.** Wer einen Gegenstand mit eigenem Titel einfasst, benutzt `<Card>`. Wer Bedienelemente gruppiert, eine Option zeichnet oder einen Hinweis setzt, benutzt das dafür vorgesehene Bauteil — nicht eine Karte mit anderem Innenabstand.
+
+**Woran man eine Karte erkennt:** Sie hat einen Gegenstand, über den sich ein Satz sagen lässt. „Freigabe-Einstellungen“ ist einer. „Die drei Umschaltknöpfe“ ist keiner.
+
+Nicht jeder Kasten mit Rahmen ist eine Karte:
+
+| Was | Erkennbar an | Bauteil |
+|---|---|---|
+| **Karte** | eigener Gegenstand, meist mit Titel | `<Card>` |
+| **Gruppe** | fasst Bedienelemente zusammen, kein eigener Gegenstand | `<Group>` — oder `<TabsList>`, wo schon `role="tablist"` |
+| **Option** | auswählbar, Teil einer Menge | `<Option>` |
+| **Hinweis** | eine Aussage, kein Gegenstand | `<Hinweis>` |
+| **entfällt** | Rahmen ohne Gegenstand — Dekoration | Rahmen entfernen |
+
+**Voreinstellungen der Karte** (`components/ui/card.tsx`):
+
+| | Wert |
+|---|---|
+| Radius | `rounded-lg` |
+| Innenabstand | `p-4` |
+| Hintergrund | `bg-card` |
+| Rahmen | `border-border` |
+
+Eine Kartenfläche, nicht mehrere. `bg-muted/20`, `/30` und `/40` sind keine Kartenhintergründe. Wer eine gedämpfte Fläche braucht, baut einen **Hinweis**.
+
+**`CardTitle`:** Rendert ein echtes Überschriftenelement. Prop `as?: 'h2' | 'h3' | 'h4' | 'div'`, Voreinstellung **`h2`**.
+
+- Karte als Abschnitt der Seite: `h2` (Default)
+- Karte in einer Karte: `as="h3"`
+- Tiefer nicht. Kein `h1` in der Karte (das bleibt die Seite, §10)
+- `as="div"` nur, wo `CardTitle` nachweislich keine Überschrift ist
+
+**Prüfkriterium:** Keine `h2` innerhalb einer anderen `<Card>`.
+
+**Gruppe** (`components/ui/group.tsx`): `rounded-lg border border-border bg-muted p-1`. Einfassung, keine Auswahl-Logik. Segment-Schalter mit `role="tablist"` nutzen `TabsList`.
+
+**Option** (`components/ui/option.tsx`): `rounded-md border p-2`. Ausgewählt über `has-[:checked]:` oder `data-selected="true"`. Der Aufrufer bleibt `label` / `button` / `fieldset`.
+
+**Hinweis** (`components/ui/hinweis.tsx`): `rounded-md border p-2 text-xs`. `tone`: `muted` (Default) · `destructive` · `warning` (Status-Tokens, keine Roh-Palette). Kein `role="alert"` von selbst.
+
+**Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 1: Warnung mit Zähler (CI `::warning`). Phase 2 (`--fail` / `ENCLOSURE_GUARD_FAIL=1`) erst nach §11.3 — die verbleibenden Treffer sind Felder, Chrome, Logos und gestrichelte Leerflächen. Leerflächen nicht auf die Allowlist, sonst verschwinden sie aus §11.3.

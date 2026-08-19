@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import { statusTone, statusToneFill, statusToneText } from '@/lib/ui/status-tone'
 import {
@@ -146,9 +147,9 @@ export function DealRfpRecommendationBanner({
 
   return (
     <div id="urteil" className="scroll-mt-24">
-      <div
+      <Card
         className={cn(
-          'relative overflow-hidden rounded-xl border shadow-sm',
+          'relative overflow-hidden p-0',
           styles.shell,
         )}
       >
@@ -221,7 +222,7 @@ export function DealRfpRecommendationBanner({
             </div>
           ) : null}
         </div>
-      </div>
+      </Card>
       {isStale ? (
         <p className="mt-1.5 text-right text-xs font-medium text-muted-foreground">
           {COPY.deals.cockpit.rfpReanalyzeHint}

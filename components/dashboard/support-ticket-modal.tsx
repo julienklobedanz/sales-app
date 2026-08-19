@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -185,7 +186,7 @@ export function SupportTicketModal({
                 />
               </div>
 
-              <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5">
+              <Hinweis className="px-3 py-2.5">
                 {editingEmail ? (
                   <div className="space-y-2">
                     <Label htmlFor="ticket-email">Antwort an</Label>
@@ -237,7 +238,7 @@ export function SupportTicketModal({
                     </button>
                   </p>
                 )}
-              </div>
+              </Hinweis>
 
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button

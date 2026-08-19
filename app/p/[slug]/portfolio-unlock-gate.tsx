@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { unlockPublicPortfolio } from '../actions'
@@ -41,7 +42,7 @@ export function PortfolioUnlockGate({ slug }: { slug: string }) {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/25 p-6">
-      <div className="w-full max-w-md rounded-2xl border bg-card/95 p-8 shadow-sm">
+      <Card className="w-full max-w-md p-8">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent dark:bg-slate-800">
             <AppIcon
@@ -75,7 +76,7 @@ export function PortfolioUnlockGate({ slug }: { slug: string }) {
             {busy ? 'Wird geprüft …' : 'Inhalt anzeigen'}
           </Button>
         </form>
-      </div>
+      </Card>
     </div>
   )
 }

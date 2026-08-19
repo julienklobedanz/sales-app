@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { CopyIcon, Loader, RefreshCw, Sparkles } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Option } from '@/components/ui/option'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -160,10 +162,8 @@ export function AiDraftComposer({
           <legend className="text-sm font-medium text-foreground">Format</legend>
           <div className="space-y-2" role="radiogroup" aria-label="Ausgabeformat">
             {FORMAT_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-muted/20 p-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-              >
+              <Option key={opt.value}>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
                 <input
                   type="radio"
                   name={formatGroupName}
@@ -174,6 +174,7 @@ export function AiDraftComposer({
                 />
                 <span>{opt.label}</span>
               </label>
+              </Option>
             ))}
           </div>
         </fieldset>
@@ -227,7 +228,7 @@ export function AiDraftComposer({
 
         <div className="space-y-2">
           <Label htmlFor="ai-draft-result">Ergebnis</Label>
-          <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+          <Card className="p-3">
             <Textarea
               id="ai-draft-result"
               value={output}
@@ -240,7 +241,7 @@ export function AiDraftComposer({
               }
               className="min-h-[200px] max-h-[40vh] resize-y border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
             />
-          </div>
+          </Card>
         </div>
       </div>
 

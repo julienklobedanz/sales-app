@@ -7,6 +7,7 @@ import { Lock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Option } from '@/components/ui/option'
 import { Separator } from '@/components/ui/separator'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
@@ -128,14 +129,13 @@ export function ShowcaseMultiPortfolio({
             const active = ref.id === selected.id
             return (
               <li key={ref.id} className="min-w-[14rem] lg:min-w-0">
+                <Option data-selected={active ? 'true' : undefined} className="p-0">
                 <button
                   type="button"
                   onClick={() => select(ref.id)}
                   className={cn(
-                    'flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition-colors',
-                    active
-                      ? 'border-foreground/20 ring-2 ring-foreground/10'
-                      : 'hover:bg-muted/40',
+                    'flex w-full items-start gap-3 p-3 text-left transition-colors',
+                    !active && 'hover:bg-muted/40',
                   )}
                   aria-current={active ? 'true' : undefined}
                 >
@@ -160,13 +160,14 @@ export function ShowcaseMultiPortfolio({
                     </span>
                   </span>
                 </button>
+                </Option>
               </li>
             )
           })}
         </ul>
       </nav>
 
-      <article className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+      <Card className="p-6 md:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             {selectedIndex + 1} von {references.length}
@@ -211,9 +212,9 @@ export function ShowcaseMultiPortfolio({
                   />
                 ) : null}
                 <div className="min-w-0">
-                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                  <CardTitle className="text-2xl tracking-tight">
                     {selected.title}
-                  </h2>
+                  </CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {selected.company_name}
                     {selected.industry
@@ -301,10 +302,13 @@ export function ShowcaseMultiPortfolio({
                       {kpisInDetails.map((kpi) => (
                         <Card
                           key={kpi.label}
-                          className="border-border/70 bg-muted/20 shadow-none"
+                          className="border-border/70 bg-card shadow-none"
                         >
                           <CardHeader className="py-3 pb-1">
-                            <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            <CardTitle
+                              as="h3"
+                              className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                            >
                               {kpi.label}
                             </CardTitle>
                           </CardHeader>
@@ -322,7 +326,7 @@ export function ShowcaseMultiPortfolio({
             </Card>
           </aside>
         </div>
-      </article>
+      </Card>
     </div>
   )
 }

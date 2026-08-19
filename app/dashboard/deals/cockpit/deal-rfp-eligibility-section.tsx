@@ -115,16 +115,16 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
           </table>
         </div>
 
-        <div
+        <Card
           className={cn(
-            'flex flex-col gap-3 rounded-lg border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between',
+            'flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between',
             verdictBannerClass(tone),
           )}
         >
           <div>
-            <p className="font-semibold">
+            <CardTitle as="h3" className="text-sm font-semibold">
               {COPY.deals.cockpit.eligibilityVerdict}: {label}
-            </p>
+            </CardTitle>
             <p className="mt-1 text-sm opacity-90">{assessment.summary}</p>
           </div>
           {data.capabilityProfileEmpty ? (
@@ -134,7 +134,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
               </Link>
             </Button>
           ) : null}
-        </div>
+        </Card>
       </CardContent>
     </Card>
   )

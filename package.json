@@ -21,7 +21,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:all": "npm run test && npm run test:integration",
     "knip": "knip --no-progress",
-    "check:palette": "node scripts/check-raw-palette-classes.mjs"
+    "check:palette": "node scripts/check-raw-palette-classes.mjs",
+    "check:enclosures": "node scripts/check-enclosure-classes.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",

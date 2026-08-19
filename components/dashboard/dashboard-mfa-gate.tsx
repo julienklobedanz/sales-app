@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Shield } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -135,12 +136,12 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
         aria-modal="true"
         aria-labelledby="mfa-gate-title"
       >
-        <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
+        <Card className="w-full max-w-md p-6 shadow-lg">
           <div className="mb-4 flex items-center gap-2 text-foreground">
             <Shield className="size-5 shrink-0 text-primary" aria-hidden />
-            <h2 id="mfa-gate-title" className="text-base font-semibold tracking-tight">
+            <CardTitle id="mfa-gate-title" className="text-base font-semibold tracking-tight">
               Zwei-Faktor-Authentifizierung
-            </h2>
+            </CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
             Gib den Code aus deiner Authenticator-App ein, um fortzufahren.
@@ -171,7 +172,7 @@ export function DashboardMfaGate({ children }: { children: React.ReactNode }) {
               )}
             </Button>
           </form>
-        </div>
+        </Card>
       </div>
     )
   }

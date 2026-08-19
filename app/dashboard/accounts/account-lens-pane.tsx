@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
@@ -183,16 +184,16 @@ export function AccountLensPane({
                 ) : (
                   <ul className="space-y-2">
                     {references.map((ref) => (
-                      <li
-                        key={ref.id}
-                        className="rounded-lg border border-border/70 px-3 py-2"
-                      >
+                      <li key={ref.id}>
+                        <Card className="p-3">
+                        <CardTitle as="h3" className="text-sm font-medium">
                         <Link
                           href={ROUTES.references.detail(ref.id)}
-                          className="text-sm font-medium hover:underline"
+                          className="hover:underline"
                         >
                           {ref.title}
                         </Link>
+                        </CardTitle>
                         <p className="mt-1 text-sm text-foreground/90">
                           {ref.summary?.trim() || '—'}
                         </p>
@@ -201,6 +202,7 @@ export function AccountLensPane({
                           {' · '}
                           {proofUsability(ref.status, ndaGates)}
                         </p>
+                        </Card>
                       </li>
                     ))}
                   </ul>

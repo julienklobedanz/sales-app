@@ -15,6 +15,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Hinweis } from '@/components/ui/hinweis'
 import { submitForApproval } from '@/app/dashboard/actions'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
@@ -122,16 +123,16 @@ export function RequestApprovalDialog({
           <DialogHeader>
             <DialogTitle>Freigabe anfordern</DialogTitle>
           </DialogHeader>
-          <div className="rounded-lg border border-sky-200/80 bg-sky-50/60 p-3 text-xs leading-relaxed text-sky-950 dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100">
+          <Hinweis tone="muted" className="p-3 leading-relaxed">
             <p className="font-medium">Interne Prüfung beim Account Manager anstoßen</p>
-            <p className="mt-1 text-sky-900/90 dark:text-sky-100/85">
+            <p className="mt-1">
               Mit dieser Anfrage leiten Sie die Referenz zur internen Prüfung weiter —
               nicht direkt an den Kunden. Der Account Manager erhält eine E-Mail, prüft
               die Referenz und bereitet danach die Kundenfreigabe vor (Kontaktwahl und
               Versand des Freigabe-Links). Scope, Zitat und Fristen sind an der Referenz
               bzw. in den Einstellungen hinterlegt.
             </p>
-          </div>
+          </Hinweis>
           <div className="grid gap-5 py-2">
             <div className="grid gap-2">
               <Label htmlFor="approval-am-email">

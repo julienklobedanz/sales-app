@@ -4,6 +4,7 @@ import { Building2 } from '@hugeicons/core-free-icons'
 import type { ReferenceRow } from './actions'
 import { AppIcon } from '@/lib/icons'
 import { CompanyLogo } from '@/components/ui/company-logo'
+import { Card, CardTitle } from '@/components/ui/card'
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
 
 export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
@@ -11,7 +12,7 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
   const companyDisplay = isAnonymized ? 'Anonymisierter Kunde' : reference.company_name
 
   return (
-    <article className="w-full rounded-2xl border border-border bg-card p-6 text-foreground shadow-sm">
+    <Card className="w-full p-6 text-foreground">
       <div className="flex items-start gap-3">
         {isAnonymized ? (
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50">
@@ -30,9 +31,9 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {companyDisplay}
           </p>
-          <h2 className="mt-1 text-xl font-semibold leading-tight tracking-tight text-foreground md:text-2xl">
+          <CardTitle className="mt-1 text-xl leading-tight tracking-tight md:text-2xl">
             {reference.title}
-          </h2>
+          </CardTitle>
         </div>
       </div>
 
@@ -44,6 +45,6 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
           solution={reference.our_solution}
         />
       </div>
-    </article>
+    </Card>
   )
 }

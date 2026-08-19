@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { DealWithReferences } from '../types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
@@ -46,7 +46,7 @@ export function DealRfpNoticeHero({
     briefing.domainTags.length === 0
   ) {
     return (
-      <Card id="notice-hero" className="border-border/80 bg-muted/20">
+      <Card id="notice-hero" className="border-border/80">
         <CardContent className="py-5">
           <p className="text-sm text-muted-foreground">
             {COPY.deals.cockpit.steckbriefEmpty}
@@ -57,10 +57,10 @@ export function DealRfpNoticeHero({
   }
 
   return (
-    <Card id="notice-hero" className="border-border/80 bg-muted/20">
+    <Card id="notice-hero" className="border-border/80">
       <CardContent className="space-y-3 py-5">
         <div>
-          <h2 className="text-base font-semibold tracking-tight">{deal.title}</h2>
+          <CardTitle className="text-base tracking-tight">{deal.title}</CardTitle>
           {metaParts.length > 0 ? (
             <p className="mt-1 text-sm text-muted-foreground">{metaParts.join(' · ')}</p>
           ) : null}

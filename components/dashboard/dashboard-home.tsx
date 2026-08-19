@@ -12,6 +12,8 @@ import {
 } from '@/components/dashboard/role-home-dashboard'
 import type { FunctionRole } from '@/lib/roles/capabilities'
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { deleteDemoSeedAction } from '@/app/onboarding/delete-demo-seed-action'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
@@ -144,7 +146,10 @@ export function DashboardHome({
   return (
     <div className="relative">
       {hasDemoSeed ? (
-        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+        <Hinweis
+          tone="warning"
+          className="mb-6 flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+        >
           <p>
             Das sind <strong>Beispieldaten</strong> zum Ausprobieren — keine echten
             Kunden. Du kannst sie jederzeit mit einem Klick entfernen.
@@ -170,7 +175,7 @@ export function DashboardHome({
           >
             Beispiel löschen
           </Button>
-        </div>
+        </Hinweis>
       ) : null}
 
       {showFullChecklist ? (
@@ -220,9 +225,9 @@ function ChecklistCard({
   className?: string
 }) {
   return (
-    <div
+    <Card
       className={cn(
-        'relative mx-auto max-w-xl rounded-2xl border border-border bg-card p-6 shadow-sm',
+        'relative mx-auto max-w-xl p-6',
         className ?? 'mt-12',
       )}
     >
@@ -235,9 +240,9 @@ function ChecklistCard({
         <X className="size-4" aria-hidden />
       </button>
 
-      <h2 className="pr-8 text-lg font-semibold text-foreground">
+      <CardTitle className="pr-8 text-lg">
         Willkommen bei RefStack! Lass uns deinen Workspace einrichten.
-      </h2>
+      </CardTitle>
       <p className="mt-1 text-sm text-muted-foreground">
         In wenigen Schritten bist du startklar für Accounts, Referenzen und Markt-Signale.
       </p>
@@ -281,6 +286,6 @@ function ChecklistCard({
           )
         })}
       </ul>
-    </div>
+    </Card>
   )
 }

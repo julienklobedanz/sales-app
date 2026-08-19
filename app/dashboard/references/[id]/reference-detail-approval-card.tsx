@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { ReferenceReadinessValue } from './reference-readiness-value'
 
 export type ReferenceDetailApprovalCardProps = {
@@ -82,7 +83,7 @@ export function ReferenceDetailApprovalCard(props: ReferenceDetailApprovalCardPr
         {quote ? (
           <div className="space-y-1.5">
             <p className="text-muted-foreground">Zitat</p>
-            <p className="rounded-md border bg-muted/20 p-2 text-xs">{quote}</p>
+            <Hinweis>{quote}</Hinweis>
           </div>
         ) : null}
         {approvalConsentFileUrl ? (

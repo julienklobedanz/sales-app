@@ -1,4 +1,5 @@
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
+import { Card, CardTitle } from '@/components/ui/card'
 
 export function ShowcaseReferenceContent({
   summary,
@@ -16,10 +17,12 @@ export function ShowcaseReferenceContent({
       challenge={challenge}
       solution={solution}
       renderSection={({ title, children }) => (
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h3 className="mb-3 text-base font-semibold text-foreground">{title}</h3>
+        <Card className="p-6">
+          <CardTitle as="h3" className="text-base">
+            {title}
+          </CardTitle>
           {children}
-        </section>
+        </Card>
       )}
     />
   )

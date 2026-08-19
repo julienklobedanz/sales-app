@@ -13,6 +13,7 @@ import {
 } from '@/lib/command-center/homepage-universal-types'
 import { hrefForCommandSearchResult } from '@/lib/command-center/search-navigation'
 import type { CommandSearchResult } from '@/lib/command-center/global-search'
+import { Card } from '@/components/ui/card'
 
 const HOMEPAGE_GROUP_LABELS = {
   marketSignals: 'Marktsignale',
@@ -60,12 +61,12 @@ function HomepageGroupSection({
   if (count === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <Card className="gap-0 overflow-hidden p-0">
       <p className={SECTION_HEADING_CLASS}>
         {label} ({count})
       </p>
       {children}
-    </section>
+    </Card>
   )
 }
 

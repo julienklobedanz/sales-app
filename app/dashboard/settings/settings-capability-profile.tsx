@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,10 +14,6 @@ import type { CapabilityProfile } from '@/lib/organizations/capability-profile-t
 import type { IcpDefinition } from '@/lib/deals/icp-rubric'
 
 import { updateOrgCapabilitySettings } from './settings-consolidation-actions'
-import {
-  SETTINGS_CARD_CLASS,
-  SETTINGS_CARD_CLASS_COMPACT,
-} from './tabs/settings-tab-shared'
 
 function rolesToText(roles: CapabilityProfile['certifiedRoles']): string {
   if (!roles?.length) return ''
@@ -115,7 +112,7 @@ export function SettingsCapabilityProfile({
     !certifiedRoles.trim()
 
   return (
-    <div className={compact ? SETTINGS_CARD_CLASS_COMPACT : SETTINGS_CARD_CLASS}>
+    <Card className={compact ? undefined : 'p-6'}>
       <CardHeader
         className={compact ? 'space-y-1 px-0 pt-0 pb-0' : 'space-y-2 px-0 pt-0'}
       >
@@ -130,9 +127,9 @@ export function SettingsCapabilityProfile({
         className={compact ? 'space-y-3 px-0 pb-0 pt-2' : 'space-y-6 px-0 pb-0 pt-1'}
       >
         {emptyProfile ? (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <Hinweis tone="warning" className="px-3 py-2 text-sm">
             {COPY.settings.capabilityProfile.emptyHint}
-          </p>
+          </Hinweis>
         ) : null}
 
         <div className="grid gap-2.5 sm:grid-cols-2">
@@ -274,6 +271,6 @@ export function SettingsCapabilityProfile({
           </p>
         )}
       </CardContent>
-    </div>
+    </Card>
   )
 }

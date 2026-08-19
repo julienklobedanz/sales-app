@@ -1,11 +1,10 @@
 'use client'
 
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-
-import { SETTINGS_CARD_CLASS } from './settings-tab-shared'
 
 export function WorkflowFreigabeSettingsCard({
   linkExpiryDays,
@@ -39,13 +38,15 @@ export function WorkflowFreigabeSettingsCard({
   onAutoNotifyRequesterOnEscalationChange: (value: boolean) => void
 }) {
   return (
-    <div className={SETTINGS_CARD_CLASS}>
+    <Card className="p-6">
       <CardHeader className="space-y-2 px-0 pt-0">
         <CardTitle className="text-base">Freigabe-Workflow</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 px-0 pb-0 pt-2">
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">1. Entry</p>
+        <Card className="p-4">
+          <CardTitle as="h3" className="text-sm">
+            1. Entry
+          </CardTitle>
           <div className="mt-3 max-w-sm space-y-2">
             <Label htmlFor="link-expiry-days">Link Expiry (Tage)</Label>
             <Input
@@ -55,11 +56,13 @@ export function WorkflowFreigabeSettingsCard({
               inputMode="numeric"
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">2. Interne Prüfung</p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
+        <Card className="p-4">
+          <CardTitle as="h3" className="text-sm">
+            2. Interne Prüfung
+          </CardTitle>
+          <div className="mt-3 flex items-center justify-between p-3">
             <div>
               <p className="text-sm font-medium">Vier-Augen-Prinzip aktiv</p>
             </div>
@@ -68,11 +71,13 @@ export function WorkflowFreigabeSettingsCard({
               onCheckedChange={onRequireInternalApprovalChange}
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">3. Externer Versand</p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
+        <Card className="p-4">
+          <CardTitle as="h3" className="text-sm">
+            3. Externer Versand
+          </CardTitle>
+          <div className="mt-3 flex items-center justify-between p-3">
             <div>
               <p className="text-sm font-medium">Delegation erlauben</p>
             </div>
@@ -81,10 +86,12 @@ export function WorkflowFreigabeSettingsCard({
               onCheckedChange={onAutoAllowDelegationChange}
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">4. Follow-up Sequenz</p>
+        <Card className="p-4">
+          <CardTitle as="h3" className="text-sm">
+            4. Follow-up Sequenz
+          </CardTitle>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="approval-reminder-1">Reminder #1 (Tage)</Label>
@@ -114,13 +121,13 @@ export function WorkflowFreigabeSettingsCard({
               />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-semibold text-foreground">
+        <Card className="p-4">
+          <CardTitle as="h3" className="text-sm">
             5. Abschluss & Transparenz
-          </p>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
+          </CardTitle>
+          <div className="mt-3 flex items-center justify-between p-3">
             <div>
               <p className="text-sm font-medium">
                 Requester bei Eskalation benachrichtigen
@@ -131,9 +138,9 @@ export function WorkflowFreigabeSettingsCard({
               onCheckedChange={onAutoNotifyRequesterOnEscalationChange}
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="flex items-center justify-between rounded-lg border border-border bg-muted p-3">
+        <Hinweis className="flex items-center justify-between p-3">
           <div>
             <p className="text-sm font-medium text-foreground">Live-Ablaufvorschau</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -142,8 +149,8 @@ export function WorkflowFreigabeSettingsCard({
               Eskalation
             </p>
           </div>
-        </div>
+        </Hinweis>
       </CardContent>
-    </div>
+    </Card>
   )
 }
