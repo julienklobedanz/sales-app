@@ -287,7 +287,7 @@ export function SettingsTeamCard({
 
       <div>
         {members.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 py-5 text-center text-sm text-muted-foreground">
+          <p className="py-5 text-center text-sm text-muted-foreground">
             Noch keine Mitglieder. Lade jemanden per E-Mail ein.
           </p>
         ) : (

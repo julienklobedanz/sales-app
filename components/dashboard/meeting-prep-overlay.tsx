@@ -123,14 +123,14 @@ export function MeetingPrepOverlayDialog({
                       </p>
                         </Card>
                       ) : (
-                        <div className="rounded-lg border border-dashed border-muted-foreground/40 px-3 py-2">
+                        <div className="px-1 py-2 italic text-muted-foreground">
                       <Link
                         href={ref.href}
-                        className="text-sm font-medium hover:underline"
+                        className="text-sm font-medium not-italic hover:underline"
                       >
                         {ref.title}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs not-italic">
                         {Math.round(ref.similarity * 100)} % Match
                         {ref.snippet ? ` · ${ref.snippet}` : ''}
                       </p>
@@ -214,7 +214,7 @@ export function MeetingPrepOverlayDialog({
                   {snapshot.signalReferencePairs.map((pair, idx) => (
                     <li
                       key={`${pair.referenceId}-${idx}`}
-                      className="rounded-lg border border-dashed border-muted-foreground/35 bg-muted/10 px-3 py-2 text-sm"
+                      className="px-1 py-2 text-sm"
                     >
                       <p className="text-muted-foreground italic">{pair.signalLabel}</p>
                       <p className="mt-1 font-medium not-italic">

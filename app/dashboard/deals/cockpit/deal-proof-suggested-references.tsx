@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import { cn } from '@/lib/utils'
 import { addReferenceToDealWithScore } from '../actions'
 import type { DealReferenceSuggestion } from '@/lib/deals/suggest-deal-reference-matches'
 
@@ -55,10 +54,7 @@ export function DealProofSuggestedReferences({
         {suggestions.map((s) => (
           <li
             key={s.id}
-            className={cn(
-              'flex items-start gap-3 rounded-lg border border-dashed border-muted-foreground/35',
-              'bg-muted/10 px-3 py-2.5 italic text-muted-foreground',
-            )}
+            className="flex items-start gap-3 px-1 py-2.5 italic text-muted-foreground"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium not-italic text-foreground/80">

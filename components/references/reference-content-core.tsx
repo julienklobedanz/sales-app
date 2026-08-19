@@ -49,10 +49,10 @@ const FILE_CATEGORY_LABEL: Record<(typeof FILE_CATEGORIES)[number], string> = {
 
 function DetailCell({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="gap-1 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium">{value}</div>
-    </Card>
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-sm font-medium">{value}</dd>
+    </div>
   )
 }
 
@@ -68,11 +68,13 @@ function ContactBlock({
   role?: string | null
 }) {
   return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-medium">{name}</div>
-      {email ? <div className="text-xs text-muted-foreground">{email}</div> : null}
-      {role ? <div className="text-xs text-muted-foreground">{role}</div> : null}
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1">
+        <p className="font-medium">{name}</p>
+        {email ? <p className="text-xs text-muted-foreground">{email}</p> : null}
+        {role ? <p className="text-xs text-muted-foreground">{role}</p> : null}
+      </dd>
     </div>
   )
 }
@@ -215,14 +217,16 @@ export function ReferenceContentCore({
   }
 
   const projectCells: Array<{ label: string; value: string; id: string }> = []
-  if (show('volume')) projectCells.push({ id: 'volume', label: 'Volumen', value: volumeLabel })
-  if (show('contractType')) {
+  if (show('volume') && volumeLabel.trim()) {
+    projectCells.push({ id: 'volume', label: 'Volumen', value: volumeLabel })
+  }
+  if (show('contractType') && contractLabel.trim()) {
     projectCells.push({ id: 'contractType', label: 'Vertragsart', value: contractLabel })
   }
-  if (show('projectStart')) {
+  if (show('projectStart') && startLabel.trim()) {
     projectCells.push({ id: 'projectStart', label: 'Projektstart', value: startLabel })
   }
-  if (show('projectEnd')) {
+  if (show('projectEnd') && endLabel.trim()) {
     projectCells.push({ id: 'projectEnd', label: 'Projektende', value: endLabel })
   }
   if (show('incumbentProvider') && incumbentProvider?.trim()) {
@@ -288,18 +292,18 @@ export function ReferenceContentCore({
       {projectCells.length > 0 ? (
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">Projektdetails</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {projectCells.map((cell) => (
               <DetailCell key={cell.id} label={cell.label} value={cell.value} />
             ))}
-          </div>
+          </dl>
         </section>
       ) : null}
 
       {show('customerContact') || show('salesContact') ? (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold">Kontakte</h3>
-          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+          <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             {show('salesContact') ? (
               <ContactBlock
                 label="Sales"
@@ -315,16 +319,14 @@ export function ReferenceContentCore({
                 role={customerContactRole}
               />
             ) : null}
-          </div>
+          </dl>
         </section>
       ) : null}
 
       {filesLoading ? (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold">Dateien</h3>
-          <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Dateien werden geladen…
-          </div>
+          <p className="text-sm text-muted-foreground">Dateien werden geladen…</p>
         </section>
       ) : show('files') && files && files.length > 0 ? (
         <section className="space-y-3">

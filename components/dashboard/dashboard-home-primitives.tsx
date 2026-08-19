@@ -99,7 +99,7 @@ export function HonestEmpty({
   description?: string
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-5 text-center text-sm text-muted-foreground">
+    <div className="px-1 py-3 text-center text-sm text-muted-foreground">
       <p className="font-medium text-foreground">{title}</p>
       {description ? <p className="mt-1">{description}</p> : null}
     </div>

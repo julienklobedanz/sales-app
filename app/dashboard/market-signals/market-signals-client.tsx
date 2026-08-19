@@ -246,7 +246,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       </div>
 
       {!hasWatchlist ? (
-        <div className="rounded-xl border border-dashed bg-muted/30 px-6 py-10 text-center">
+        <div className="px-6 py-10 text-center">
           <p className="font-medium text-foreground">
             {COPY.marketSignals.emptyFollowingTitle}
           </p>
@@ -371,7 +371,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     aria-pressed={filter.pressed}
                     onClick={filter.onToggle}
                     className={cn(
-                      'inline-flex h-10 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition-colors',
+                      'inline-flex h-10 shrink-0 items-center rounded-lg border-input px-3 text-xs font-medium transition-colors',
                       filter.pressed
                         ? 'border-primary/40 bg-primary/5 text-primary'
                         : 'border-border/80 bg-muted/40 text-muted-foreground hover:bg-background/60 hover:text-foreground',

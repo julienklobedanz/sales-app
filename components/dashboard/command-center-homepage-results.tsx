@@ -103,7 +103,7 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
 
   if (!hasAnyHomepageSearchHit(referenceHits, groups)) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-muted/60 px-6 py-12 text-center">
+      <div className="px-6 py-12 text-center">
         <p className="text-sm font-medium text-foreground">Keine Treffer</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Für „{query}“ wurden keine Ergebnisse gefunden. Formuliere die Anfrage anders

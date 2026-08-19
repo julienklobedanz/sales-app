@@ -50,7 +50,7 @@ export function WatchlistExecutivesPanel({
           value={newPersonName}
           onChange={(e) => setNewPersonName(e.target.value)}
           placeholder="Name, z. B. Tim Cook"
-          className="h-10 w-full rounded-xl border-border/70 bg-card md:w-[calc((100%-2rem)/3)]"
+          className="h-10 w-full rounded-xl border-input bg-card md:w-[calc((100%-2rem)/3)]"
           disabled={isPending && !!pendingStakeholderKey}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -67,7 +67,7 @@ export function WatchlistExecutivesPanel({
             onSelectSuggestion={(s) => setNewCompanyName(s.name)}
             disabled={isPending && !!pendingStakeholderKey}
             placeholder="Unternehmen, z. B. Apple"
-            className="h-10 rounded-xl border-border/70"
+            className="h-10 rounded-xl border-input"
           />
         </div>
         <Button
@@ -92,12 +92,12 @@ export function WatchlistExecutivesPanel({
           value={stakeholderQuery}
           onChange={(event) => setStakeholderQuery(event.target.value)}
           placeholder="Durchsuchen"
-          className="h-10 rounded-xl border-border/70 bg-card pl-10"
+          className="h-10 rounded-xl border-input bg-card pl-10"
         />
       </div>
 
       {filteredStakeholders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-6 py-14 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
           {stakeholderQuery.trim() ? (
             <>
               <Search
