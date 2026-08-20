@@ -25,9 +25,7 @@ import {
 
 export type {
   AccountStatusValue,
-  CompanyStrategyRow,
   CompanyRefRow,
-  RoadmapProjectRow,
   RecommendedReference,
   AccountDealRow,
   DealSignalRow,
