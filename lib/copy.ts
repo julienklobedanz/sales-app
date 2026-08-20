@@ -322,6 +322,7 @@ export const COPY = {
       risksSeverityHigh: 'Hoch',
       risksSeverityMedium: 'Mittel',
       recommendationAnalyzedOn: 'Analyse vom {date}',
+      recommendationCoverage: 'Beweis vorhanden {percent}%',
       draftsTitle: 'Antwort-Entwürfe',
       draftsSubtitle:
         'Vorbereitete Antworten pro RFP-Anforderung — mit Referenz-Nachweis.',
@@ -348,7 +349,7 @@ export const COPY = {
       draftsCancelEdit: 'Abbrechen',
       draftsSaveSuccess: 'Antwort gespeichert.',
       draftsSaveFailed: 'Antwort konnte nicht gespeichert werden.',
-      draftsCoveredCount: '{covered}/{total} bereit',
+      draftsCoveredCount: '{covered}/{total} Antwort bereit',
       draftsGapsCount: '{count} Lücken',
       briefingDialogTitle: 'Executive Briefing',
       briefingDialogDescription:
