@@ -53,33 +53,35 @@ export function BidOverviewCollapsibleCard({
             )}
           >
             {headerPrefix ? <div className="shrink-0">{headerPrefix}</div> : null}
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 cursor-pointer select-none items-center justify-between gap-3 border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-expanded={open}
-              >
-                <div className="min-w-0 flex-1 space-y-1">
-                  {title}
-                  {description ? (
-                    <div className="text-sm font-normal text-muted-foreground">
-                      {description}
-                    </div>
-                  ) : null}
-                </div>
-                <span
-                  className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground"
-                  aria-hidden
+            <h2 className="m-0 min-w-0 flex-1 text-base font-semibold">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full min-w-0 cursor-pointer select-none items-center justify-between gap-3 border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-expanded={open}
                 >
-                  <ChevronDown
-                    className={cn(
-                      'size-4 transition-transform duration-200',
-                      open && 'rotate-180',
-                    )}
-                  />
-                </span>
-              </button>
-            </CollapsibleTrigger>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    {title}
+                    {description ? (
+                      <div className="text-sm font-normal text-muted-foreground">
+                        {description}
+                      </div>
+                    ) : null}
+                  </div>
+                  <span
+                    className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground"
+                    aria-hidden
+                  >
+                    <ChevronDown
+                      className={cn(
+                        'size-4 transition-transform duration-200',
+                        open && 'rotate-180',
+                      )}
+                    />
+                  </span>
+                </button>
+              </CollapsibleTrigger>
+            </h2>
             {headerActions ? (
               <div className="flex shrink-0 items-center gap-2">{headerActions}</div>
             ) : null}
