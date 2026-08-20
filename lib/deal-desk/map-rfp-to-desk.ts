@@ -42,7 +42,7 @@ function buildSmeTasks(
         id: `sme-${row.requirementId}`,
         question: hasMatch
           ? `${row.requirementText.slice(0, 200)} — fachliche Klärung (${row.category ?? 'Allgemein'})`
-          : `Keine interne Referenz: ${row.requirementText.slice(0, 180)}`,
+          : row.requirementText.slice(0, 180),
         category: row.category ?? 'Allgemein',
         dueInDays: 3 + (n % 5),
         contextExcerpt: row.requirementText.slice(0, 320),

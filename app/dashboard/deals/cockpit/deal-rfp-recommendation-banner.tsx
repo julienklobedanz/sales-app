@@ -184,7 +184,11 @@ export function DealRfpRecommendationBanner({
                 ) : null}
                 {reifeHint ? (
                   <p className="text-xs text-muted-foreground">
-                    {reifeHint} · Coverage {data.coveragePercent}%
+                    {reifeHint} ·{' '}
+                    {COPY.deals.cockpit.recommendationCoverage.replace(
+                      '{percent}',
+                      String(data.coveragePercent),
+                    )}
                   </p>
                 ) : null}
               </div>
