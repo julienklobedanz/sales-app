@@ -394,7 +394,7 @@ export function AppDataTable<TData, TValue>({
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
         <Table
           className={enableColumnResize ? 'w-full table-fixed' : undefined}
           style={

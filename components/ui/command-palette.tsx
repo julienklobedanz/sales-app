@@ -334,7 +334,7 @@ export function CommandPalette() {
         'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-100',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100',
       )}
-      overlayClassName="bg-slate-950/45 backdrop-blur-sm"
+      overlayClassName="bg-foreground/45 backdrop-blur-sm"
       commandClassName={cn(
         // Wichtig: nicht h-full — sonst füllt die Card den Fullscreen-Host end-to-end.
         '!h-auto w-full max-w-[min(56rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-[0_8px_30px_rgba(15,23,42,0.12)]',

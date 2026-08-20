@@ -4,21 +4,23 @@ import {
   countPaletteHits,
   countWhiteBlackHits,
   isExcludedPath,
+  isPaletteAllowlisted,
   isWhiteBlackAllowlisted,
+  scanRepo,
   zoneFor,
 } from './check-raw-palette-classes.mjs'
 
 describe('isExcludedPath', () => {
-  it('skips components/ui, theme-shell CSS, and tests', () => {
-    expect(isExcludedPath('components/ui/button.tsx')).toBe(true)
-    expect(isExcludedPath('components/ui/badge.tsx')).toBe(true)
+  it('skips theme-shell CSS and tests, scans ui primitives', () => {
+    expect(isExcludedPath('components/ui/button.tsx')).toBe(false)
+    expect(isExcludedPath('components/ui/badge.tsx')).toBe(false)
     expect(isExcludedPath('styles/theme-shell.css')).toBe(true)
     expect(isExcludedPath('styles/theme-shell-content.css')).toBe(true)
     expect(isExcludedPath('lib/deal-desk/benchmark-risk.test.ts')).toBe(true)
     expect(isExcludedPath('lib/foo.integration.test.ts')).toBe(true)
   })
 
-  it('scans app, components (outside ui), and lib production files', () => {
+  it('scans app, components, and lib production files', () => {
     expect(isExcludedPath('components/deal-status-badge.tsx')).toBe(false)
     expect(isExcludedPath('app/dashboard/deals/page.tsx')).toBe(false)
     expect(isExcludedPath('lib/ui/status-tone.ts')).toBe(false)
@@ -49,13 +51,21 @@ describe('countWhiteBlackHits', () => {
 })
 
 describe('isWhiteBlackAllowlisted', () => {
-  it('allows brand panel, QR well, and leftover raw-palette text-white', () => {
+  it('allows brand panel, QR well, leftover raw-palette text-white, and logo placeholder', () => {
     expect(isWhiteBlackAllowlisted('components/auth-brand-panel.tsx')).toBe(true)
     expect(
       isWhiteBlackAllowlisted('components/dashboard/settings-totp-mfa-card.tsx'),
     ).toBe(true)
     expect(isWhiteBlackAllowlisted('app/onboarding/steps/workspace-step.tsx')).toBe(true)
+    expect(isWhiteBlackAllowlisted('components/ui/company-logo.tsx')).toBe(true)
     expect(isWhiteBlackAllowlisted('lib/ui/status-tone.ts')).toBe(false)
+  })
+})
+
+describe('isPaletteAllowlisted', () => {
+  it('allows the company-logo brand placeholder', () => {
+    expect(isPaletteAllowlisted('components/ui/company-logo.tsx')).toBe(true)
+    expect(isPaletteAllowlisted('components/ui/button.tsx')).toBe(false)
   })
 })
 
@@ -64,5 +74,12 @@ describe('zoneFor', () => {
     expect(zoneFor('app/dashboard/page.tsx')).toBe('app')
     expect(zoneFor('components/deal-status-badge.tsx')).toBe('components')
     expect(zoneFor('lib/copy.ts')).toBe('lib')
+  })
+})
+
+describe('scanRepo', () => {
+  it('has no family-NNN hits in components/ui after allowlist', () => {
+    const { byFile } = scanRepo()
+    expect(byFile.filter((row) => row.rel.startsWith('components/ui/'))).toEqual([])
   })
 })

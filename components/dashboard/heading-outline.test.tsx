@@ -10,6 +10,7 @@ import { DealCockpitHeader } from '@/app/dashboard/deals/cockpit/deal-cockpit-he
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
 import { ShowcaseSingleReference } from '@/app/p/[slug]/showcase-single-reference'
 import type { PublicReference } from '@/app/p/actions'
+import { ApprovalReferenceSections } from '@/app/approval/[token]/approval-reference-sections'
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/dashboard/references',
@@ -174,6 +175,20 @@ describe('§11.2 heading outline', () => {
 
     expect(headingsByLevel(1)).toHaveLength(1)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cloud-Migration')
+  })
+
+  it('Approval-Abschnitte: Collapsible-Titel sind h2', () => {
+    render(
+      <>
+        <h1>Cloud-Migration</h1>
+        <ApprovalReferenceSections summary="Absatz" challenge={null} solution={null} />
+      </>,
+    )
+
+    expect(headingsByLevel(1)).toHaveLength(1)
+    expect(
+      screen.getByRole('heading', { level: 2, name: /Kurzbeschreibung/ }),
+    ).toBeInTheDocument()
   })
 
   it('Login: genau ein h1, Marketing-Spalte ist kein Heading', () => {

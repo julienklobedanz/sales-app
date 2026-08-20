@@ -6,7 +6,8 @@
  * Phase 1 (default): print the count and exit 0.
  * Phase 2: `node scripts/check-raw-palette-classes.mjs --fail` (or PALETTE_GUARD_FAIL=1).
  *
- * Excludes: components/ui, theme-shell CSS, *.test.ts / *.test.tsx.
+ * Excludes: theme-shell CSS, *.test.ts / *.test.tsx.
+ * Scans components/ui (primitives must use tokens). Family allowlist: brand placeholder.
  * White/black allowlist: brand panel, TOTP QR well, leftover text-white on raw palettes.
  */
 
@@ -25,7 +26,8 @@ export const PALETTE_RE = new RegExp(`\\b(?:${PALETTE_FAMILIES})-[0-9]{2,3}\\b`,
 export const WHITE_BLACK_RE = /\b(?:bg|text|border|ring|fill|stroke)-(?:white|black)\b/g
 
 /**
- * Documented exceptions for white/black only (family-NNN still counts).
+ * Documented exceptions for white/black only (family-NNN still counts unless
+ * the file is also on PALETTE_ALLOWLIST).
  * Brand/QR stay on purpose; group-4 text-white sits on raw palettes (phase 1).
  */
 export const WHITE_BLACK_ALLOWLIST = new Set([
@@ -36,13 +38,22 @@ export const WHITE_BLACK_ALLOWLIST = new Set([
   'lib/deal-desk/hero-key-takeaways.ts',
   'app/p/[slug]/showcase-action-buttons.tsx',
   'app/approval/[token]/approval-quick-choice.tsx',
+  // brand placeholder — initials on a gradient, not theme
+  'components/ui/company-logo.tsx',
+])
+
+/**
+ * Family-NNN exceptions. Category in the comment, not a remainder pool.
+ */
+export const PALETTE_ALLOWLIST = new Set([
+  // brand placeholder — initials, not theme
+  'components/ui/company-logo.tsx',
 ])
 
 const SCAN_ROOTS = ['app', 'components', 'lib']
 const SCAN_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css'])
 
 export function isExcludedPath(relPosix) {
-  if (relPosix === 'components/ui' || relPosix.startsWith('components/ui/')) return true
   if (/(?:^|\/)theme-shell(?:-content)?\.css$/.test(relPosix)) return true
   if (/\.(?:integration\.)?test\.[cm]?[jt]sx?$/.test(relPosix)) return true
   return false
@@ -50,6 +61,10 @@ export function isExcludedPath(relPosix) {
 
 export function isWhiteBlackAllowlisted(relPosix) {
   return WHITE_BLACK_ALLOWLIST.has(relPosix)
+}
+
+export function isPaletteAllowlisted(relPosix) {
+  return PALETTE_ALLOWLIST.has(relPosix)
 }
 
 export function countPaletteHits(source) {
@@ -91,6 +106,7 @@ export function scanRepo(root = ROOT) {
   const byFile = []
   let whiteBlack = 0
   let whiteBlackAllowlisted = 0
+  let paletteAllowlisted = 0
 
   for (const full of files) {
     if (!SCAN_EXTS.has(path.extname(full))) continue
@@ -99,8 +115,12 @@ export function scanRepo(root = ROOT) {
     const source = fs.readFileSync(full, 'utf8')
     const n = countPaletteHits(source)
     if (n > 0) {
-      byFile.push({ rel, n })
-      byZone[zoneFor(rel)] += n
+      if (isPaletteAllowlisted(rel)) {
+        paletteAllowlisted += n
+      } else {
+        byFile.push({ rel, n })
+        byZone[zoneFor(rel)] += n
+      }
     }
     const wb = countWhiteBlackHits(source)
     if (wb === 0) continue
@@ -110,7 +130,7 @@ export function scanRepo(root = ROOT) {
 
   byFile.sort((a, b) => b.n - a.n || a.rel.localeCompare(b.rel))
   const total = byFile.reduce((sum, row) => sum + row.n, 0)
-  return { total, byZone, byFile, whiteBlack, whiteBlackAllowlisted }
+  return { total, byZone, byFile, whiteBlack, whiteBlackAllowlisted, paletteAllowlisted }
 }
 
 function shouldFail(argv = process.argv.slice(2), env = process.env) {
@@ -118,13 +138,21 @@ function shouldFail(argv = process.argv.slice(2), env = process.env) {
 }
 
 export function formatReport(
-  { total, byZone, byFile, whiteBlack = 0, whiteBlackAllowlisted = 0 },
+  {
+    total,
+    byZone,
+    byFile,
+    whiteBlack = 0,
+    whiteBlackAllowlisted = 0,
+    paletteAllowlisted = 0,
+  },
   { fail },
 ) {
   const top = byFile.slice(0, 10)
   const lines = [
-    `T8 palette guard: ${total} raw Tailwind palette classes outside components/ui`,
+    `T8 palette guard: ${total} raw Tailwind palette classes after allowlist`,
     `  app ${byZone.app} · components ${byZone.components} · lib ${byZone.lib}`,
+    `  family allowlisted: ${paletteAllowlisted}`,
     `  white/black: ${whiteBlack} after allowlist (${whiteBlackAllowlisted} excepted)`,
     fail
       ? '  mode: fail (phase 2)'

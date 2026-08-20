@@ -56,10 +56,10 @@ Damit Status‑Chips überall gleich “wirken”, nutzen wir `Badge`‑Variants
 
 ### 7) Farben & Copy: laufende Disziplin
 
-> **Korrektur 14.08.2026.** Die frühere Fassung behauptete, ein Sweep habe „die letzten offensichtlichen Stellen bereinigt". Das trifft nicht zu: Eine Zählung am 14.08. findet **815 Raw‑Paletten‑Klassen** außerhalb von `components/ui` (app 528 / components ohne `ui/` 209 / lib 78). `components/ui` selbst: 15 — die einzige erlaubte Zone. Die Regel gilt weiter, sie wird nur nicht eingehalten. Abbauplan: [`arbeitspaket-ui-konsistenz.md`](./arbeitspaket-ui-konsistenz.md).
+> **Korrektur 20.08.2026.** `components/ui` ist keine Paletten-Freizone. Der Wächter `check:palette` scannt den Ordner. Overlay-Scrims nutzen `bg-foreground/…` (kein eigenes Token). Benannte Ausnahme: Firmenlogo-Platzhalter in `company-logo.tsx` (Verlauf + `text-white`, Allowlist). Die Zählung vom 14.08. (815 außerhalb von `ui`) bleibt historisch; Abbauplan: [`arbeitspaket-ui-konsistenz.md`](./arbeitspaket-ui-konsistenz.md).
 
-- **Keine Raw‑Tailwind‑Paletten** in App‑Screens (`green-600`, `slate-*`, `zinc-*`, …): semantische Utilities (`text-primary`, `text-muted-foreground`, `bg-muted`, `border-border`, `text-destructive`, …) oder UI‑Variants nutzen. Bei neuen Features gleich Tokens verwenden.
-- **`components/` (App‑Ebene, nicht `ui/`):** Eigenes Markup nutzt durchgängig semantische Klassen (`auth-shell`, Status‑Badges, `SupportTicketModal`, …). Generierte **Shadcn‑Primitives** unter `components/ui/*` dürfen z. B. **Overlay‑Scrims** (`bg-black/50` / `bg-black/80`) sowie `text-white` auf **destructive**‑Buttons enthalten – das sind etablierte Muster; nur bei gezieltem Theme‑Tuning anfassen (visuell testen). `dark:` ist verboten.
+- **Keine Raw‑Tailwind‑Paletten** in App‑Screens (`green-600`, `slate-*`, `zinc-*`, …): semantische Utilities (`text-primary`, `text-muted-foreground`, `bg-muted`, `border-border`, `text-destructive`, …) oder UI‑Variants nutzen. Bei neuen Features gleich Tokens verwenden. Dasselbe gilt in `components/ui/*`.
+- **`components/` (App‑Ebene):** Eigenes Markup nutzt durchgängig semantische Klassen (`auth-shell`, Status‑Badges, `SupportTicketModal`, …). `dark:` ist verboten.
 - **Copy:** wiederkehrende Labels weiter über `lib/copy.ts` (`COPY`) führen; Rollen/Nav sind dort bereits vorhanden.
 - **Badges:** Status über die zentralen `*StatusBadge`‑Komponenten; Variant‑Semantik siehe Abschnitt 5.
 
