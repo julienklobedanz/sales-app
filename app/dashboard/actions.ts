@@ -13,7 +13,6 @@ import {
   type ApproveInternalRecipientOptions,
 } from '@/lib/references/library/approvals'
 import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
-import { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
 import {
@@ -25,23 +24,11 @@ import {
   getCompetitorSuggestionsImpl,
   getIncumbentSuggestionsImpl,
 } from '@/lib/references/library/suggestions'
-import {
-  getRequestsImpl,
-  reviewRequestImpl,
-} from '@/lib/references/library/approval-requests'
-import {
-  cleanupCompanyDomainNamesImpl,
-  mergeDuplicateCompaniesImpl,
-} from '@/app/dashboard/accounts/maintenance'
 import { matchReferencesImpl } from '@/lib/references/library/match'
 import type {
   MatchReferencesOptions,
   MatchReferencesResult,
 } from '@/lib/match/match-types'
-import {
-  getDashboardDataImpl,
-  getDeletedReferencesImpl,
-} from '@/lib/references/library/dashboard'
 import {
   deleteReferenceImpl,
   emptyTrashImpl,
@@ -52,7 +39,6 @@ import {
   createSharedPortfolioImpl,
   getExistingShareForReferenceImpl,
   getPortfolioViewSessionsForReferenceImpl,
-  getReferencesByIdsImpl,
   resetSharedPortfolioManageTokenImpl,
   updateShareLinkSecurityByReferenceImpl,
 } from '@/lib/references/library/sharing'
@@ -63,7 +49,6 @@ import {
 import type { SubmitTicketResult } from '@/app/dashboard/support/tickets'
 import { submitTicketImpl } from '@/app/dashboard/support/tickets'
 import { updateReferenceImpl } from '@/lib/references/library/update'
-import { updateReferenceDetailFieldsImpl } from '@/lib/references/library/detail-fields'
 import { bulkCreateReferencesFromFilesImpl } from '@/lib/references/library/bulk-import'
 import { generateSummaryFromStoryImpl } from '@/lib/references/library/summary'
 import { recordAiDraftGenerated as recordAiDraftGeneratedImpl } from '@/lib/references/library/ai-draft-log'
@@ -116,36 +101,10 @@ export type ReferenceRow = {
   approval_internal_status?: string | null
 }
 
-export type GetDashboardDataResult = {
-  references: ReferenceRow[]
-  totalCount: number
-  deletedCount: number
-}
-
 export type DeletedReferenceRow = {
   id: string
   title: string
   company_name: string
-}
-
-export type RequestItem = {
-  id: string
-  reference_id: string
-  reference_title: string
-  company_name: string
-  requester_name?: string
-  status: 'pending' | 'approved' | 'rejected'
-  created_at: string
-}
-
-export async function getDashboardData(
-  onlyFavorites = false,
-): Promise<GetDashboardDataResult> {
-  return getDashboardDataImpl(onlyFavorites) as unknown as GetDashboardDataResult
-}
-
-export async function getDeletedReferences(): Promise<DeletedReferenceRow[]> {
-  return getDeletedReferencesImpl() as unknown as DeletedReferenceRow[]
 }
 
 export async function toggleFavorite(referenceId: string) {
@@ -155,8 +114,6 @@ export async function toggleFavorite(referenceId: string) {
 export type BulkImportReferencesResult =
   | { success: true; created: number; referenceIds: string[]; organizationId: string }
   | { success: false; error: string }
-
-export type BulkImportGroup = { projectName: string; fileCount: number }
 
 export async function bulkCreateReferencesFromFiles(
   formData: FormData,
@@ -190,18 +147,6 @@ export type EmptyTrashResult = {
 
 export async function updateReference(id: string, formData: FormData) {
   return updateReferenceImpl(id, formData)
-}
-
-/** Teilupdate für Detail-Modal: nur Projektstatus, Incumbent, Wettbewerber */
-export async function updateReferenceDetailFields(
-  id: string,
-  payload: {
-    project_status?: 'active' | 'completed' | null
-    incumbent_provider?: string | null
-    competitors?: string | null
-  },
-) {
-  return updateReferenceDetailFieldsImpl(id, payload)
 }
 
 /** Kundenlink erstellen: shared_portfolios Eintrag mit Slug (xxx-xxxx-xxx), gibt URL zurück */
@@ -274,11 +219,6 @@ export async function updateShareLinkSecurity(
   return updateShareLinkSecurityByReferenceImpl(referenceId, input)
 }
 
-/** Referenzen nach IDs laden (z. B. für Share-Vorschau / ReferenceReader-Liste) */
-export async function getReferencesByIds(ids: string[]): Promise<ReferenceRow[]> {
-  return getReferencesByIdsImpl(ids)
-}
-
 export type ReferenceAssetRow = {
   id: string
   reference_id: string
@@ -331,7 +271,6 @@ export async function prepareCustomerApproval(
 }
 
 export type {
-  PrepareCustomerApprovalResult,
   ApproveInternalRecipientOptions,
 } from '@/lib/references/library/approvals'
 
@@ -348,7 +287,6 @@ export async function getContactOptionsForReference(referenceId: string) {
 }
 
 export type { DashboardNotificationItem } from '@/app/dashboard/notifications/inbox'
-export type { PendingClientApprovalRow } from '@/lib/references/library/pending-approvals'
 
 export async function getInboxNotificationsForLayout(
   userId: string,
@@ -388,21 +326,6 @@ export async function updateApprovalCoordinator(
   return updateApprovalCoordinatorImpl(referenceId, coordinatorEmail)
 }
 
-export async function getPendingClientApprovals() {
-  return getPendingClientApprovalsImpl()
-}
-
-export async function getRequests(): Promise<RequestItem[]> {
-  return getRequestsImpl()
-}
-
-export async function reviewRequest(
-  approvalId: string,
-  decision: 'approve_external' | 'approve_internal' | 'reject',
-) {
-  return reviewRequestImpl(approvalId, decision)
-}
-
 /** KI-Zusammenfassung: Aus Herausforderung + Lösung eine prägnante, vertriebsorientierte Zusammenfassung per OpenAI (gpt-4o-mini). */
 export type GenerateSummaryResult =
   | { success: true; summary: string }
@@ -424,8 +347,6 @@ export async function recordAiDraftGenerated(
 }
 
 export type {
-  MatchReferenceHit,
-  MatchReferenceFilters,
   MatchReferencesOptions,
   MatchReferencesResult,
 } from '@/lib/match/match-types'
@@ -440,20 +361,4 @@ export async function matchReferences(
   options?: MatchReferencesOptions,
 ): Promise<MatchReferencesResult> {
   return matchReferencesImpl(input, dealId, options)
-}
-
-export type MergeDuplicateCompaniesResult =
-  | { success: true; merged: number; deleted: number }
-  | { success: false; error: string }
-
-export type CleanupCompanyDomainNamesResult =
-  | { success: true; updated: number }
-  | { success: false; error: string }
-
-export async function mergeDuplicateCompanies(): Promise<MergeDuplicateCompaniesResult> {
-  return mergeDuplicateCompaniesImpl()
-}
-
-export async function cleanupCompanyDomainNames(): Promise<CleanupCompanyDomainNamesResult> {
-  return cleanupCompanyDomainNamesImpl()
 }

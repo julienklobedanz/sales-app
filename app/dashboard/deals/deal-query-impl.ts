@@ -1,10 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile } from '@/lib/auth/request-user'
-import { resolveIndustryId } from '@/lib/constants/industries'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import type { DealRow, DealWithReferences } from './types'
-import type { MatchSuggestion } from './deal-action-types'
 
 async function getSessionOrgId(): Promise<string | null> {
   const profile = await getRequestProfile()
@@ -146,19 +144,6 @@ export async function getDealsImpl(): Promise<DealRow[]> {
   })
 }
 
-/** Deals mit Ablaufdatum in den nächsten 180 Tagen (oder bereits abgelaufen), für Progress-Anzeige */
-export async function getExpiringDealsImpl(): Promise<DealRow[]> {
-  const all = await getDealsImpl()
-  const now = new Date()
-  const in180 = new Date(now)
-  in180.setDate(in180.getDate() + 180)
-  return all.filter((d) => {
-    if (!d.expiry_date) return false
-    const exp = new Date(d.expiry_date)
-    return exp <= in180
-  })
-}
-
 export async function getDealWithReferencesImpl(
   id: string,
 ): Promise<DealWithReferences | null> {
@@ -285,72 +270,6 @@ export async function getDealWithReferencesImpl(
     best_match_score,
     references,
   }
-}
-
-/** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
-export async function getMatchingReferencesForDealsImpl(
-  dealIds: string[],
-): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
-  const result: Record<string, { count: number; suggestions: MatchSuggestion[] }> = {}
-  dealIds.forEach((id) => {
-    result[id] = { count: 0, suggestions: [] }
-  })
-  if (dealIds.length === 0) return result
-
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId()
-  if (!orgId) return result
-
-  const { data: deals } = await supabase
-    .from('deals')
-    .select('id, industry')
-    .in('id', dealIds)
-    .eq('organization_id', orgId)
-  const dealIndustries: Record<string, string | null> = {}
-  ;(deals ?? []).forEach((d) => {
-    dealIndustries[d.id] = d.industry ?? null
-  })
-
-  const { data: drRows } = await supabase
-    .from('deal_references')
-    .select('deal_id, reference_id')
-    .in('deal_id', dealIds)
-  const linkedByDeal: Record<string, Set<string>> = {}
-  dealIds.forEach((id) => {
-    linkedByDeal[id] = new Set()
-  })
-  ;(drRows ?? []).forEach((r) => linkedByDeal[r.deal_id]?.add(r.reference_id))
-
-  const { data: refs } = await supabase
-    .from('references')
-    .select('id, title, industry, companies(name, logo_url)')
-    .eq('organization_id', orgId)
-    .order('title')
-  if (!refs?.length) return result
-
-  const refList = refs.map((r) => {
-    const company = accountFromJoin(r.companies)
-    return {
-      id: r.id,
-      title: r.title ?? '',
-      industry: r.industry ?? null,
-      company_name: company?.name ?? '—',
-      logo_url: company?.logoUrl ?? null,
-    }
-  })
-
-  for (const dealId of dealIds) {
-    const industry = dealIndustries[dealId] ?? null
-    const linked = linkedByDeal[dealId] ?? new Set<string>()
-    const dealIndustryId = resolveIndustryId(industry)
-    const matching = dealIndustryId
-      ? refList.filter(
-          (r) => resolveIndustryId(r.industry) === dealIndustryId && !linked.has(r.id),
-        )
-      : []
-    result[dealId] = { count: matching.length, suggestions: matching.slice(0, 3) }
-  }
-  return result
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */

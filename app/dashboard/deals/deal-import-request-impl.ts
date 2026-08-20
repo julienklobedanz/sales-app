@@ -1,26 +1,10 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { Resend } from 'resend'
-import { getAppOrigin } from '@/lib/env/app-origin'
-import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
 import * as XLSX from 'xlsx'
-import { formatIndustryDisplay } from '@/lib/constants/industries'
-import {
-  buildRefstackEmailHtml,
-  escapeRefstackEmailHtml,
-  getRefstackResendFrom,
-} from '@/lib/email/refstack-email-layout'
 import { log } from '@/lib/observability/logger'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
-import { getDealWithReferencesImpl } from './deal-query-impl'
-
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY
-  if (!key) return null
-  return new Resend(key)
-}
 
 /** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
 export async function importDealsFromXlsxImpl(
@@ -117,83 +101,6 @@ export async function importDealsFromXlsxImpl(
   }
   revalidatePath(ROUTES.deals.root)
   return { success: true, created }
-}
-
-/** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
-export async function submitReferenceRequestImpl(
-  dealId: string,
-  message: string,
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const deal = await getDealWithReferencesImpl(dealId)
-  if (!deal) return { success: false, error: 'Deal nicht gefunden.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, full_name')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation.' }
-
-  const toEmail = await resolveReferenceManagerEmail(supabase, orgId)
-  if (!toEmail) {
-    return {
-      success: false,
-      error:
-        'Kein Reference Manager erreichbar. REFERENCE_MANAGER_EMAIL setzen oder mindestens einen Admin in der Organisation hinterlegen.',
-    }
-  }
-
-  const resend = getResend()
-  if (resend) {
-    try {
-      const requesterName = profile?.full_name ?? user.email ?? 'Ein Nutzer'
-      const dealUrl = `${getAppOrigin()}${ROUTES.deals.detail(dealId)}`
-      const metaRows = [
-        { label: 'Von', value: `${requesterName} (${user.email ?? '—'})` },
-        { label: 'Deal', value: deal.title },
-      ]
-      if (deal.company_name)
-        metaRows.push({ label: 'Unternehmen', value: deal.company_name })
-      if (deal.industry) {
-        metaRows.push({ label: 'Branche', value: formatIndustryDisplay(deal.industry) })
-      }
-      if (deal.volume) metaRows.push({ label: 'Volumen', value: deal.volume })
-
-      const html = buildRefstackEmailHtml({
-        audience: 'internal',
-        badge: 'Referenzbedarf',
-        bodyHtml: `<p style="margin:0 0 16px;">Es wurde ein Referenzbedarf für einen Deal gemeldet.</p>
-          <p style="margin:0 0 8px;font-weight:600;">Nachricht:</p>
-          <p style="margin:0;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;">${escapeRefstackEmailHtml(message || '—')}</p>`,
-        meta: { rows: metaRows },
-        ctas: [{ label: 'Deal in Refstack öffnen', href: dealUrl }],
-      })
-
-      await resend.emails.send({
-        from: getRefstackResendFrom(),
-        to: toEmail,
-        subject: `Referenzbedarf: ${deal.title}`,
-        html,
-      })
-    } catch (e) {
-      log.error(
-        'reference need email failed',
-        { action: 'submitReferenceRequest.email' },
-        e,
-      )
-      return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
-    }
-  }
-
-  revalidatePath(ROUTES.deals.detail(dealId))
-  return { success: true }
 }
 
 export async function createDealReferenceRequestImpl(args: {

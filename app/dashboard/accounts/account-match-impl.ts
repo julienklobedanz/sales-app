@@ -174,28 +174,6 @@ export async function getRecommendedReferencesImpl(
   })
 }
 
-/** Alle Referenzen der Org für Fallback "alle Referenzen anzeigen" (z. B. Top 10) */
-export async function getReferencesForOrgImpl(
-  limit = 10,
-): Promise<RecommendedReference[]> {
-  const supabase = await createServerSupabaseClient()
-  const { data } = await supabase
-    .from('references')
-    .select('id, title, companies(name)')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  if (!data?.length) return []
-  return data.map((r) => ({
-    id: r.id,
-    title: r.title ?? '',
-    company_name: companyNameFromJoin(r.companies),
-    matchType: 'industry_only' as const,
-    score: 0,
-    matchReasons: { industry: false, tags: false, sizeRegion: false },
-  }))
-}
-
 export async function getReferencesByCompanyIdImpl(
   companyId: string,
 ): Promise<CompanyRefRow[]> {

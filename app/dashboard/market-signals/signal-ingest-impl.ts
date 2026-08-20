@@ -1,7 +1,6 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
-import { runMarketSignalEnrichmentBackfill } from '@/lib/market-signals/backfill-signal-enrichment'
 import { discoverAndSaveCompanyNewsrooms } from '@/lib/market-signals/discover-company-newsroom'
 import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
 import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
@@ -11,7 +10,6 @@ import { writeAuditLog } from '@/lib/audit/log-audit'
 import { ROUTES } from '@/lib/routes'
 import type {
   BackfillCompanyNewsroomsResult,
-  BackfillMarketSignalEnrichmentResult,
   TriggerMarketSignalsIngestResult,
 } from './market-signal-action-types'
 
@@ -122,67 +120,6 @@ export async function triggerMarketSignalsIngestForMyOrgImpl(args?: {
       errors: executives.errors,
     },
   }
-}
-
-/** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
-export async function triggerCompanyNewsIngestForMyOrgImpl() {
-  return triggerMarketSignalsIngestForMyOrgImpl()
-}
-
-/** Bestehende RSS-Zeilen ohne insight_* per LLM/heuristisch anreichern (Org-Scope). */
-export async function backfillMarketSignalEnrichmentForMyOrgImpl(args?: {
-  maxNews?: number
-  maxExecutives?: number
-  removeIrrelevant?: boolean
-}): Promise<BackfillMarketSignalEnrichmentResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-
-  // Service-Role weil: LLM-Backfill liest/schreibt Signale org-weit.
-  // Grenze: organizationId aus authentifiziertem Profil.
-  const admin = createServiceRoleSupabaseClient()
-  if (!admin) {
-    return {
-      success: false,
-      error:
-        'SUPABASE_SERVICE_ROLE_KEY fehlt. Lokal in .env.local setzen und Dev-Server neu starten.',
-    }
-  }
-
-  const result = await runMarketSignalEnrichmentBackfill(admin, {
-    organizationId: orgId,
-    maxNews: args?.maxNews ?? 60,
-    maxExecutives: args?.maxExecutives ?? 60,
-    pauseMsBetweenItems: 350,
-    removeIrrelevant: args?.removeIrrelevant ?? true,
-  })
-
-  void writeAuditLog({
-    orgId,
-    action: 'market_signals_enrichment_backfill',
-    entityId: orgId,
-    actionDetails: {
-      ...result,
-      at: new Date().toISOString(),
-    },
-  })
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-
-  return { success: true, ...result }
 }
 
 /**

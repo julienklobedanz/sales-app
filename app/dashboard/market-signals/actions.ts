@@ -2,8 +2,6 @@
 
 import type {
   BackfillCompanyNewsroomsResult,
-  BackfillMarketSignalEnrichmentResult,
-  DecisionMakerCandidate,
   SignalReferenceMatchPayload,
   TriggerMarketSignalsIngestResult,
   WatchlistCompanyResult,
@@ -15,32 +13,21 @@ import {
   watchCompanyFromSuggestionImpl,
 } from './watchlist-impl'
 import {
-  addMarketSignalToDealImpl,
   markMarketSignalNotificationsReadImpl,
   markMarketSignalOutcomeImpl,
   markMarketSignalsIrrelevantImpl,
-  setMarketSignalPriorityImpl,
   snoozeMarketSignalImpl,
-  submitMarketSignalDraftFeedbackImpl,
 } from './signal-inbox-impl'
 import {
   backfillCompanyNewsroomsForMyOrgImpl,
-  backfillMarketSignalEnrichmentForMyOrgImpl,
-  triggerCompanyNewsIngestForMyOrgImpl,
   triggerMarketSignalsIngestForMyOrgImpl,
   updateCompanyNewsroomUrlsImpl,
 } from './signal-ingest-impl'
-import {
-  getDecisionMakerCandidatesImpl,
-  matchReferencesForSignalsImpl,
-  requestReferenceApprovalForSignalImpl,
-} from './signal-match-impl'
+import { matchReferencesForSignalsImpl } from './signal-match-impl'
 
 export type {
-  DecisionMakerCandidate,
   WatchlistCompanyResult,
   TriggerMarketSignalsIngestResult,
-  BackfillMarketSignalEnrichmentResult,
   BackfillCompanyNewsroomsResult,
   SignalReferenceMatchPayload,
 } from './market-signal-action-types'
@@ -51,15 +38,6 @@ export async function markMarketSignalNotificationsRead(keys: string[]) {
 
 export async function markMarketSignalsIrrelevant(keys: string[]) {
   return markMarketSignalsIrrelevantImpl(keys)
-}
-
-export async function addMarketSignalToDeal(args: {
-  dealId: string
-  companyId: string
-  signalKey: string
-  referenceIds?: string[]
-}): Promise<{ success: true; added: number } | { success: false; error: string }> {
-  return addMarketSignalToDealImpl(args)
 }
 
 export async function setCompanyWatchlistState(companyId: string, isFollowing: boolean) {
@@ -91,16 +69,6 @@ export async function setChampionWatchlistState(
   return setChampionWatchlistStateImpl(personName, isFollowing, companyName)
 }
 
-export async function getDecisionMakerCandidates(args: {
-  companyId: string
-  signalKind: 'exec' | 'news'
-}): Promise<
-  | { success: true; candidates: DecisionMakerCandidate[] }
-  | { success: false; error: string }
-> {
-  return getDecisionMakerCandidatesImpl(args)
-}
-
 /** Company Updates + Exec-Presse-Signale (Google News RSS, kein Scraping). */
 export async function triggerMarketSignalsIngestForMyOrg(args?: {
   ingestMode?: 'all_accounts' | 'focus_only'
@@ -108,20 +76,6 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   refreshFeeds?: boolean
 }): Promise<TriggerMarketSignalsIngestResult> {
   return triggerMarketSignalsIngestForMyOrgImpl(args)
-}
-
-/** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
-export async function triggerCompanyNewsIngestForMyOrg() {
-  return triggerCompanyNewsIngestForMyOrgImpl()
-}
-
-/** Bestehende RSS-Zeilen ohne insight_* per LLM/heuristisch anreichern (Org-Scope). */
-export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
-  maxNews?: number
-  maxExecutives?: number
-  removeIrrelevant?: boolean
-}): Promise<BackfillMarketSignalEnrichmentResult> {
-  return backfillMarketSignalEnrichmentForMyOrgImpl(args)
 }
 
 /**
@@ -142,34 +96,11 @@ export async function updateCompanyNewsroomUrls(
   return updateCompanyNewsroomUrlsImpl(companyId, urls)
 }
 
-export async function requestReferenceApprovalForSignal(args: {
-  referenceId: string
-  referenceTitle: string
-  companyName: string
-}): Promise<{ success: true } | { success: false; error: string }> {
-  return requestReferenceApprovalForSignalImpl(args)
-}
-
-export async function setMarketSignalPriority(args: {
-  signalKey: string
-  priority: 'today' | 'none'
-}): Promise<{ success: true } | { success: false; error: string }> {
-  return setMarketSignalPriorityImpl(args)
-}
-
 export async function snoozeMarketSignal(args: {
   signalKey: string
   untilIso: string
 }): Promise<{ success: true } | { success: false; error: string }> {
   return snoozeMarketSignalImpl(args)
-}
-
-export async function submitMarketSignalDraftFeedback(args: {
-  signalKey: string
-  helpful: boolean
-  reason?: string
-}): Promise<{ success: true } | { success: false; error: string }> {
-  return submitMarketSignalDraftFeedbackImpl(args)
 }
 
 export async function markMarketSignalOutcome(args: {

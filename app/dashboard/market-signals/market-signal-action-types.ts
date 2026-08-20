@@ -1,21 +1,3 @@
-import type { BackfillSignalEnrichmentResult } from '@/lib/market-signals/backfill-signal-enrichment'
-
-export type DecisionMakerCandidate = {
-  id: string
-  fullName: string
-  title: string
-  roleBucket: 'cio' | 'it_lead' | 'infrastructure' | 'security' | 'data' | 'other'
-  confidence: number
-  confidenceReason: string
-  source: 'the_org' | 'cio_de' | 'linkedin'
-  sourceLabel: string
-  profileUrl: string | null
-  lastSeenAt: string | null
-  mutualConnections: number | null
-  /** Lesbare Warm-Intro-Brücken (z. B. Kollege X kennt Stakeholder Y). */
-  mutualConnectionBridges: string[]
-}
-
 export type WatchlistCompanyResult = {
   id: string
   name: string
@@ -45,10 +27,6 @@ export type TriggerMarketSignalsIngestResult =
         errors: string[]
       }
     }
-  | { success: false; error: string }
-
-export type BackfillMarketSignalEnrichmentResult =
-  | ({ success: true } & BackfillSignalEnrichmentResult)
   | { success: false; error: string }
 
 export type BackfillCompanyNewsroomsResult =
