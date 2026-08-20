@@ -311,60 +311,6 @@ export async function updateWorkspaceSecurityCompliance(input: {
   return { success: true }
 }
 
-const HIGHLIGHT_GLOSSARY_MAX_LEN = 4000
-
-export async function updateWorkspaceReferenceHighlightGlossary(
-  raw: string,
-): Promise<ActionResult> {
-  const { supabase, user, organizationId } = await getContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('system_role, function_role')
-    .eq('id', user.id)
-    .single()
-  const { systemRole } = parseProfileRoles(profile)
-  if (!isSystemAdmin(systemRole)) {
-    return {
-      success: false,
-      error: 'Nur Workspace-Administratoren können das Glossar bearbeiten.',
-    }
-  }
-
-  const glossary = String(raw ?? '').slice(0, HIGHLIGHT_GLOSSARY_MAX_LEN)
-
-  const { data: orgRow, error: readErr } = await supabase
-    .from('organizations')
-    .select('workflow_settings')
-    .eq('id', organizationId)
-    .single()
-  if (readErr) return { success: false, error: readErr.message }
-
-  const prev =
-    orgRow?.workflow_settings && typeof orgRow.workflow_settings === 'object'
-      ? (orgRow.workflow_settings as Record<string, unknown>)
-      : {}
-  const workflowSettings = {
-    ...prev,
-    reference_highlight_glossary: glossary.trim() ? glossary : null,
-  }
-
-  const { error } = await supabase
-    .from('organizations')
-    .update({
-      workflow_settings: workflowSettings as Json,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', organizationId)
-
-  if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.references.root)
-  return { success: true }
-}
-
 export async function updateOrgCapabilitySettings(input: {
   capabilityProfile: CapabilityProfile
   icpDefinition: IcpDefinition

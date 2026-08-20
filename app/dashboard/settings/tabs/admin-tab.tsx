@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import {
   Table,
@@ -21,7 +20,6 @@ import type { DevRolePreview } from '@/lib/dev-role-preview'
 import { SettingsDevRoleCard } from '../settings-dev-role-card'
 import {
   updateWorkspaceAdminSettings,
-  updateWorkspaceReferenceHighlightGlossary,
   updateWorkspaceSecurityCompliance,
 } from '../settings-consolidation-actions'
 import { type RegisterSettingsTab } from './settings-tab-shared'
@@ -48,7 +46,6 @@ type AdminTabProps = {
       publicLinkMaxTtlDays: number
       publicLinkRequirePasswordForNew: boolean
       auditLogRetentionDays: number
-      referenceHighlightGlossary: string
     }
   }
   auditLogs: Array<{
@@ -82,12 +79,8 @@ export function AdminTab({
   const [auditRetentionDays, setAuditRetentionDays] = useState(
     String(org.workflowSettings.auditLogRetentionDays),
   )
-  const [referenceHighlightGlossary, setReferenceHighlightGlossary] = useState(
-    org.workflowSettings.referenceHighlightGlossary,
-  )
   const [workspacePending, startWorkspaceTransition] = useTransition()
   const [securityPending, startSecurityTransition] = useTransition()
-  const [glossaryPending, startGlossaryTransition] = useTransition()
   const [auditActionFilter] = useState('all')
   const [auditSearch, setAuditSearch] = useState('')
   const [auditTimeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('7d')
@@ -103,8 +96,7 @@ export function AdminTab({
 
   const adminDirty =
     apiKeyMask !== org.apiSettings.apiKeyMask ||
-    useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding ||
-    referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary
+    useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding
 
   function saveWorkspaceAdmin() {
     startWorkspaceTransition(async () => {
@@ -138,28 +130,12 @@ export function AdminTab({
     })
   }
 
-  function saveReferenceHighlightGlossary() {
-    startGlossaryTransition(async () => {
-      const result = await updateWorkspaceReferenceHighlightGlossary(
-        referenceHighlightGlossary,
-      )
-      if (!result.success) {
-        toast.error(result.error)
-        return
-      }
-      toast.success('Hervorhebungs-Glossar gespeichert')
-    })
-  }
-
   function saveAdminTab() {
     if (
       apiKeyMask !== org.apiSettings.apiKeyMask ||
       useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding
     ) {
       saveWorkspaceAdmin()
-    }
-    if (referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary) {
-      saveReferenceHighlightGlossary()
     }
   }
 
@@ -173,7 +149,7 @@ export function AdminTab({
     'process',
     {
       dirty: adminDirty,
-      pending: workspacePending || glossaryPending,
+      pending: workspacePending,
       save: saveAdminTab,
     },
     register,
@@ -322,29 +298,6 @@ export function AdminTab({
             </Card>
           </CardContent>
         </Card>
-
-        {roleSwitcher.isServerAdmin ? (
-          <Card className="p-6">
-            <CardHeader className="space-y-2 px-0 pt-0">
-              <CardTitle className="text-base">Referenztext-Hervorhebungen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 px-0 pb-0 pt-1">
-              <div className="space-y-2">
-                <Label htmlFor="ref-highlight-glossary">
-                  Workspace-Glossar (optional)
-                </Label>
-                <Textarea
-                  id="ref-highlight-glossary"
-                  value={referenceHighlightGlossary}
-                  onChange={(e) => setReferenceHighlightGlossary(e.target.value)}
-                  placeholder={'z. B. Lakehouse\nGovernance\nProcess Mining'}
-                  rows={5}
-                  className="font-mono text-sm"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
 
         {roleSwitcher.isServerAdmin ? (
           <Card className="p-6">

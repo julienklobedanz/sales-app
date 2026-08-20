@@ -79,7 +79,6 @@ export function SettingsTabs({
       publicLinkMaxTtlDays: number
       publicLinkRequirePasswordForNew: boolean
       auditLogRetentionDays: number
-      referenceHighlightGlossary: string
     }
     capabilitySettings: {
       capabilityProfile: import('@/lib/organizations/capability-profile-types').CapabilityProfile
