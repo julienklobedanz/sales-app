@@ -8,7 +8,6 @@ import {
 } from '@/lib/meeting-prep/build-meeting-prep-snapshot'
 import type {
   CompanySearchHit,
-  MeetingPrepSessionListItem,
   MeetingPrepSnapshot,
 } from '@/lib/meeting-prep/meeting-prep-types'
 
@@ -21,16 +20,6 @@ async function requireOrgUser(): Promise<
   const orgId = profile?.organization_id
   if (!orgId) return { error: 'Keine Organisation.' }
   return { user: { id: user.id }, orgId }
-}
-
-export async function searchMeetingPrepCompaniesAction(
-  query: string,
-): Promise<{ hits: CompanySearchHit[] } | { error: string }> {
-  const auth = await requireOrgUser()
-  if ('error' in auth) return { error: auth.error }
-  const supabase = await createServerSupabaseClient()
-  const hits = await searchCompaniesForMeetingPrep(supabase, auth.orgId, query)
-  return { hits }
 }
 
 export type CreateMeetingPrepResult =
@@ -118,32 +107,4 @@ export async function loadMeetingPrepSessionAction(
     title: String(data.title ?? 'Meeting Prep'),
     snapshot: data.snapshot as unknown as MeetingPrepSnapshot,
   }
-}
-
-export async function listMeetingPrepSessionsForDashboard(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  orgId: string,
-  userId: string,
-): Promise<MeetingPrepSessionListItem[]> {
-  const { data } = await supabase
-    .from('sales_meeting_prep_sessions')
-    .select('id, title, company_id, company_name_query, created_at, companies(logo_url)')
-    .eq('organization_id', orgId)
-    .eq('created_by', userId)
-    .order('created_at', { ascending: false })
-    .limit(10)
-
-  return (data ?? []).map((row) => {
-    const co = Array.isArray(row.companies)
-      ? (row.companies[0] as { logo_url?: string | null } | undefined)
-      : (row.companies as { logo_url?: string | null } | null)
-    return {
-      id: String(row.id),
-      title: String(row.title ?? row.company_name_query ?? 'Meeting'),
-      companyId: row.company_id ? String(row.company_id) : null,
-      companyNameQuery: String(row.company_name_query ?? ''),
-      createdAt: String(row.created_at ?? ''),
-      companyLogoUrl: (co?.logo_url as string | null) ?? null,
-    }
-  })
 }

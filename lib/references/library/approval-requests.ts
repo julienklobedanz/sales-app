@@ -1,15 +1,9 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import { asReferenceStatus } from '@/lib/supabase/db-types'
-import { ROUTES } from '@/lib/routes'
-import { revalidateReferenceInternalPaths } from '@/lib/references/revalidate-reference-internal-paths'
-import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
-import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { log } from '@/lib/observability/logger'
 
 export type RequestItem = {
@@ -84,58 +78,4 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
       created_at: row.created_at ?? '',
     }
   })
-}
-
-export async function reviewRequestImpl(
-  approvalId: string,
-  decision: 'approve_external' | 'approve_internal' | 'reject',
-) {
-  const supabase = await createServerSupabaseClient()
-
-  const { data: approval, error: fetchErr } = await supabase
-    .from('approvals')
-    .select('reference_id')
-    .eq('id', approvalId)
-    .single()
-
-  if (fetchErr || !approval) throw new Error('Antrag nicht gefunden')
-
-  let newRefStatus = 'draft'
-  let approvalStatus: 'approved' | 'rejected' = 'rejected'
-
-  if (decision === 'approve_external') {
-    newRefStatus = 'external'
-    approvalStatus = 'approved'
-  } else if (decision === 'approve_internal') {
-    newRefStatus = 'internal'
-    approvalStatus = 'approved'
-  }
-
-  const { error: refError } = await supabase
-    .from('references')
-    .update({ status: asReferenceStatus(newRefStatus) })
-    .eq('id', approval.reference_id)
-
-  if (refError) throw new Error(refError.message)
-
-  const { error: appError } = await supabase
-    .from('approvals')
-    .update({ status: approvalStatus })
-    .eq('id', approvalId)
-
-  if (appError) throw new Error(appError.message)
-
-  await logEventForCurrentOrg({
-    eventType: 'internal_approval_decided',
-    referenceId: approval.reference_id,
-    payload: {
-      decision,
-      approval_id: approvalId,
-    },
-  })
-
-  revalidatePath(ROUTES.home)
-  revalidateReferenceInternalPaths(approval.reference_id)
-  revalidatePath(ROUTES.references.root)
-  await revalidateOrgCachesForReference(approval.reference_id)
 }

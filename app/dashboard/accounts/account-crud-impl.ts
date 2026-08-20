@@ -10,15 +10,11 @@ import type { PartnerCategory } from '@/lib/accounts/account-entity'
 import { parseAccountsImportRow } from '@/lib/accounts/accounts-import-parse'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-account-for-import'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
-import {
-  discoverAndSaveCompanyNewsrooms,
-  scheduleCompanyNewsroomDiscovery,
-} from '@/lib/market-signals/discover-company-newsroom'
-import { log } from '@/lib/observability/logger'
+import { scheduleCompanyNewsroomDiscovery } from '@/lib/market-signals/discover-company-newsroom'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
-/** Setzt nur `account_status`. Stammdaten inkl. Status: {@link updateCompany}. */
+/** Setzt nur `account_status`. */
 export async function updateCompanyAccountStatusImpl(
   companyId: string,
   account_status: AccountStatusValue | null,
@@ -364,84 +360,6 @@ export async function bulkCreateCompaniesFromSheetImpl(
 
   revalidatePath(ROUTES.accounts)
   return { success: true, createdCount, skippedCount, failedCount }
-}
-
-export async function updateCompanyImpl(payload: {
-  id: string
-  name: string
-  website_url?: string | null
-  industry?: string | null
-  headquarters?: string | null
-  logo_url?: string | null
-  employee_count?: number | null
-  description?: string | null
-  account_status?: string | null
-}): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.organization_id)
-    return { success: false, error: 'Onboarding unvollständig.' }
-  const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (profileIsSalesRestricted(systemRole, functionRole))
-    return { success: false, error: 'Keine Berechtigung.' }
-
-  const name = payload.name.trim()
-  if (!name) return { success: false, error: 'Name ist erforderlich.' }
-
-  const account_status = normalizeAccountStatus(payload.account_status)
-
-  const { data: row, error: fetchError } = await supabase
-    .from('companies')
-    .select('id, organization_id, website_url')
-    .eq('id', payload.id)
-    .single()
-
-  if (fetchError || !row) return { success: false, error: 'Account nicht gefunden.' }
-  if (row.organization_id !== profile.organization_id) {
-    return { success: false, error: 'Keine Berechtigung.' }
-  }
-
-  const nextWebsite = payload.website_url?.trim() || null
-  const prevWebsite = row.website_url ?? null
-
-  const { error } = await supabase
-    .from('companies')
-    .update({
-      name,
-      website_url: nextWebsite,
-      industry: payload.industry?.trim() || null,
-      headquarters: payload.headquarters?.trim() || null,
-      logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
-      employee_count: payload.employee_count ?? null,
-      description: payload.description?.trim() || null,
-      account_status,
-    })
-    .eq('id', payload.id)
-    .eq('organization_id', profile.organization_id)
-
-  if (error) return { success: false, error: error.message }
-
-  if (nextWebsite && nextWebsite !== prevWebsite) {
-    void discoverAndSaveCompanyNewsrooms(supabase, payload.id, {
-      websiteUrl: nextWebsite,
-      force: true,
-    }).catch((err) => {
-      log.error('newsroomDiscover.companyUpdateFailed', { companyId: payload.id }, err)
-    })
-  }
-
-  revalidatePath(ROUTES.accounts)
-  revalidatePath(ROUTES.accountsDetail(payload.id))
-  return { success: true }
 }
 
 export async function deleteCompanyWithDataImpl(

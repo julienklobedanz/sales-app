@@ -12,11 +12,8 @@ import {
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import {
-  defaultRolesPermissionsSettings,
-  parseRolesPermissionsSettings,
   serializeRolesPermissionsSettings,
   type ApprovalRoutingMode,
-  type RolesPermissionsSettings,
 } from '@/lib/roles/roles-permissions-settings'
 import { asJson } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -56,24 +53,6 @@ async function requireAdminContext() {
   }
 
   return { supabase, user, organizationId, error: null as null }
-}
-
-export async function getRolesPermissionsSettingsForOrg(): Promise<RolesPermissionsSettings> {
-  const ctx = await requireAdminContext()
-  if (ctx.error || !ctx.organizationId) return defaultRolesPermissionsSettings()
-
-  const { data: org } = await ctx.supabase
-    .from('organizations')
-    .select('api_settings')
-    .eq('id', ctx.organizationId)
-    .single()
-
-  const api =
-    org?.api_settings && typeof org.api_settings === 'object'
-      ? (org.api_settings as Record<string, unknown>)
-      : {}
-
-  return parseRolesPermissionsSettings(api.roles_permissions)
 }
 
 export type UpdateRolesPermissionsInput = {

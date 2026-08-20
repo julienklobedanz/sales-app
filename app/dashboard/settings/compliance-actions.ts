@@ -81,7 +81,7 @@ export async function listComplianceDocuments(): Promise<
   return { success: true, rows }
 }
 
-export async function createComplianceDocument(payload: {
+async function createComplianceDocument(payload: {
   documentType: string
   title: string
   validUntil?: string | null
@@ -155,14 +155,6 @@ export async function createComplianceDocument(payload: {
   return { success: true, id: docId }
 }
 
-export type ExtractComplianceCertificateExpiryResult =
-  | {
-      success: true
-      validUntil: string | null
-      confidence: 'high' | 'medium' | 'low' | 'none'
-    }
-  | { success: false; error: string }
-
 export type ExtractComplianceCertificateMetadataResult =
   | {
       success: true
@@ -184,31 +176,6 @@ function readCompliancePdfUpload(formData: FormData): { file: File } | { error: 
     return { error: 'Nur PDF-Dateien werden unterstützt.' }
   }
   return { file }
-}
-
-/** Liest Ablaufdatum aus PDF-Text (mehrsprachige Heuristik). */
-export async function extractComplianceCertificateExpiryFromPdf(
-  formData: FormData,
-): Promise<ExtractComplianceCertificateExpiryResult> {
-  const auth = await getComplianceAuth()
-  if ('error' in auth) return { success: false, error: auth.error }
-
-  const upload = readCompliancePdfUpload(formData)
-  if ('error' in upload) return { success: false, error: upload.error }
-
-  try {
-    const bytes = Buffer.from(await upload.file.arrayBuffer())
-    const text = await extractPdfPlainText(bytes)
-    const extracted = extractCertificateExpiryFromText(text)
-    return {
-      success: true,
-      validUntil: extracted.validUntil,
-      confidence: extracted.confidence,
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return { success: false, error: `PDF konnte nicht gelesen werden: ${msg}` }
-  }
 }
 
 /** Liest Ablaufdatum und Dokumenttyp aus PDF-Text. */
@@ -331,17 +298,6 @@ export async function uploadComplianceDocument(
   })
 }
 
-export async function listCurrentComplianceDocuments(): Promise<
-  { success: true; rows: ComplianceDocumentRow[] } | { success: false; error: string }
-> {
-  const listed = await listComplianceDocuments()
-  if (!listed.success) return listed
-  return {
-    success: true,
-    rows: listed.rows.filter((row) => row.is_current),
-  }
-}
-
 async function createComplianceFileAccessUrls(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   fileStoragePath: string,
@@ -433,14 +389,6 @@ export async function prefetchComplianceDocumentUrls(
   return { success: true, urlsById }
 }
 
-export async function getComplianceDocumentDownloadUrl(
-  documentId: string,
-): Promise<{ success: true; url: string } | { success: false; error: string }> {
-  const result = await getComplianceDocumentAccessUrls(documentId)
-  if (!result.success) return result
-  return { success: true, url: result.urls.downloadUrl }
-}
-
 export async function updateComplianceDocument(payload: {
   documentId: string
   title: string
@@ -484,40 +432,6 @@ export async function updateComplianceDocument(payload: {
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.references.root)
   revalidateOrgCompliance(auth.orgId)
-  return { success: true }
-}
-
-/** Löscht eine archivierte Version (nicht die aktuelle). */
-export async function deleteComplianceDocumentVersion(
-  documentId: string,
-): Promise<{ success: true } | { success: false; error: string }> {
-  const auth = await getComplianceAuth()
-  if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin)
-    return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
-
-  const id = documentId.trim()
-  if (!id) return { success: false, error: 'Dokument-ID fehlt.' }
-
-  const { data: row, error: fetchError } = await auth.supabase
-    .from('organization_compliance_documents')
-    .select('id,is_current')
-    .eq('organization_id', auth.orgId)
-    .eq('id', id)
-    .maybeSingle()
-
-  if (fetchError) return { success: false, error: fetchError.message }
-  if (!row) return { success: false, error: 'Dokument nicht gefunden.' }
-  if (row.is_current) {
-    return {
-      success: false,
-      error:
-        'Die aktuelle Version kann hier nicht gelöscht werden. Bitte zuerst eine neue Version hochladen.',
-    }
-  }
-
-  const deleted = await deleteComplianceDocuments([id])
-  if (!deleted.success) return deleted
   return { success: true }
 }
 

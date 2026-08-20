@@ -5,35 +5,23 @@ import type {
   AccountDealRow,
   AccountStatusValue,
   CompanyRefRow,
-  DealSignalRow,
-  RecommendedReference,
 } from './account-action-types'
-import { getReferencesForOrgImpl, getReferencesByCompanyIdImpl } from './account-match-impl'
-import {
-  getActiveDealsByCompanyIdImpl,
-  getExpiringDealsByCompanyIdImpl,
-} from './account-deals-impl'
+import { getReferencesByCompanyIdImpl } from './account-match-impl'
+import { getActiveDealsByCompanyIdImpl } from './account-deals-impl'
 import {
   updateCompanyAccountStatusImpl,
   toggleCompanyFavoriteImpl,
   createCompanyImpl,
   createPartnerImpl,
   bulkCreateCompaniesFromSheetImpl,
-  updateCompanyImpl,
   deleteCompanyWithDataImpl,
 } from './account-crud-impl'
 
 export type {
   AccountStatusValue,
   CompanyRefRow,
-  RecommendedReference,
   AccountDealRow,
-  DealSignalRow,
 } from './account-action-types'
-
-export async function getReferencesForOrg(limit = 10): Promise<RecommendedReference[]> {
-  return getReferencesForOrgImpl(limit)
-}
 
 export async function getReferencesByCompanyId(
   companyId: string,
@@ -45,12 +33,6 @@ export async function getActiveDealsByCompanyId(
   companyId: string,
 ): Promise<AccountDealRow[]> {
   return getActiveDealsByCompanyIdImpl(companyId)
-}
-
-export async function getExpiringDealsByCompanyId(
-  companyId: string,
-): Promise<DealSignalRow[]> {
-  return getExpiringDealsByCompanyIdImpl(companyId)
 }
 
 export async function updateCompanyAccountStatus(
@@ -106,20 +88,6 @@ export async function bulkCreateCompaniesFromSheet(
   error?: string
 }> {
   return bulkCreateCompaniesFromSheetImpl(fileBuffer, options)
-}
-
-export async function updateCompany(payload: {
-  id: string
-  name: string
-  website_url?: string | null
-  industry?: string | null
-  headquarters?: string | null
-  logo_url?: string | null
-  employee_count?: number | null
-  description?: string | null
-  account_status?: string | null
-}): Promise<{ success: boolean; error?: string }> {
-  return updateCompanyImpl(payload)
 }
 
 export async function deleteCompanyWithData(

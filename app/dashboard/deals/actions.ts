@@ -1,12 +1,9 @@
 'use server'
 
 import type { DealRow, DealStatus, DealWithReferences } from './types'
-import type { MatchSuggestion } from './deal-action-types'
 import {
   getDealsImpl,
-  getExpiringDealsImpl,
   getDealWithReferencesImpl,
-  getMatchingReferencesForDealsImpl,
   getReferencesForOrgImpl,
 } from './deal-query-impl'
 import {
@@ -25,19 +22,11 @@ import {
 } from './deal-references-impl'
 import {
   importDealsFromXlsxImpl,
-  submitReferenceRequestImpl,
   createDealReferenceRequestImpl,
 } from './deal-import-request-impl'
 
-export type { MatchSuggestion } from './deal-action-types'
-
 export async function getDeals(): Promise<DealRow[]> {
   return getDealsImpl()
-}
-
-/** Deals mit Ablaufdatum in den nächsten 180 Tagen (oder bereits abgelaufen), für Progress-Anzeige */
-export async function getExpiringDeals(): Promise<DealRow[]> {
-  return getExpiringDealsImpl()
 }
 
 export async function getDealWithReferences(
@@ -50,13 +39,6 @@ export async function createDeal(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string; id?: string }> {
   return createDealImpl(formData)
-}
-
-/** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
-export async function getMatchingReferencesForDeals(
-  dealIds: string[],
-): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
-  return getMatchingReferencesForDealsImpl(dealIds)
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
@@ -148,14 +130,6 @@ export async function importDealsFromXlsx(
   formData: FormData,
 ): Promise<{ success: boolean; created?: number; error?: string }> {
   return importDealsFromXlsxImpl(formData)
-}
-
-/** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
-export async function submitReferenceRequest(
-  dealId: string,
-  message: string,
-): Promise<{ success: boolean; error?: string }> {
-  return submitReferenceRequestImpl(dealId, message)
 }
 
 export async function createDealReferenceRequest(args: {

@@ -9,9 +9,7 @@ import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'
-import { extractDataFromDocument } from '@/lib/document-text'
 import { parseGermanEmployeeCountInput } from '@/lib/format'
-import type { ExtractDataFromDocumentResult } from './types'
 import type { CreateReferenceResult } from './reference-new-action-types'
 import {
   domainToDisplayName,
@@ -20,13 +18,6 @@ import {
 } from './company-search-enrich-impl'
 
 const REFERENCE_STATUSES = ['draft', 'internal_only', 'approved', 'anonymized'] as const
-
-/** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
-export async function extractReferenceDocumentFromUploadImpl(
-  formData: FormData,
-): Promise<ExtractDataFromDocumentResult> {
-  return extractDataFromDocument(formData)
-}
 
 export async function createReferenceImpl(
   formData: FormData,

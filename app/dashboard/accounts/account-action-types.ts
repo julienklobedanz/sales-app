@@ -35,13 +35,3 @@ export type AccountDealRow = {
   created_at: string
   updated_at: string | null
 }
-
-/** Expiring Deals für einen Account (Market Signals Tab). */
-export type DealSignalRow = {
-  id: string
-  title: string
-  expiry_date: string | null
-  volume: string | null
-  incumbent_provider: string | null
-  status: string
-}

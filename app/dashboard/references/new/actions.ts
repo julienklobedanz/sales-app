@@ -1,6 +1,5 @@
 'use server'
 
-import type { ExtractDataFromDocumentResult } from './types'
 import type {
   CompanySearchResult,
   CreateReferenceResult,
@@ -16,7 +15,6 @@ import {
 import {
   attachOriginalDocumentToReferenceImpl,
   createReferenceImpl,
-  extractReferenceDocumentFromUploadImpl,
 } from './create-reference-impl'
 import {
   createContactImpl,
@@ -39,13 +37,6 @@ export async function searchCompanySuggestions(
   input: string,
 ): Promise<CompanySearchResult> {
   return searchCompanySuggestionsImpl(input)
-}
-
-/** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
-export async function extractReferenceDocumentFromUpload(
-  formData: FormData,
-): Promise<ExtractDataFromDocumentResult> {
-  return extractReferenceDocumentFromUploadImpl(formData)
 }
 
 export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompanyResult> {

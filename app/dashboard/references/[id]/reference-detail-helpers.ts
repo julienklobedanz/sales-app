@@ -7,18 +7,6 @@ export function splitTags(tags: string | null) {
     .filter(Boolean)
 }
 
-export function anonymizeText(
-  value: string | null | undefined,
-  companyName: string | null | undefined,
-) {
-  const text = String(value ?? '')
-  const normalizedCompany = String(companyName ?? '').trim()
-  if (!text) return text
-  if (!normalizedCompany) return text
-  const escaped = normalizedCompany.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
-}
-
 export type CompanyRow = {
   id: string
   name: string
