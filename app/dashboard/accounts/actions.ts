@@ -26,13 +26,9 @@ import {
 export type {
   AccountStatusValue,
   CompanyStrategyRow,
-  StakeholderRole,
-  StakeholderRow,
   CompanyRefRow,
   RoadmapProjectRow,
   RecommendedReference,
-  ContactPersonRow,
-  ExternalContactRow,
   AccountDealRow,
   DealSignalRow,
 } from './account-action-types'
