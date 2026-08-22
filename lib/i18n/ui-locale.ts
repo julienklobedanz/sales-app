@@ -17,7 +17,3 @@ export function uiLocaleFromApiSettings(raw: unknown): UiLocale {
   const obj = raw as Record<string, unknown>
   return normalizeUiLocale(typeof obj.ui_locale === 'string' ? obj.ui_locale : null)
 }
-
-export function uiLocaleLabel(locale: UiLocale): string {
-  return locale === 'en' ? 'Englisch' : 'Deutsch'
-}

@@ -360,26 +360,6 @@ export function pickBestLogoUrlFromBrandfetchJson(
   return rewriteBrandfetchLogoUrlForLightBackground(picked)
 }
 
-/** True, wenn die URL in Brandfetch als theme=light geführt wird (helles Logo für dunkle Hintergründe). */
-export function logoUrlIsBrandfetchLightTheme(
-  json: { logos?: BrandfetchLogoJson[] | null },
-  logoUrl: string | null | undefined,
-): boolean {
-  const target = String(logoUrl ?? '').trim()
-  if (!target) return false
-  for (const logo of json.logos ?? []) {
-    if (
-      String(logo.theme ?? '')
-        .trim()
-        .toLowerCase() !== 'light'
-    )
-      continue
-    for (const fmt of logo.formats ?? []) {
-      if (String(fmt?.src ?? '').trim() === target) return true
-    }
-  }
-  return false
-}
 
 /** Brandfetch-Domain-Lookup (z. B. Bulk-Import, Cron). */
 export async function fetchBrandfetchCompany(

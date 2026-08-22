@@ -24,11 +24,13 @@ export function winProbabilityRecommendationLabel(tone: WinProbabilityTone): str
   return 'Empfehlung: NO-BID'
 }
 
+/** P0-5 (14.08.): Win-Probability groß, Ampel-Farbcodes — zurückgestellt. @public */
 export function winProbabilityScoreLegend(): string {
   const { goMin, cautionMin } = WIN_PROBABILITY_THRESHOLDS
   return `Lieferfähigkeit: Portfolio 40% · Capabilities 35% · Nachweise 25% · Vertragsrisiko als Abzug. ≥${goMin}% GO · ${cautionMin}–${goMin - 1}% prüfen · <${cautionMin}% NO-BID`
 }
 
+/** P0-5 (14.08.): Win-Probability groß, Ampel-Farbcodes — zurückgestellt. @public */
 export function winProbabilityBreakdownTooltip(
   breakdown: WinProbabilityBreakdown,
 ): string {
@@ -44,12 +46,14 @@ export function winProbabilityBreakdownTooltip(
   return lines.join('\n')
 }
 
+/** P0-5 (14.08.): Win-Probability groß, Ampel-Farbcodes — zurückgestellt. @public */
 export function winProbabilityRingClass(tone: WinProbabilityTone): string {
   if (tone === 'go') return 'text-emerald-600'
   if (tone === 'caution') return 'text-amber-500'
   return 'text-red-600'
 }
 
+/** P0-5 (14.08.): Win-Probability groß, Ampel-Farbcodes — zurückgestellt. @public */
 export function winProbabilityValueClass(tone: WinProbabilityTone): string {
   if (tone === 'go') return 'text-emerald-700'
   if (tone === 'caution') return 'text-amber-700'

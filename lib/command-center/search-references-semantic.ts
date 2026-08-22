@@ -2,7 +2,6 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { CommandSearchResult } from '@/lib/command-center/global-search'
 import {
   enrichHomepageSemanticQuery,
   parseVolumeConstraintFromQuery,
@@ -152,46 +151,6 @@ export async function searchHomepageReferencesSemantic(
     matchedReferenceIds: hits.map((h) => h.id),
     source: 'homepage',
     matchThreshold: params.matchThreshold ?? HOME_SEMANTIC_MATCH_THRESHOLD,
-    durationMs,
-  })
-
-  return { success: true, hits }
-}
-
-/** Legacy-Fallback für gemischte Command-Search. */
-export async function searchReferencesSemanticLegacy(
-  params: SemanticSearchParams,
-): Promise<
-  | { success: true; hits: Extract<CommandSearchResult, { kind: 'reference' }>[] }
-  | { success: false; error: string }
-> {
-  const trimmed = params.query.trim()
-  if (!trimmed) return { success: true, hits: [] }
-
-  const { rows, error, durationMs } = await runSemanticMatch({
-    ...params,
-    embedInput: trimmed,
-    matchThreshold: params.matchThreshold ?? 0.52,
-    matchCount: params.matchCount ?? 10,
-    source: 'command',
-  })
-
-  if (error) return { success: false, error }
-
-  const hits = rows.map((r) => ({
-    kind: 'reference' as const,
-    id: r.id,
-    title: r.title ?? '',
-    accountName: r.company_name?.trim() ? r.company_name : null,
-    industry: r.industry ?? null,
-    similarity: typeof r.similarity === 'number' ? r.similarity : 0,
-  }))
-
-  void logReferenceMatched({
-    organizationId: params.organizationId,
-    matchedReferenceIds: hits.map((h) => h.id),
-    source: 'command',
-    matchThreshold: params.matchThreshold ?? 0.52,
     durationMs,
   })
 

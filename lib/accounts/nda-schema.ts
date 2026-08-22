@@ -34,13 +34,3 @@ export function isMissingNdaFileStorageColumn(message: string | undefined): bool
     isMissingNdaColumn(message, 'signed_at')
   )
 }
-
-export function withNdaFileFieldsNull<T extends Record<string, unknown>>(row: T) {
-  return {
-    ...row,
-    file_storage_path: null,
-    file_name: null,
-    document_version: null,
-    signed_at: null,
-  }
-}

@@ -14,11 +14,6 @@ import {
   hasActiveCustomerApprovalWorkflow,
 } from '@/lib/references/effective-customer-approval'
 import { notifyInternalTeamApprovalWithdrawn } from '@/lib/references/approval-workflow-internal-notifications'
-import {
-  buildRefstackEmailHtml,
-  getRefstackResendFrom,
-} from '@/lib/email/refstack-email-layout'
-import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { withdrawRestoredReferenceStatus } from '@/lib/references/library/approvals-helpers'
 
@@ -123,52 +118,6 @@ export async function withdrawApprovalRequestImpl(
   revalidateReferenceInternalPaths(referenceId)
   revalidatePath(ROUTES.home)
   await revalidateOrgCachesForReference(referenceId)
-  return { success: true }
-}
-
-export async function delegateClientApprovalImpl(params: {
-  token: string
-  delegateName?: string
-  delegateEmail: string
-}): Promise<{ success: true } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const token = params.token.trim()
-  const email = params.delegateEmail.trim().toLowerCase()
-  if (!token || !email.includes('@'))
-    return { success: false, error: 'Ungültige Delegationsdaten.' }
-  const { data: ref } = await supabase
-    .from('references')
-    .select(
-      'id, title, approval_token, approval_delegated_to_name, approval_delegated_to_email',
-    )
-    .eq('approval_token', token)
-    .maybeSingle()
-  if (!ref) return { success: false, error: 'Link ungültig.' }
-  await supabase
-    .from('references')
-    .update({
-      approval_delegated_to_name: params.delegateName?.trim() || null,
-      approval_delegated_to_email: email,
-    })
-    .eq('id', ref.id)
-  const resend = getApprovalResendClient()
-  if (resend) {
-    const approvalUrl = `${getAppOrigin()}/approval/${token}`
-    const refTitle = String(ref.title ?? 'Referenz')
-    const html = buildRefstackEmailHtml({
-      audience: 'external',
-      badge: 'Delegierte Freigabe',
-      bodyHtml: '<p style="margin:0;">Eine Referenz-Freigabe wurde an Sie delegiert.</p>',
-      ctas: [{ label: 'Zur Freigabe-Seite', href: approvalUrl }],
-      meta: { rows: [{ label: 'Referenz', value: refTitle }] },
-    })
-    await resend.emails.send({
-      from: getRefstackResendFrom(),
-      to: email,
-      subject: `Weitergeleitete Freigabe: ${refTitle}`,
-      html,
-    })
-  }
   return { success: true }
 }
 

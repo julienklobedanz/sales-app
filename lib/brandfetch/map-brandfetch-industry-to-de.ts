@@ -1,4 +1,4 @@
-import { isIndustryId, resolveIndustryId } from '@/lib/constants/industries'
+import { resolveIndustryId } from '@/lib/constants/industries'
 
 /**
  * Brandfetch liefert englische Branchenlabels (z. B. „lifestyle fashion & apparel“).
@@ -221,13 +221,6 @@ export function joinBrandfetchIndustryNames(
   return parts.join(' | ')
 }
 
-export function mapBrandfetchIndustryToGermanCategory(
-  name: string | null | undefined,
-): string | null {
-  const id = mapBrandfetchIndustryToMasterId(name)
-  return id
-}
-
 function mapBrandfetchIndustryToMasterId(name: string | null | undefined): string | null {
   if (!name?.trim()) return null
 
@@ -249,15 +242,4 @@ export function mapBrandfetchIndustriesArrayToGermanCategory(
   const raw = joinBrandfetchIndustryNames(industries)
   if (!raw) return null
   return mapBrandfetchIndustryToMasterId(raw)
-}
-
-/** Expliziter Export für neue Call-Sites. */
-export function mapBrandfetchIndustriesArrayToMasterId(
-  industries: { name?: string | null }[] | null | undefined,
-): string | null {
-  return mapBrandfetchIndustriesArrayToGermanCategory(industries)
-}
-
-export function isMasterIndustryId(value: string | null | undefined): boolean {
-  return isIndustryId(value)
 }

@@ -160,8 +160,3 @@ export function topBenchmarkRiskTooltipHits(
     )
     .slice(0, limit)
 }
-
-export function formatBenchmarkRiskTooltipLine(hit: BenchmarkRiskHit): string {
-  const def = BENCHMARK_RISK_CRITERIA[hit.id]
-  return `• ${def.tooltipLabel} (+${def.weight}%)`
-}

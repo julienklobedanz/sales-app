@@ -26,16 +26,6 @@ function formatIcsStamp(date: Date): string {
     .replace(/\.\d{3}Z$/, 'Z')
 }
 
-function sanitizeFileName(value: string): string {
-  return (
-    value
-      .trim()
-      .replace(/[^\wäöüÄÖÜß.-]+/gi, '-')
-      .replace(/-+/g, '-')
-      .slice(0, 80) || 'bid-fristen'
-  )
-}
-
 export function buildBidTimelineIcsContent(params: {
   customerName: string
   rfpTitle: string
@@ -83,20 +73,4 @@ export function buildBidTimelineIcsContent(params: {
     ...events,
     'END:VCALENDAR',
   ].join('\r\n')
-}
-
-export function downloadBidTimelineIcs(params: {
-  customerName: string
-  rfpTitle: string
-  items: DealDeskTimelineItem[]
-  projectId?: string
-}): void {
-  const content = buildBidTimelineIcsContent(params)
-  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${sanitizeFileName(params.rfpTitle)}-fristen.ics`
-  anchor.click()
-  URL.revokeObjectURL(url)
 }

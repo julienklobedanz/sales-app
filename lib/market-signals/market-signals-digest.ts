@@ -37,17 +37,6 @@ function companyNameFromRow(companies: unknown): string {
   return accountFromJoin(companies)?.name ?? 'Account'
 }
 
-export function parseMarketSignalsDigestRole(raw: unknown): MarketSignalsDigestRole {
-  if (
-    raw === ADMIN_DIGEST_ROLE ||
-    raw === SALES_DIGEST_ROLE ||
-    raw === ACCOUNT_MANAGER_DIGEST_ROLE
-  ) {
-    return raw as MarketSignalsDigestRole
-  }
-  return SALES_DIGEST_ROLE
-}
-
 /** Digest-Rolle aus normalisierten Profil-Dimensionen (ohne profiles.role). */
 export function marketSignalsDigestRoleFromProfile(
   profile: Parameters<typeof parseProfileRoles>[0],

@@ -341,14 +341,3 @@ export function buildMarketSignalIntelligence(
     is_demission: transition.is_demission,
   }
 }
-
-/** Parse „Dein Kollege X kennt Y …“ bridge lines from decision-maker mocks. */
-export function parseWarmIntroBridge(
-  line: string,
-): { colleague: string; stakeholder: string } | null {
-  const m = String(line ?? '')
-    .trim()
-    .match(/^Dein Kollege (.+?) kennt (.+?) – starker Einstieg für ein Warm-Intro\.?$/)
-  if (!m) return null
-  return { colleague: m[1].trim(), stakeholder: m[2].trim() }
-}

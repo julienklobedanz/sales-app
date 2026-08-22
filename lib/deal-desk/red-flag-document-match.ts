@@ -84,33 +84,3 @@ export function enrichRedFlagsWithDocuments(
     }
   })
 }
-
-/** Eindeutige Dokumente für alle markierten Legal-Flags (mit Fallback auf Vertragswerke). */
-export function collectLegalAttachmentDocuments(
-  markedFlags: DealDeskRedFlag[],
-  allDocuments: DealDeskDocumentRef[],
-): DealDeskDocumentRef[] {
-  const byId = new Map<string, DealDeskDocumentRef>()
-
-  for (const flag of markedFlags) {
-    const doc =
-      (flag.sourceDocumentId
-        ? allDocuments.find((d) => d.id === flag.sourceDocumentId)
-        : null) ?? guessSourceDocumentForRedFlag(flag, allDocuments)
-
-    if (doc?.storage_path) {
-      byId.set(doc.id, doc)
-    }
-  }
-
-  if (byId.size === 0 && markedFlags.length > 0) {
-    for (const doc of allDocuments) {
-      if (doc.storage_path && isContractLikeDocument(doc.file_name)) {
-        byId.set(doc.id, doc)
-        if (byId.size >= 3) break
-      }
-    }
-  }
-
-  return [...byId.values()]
-}

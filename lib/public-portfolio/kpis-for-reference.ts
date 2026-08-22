@@ -98,8 +98,6 @@ export function kpisForPublicReference(
   return out
 }
 
-const A4_W_PT = 595.28
-
 export type PublicPortfolioPdfLayout = {
   scale: number
   canvasWidthPt: number
@@ -109,53 +107,4 @@ export type PublicPortfolioPdfLayout = {
   quoteMax: number
   titleMax: number
   tagLimit: number
-}
-
-function estimatePdfWeight(refs: PublicReference[]): {
-  refCount: number
-  weight: number
-} {
-  const refCount = refs.length
-  let weight = 0
-  for (const r of refs) {
-    weight += 220
-    weight += (r.title?.length ?? 0) * 1.1
-    weight += (r.summary?.length ?? 0) * 0.38
-    weight += (r.customer_challenge?.length ?? 0) * 0.38
-    weight += (r.our_solution?.length ?? 0) * 0.38
-    weight += (r.approval_quote_approved?.length ?? 0) * 0.28
-  }
-  return { refCount, weight }
-}
-
-/**
- * Eine A4-Seite: Skalierung (0,62–1) + angepasste Textlimits, damit der Inhalt möglichst auf eine Seite passt.
- */
-export function computePublicPortfolioPdfLayout(
-  refs: PublicReference[],
-): PublicPortfolioPdfLayout {
-  const { refCount, weight } = estimatePdfWeight(refs)
-  let scale = 1
-  if (refCount >= 2) scale *= 0.9
-  if (refCount >= 3) scale *= 0.9
-  if (refCount >= 4) scale *= 0.88
-  if (weight > 1800) scale *= 0.94
-  if (weight > 3000) scale *= 0.93
-  if (weight > 4800) scale *= 0.92
-  if (weight > 7000) scale *= 0.9
-  if (weight > 9500) scale *= 0.88
-  scale = Math.max(0.62, Math.min(1, scale))
-
-  const density = 1 / scale + Math.max(0, refCount - 1) * 0.14
-
-  return {
-    scale,
-    canvasWidthPt: A4_W_PT / scale,
-    summaryMax: Math.round(Math.min(720, Math.max(200, 420 / density))),
-    challengeMax: Math.round(Math.min(520, Math.max(140, 300 / density))),
-    solutionMax: Math.round(Math.min(720, Math.max(200, 420 / density))),
-    quoteMax: Math.round(Math.min(320, Math.max(100, 200 / density))),
-    titleMax: Math.round(Math.min(140, Math.max(72, 110 / density))),
-    tagLimit: Math.max(3, Math.min(8, 9 - refCount * 2)),
-  }
 }

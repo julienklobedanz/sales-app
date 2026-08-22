@@ -63,24 +63,6 @@ async function loadDashboardHomeForFunctionRoleInner(
   }
 }
 
-/** @deprecated Nutze `loadDashboardHomeForFunctionRole`. */
-export async function loadDashboardHomeForRole(
-  systemRole: SystemRole,
-  functionRole: FunctionRole,
-  supabase: SupabaseClient,
-  userId: string,
-  fullName: string | null,
-  organizationId?: string,
-): Promise<DashboardHomePayload> {
-  return loadDashboardHomeForFunctionRole(
-    functionRole,
-    systemRole,
-    supabase,
-    userId,
-    fullName,
-    organizationId,
-  )
-}
 
 export async function loadDashboardHomeForFunctionRole(
   functionRole: FunctionRole,

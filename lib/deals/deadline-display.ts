@@ -39,19 +39,6 @@ function formatDeadlineDate(
   return formatReferenceDate(iso, dateDisplayFormat)
 }
 
-export function formatDeadlineCountdownLabel(
-  deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
-): string {
-  const now = options?.now ?? new Date()
-  const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
-  const parts = formatDeadlineRowParts(deadline, { now, dateDisplayFormat })
-  if (parts.countdown) {
-    return `${parts.labelDate} ${parts.countdown}`
-  }
-  return parts.labelDate
-}
-
 export function formatDeadlineRowParts(
   deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
   options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },

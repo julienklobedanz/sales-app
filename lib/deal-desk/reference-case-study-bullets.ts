@@ -60,20 +60,3 @@ export function buildCustomerChallengeBullets(analysis: DealDeskMockAnalysis): s
   if (icpBullets.length === 1) return icpBullets
   return ['Ausgangslage und Ziele werden aus dem RFP-Dokument extrahiert.']
 }
-
-export function buildCaseStudySolutionBullets(
-  analysis: DealDeskMockAnalysis,
-  fallback: string,
-): string[] {
-  const answers = analysis.draftRows
-    .filter((r) => r.answer?.trim())
-    .slice(0, MAX_CHALLENGE_BULLETS)
-    .map((r) => firstSentence(r.answer!.trim(), 180))
-  if (answers.length) return answers
-
-  const trimmed = fallback.replace(/\s+/g, ' ').trim()
-  if (!trimmed) return ['—']
-  const sentences = trimmed.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10)
-  if (sentences.length >= 2) return sentences.slice(0, MAX_CHALLENGE_BULLETS)
-  return [trimmed]
-}

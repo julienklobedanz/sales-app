@@ -1,5 +1,4 @@
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
-import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
 export type DealDeskSuitabilityCriteria = {
   bidderRequirements: string[]
@@ -36,15 +35,4 @@ export function hasSuitabilityContent(criteria: DealDeskSuitabilityCriteria): bo
     criteria.roleQualifications.length > 0 ||
     criteria.specialConditions.length > 0
   )
-}
-
-export function resolveBidEnrichment(
-  analysis: Pick<DealDeskMockAnalysis, 'executiveBriefing'>,
-) {
-  const briefing = analysis.executiveBriefing
-  return {
-    domainTags: resolveDomainTags(briefing),
-    projectLocation: resolveProjectLocation(briefing),
-    suitability: resolveSuitabilityCriteria(briefing),
-  }
 }

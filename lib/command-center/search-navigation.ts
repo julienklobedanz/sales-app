@@ -28,11 +28,3 @@ export function hrefForCommandSearchResult(result: CommandSearchResult): string 
       return ROUTES.home
   }
 }
-
-export function recentsKindToSearchKind(
-  kind: 'reference' | 'account' | 'deal',
-): CommandSearchResult['kind'] | null {
-  if (kind === 'reference') return 'reference'
-  if (kind === 'account') return 'account'
-  return null
-}

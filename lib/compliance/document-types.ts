@@ -48,10 +48,6 @@ export type ComplianceDocumentTypeOption = {
   id?: string
 }
 
-export function isSystemComplianceDocumentType(slug: string): boolean {
-  return (COMPLIANCE_DOCUMENT_TYPES as readonly string[]).includes(slug)
-}
-
 export function getSystemComplianceDocumentTypes(): ComplianceDocumentTypeOption[] {
   return COMPLIANCE_DOCUMENT_TYPES.map((slug) => ({
     slug,

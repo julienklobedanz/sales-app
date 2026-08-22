@@ -8,26 +8,3 @@ export async function loadReferenceKpis(
 ): Promise<ReferenceKpiCounts> {
   return loadReferenceKpisForOrg(supabase, orgId)
 }
-
-export async function countReferencesInWindow(
-  supabase: SupabaseClient,
-  orgId: string,
-  fromIso: string,
-  toIso: string,
-  status?: 'draft' | 'internal_only' | 'approved',
-) {
-  let q = supabase
-    .from('references')
-    .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
-    .eq('organization_id', orgId)
-    .is('deleted_at', null)
-    .gte('created_at', fromIso)
-    .lt('created_at', toIso)
-  if (status === 'approved') {
-    q = q.in('status', ['approved', 'external'])
-  } else if (status) {
-    q = q.eq('status', status)
-  }
-  const { count } = await q
-  return count ?? 0
-}

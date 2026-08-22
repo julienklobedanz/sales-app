@@ -23,6 +23,5 @@ export { loadAdminDashboardData } from '@/lib/dashboard-home/dashboard-home-admi
 export { loadGeneralistDashboardData } from '@/lib/dashboard-home/dashboard-home-generalist'
 export {
   loadDashboardHomeForFunctionRole,
-  loadDashboardHomeForRole,
   type DashboardHomePayload,
 } from '@/lib/dashboard-home/dashboard-home-dispatch'

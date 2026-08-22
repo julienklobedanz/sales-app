@@ -7,7 +7,6 @@ export type {
 export { submitForApprovalImpl } from '@/lib/references/library/approvals-submit'
 export { prepareCustomerApprovalImpl } from '@/lib/references/library/approvals-approve-internal'
 export {
-  delegateClientApprovalImpl,
   getApprovalLinkImpl,
   resendClientApprovalEmailImpl,
   withdrawApprovalRequestImpl,

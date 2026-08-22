@@ -26,10 +26,3 @@ export function fail(
   log.error(message, context, cause)
   return { success: false, error: message }
 }
-
-export function fromThrown(
-  message: string,
-  context?: Record<string, unknown>,
-): (cause: unknown) => { success: false; error: string } {
-  return (cause) => fail(message, context, cause)
-}

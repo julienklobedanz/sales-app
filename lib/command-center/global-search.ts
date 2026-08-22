@@ -207,12 +207,6 @@ export function dedupeCompanySearchResults<T extends { id: string; title: string
   return [...byName.values()]
 }
 
-/** @deprecated Prefer dedupeCompanySearchResults */
-export function dedupeAccountSearchResults(
-  items: Extract<CommandSearchResult, { kind: 'account' }>[],
-): Extract<CommandSearchResult, { kind: 'account' }>[] {
-  return dedupeCompanySearchResults(items)
-}
 
 export type SearchCommandCenterOptions = {
   /** Semantische Referenz-Treffer; wenn gesetzt, entfällt ILIKE auf references. */
@@ -538,41 +532,4 @@ export async function fetchNdaSearchRows(
       file_storage_path: typed.file_storage_path ?? null,
     }
   })
-}
-
-/** Legacy flache Liste für Command Palette (cmdk). */
-export async function searchGlobalEntities(
-  supabase: SupabaseClient,
-  rawQuery: string,
-): Promise<GlobalSearchResult[]> {
-  const groups = await searchCommandCenter(supabase, rawQuery)
-  const dealsRes = await supabase
-    .from('deals')
-    .select('id,title')
-    .ilike('title', `%${sanitizeIlikeUserInput(rawQuery)}%`)
-    .limit(8)
-
-  const flat: GlobalSearchResult[] = []
-
-  for (const r of groups.references) {
-    if (r.kind !== 'reference') continue
-    flat.push({
-      kind: 'reference',
-      id: r.id,
-      title: r.title,
-      accountName: r.accountName,
-    })
-  }
-  for (const a of groups.accounts) {
-    if (a.kind !== 'account') continue
-    flat.push({ kind: 'account', id: a.id, title: a.title })
-  }
-  for (const p of groups.partners) {
-    if (p.kind !== 'partner') continue
-    flat.push({ kind: 'account', id: p.id, title: p.title })
-  }
-  for (const d of dealsRes.data ?? []) {
-    flat.push({ kind: 'deal', id: String(d.id), title: String(d.title) })
-  }
-  return flat
 }

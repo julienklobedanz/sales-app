@@ -1,5 +1,3 @@
-import type { ReferenceAssetRow } from '@/lib/references/library/assets'
-
 export function splitTags(tags: string | null) {
   return (tags ?? '')
     .split(',')
@@ -69,38 +67,4 @@ export type ReferenceDetailRow = {
   competitors: string | null
   website: string | null
   companies: CompanyRow | CompanyRow[] | null
-}
-
-export type DetailFileRow = {
-  key: string
-  name: string
-  href: string
-  category: string | null
-}
-
-export function toReferencesPublicUrl(publicBase: string, path: string) {
-  return `${publicBase}/storage/v1/object/public/references/${path}`
-}
-
-export function buildDetailFileRows(
-  assetRows: ReferenceAssetRow[],
-  legacyFilePath: string | null | undefined,
-  publicBase: string,
-): DetailFileRow[] {
-  const detailFileRows: DetailFileRow[] = assetRows.map((a) => ({
-    key: a.id,
-    name: a.file_name || a.file_path.split('/').pop() || 'Dokument',
-    href: toReferencesPublicUrl(publicBase, a.file_path),
-    category: a.category,
-  }))
-  const legacy = (legacyFilePath ?? '').trim()
-  if (legacy && !assetRows.some((x) => x.file_path === legacy)) {
-    detailFileRows.unshift({
-      key: `legacy-${legacy}`,
-      name: legacy.split('/').pop() || 'Dokument',
-      href: toReferencesPublicUrl(publicBase, legacy),
-      category: null,
-    })
-  }
-  return detailFileRows
 }

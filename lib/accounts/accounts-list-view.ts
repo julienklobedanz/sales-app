@@ -51,12 +51,6 @@ export function accountsListTitle(view: AccountsListView): string {
   return view === 'partner' ? 'Partner' : 'Accounts'
 }
 
-export function entityKindToListView(
-  entityKind: string | null | undefined,
-): AccountsListView {
-  return entityKind === 'partner' ? 'partner' : 'account'
-}
-
 export function accountsDetailHref(
   id: string,
   listView: AccountsListView = 'account',

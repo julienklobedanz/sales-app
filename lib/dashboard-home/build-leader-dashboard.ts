@@ -6,12 +6,10 @@ import {
   type OrgDateDisplayFormat,
 } from '@/lib/format'
 import type {
-  LeaderCoachingRow,
   LeaderCoveragePipelineRow,
   LeaderPipelineSignalRow,
   LeaderRiskDealRow,
   LeaderSignalRiskRow,
-  TeamActivityRow,
 } from '@/lib/dashboard-home/dashboard-home-types'
 import { ACTIVE_DEAL_STATUSES } from '@/lib/dashboard-home/dashboard-home-types'
 import { ROUTES } from '@/lib/routes'
@@ -87,46 +85,6 @@ export function buildLeaderCoveragePipeline(
   return rows.slice(0, 6)
 }
 
-export function buildLeaderCoaching(
-  profiles: Array<{ id: string; full_name: string | null; function_role: string | null }>,
-  matchCounts: Map<string, number>,
-  pendingByUser: Map<string, number>,
-): LeaderCoachingRow[] {
-  const rows: LeaderCoachingRow[] = []
-  for (const p of profiles) {
-    const name = p.full_name?.trim() || 'User'
-    const role =
-      p.function_role === 'account_manager'
-        ? 'Account Manager'
-        : p.function_role === 'sales_leader'
-          ? 'Sales Lead'
-          : 'Sales Rep'
-    const who = `${name} · ${role}`
-    const matches = matchCounts.get(p.id) ?? 0
-    const pending = pendingByUser.get(p.id) ?? 0
-    if (matches === 0) {
-      rows.push({
-        who,
-        signal: 'nutzt RefStack kaum (0 Matches/30 T)',
-        tone: 'gap',
-      })
-    } else if (pending >= 3) {
-      rows.push({
-        who,
-        signal: `${pending} Freigaben überfällig`,
-        tone: 'warn',
-      })
-    } else if (matches >= 4) {
-      rows.push({
-        who,
-        signal: 'aktiv mit Beweis-Arbeit — Vorbild',
-        tone: 'ok',
-      })
-    }
-  }
-  return rows.slice(0, 6)
-}
-
 export function buildLeaderSignalRisks(input: {
   championLossCount: number
   unansweredTriggers: number
@@ -172,15 +130,4 @@ export function buildWinRateCompare(closedDeals: DealRow[], minRequired: number)
     closedDealsCount: closedCount,
     minDealsRequired: minRequired,
   }
-}
-
-export function aggregateTeamMatches(
-  teamActivity: TeamActivityRow[],
-): Map<string, number> {
-  const counts = new Map<string, number>()
-  for (const row of teamActivity) {
-    if (!row.userId) continue
-    counts.set(row.userId, (counts.get(row.userId) ?? 0) + 1)
-  }
-  return counts
 }

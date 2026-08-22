@@ -2,7 +2,6 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
-  resolveOrCreateAccountForImport,
   syncExistingAccountBrandfetch,
   type ResolveAccountForImportResult,
 } from '@/lib/accounts/resolve-account-for-import'
@@ -159,26 +158,4 @@ export async function upgradeAllOrganizationBrandfetchLogosToDark(): Promise<{
   }
 
   return { updated, checked: rows.length }
-}
-
-/** Nach Firmennamen (z. B. aus PDF) — findet „Aurubis“ statt neu „Aurubis AG“. */
-export async function syncCompanyBrandfetchByName(
-  companyName: string,
-): Promise<ResolveAccountForImportResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-
-  const organizationId = profile?.organization_id ?? null
-  if (!organizationId) return { success: false, error: 'Keine Organisation.' }
-
-  return resolveOrCreateAccountForImport(supabase, organizationId, companyName.trim())
 }

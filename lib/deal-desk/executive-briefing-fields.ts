@@ -124,36 +124,3 @@ export function normalizeExecutiveBriefingFields(
     projectOverviewPlain: str(o.projectOverviewPlain),
   }
 }
-
-/** Ergänzt fehlende KI-Felder aus Fallback (nur Demo/Mock — nicht bei API-Snapshots). */
-export function mergeExecutiveBriefingFields(
-  partial: unknown,
-  fallback: DealDeskExecutiveBriefingFields | undefined,
-  fillEnrichmentFromFallback = false,
-): DealDeskExecutiveBriefingFields | undefined {
-  const normalized = partial ? normalizeExecutiveBriefingFields(partial) : undefined
-  if (!normalized) return fallback
-  if (!fallback || !fillEnrichmentFromFallback) return normalized
-  return {
-    ...normalized,
-    domainTags:
-      normalized.domainTags.length > 0 ? normalized.domainTags : fallback.domainTags,
-    projectLocation: normalized.projectLocation ?? fallback.projectLocation,
-    bidderRequirements:
-      normalized.bidderRequirements.length > 0
-        ? normalized.bidderRequirements
-        : fallback.bidderRequirements,
-    roleQualifications:
-      normalized.roleQualifications.length > 0
-        ? normalized.roleQualifications
-        : fallback.roleQualifications,
-    specialConditions:
-      normalized.specialConditions.length > 0
-        ? normalized.specialConditions
-        : fallback.specialConditions,
-    requiredSubmissionDocuments:
-      normalized.requiredSubmissionDocuments.length > 0
-        ? normalized.requiredSubmissionDocuments
-        : fallback.requiredSubmissionDocuments,
-  }
-}
