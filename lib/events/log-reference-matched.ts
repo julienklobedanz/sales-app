@@ -1,6 +1,6 @@
 import { logEvent } from '@/lib/events/log-event'
 
-export type ReferenceMatchedSource =
+type ReferenceMatchedSource =
   | 'homepage'
   | 'command'
   | 'match_page'

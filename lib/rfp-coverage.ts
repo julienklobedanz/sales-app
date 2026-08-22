@@ -14,7 +14,7 @@ const MATCH_THRESHOLD = MATCH_COVERAGE_THRESHOLD
 const MATCH_COUNT = 8
 const EMBED_CONCURRENCY = 4
 
-export type RfpCoverageMatch = {
+type RfpCoverageMatch = {
   id: string
   title: string
   summary: string | null

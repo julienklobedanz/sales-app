@@ -4,7 +4,7 @@ import { tagForOrgScope, type OrgCacheScope } from '@/lib/cache/tags'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 /** Invalidiert gecachte Org-Reads nach Mutationen (Server Actions: `updateTag`). */
-export function revalidateOrgCaches(orgId: string, scopes: OrgCacheScope[]): void {
+function revalidateOrgCaches(orgId: string, scopes: OrgCacheScope[]): void {
   for (const scope of scopes) {
     updateTag(tagForOrgScope(scope, orgId))
   }

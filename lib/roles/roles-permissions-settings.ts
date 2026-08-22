@@ -72,7 +72,7 @@ function parseCapabilityArray(raw: unknown): Capability[] | null {
   return out
 }
 
-export function defaultRolesPermissionsSettings(): RolesPermissionsSettings {
+function defaultRolesPermissionsSettings(): RolesPermissionsSettings {
   return {}
 }
 

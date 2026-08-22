@@ -1,7 +1,7 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 import { buildCustomerChallengeBullets } from '@/lib/deal-desk/reference-case-study-bullets'
 
-export type ReferenceIncubatorHarvest = {
+type ReferenceIncubatorHarvest = {
   companyName: string
   logoUrl: string | null
   website: string
@@ -26,7 +26,7 @@ function firstSentence(text: string, max = 320): string {
 /**
  * Leitet Inkubator-/Referenz-Felder aus dem echten Deal-Desk-Analyse-Snapshot ab.
  */
-export function buildHarvestFromAnalysis(
+function buildHarvestFromAnalysis(
   analysis: DealDeskMockAnalysis,
 ): ReferenceIncubatorHarvest {
   const customerName = analysis.customerName?.trim() || 'Kunde'

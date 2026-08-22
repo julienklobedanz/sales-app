@@ -50,7 +50,7 @@ export type SmartMatchSessionState = {
   results: MatchReferenceHit[]
 }
 
-export function normalizeFilters(raw: Partial<FiltersState> | undefined): FiltersState {
+function normalizeFilters(raw: Partial<FiltersState> | undefined): FiltersState {
   const legacy = raw as Partial<FiltersState> & {
     minVolume?: number | null
     maxVolume?: number | null
@@ -193,7 +193,7 @@ export function filtersFromParsed(parsed: ParsedSmartMatchConstraints): FiltersS
   }
 }
 
-export function filtersFromDeal(deal: DealRow | null): Partial<FiltersState> {
+function filtersFromDeal(deal: DealRow | null): Partial<FiltersState> {
   if (!deal) return {}
   const industryId = resolveIndustryId(deal.industry)
   const vol = parseStoredVolumeEur(deal.volume)

@@ -24,13 +24,13 @@ import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-sche
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 import { buildEmptyDealDeskAnalysis } from '@/lib/deal-desk/deal-analysis-types'
 
-export type AnalyzeRfpDealContext = {
+type AnalyzeRfpDealContext = {
   title: string | null
   industry: string | null
   volume: string | null
 }
 
-export type AnalyzeRfpProjectDocument = {
+type AnalyzeRfpProjectDocument = {
   id: string
   file_name: string
   storage_path: string | null

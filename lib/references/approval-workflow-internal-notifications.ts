@@ -64,7 +64,7 @@ type ReferenceNotifyContext = {
   coordinatorEmail: string | null
 }
 
-export async function loadReferenceNotifyContext(
+async function loadReferenceNotifyContext(
   admin: SupabaseClient<Database>,
   referenceId: string,
 ): Promise<ReferenceNotifyContext | null> {

@@ -2,13 +2,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/lib/database.types'
 
-export type IntegrationSupabaseConfig = {
+type IntegrationSupabaseConfig = {
   url: string
   anonKey: string
   serviceRoleKey: string
 }
 
-export function getIntegrationSupabaseConfig(): IntegrationSupabaseConfig | null {
+function getIntegrationSupabaseConfig(): IntegrationSupabaseConfig | null {
   const url =
     process.env.SUPABASE_TEST_URL ??
     process.env.API_URL ??

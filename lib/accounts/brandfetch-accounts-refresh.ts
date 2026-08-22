@@ -431,7 +431,7 @@ export async function fetchBrandfetchCompany(
   return { success: true, data }
 }
 
-export type StaleCompanyBrandfetchRow = {
+type StaleCompanyBrandfetchRow = {
   id: string
   name: string | null
   website_url: string | null
@@ -457,7 +457,7 @@ export type BrandfetchStaleRefreshResult = {
  * `scheduledStaleRefresh`: bei erfolgreichem API-Call werden Logo/HQ/MA-Zahl aus der API übernommen (wenn vorhanden),
  * Branche nur wie bisher bei leerer/generischer Branche. `brandfetch_synced_at` wird bei Erfolg gesetzt.
  */
-export async function refreshCompanyRowFromBrandfetch(
+async function refreshCompanyRowFromBrandfetch(
   supabase: SupabaseClient,
   company: StaleCompanyBrandfetchRow,
   options: { scheduledStaleRefresh: boolean },

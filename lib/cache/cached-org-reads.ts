@@ -340,7 +340,7 @@ async function fetchReferenceKpisForOrg(
   }
 }
 
-export function getCachedReferenceKpis(orgId: string): Promise<ReferenceKpiCounts> {
+function getCachedReferenceKpis(orgId: string): Promise<ReferenceKpiCounts> {
   return readWithOrgCache(
     'org-kpis',
     orgId,

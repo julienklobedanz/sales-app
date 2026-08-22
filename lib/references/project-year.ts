@@ -10,7 +10,7 @@ export function projectYearFromDates(
   return new Date(iso).getUTCFullYear()
 }
 
-export function updatedAtTimestamp(updatedAt: string | null | undefined): number {
+function updatedAtTimestamp(updatedAt: string | null | undefined): number {
   if (!updatedAt) return 0
   const time = new Date(updatedAt).getTime()
   return Number.isNaN(time) ? 0 : time

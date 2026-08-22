@@ -9,7 +9,7 @@ export type TablesInsert<T extends keyof Database['public']['Tables']> =
 export type TablesUpdate<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Update']
 
-export type DbEnums<T extends keyof Database['public']['Enums']> =
+type DbEnums<T extends keyof Database['public']['Enums']> =
   Database['public']['Enums'][T]
 
 export type ReferenceStatus = DbEnums<'reference_status'>

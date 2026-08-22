@@ -1,7 +1,7 @@
 import { ROUTES } from '@/lib/routes'
 
-export const REFERENCES_VIEW_PARAM = 'view'
-export const REFERENCES_OBJECT_PARAM = 'id'
+const REFERENCES_VIEW_PARAM = 'view'
+const REFERENCES_OBJECT_PARAM = 'id'
 
 export function referencesReadHref(
   id: string,

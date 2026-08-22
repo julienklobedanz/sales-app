@@ -14,7 +14,7 @@ export function buildAuthCallbackUrl(nextPath: string): string {
   return `${origin}${ROUTES.authCallback}?next=${encodeURIComponent(nextPath)}`
 }
 
-export function extractEmailDomain(email: string): string | null {
+function extractEmailDomain(email: string): string | null {
   const trimmed = email.trim().toLowerCase()
   const at = trimmed.lastIndexOf('@')
   if (at <= 0 || at === trimmed.length - 1) return null

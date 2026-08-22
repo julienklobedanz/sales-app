@@ -87,24 +87,3 @@ export async function createMeetingPrepSessionAction(input: {
 
   return { success: true, snapshot }
 }
-
-export async function loadMeetingPrepSessionAction(
-  sessionId: string,
-): Promise<{ snapshot: MeetingPrepSnapshot; title: string } | { error: string }> {
-  const auth = await requireOrgUser()
-  if ('error' in auth) return { error: auth.error }
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from('sales_meeting_prep_sessions')
-    .select('title, snapshot')
-    .eq('id', sessionId)
-    .eq('organization_id', auth.orgId)
-    .eq('created_by', auth.user.id)
-    .maybeSingle()
-  if (error) return { error: error.message }
-  if (!data) return { error: 'Session nicht gefunden.' }
-  return {
-    title: String(data.title ?? 'Meeting Prep'),
-    snapshot: data.snapshot as unknown as MeetingPrepSnapshot,
-  }
-}

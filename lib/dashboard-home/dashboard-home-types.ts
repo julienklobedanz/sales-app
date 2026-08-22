@@ -19,13 +19,6 @@ export type SalesRepDealCard = {
   recentSignalCount: number
 }
 
-export type RecommendedRefRow = {
-  id: string
-  title: string
-  snippet: string
-  similarity: number
-}
-
 export type RecentShareRow = {
   created_at: string
   slug: string | null
@@ -86,13 +79,6 @@ export type LeaderPipelineSignalRow = {
 }
 
 export type ReferenceKpiCounts = {
-  total: number
-  approved: number
-  internal: number
-  draft: number
-}
-
-export type WeeklyTrendStrip = {
   total: number
   approved: number
   internal: number
@@ -161,7 +147,7 @@ export type AccountManagerDashboardModel = {
   }
 }
 
-export type AdminKpiStrip = {
+type AdminKpiStrip = {
   referencesTotal: number
   matches7d: number
   shares7d: number
@@ -197,12 +183,6 @@ export type LeaderRiskDealRow = {
   tone: 'gap' | 'warn' | 'ok'
   ctaLabel: string | null
   href: string
-}
-
-export type LeaderCoachingRow = {
-  who: string
-  signal: string
-  tone: 'gap' | 'warn' | 'ok'
 }
 
 export type LeaderCoveragePipelineRow = {

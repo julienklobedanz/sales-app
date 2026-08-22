@@ -9,7 +9,7 @@ import type { SmeTopicGroup } from '@/lib/deals/group-sme-by-topic'
  * ungültiger Query greift nicht.
  */
 
-export const DEAL_WORKSPACE_RISK_ENTRY_PREFIXES = ['rf', 'sme', 'ev'] as const
+const DEAL_WORKSPACE_RISK_ENTRY_PREFIXES = ['rf', 'sme', 'ev'] as const
 
 export type DealWorkspaceRiskEntryPrefix =
   (typeof DEAL_WORKSPACE_RISK_ENTRY_PREFIXES)[number]

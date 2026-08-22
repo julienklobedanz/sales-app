@@ -25,7 +25,7 @@ export type NdaAgreementStatusInput = {
   file_storage_path?: string | null
 }
 
-export function hasNdaDocumentUploaded(row: NdaAgreementStatusInput): boolean {
+function hasNdaDocumentUploaded(row: NdaAgreementStatusInput): boolean {
   return Boolean(row.file_storage_path?.trim())
 }
 

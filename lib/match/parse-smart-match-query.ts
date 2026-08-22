@@ -309,7 +309,7 @@ export function parseExcludeYearsFromQuery(query: string): number[] {
 }
 
 /** Branchen-Negationen: „kein Banking“, „ohne Healthcare“, „nicht Finanz…“. */
-export function parseExcludeIndustriesFromQuery(query: string): string[] {
+function parseExcludeIndustriesFromQuery(query: string): string[] {
   const q = normalizeQuery(query)
   const ids = new Set<string>()
 
@@ -327,7 +327,7 @@ export function parseExcludeIndustriesFromQuery(query: string): string[] {
  * Freitext-Negationen die keine Branche sind („ohne Cloud“, „kein SAP“).
  * Branchen-Treffer werden hier bewusst weggelassen.
  */
-export function parseExcludeTermsFromQuery(query: string): string[] {
+function parseExcludeTermsFromQuery(query: string): string[] {
   const q = normalizeQuery(query)
   const terms = new Set<string>()
   const industryIds = new Set(parseExcludeIndustriesFromQuery(query))

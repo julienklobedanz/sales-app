@@ -4,7 +4,7 @@ import { buildDefaultComplianceTitle } from '@/lib/compliance/upload-filename'
 
 import type { BulkFileItem, BulkGroup } from './compliance-bulk-upload-types'
 
-export function createFileItem(file: File): BulkFileItem {
+function createFileItem(file: File): BulkFileItem {
   return {
     id: crypto.randomUUID(),
     file,

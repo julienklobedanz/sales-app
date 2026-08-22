@@ -8,14 +8,7 @@ import {
 } from '@/lib/organizations/capability-profile-types'
 import { log } from '@/lib/observability/logger'
 
-export type {
-  CapabilityProfile,
-  OrgCapabilitySettings,
-} from '@/lib/organizations/capability-profile-types'
-export {
-  parseCapabilityProfile,
-  parseOrgCapabilitySettings,
-} from '@/lib/organizations/capability-profile-types'
+export type { OrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 
 export async function loadOrgCapabilitySettings(
   supabase: SupabaseClient,

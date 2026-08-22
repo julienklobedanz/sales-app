@@ -188,7 +188,7 @@ export function hasAnyCommandSearchHit(groups: CommandSearchGroups): boolean {
 }
 
 /** Accounts/Partner-Gruppe: keine Doppelten (gleiche ID oder gleicher Name). */
-export function dedupeCompanySearchResults<T extends { id: string; title: string }>(
+function dedupeCompanySearchResults<T extends { id: string; title: string }>(
   items: T[],
 ): T[] {
   const byId = new Map<string, T>()

@@ -28,7 +28,7 @@ export function groupComplianceDocumentsForTable(
   return rows
 }
 
-export function complianceDocumentSearchHaystack(doc: ComplianceDocumentRow): string {
+function complianceDocumentSearchHaystack(doc: ComplianceDocumentRow): string {
   return [doc.title, complianceDocumentTypeLabel(doc.document_type), doc.file_name]
     .filter(Boolean)
     .join(' ')

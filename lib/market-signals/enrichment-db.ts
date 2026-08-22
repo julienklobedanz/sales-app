@@ -1,4 +1,4 @@
-export const ENRICHMENT_COLUMN_NAMES = [
+const ENRICHMENT_COLUMN_NAMES = [
   'signal_category',
   'insight_signal_fact',
   'insight_why_now',

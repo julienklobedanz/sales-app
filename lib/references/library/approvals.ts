@@ -1,8 +1,4 @@
-export type {
-  PrepareCustomerApprovalResult,
-  ApproveInternalRecipientOptions,
-  RequestCustomerApprovalAgainResult,
-} from '@/lib/references/library/approvals-types'
+export type { ApproveInternalRecipientOptions } from '@/lib/references/library/approvals-types'
 
 export { submitForApprovalImpl } from '@/lib/references/library/approvals-submit'
 export { prepareCustomerApprovalImpl } from '@/lib/references/library/approvals-approve-internal'

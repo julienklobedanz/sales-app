@@ -1,11 +1,11 @@
-export type RefstackEmailAudience = 'internal' | 'external'
+type RefstackEmailAudience = 'internal' | 'external'
 
 export type RefstackEmailMetaRow = {
   label: string
   value: string
 }
 
-export type RefstackEmailCta = {
+type RefstackEmailCta = {
   label: string
   href: string
   variant?: 'primary' | 'warning'

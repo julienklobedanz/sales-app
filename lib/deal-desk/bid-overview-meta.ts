@@ -38,7 +38,7 @@ export function shortenPersonName(fullName: string): string {
   return `${first} ${lastInitial}.`
 }
 
-export function initialsFromName(fullName: string): string {
+function initialsFromName(fullName: string): string {
   const short = shortenPersonName(fullName)
   if (short === 'Du') return 'DU'
   const parts = fullName.trim().split(/\s+/).filter(Boolean)
@@ -179,7 +179,7 @@ function shortenDeadlineTitle(title: string): string {
   return t.length > 28 ? `${t.slice(0, 26)}…` : t
 }
 
-export function formatDeadlineTimeForMeta(
+function formatDeadlineTimeForMeta(
   dueTime: string | null | undefined,
 ): string | null {
   const normalized = normalizeDueTime(dueTime)

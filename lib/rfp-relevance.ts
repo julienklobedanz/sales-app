@@ -12,7 +12,7 @@ import 'server-only'
 const MODEL = 'gpt-4o-mini'
 const FETCH_MS = 20000
 
-export type RfpVerdictValue = 'covers' | 'partial' | 'none'
+type RfpVerdictValue = 'covers' | 'partial' | 'none'
 export type RfpVerdict = {
   verdict: RfpVerdictValue
   /** Vom LLM als am besten passend gewählte Referenz (kann von der Top-Similarity abweichen). */

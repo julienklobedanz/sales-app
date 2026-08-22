@@ -4,7 +4,7 @@ import { AccountsToolbarTooltip } from './accounts-toolbar-tooltip'
 import { cn } from '@/lib/utils'
 import { ActivityPulseIcon } from './activity-pulse-icon'
 
-export type AccountSortMode = 'az' | 'activity'
+type AccountSortMode = 'az' | 'activity'
 
 type Props = {
   value: AccountSortMode

@@ -66,9 +66,9 @@ export function rpcVolumeBoundsFromBands(bands: VolumeBandId[]): {
   }
 }
 
-export type RecencyWindow = { after: string | null; before: string | null }
+type RecencyWindow = { after: string | null; before: string | null }
 
-export function recencyWindowFromMonthsBack(
+function recencyWindowFromMonthsBack(
   monthsBack: number,
   now = new Date(),
 ): RecencyWindow {

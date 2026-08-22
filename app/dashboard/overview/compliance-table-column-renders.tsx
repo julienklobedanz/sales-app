@@ -27,7 +27,7 @@ export const COMPLIANCE_COLUMN_KEYS = [
 
 export type ComplianceColumnKey = (typeof COMPLIANCE_COLUMN_KEYS)[number]
 
-export const COMPLIANCE_COLUMN_LABELS: Record<ComplianceColumnKey, string> = {
+const COMPLIANCE_COLUMN_LABELS: Record<ComplianceColumnKey, string> = {
   document_type: 'Typ',
   title: 'Titel',
   valid_until: 'Gültig bis',

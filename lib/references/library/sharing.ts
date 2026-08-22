@@ -4,7 +4,6 @@
  * Kein `'use server'` hier: Turbopack erlaubt in Server-Action-Dateien keine
  * Re-Exports/`export type` — nur async Function-Exports.
  */
-export type { CreateSharedPortfolioRecipient } from '@/lib/references/library/sharing-helpers'
 export {
   createSharedPortfolioImpl,
   getPortfolioManageAndPreviewUrlsForApprovalEmail,

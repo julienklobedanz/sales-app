@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/references/library/sharing'
 import {
-  fetchVendorOrganizationName,
   resolveCustomerApprovalRecipient,
   type CustomerApprovalRecipientRow,
 } from '@/lib/references/customer-approval-recipient'
@@ -74,5 +73,3 @@ export async function getCustomerApprovalRecipientEmailImpl(
   )
   return resolved?.email ?? null
 }
-
-export { fetchVendorOrganizationName }

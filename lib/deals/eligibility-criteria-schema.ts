@@ -1,4 +1,4 @@
-export type EligibilityDimension =
+type EligibilityDimension =
   | 'employee_count'
   | 'annual_revenue'
   | 'reference_count'
@@ -6,7 +6,7 @@ export type EligibilityDimension =
   | 'region'
   | 'other'
 
-export type EligibilityOperator = 'gte' | 'lte' | 'eq' | 'contains'
+type EligibilityOperator = 'gte' | 'lte' | 'eq' | 'contains'
 
 export type EligibilityConfidence = 'high' | 'medium' | 'low'
 
@@ -60,7 +60,7 @@ function slugId(label: string, index: number): string {
   return base ? `${base}-${index}` : `criterion-${index}`
 }
 
-export function parseEligibilityCriterion(
+function parseEligibilityCriterion(
   raw: unknown,
   index: number,
 ): EligibilityCriterion | null {

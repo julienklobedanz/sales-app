@@ -1,13 +1,10 @@
 /** Referenz-Status, die Vertrieb ohne Draft-/Confidential-Cap sieht (aligned mit RPC/RLS). */
-export const SALES_VISIBLE_REFERENCE_STATUSES = [
+const SALES_VISIBLE_REFERENCE_STATUSES = [
   'approved',
   'internal_only',
   'anonymized',
   'external',
 ] as const
-
-export type SalesVisibleReferenceStatus =
-  (typeof SALES_VISIBLE_REFERENCE_STATUSES)[number]
 
 export function isReferenceVisibleToSales(status: string | null | undefined): boolean {
   const normalized = String(status ?? '')

@@ -84,7 +84,7 @@ export function formatThousandsDots(raw: string | null | undefined): string {
 }
 
 /** Brandfetch liefert bei der höchsten Mitarbeiter-Kategorie oft 10.001 als Deckel — Anzeige als „10.001+“. */
-export const BRANDFETCH_EMPLOYEE_CAP = 10_001
+const BRANDFETCH_EMPLOYEE_CAP = 10_001
 
 export function formatEmployeeCountDeDisplay(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return ''

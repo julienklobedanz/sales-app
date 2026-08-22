@@ -11,7 +11,7 @@ export type IcpDefinition = {
   segment?: string
 }
 
-export type IcpRubrikItem = {
+type IcpRubrikItem = {
   field: keyof IcpDefinition
   label: string
   definitionValue: string

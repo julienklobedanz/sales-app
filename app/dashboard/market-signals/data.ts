@@ -6,7 +6,7 @@ import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { log } from '@/lib/observability/logger'
 
-export type MarketSignalCategory = 'people' | 'finance' | 'strategy'
+type MarketSignalCategory = 'people' | 'finance' | 'strategy'
 
 export type ExecutiveTrackingRow = {
   id: string
@@ -41,7 +41,7 @@ export type AccountNewsRow = {
   insightWhyNow: string | null
 }
 
-export type MarketSignalsCompanyOption = {
+type MarketSignalsCompanyOption = {
   id: string
   name: string
   logoUrl: string | null

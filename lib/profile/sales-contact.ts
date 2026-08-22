@@ -1,7 +1,7 @@
 /** Mindestanzahl Ziffern, damit eine Telefonnummer für Sales akzeptiert wird (inkl. Vorwahl). */
 const SALES_PHONE_MIN_DIGITS = 8
 
-export function countPhoneDigits(value: string): number {
+function countPhoneDigits(value: string): number {
   return String(value ?? '').replace(/\D/g, '').length
 }
 

@@ -38,7 +38,7 @@ type Props = {
   projectStatusLabels: Record<string, string>
 }
 
-export function referenceMoreFiltersActive(args: {
+function referenceMoreFiltersActive(args: {
   favoritesOnly: boolean
   volumeFilter: ReferenceVolumeFilter
   industryFilter: string

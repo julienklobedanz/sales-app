@@ -1,4 +1,4 @@
-export const UI_LOCALES = ['de', 'en'] as const
+const UI_LOCALES = ['de', 'en'] as const
 
 export type UiLocale = (typeof UI_LOCALES)[number]
 

@@ -34,7 +34,7 @@
   "tags": ["-public"],
   "ignoreIssues": {
     "lib/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
-    "components/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
+    "components/ui/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
     "hooks/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
     "app/**/actions.ts": ["exports", "types"],
     "app/**/*-actions.ts": ["exports", "types"],

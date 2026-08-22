@@ -2,9 +2,8 @@ import PptxGenJS from 'pptxgenjs'
 
 /** PptxGenJS LAYOUT_16x9 — 10" × 5.625" */
 export const SLIDE_W_IN = 10
-export const SLIDE_H_IN = 5.625
 
-export const PPTX_COLORS = {
+const PPTX_COLORS = {
   heading: '1E293B',
   body: '334155',
   muted: '94A3B8',
@@ -37,8 +36,8 @@ export const PPTX_LAYOUT = {
   FOOTER_Y: 5.38,
 } as const
 
-export const PPTX_BULLET_FONT_PT = 10
-export const PPTX_FACT_FONT_PT = 10
+const PPTX_BULLET_FONT_PT = 10
+const PPTX_FACT_FONT_PT = 10
 
 export function clipPptxHeader(
   text: string | null | undefined,

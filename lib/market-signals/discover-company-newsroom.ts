@@ -6,7 +6,7 @@ const PROBE_TIMEOUT_MS = 2_500
 const MAX_NEWSROOM_URLS = 6
 
 /** Common press / newsroom paths on corporate sites (DACH + EN). */
-export const NEWSROOM_PATH_CANDIDATES = [
+const NEWSROOM_PATH_CANDIDATES = [
   '/newsroom',
   '/de/newsroom',
   '/en/newsroom',
@@ -89,7 +89,7 @@ async function probeUrlExists(url: string, signal?: AbortSignal): Promise<string
  * Probe known press/newsroom paths on the company website.
  * Does not scrape article lists — only checks path reachability.
  */
-export async function discoverCompanyNewsroomUrls(
+async function discoverCompanyNewsroomUrls(
   websiteUrl: string | null | undefined,
   opts?: { signal?: AbortSignal; maxUrls?: number },
 ): Promise<string[]> {

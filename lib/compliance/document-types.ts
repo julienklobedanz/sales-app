@@ -14,9 +14,9 @@ export const COMPLIANCE_DOCUMENT_TYPES = [
   'code_of_conduct',
 ] as const
 
-export type ComplianceDocumentType = (typeof COMPLIANCE_DOCUMENT_TYPES)[number]
+type ComplianceDocumentType = (typeof COMPLIANCE_DOCUMENT_TYPES)[number]
 
-export const COMPLIANCE_DOCUMENT_TYPE_LABELS: Record<ComplianceDocumentType, string> = {
+const COMPLIANCE_DOCUMENT_TYPE_LABELS: Record<ComplianceDocumentType, string> = {
   iso_27001: 'ISO 27001',
   iso_14001: 'ISO 14001',
   iso_9001: 'ISO 9001',
@@ -33,7 +33,7 @@ export const COMPLIANCE_DOCUMENT_TYPE_LABELS: Record<ComplianceDocumentType, str
 }
 
 /** Ältere Slugs in bestehenden Datensätzen — Anzeige bleibt lesbar. */
-export const LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS: Record<string, string> = {
+const LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS: Record<string, string> = {
   soc_2: 'SOC 2',
   pen_test: 'Pen-Test-Report',
   gdpr_dpa: 'AVV / DPA',

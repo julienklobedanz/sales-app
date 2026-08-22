@@ -1,7 +1,3 @@
-import { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT } from './signal-intelligence-prompt'
-
-export { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT }
-
 export type RoleTransitionKind =
   | 'promotion'
   | 'lateral'
@@ -9,16 +5,16 @@ export type RoleTransitionKind =
   | 'new_hire'
   | 'unknown'
 
-export type MarketSignalActionTriggerType = 'direct_outreach' | 'warm_intro'
+type MarketSignalActionTriggerType = 'direct_outreach' | 'warm_intro'
 
-export type MarketSignalActionTrigger = {
+type MarketSignalActionTrigger = {
   type: MarketSignalActionTriggerType
   label: string
   primaryStakeholderName: string
   internalColleagueName?: string
 }
 
-export type MarketSignalInsight = {
+type MarketSignalInsight = {
   why_now: string
   signal_fact: string
   reference_line: string | null
@@ -257,7 +253,7 @@ export function buildReferenceInsightLine(input: {
   return `${pool.length} Referenzen verfügbar — jedoch hat noch keine von diesen die Freigabe für externe Nutzung.`
 }
 
-export function deriveActionTriggers(input: {
+function deriveActionTriggers(input: {
   primaryStakeholder?: { fullName: string; title: string } | null
   warmIntro?: { colleagueName: string; stakeholderName: string } | null
 }): MarketSignalActionTrigger[] {

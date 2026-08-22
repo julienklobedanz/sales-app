@@ -18,7 +18,7 @@ const COMPANY_SUFFIX_PATTERN =
 const PROJECT_PART_HINTS =
   /^(teil|part|anlage|appendix|anhang|doc|dokument|v\d+|version|final|draft|signed|kopie|copy)$/i
 
-export function splitFileStem(stem: string): string[] {
+function splitFileStem(stem: string): string[] {
   return stem
     .split(/[_-]+/)
     .map((part) => part.trim())

@@ -12,7 +12,7 @@ export const CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS = 14
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-export function customerApprovalReminderCutoffIso(now = Date.now()): string {
+function customerApprovalReminderCutoffIso(now = Date.now()): string {
   return new Date(now - CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS * MS_PER_DAY).toISOString()
 }
 

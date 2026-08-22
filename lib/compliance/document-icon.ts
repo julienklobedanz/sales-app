@@ -17,7 +17,7 @@ function documentHaystack(doc: {
 }
 
 /** System- oder künftige ISO-Slugs (z. B. iso_45001). */
-export function isIsoComplianceDocumentType(slug: string): boolean {
+function isIsoComplianceDocumentType(slug: string): boolean {
   const normalized = slug.trim().toLowerCase()
   return ISO_SLUG_PATTERN.test(normalized) || ISO_SYSTEM_SLUGS.has(normalized as never)
 }
@@ -26,7 +26,7 @@ export function isIsoComplianceDocumentType(slug: string): boolean {
  * Erkennt ISO-Zertifikate anhand Dokumenttyp, Titel oder Dateiname
  * (alle ISO-Normen, nicht nur 27001).
  */
-export function isIsoComplianceDocument(doc: {
+function isIsoComplianceDocument(doc: {
   document_type: string
   title?: string | null
   file_name?: string | null

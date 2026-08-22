@@ -101,7 +101,7 @@ export function scoreCallCandidate(
   return score
 }
 
-export function buildCallWhyNowBullets(input: {
+function buildCallWhyNowBullets(input: {
   candidate: LeaderCallSignalCandidate
   deal: LeaderCallDealContext
   match: LeaderCallMatchResult | null

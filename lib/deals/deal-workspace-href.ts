@@ -33,7 +33,7 @@ export const DEAL_RFP_HASH_IDS = [
   'notice-hero',
 ] as const
 
-export type DealRfpHashId = (typeof DEAL_RFP_HASH_IDS)[number]
+type DealRfpHashId = (typeof DEAL_RFP_HASH_IDS)[number]
 
 export type DealHashSurface = 'deal-page' | 'workspace'
 
@@ -69,7 +69,7 @@ function normalizeHashId(hash: string): string {
   return hash.replace(/^#/, '').trim()
 }
 
-export function isDealRfpHashId(id: string): id is DealRfpHashId {
+function isDealRfpHashId(id: string): id is DealRfpHashId {
   return (DEAL_RFP_HASH_IDS as readonly string[]).includes(id)
 }
 

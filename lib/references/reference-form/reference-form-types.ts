@@ -5,7 +5,7 @@ export type ReferenceFormCompany = {
 }
 
 /** Ergebnis der Unternehmens-Autocomplete-Suche (lokal + remote). */
-export type ReferenceFormCompanySearchResult =
+type ReferenceFormCompanySearchResult =
   | { success: true; suggestions: ReferenceFormCompany[]; hint?: string }
   | { success: false; error: string }
 
@@ -69,5 +69,3 @@ export type ReferenceFormInitialData = {
   project_end?: string | null
   is_nda_deal?: boolean
 }
-
-export type ReferenceFormCompanyOption = ReferenceFormCompany

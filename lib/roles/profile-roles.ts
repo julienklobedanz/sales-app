@@ -17,7 +17,7 @@ function asFunctionRole(value: unknown): FunctionRole | null {
   return s && FUNCTION_ROLES.has(s as FunctionRole) ? (s as FunctionRole) : null
 }
 
-export function parseCapabilitiesOverrides(
+function parseCapabilitiesOverrides(
   raw: unknown,
 ): Partial<Record<Capability, boolean>> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}

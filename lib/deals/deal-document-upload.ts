@@ -6,7 +6,7 @@ export const DEAL_DOCUMENT_STORAGE_MAX_BYTES = 25 * 1024 * 1024
 /** Limit für analysierbare Ausschreibungs-Docs (Extraktion). */
 export const DEAL_DOCUMENT_ANALYZABLE_MAX_BYTES = 4.5 * 1024 * 1024
 
-export const DEAL_DOCUMENT_ALLOWED_MIME_TYPES = new Set([
+const DEAL_DOCUMENT_ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.ms-powerpoint',

@@ -2,9 +2,9 @@ import type { AccountStatusValue } from './account-status'
 import { isContractEndWithinWarningWindow } from './contract-end'
 import { NDA_EXPIRY_WARNING_DAYS } from './nda-expiry'
 
-export const ACTIVE_CUSTOMER_WON_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000
+const ACTIVE_CUSTOMER_WON_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000
 
-export type DealStatusInput = {
+type DealStatusInput = {
   status: string
   /** Close-Datum (`expiry_date`) oder Fallback */
   closedOn: string | null
@@ -12,7 +12,7 @@ export type DealStatusInput = {
   contractEndDate?: string | null
 }
 
-export type ReferenceExpiryInput = {
+type ReferenceExpiryInput = {
   approval_expires_at: string | null
   approval_grace_until: string | null
 }
