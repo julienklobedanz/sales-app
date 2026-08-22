@@ -22,9 +22,7 @@ export const COPY = {
   },
   misc: {
     matches: 'Treffer',
-    teamManagement: 'Teamverwaltung',
     workspace: 'Arbeitsbereich',
-    firstReference: 'Erste Referenz',
     team: 'Team',
   },
   notifications: {
@@ -45,9 +43,6 @@ export const COPY = {
     profileMenuHint:
       'Steuert nur die Oberfläche. Server und Datenbank nutzen weiterhin deine gespeicherte Profil-Rolle.',
     profileMenuActiveSuffix: 'aktiv',
-    roleMarketingAdmin: 'Marketing / Admin',
-    roleAccountManager: 'Account Manager',
-    roleSalesRep: 'Sales Rep',
     switchSuccess: 'Oberflächen-Rolle aktualisiert.',
   },
   roles: {
@@ -69,10 +64,6 @@ export const COPY = {
     },
   },
   settings: {
-    accountDeletionNotAvailableHint:
-      'Kontolöschung entfernt deinen Login. Workspace-Daten bleiben für andere Mitglieder erhalten.',
-    accountDeletionDisabledToast:
-      'Kontolöschung ist fehlgeschlagen. Bitte versuche es erneut oder wende dich an den Support.',
     dangerZoneTitle: 'Gefahrenzone',
     deleteAccountButton: 'Konto löschen',
     deleteAccountBody: 'Konto dauerhaft löschen.',
@@ -94,10 +85,7 @@ export const COPY = {
     signOutEverywhereTitle: 'Überall abmelden?',
     signOutEverywhereDescription:
       'Du wirst auf allen Geräten abgemeldet, auch auf diesem.',
-    roleSwitcherTab: 'Entwicklung',
     roleSwitcherCardTitle: 'Rollenauswahl (Entwicklung)',
-    roleSwitcherCardDescription:
-      'Legt fest, welche Rolle die Oberfläche steuert (Cookie). Viele Aktionen auf dem Server prüfen weiterhin deine gespeicherte Profil-Rolle in der Datenbank.',
     roleSwitcherStoredLabel: 'Rolle in der Datenbank',
     roleSwitcherActiveLabel: 'Rolle in der Oberfläche',
     roleSwitcherPickLabel: 'Als folgende Rolle anzeigen',
@@ -160,7 +148,6 @@ export const COPY = {
     contextSelect: 'Selektieren',
     contextOpen: 'Öffnen',
     contextEdit: 'Bearbeiten',
-    filterReferencesPlaceholder: 'Referenzen filtern…',
     exportAsPdf: 'Als PDF exportieren',
     exportAsPptx: 'Als PPTX exportieren',
     exportAsPptxPending: 'PPTX wird erstellt…',
@@ -178,8 +165,6 @@ export const COPY = {
     filterStatusRfp: 'RFP-Phase',
     filterStatusWon: 'Gewonnen',
     filterStatusLost: 'Verloren',
-    referenceCountColumn: 'Referenzen',
-    matchColumn: 'Match',
     proofColumn: 'Beweislage',
     deadlineColumn: 'Frist',
     /** Labels im Menü „Spalten“ (Deals-Tabelle). */
@@ -198,8 +183,6 @@ export const COPY = {
       factsEditAria: 'Deal-Fakten bearbeiten',
       deleteDeadlineAria: 'Termin entfernen',
       stammdatenTitle: 'Stammdaten',
-      stammdatenSubtitle:
-        'Aus der Ausschreibung extrahiert — getrennt von den Deal-Fakten.',
       stammdatenEmpty:
         'Noch keine Stammdaten — nach der Analyse erscheinen Auftraggeber, Fristen und Eckdaten hier.',
       stammdatenFields: {
@@ -222,10 +205,7 @@ export const COPY = {
       generateBriefing: 'Briefing erzeugen',
       promoteToRfp: 'Als Ausschreibung bearbeiten',
       demoteFromRfp: 'Kein Ausschreibungs-Deal',
-      rfpBlockPlaceholder: 'Ausschreibungs-Analyse folgt in den nächsten Schritten.',
       proofTitle: 'Verknüpfte Referenzen',
-      proofStatusLinked: '{count} verknüpft',
-      proofStatusEmpty: 'Noch kein Beweis am Deal',
       proofEmpty:
         'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
       proofRemoveAria: 'Referenz aus Deal entfernen',
@@ -234,7 +214,6 @@ export const COPY = {
       findReferenceDescription:
         'Smart Search und RFP-Coverage mit vorausgefülltem Deal-Kontext. Treffer können direkt verknüpft werden.',
       nextDeadlineLabel: 'Nächste Frist',
-      deadlinesAllTitle: 'Alle Fristen',
       deadlinesEmpty: 'Keine Termine',
       ausschreibungNavDokumente: 'Dokumente',
       ausschreibungNavSteckbrief: 'Steckbrief',
@@ -246,11 +225,6 @@ export const COPY = {
       deadlinesEmptyHint:
         'Fristen erscheinen nach RFP-Analyse oder wenn du manuell Termine hinzufügst.',
       addDeadline: 'Termin',
-      deadlineToday: 'heute',
-      deadlineInOneDay: 'in 1 Tag',
-      deadlineInDays: 'in {n} Tagen',
-      deadlineOverdueOne: '1 Tag überfällig',
-      deadlineOverdue: '{n} Tage überfällig',
       editDeadline: 'Termin bearbeiten',
       downloadDeadlinesIcs: 'ICS',
       downloadDeadlinesIcsAria: 'Alle Termine als Kalenderdatei (.ics) herunterladen',
@@ -260,7 +234,6 @@ export const COPY = {
       metricRisks: 'Risiken',
       metricDocuments: 'Dokumente',
       rfpBlockTitle: 'Ausschreibung',
-      rfpBlockSubtitle: 'Metriken und Eignungs-Check aus der letzenden RFP-Analyse.',
       rfpBlockEmpty:
         'Lade eine Ausschreibung unter Dokumente hoch und starte die Analyse von dort.',
       steckbriefEmpty: 'Noch kein Steckbrief — starte die Analyse unter Dokumente.',
@@ -270,7 +243,6 @@ export const COPY = {
       documentsAnalyze: 'Analysieren',
       documentsQuickscan: 'Schnellprüfung',
       documentsQuickscanSuccess: 'Schnellprüfung fertig — Go/No-Bid steht.',
-      documentsAnalyzeAsRfp: 'Als Ausschreibung analysieren',
       documentsReanalyze: 'Neu analysieren',
       documentsAnalyzePending: 'Analyse läuft …',
       documentsAnalyzeSuccess: 'RFP-Analyse abgeschlossen.',
@@ -288,12 +260,8 @@ export const COPY = {
       deleteDealFailed: 'Deal konnte nicht gelöscht werden.',
       documentsKindChangeAnalysisHint:
         'Analyse basiert auf einer früheren Ausschreibungs-Version dieses Dokuments.',
-      metricsStaleHint: 'Neu analysieren, um belastbare Werte zu sehen.',
       metricAngebotsReife: 'Angebots-Reife',
       metricEligibility: 'Bietfähigkeit / Eignung',
-      metricEligibilityHint: 'Abgleich RFP-Schwellen mit Fähigkeitsprofil.',
-      metricEligibilityEmptyProfile:
-        'Fähigkeitsprofil fehlt — K.O.-Check zeigt „Unbekannt", kein stiller Go.',
       eligibilityTitle: 'Eignungs- und K.O.-Kriterien',
       eligibilityEmpty:
         'Keine strukturierten Eignungskriterien in der Analyse — ggf. neu analysieren.',
@@ -304,7 +272,6 @@ export const COPY = {
       eligibilityVerdict: 'Gesamteinschätzung',
       eligibilityProfileCta: 'Fähigkeitsprofil ergänzen',
       risksTitle: 'Risiken & offene fachliche Themen',
-      risksSubtitle: 'Vertrags-Risiken und fachliche SME-Punkte aus der RFP-Analyse.',
       risksGeneralTitle: 'Allgemeine Risiken',
       risksGeneralEmpty: 'Keine kritischen Vertragsrisiken erkannt.',
       risksOpenPointsTitle: 'Offene Punkte: Fachlich',
@@ -316,19 +283,14 @@ export const COPY = {
       noticeExecutiveSummaryTitle: 'Executive Summary',
       proofSuggestedTitle: 'Vorgeschlagene Referenzen (noch nicht verknüpft)',
       proofSuggestedAdd: 'Zum Deal hinzufügen',
-      risksSmePointSingular: 'Punkt',
-      risksSmePointPlural: 'Punkte',
       risksSeverityCritical: 'Kritisch',
       risksSeverityHigh: 'Hoch',
       risksSeverityMedium: 'Mittel',
       recommendationAnalyzedOn: 'Analyse vom {date}',
       recommendationCoverage: 'Beweis vorhanden {percent}%',
       draftsTitle: 'Antwort-Entwürfe',
-      draftsSubtitle:
-        'Vorbereitete Antworten pro RFP-Anforderung — mit Referenz-Nachweis.',
       draftsEmpty:
         'Noch keine Entwürfe — nach RFP-Analyse oder Neu-Analyse erscheinen sie hier.',
-      draftsGenerateCta: '✦ KI-Antwort generieren',
       draftsNoReference:
         'Keine verifizierte Referenz — Antwort kann nicht automatisch belegt werden.',
       draftsStatusReady: 'Bereit',
@@ -344,9 +306,7 @@ export const COPY = {
       draftsDetailTitle: 'Antwort-Entwurf',
       draftsAnswerLabel: 'Antwort',
       draftsAnswerEmpty: 'Noch kein Antworttext.',
-      draftsEditAria: 'Antwort bearbeiten',
       draftsSave: 'Speichern',
-      draftsCancelEdit: 'Abbrechen',
       draftsSaveSuccess: 'Antwort gespeichert.',
       draftsSaveFailed: 'Antwort konnte nicht gespeichert werden.',
       draftsCoveredCount: '{covered}/{total} Antwort bereit',
@@ -362,13 +322,10 @@ export const COPY = {
       briefingPdfSuccess: 'Executive Briefing als PDF heruntergeladen.',
       briefingPdfFailed: 'PDF-Export fehlgeschlagen.',
       metricIcpFit: 'ICP-Fit',
-      icpPlaceholder: 'Rubrik-basierte ICP-Bewertung folgt.',
       documentsTitle: 'Dokumente',
       documentsEmpty:
         'Noch keine Dokumente — RFP, NDA, Vertrag, Angebot oder andere Dateien hochladen.',
       documentsUpload: 'Hochladen',
-      documentsOpenDealDesk: 'Deal Desk',
-      documentsOpenDealDeskAria: 'Deal Desk für diesen Deal öffnen',
       documentsUploadTitle: 'Dokument hochladen',
       documentsKindLabel: 'Dokumenttyp',
       documentsDropzoneHint: 'Datei hierher ziehen oder klicken',
@@ -416,9 +373,6 @@ export const COPY = {
     tooltipFilter: 'Filtern',
     tooltipFavorites: 'Favoriten',
     alsoLinkedAccountHint: 'Auch als Account verknüpft',
-    ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
-    ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
-    companyUpdateEmpty: 'Keine Company Updates vorhanden.',
     createDialogNameHint:
       'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
     createDialogSuggestLocal: 'Bereits angelegt',
@@ -427,12 +381,9 @@ export const COPY = {
     createDialogTypeMore: 'Mindestens 2 Zeichen für die Namenssuche eingeben.',
     createDialogNoResults:
       'Keine Treffer für diesen Namen. Namen weiter ausformulieren oder unten manuell anlegen.',
-    createDialogBrandfetchHint:
-      'Markendaten vorübergehend nicht verfügbar. Bitte kurz warten oder Stammdaten manuell ausfüllen.',
     createDialogOpenExisting:
       'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
     editDialogTitle: 'Account bearbeiten',
-    editSuccess: 'Account gespeichert.',
     editButton: 'Bearbeiten',
     quickCreateAccountTitle: 'Neuen Account anlegen',
     quickCreateAccountSubmit: 'Account anlegen und auswählen',
@@ -444,7 +395,6 @@ export const COPY = {
     filterNdaExpiring: 'NDA läuft ab',
     filterNdaNone: 'Kein NDA',
     filterLocation: 'Standort',
-    filterLocationAll: 'Alle Standorte',
     lens: {
       briefingCta: 'Briefing erzeugen',
       emptyRead: 'Wähle links eine Firma aus.',
@@ -453,7 +403,6 @@ export const COPY = {
       ndaNone: 'Kein NDA — Beweise nach ihrem Status verwendbar.',
       ndaActive: 'NDA aktiv — aus „teilbar“ wird gesperrt.',
       ndaExpiring: 'NDA läuft ab — aus „teilbar“ wird gesperrt.',
-      ndaCapture: 'NDA erfassen',
       signalHeading: 'Signal',
       dealsHeading: 'Offene Deals',
       proofsHeading: 'Beweise',
@@ -475,8 +424,6 @@ export const COPY = {
         openAccount: 'Account öffnen',
         noAccount: 'Account noch nicht angelegt.',
         createAccount: 'Account anlegen',
-        pickAccountTitle: 'Welcher Account?',
-        pickAccountDescription: 'Mehrere Treffer — bitte den richtigen Account wählen.',
       },
     },
   },
@@ -489,13 +436,9 @@ export const COPY = {
     layoutRead: 'Lesen',
     createManual: 'Manuell',
     createImport: 'Importieren',
-    columnsToggleAria: 'Spalten ein-/ausblenden',
     tooltipFavorites: 'Favoriten',
     tooltipStatus: 'Status',
-    tooltipColumns: 'Spalten',
-    tooltipImport: 'Importieren',
     tooltipCreateReference: 'Referenz erstellen',
-    tooltipSmartMatch: 'Smart Match',
     home: {
       thinBanner:
         'Ehrliche Daten: Pre-Pilot — zu wenig Volumen für belastbare Zahlen. Arbeitsschlange bleibt, Kennzahlen erst mit echten Daten.',
@@ -620,7 +563,6 @@ export const COPY = {
         callQueueColReference: 'Passende Referenz',
         callQueueColWhy: 'Jetzt anrufen, weil',
         callQueueOpenDeal: 'Deal',
-        callQueueOpenAccount: 'Account',
         callQueueOpenMatch: 'Match',
         callQueueSnooze: '1 Woche später',
         callQueueDone: 'Erledigt',
@@ -643,14 +585,8 @@ export const COPY = {
         riskNoProof: 'kein Beweis',
         riskPartial: 'teilweise',
         riskStrong: 'stark belegt',
-        riskWeakCount: 'schwach belegt ({n}/{total})',
-        riskPushRep: 'Rep pushen',
         riskRequestRef: 'Referenz anfragen',
         riskReview: 'prüfen',
-        coachingTitle: 'Coaching-Signal',
-        coachingDescription: 'Wer nutzt die Beweis-Arbeit — wer braucht einen Impuls?',
-        coachingEmptyTitle: 'Zu wenig Nutzung',
-        coachingEmptyDescription: 'Adoption noch niedrig — CS-Begleitung im Pilot.',
         covPipeTitle: 'Abdeckung vs. Pipeline',
         covPipeDescription: 'Wo verfolgen wir Deals, für die uns der Beweis fehlt?',
         covPipeEmptyTitle: 'Noch keine Pipeline-Abdeckung',
@@ -689,11 +625,6 @@ export const COPY = {
     filterAccount: 'Account',
     filterAccountAll: 'Alle Accounts',
     filterAccountSearch: 'Account suchen …',
-    filterSegmentLabel: 'Typ',
-    allAccounts: 'Alle Accounts',
-    segmentAll: 'Alle',
-    segmentCustomers: 'Kunden',
-    segmentProspects: 'Prospects',
     filterChipAll: 'Alle',
     filterChipMove: 'Move',
     filterChipExecutive: 'Executive',
@@ -743,11 +674,6 @@ export const COPY = {
     feedEmptyTitle: 'Noch keine Signale',
     feedEmptyBody:
       'Sobald neue Signale zu deiner Watchlist vorliegen, erscheinen sie hier.',
-    executiveEmptyTitle: 'Noch keine Führungswechsel',
-    executiveEmptyBody: 'Sobald neue Personen-Signale vorliegen, erscheinen sie hier.',
-    newsEmptyTitle: 'Noch keine Company Updates',
-    newsEmptyBody: 'Sobald neue Firmen-Updates vorliegen, erscheinen sie hier.',
-    roleChangeArrow: '→',
   },
   commandPalette: {
     title: 'Command Palette',
@@ -759,7 +685,6 @@ export const COPY = {
     recents: 'Zuletzt besucht',
     noRecentsYet: 'Noch keine Einträge',
     actionStartMatch: 'Smart Match',
-    actionNewDeal: 'Neuen Deal erstellen',
     actionNewReference: 'Neue Referenz erstellen',
     actionNewAccount: 'Account erstellen',
     /** Anzeige in der Suche, wenn keine Firma verknüpft ist */
