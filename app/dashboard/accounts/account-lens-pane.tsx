@@ -21,7 +21,7 @@ import { resolveNdaDisplayStatus } from '@/lib/accounts/account-entity'
 import { formatDealCollectionDeadline } from '@/app/dashboard/deals/deals-table-format'
 import { referenceStatusLabel } from './account-detail-constants'
 import { AccountDetailNdaPopover } from './components/account-detail-nda-popover'
-import type { CompanyCard } from './accounts-grid-types'
+import type { CompanyCard } from './accounts-collection-types'
 import type { AccountDealRow, CompanyRefRow } from './account-action-types'
 import type { NdaAgreementRow } from './nda-actions'
 import {

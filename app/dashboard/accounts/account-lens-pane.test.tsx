@@ -6,7 +6,7 @@ import { ACCOUNT_LENS_CARE_KEYS } from '@/lib/accounts/account-lens'
 import { COPY } from '@/lib/copy'
 
 import { AccountLensPane, type AccountLensPayload } from './account-lens-pane'
-import type { CompanyCard } from './accounts-grid-types'
+import type { CompanyCard } from './accounts-collection-types'
 import type { AccountDealRow } from './account-action-types'
 
 vi.mock('next/link', () => ({

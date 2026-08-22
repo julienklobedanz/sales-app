@@ -23,7 +23,7 @@
     "styles/**/*.css",
     "supabase/functions/**/*.ts"
   ],
-  "ignore": ["lib/database.types.ts", "lib/supabase.ts"],
+  "ignore": ["lib/database.types.ts"],
   "ignoreDependencies": [
     "server-only",
     "@radix-ui/react-checkbox",
