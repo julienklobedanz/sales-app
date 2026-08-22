@@ -20,10 +20,10 @@ import type { MatchReferenceHit } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { cn } from '@/lib/utils'
 import { parseSmartMatchQuery } from '@/lib/match/parse-smart-match-query'
-import { parseSmartMatchFiltersAction } from '@/app/dashboard/smart-match/parse-filters-action'
-import { SmartMatchFiltersPanel } from '@/app/dashboard/smart-match/smart-match-filters'
-import { SmartMatchResults } from '@/app/dashboard/smart-match/smart-match-results'
-import { SmartMatchSearchBar } from '@/app/dashboard/smart-match/smart-match-search'
+import { parseSmartMatchFiltersAction } from '@/app/dashboard/deals/parse-smart-match-filters-action'
+import { SmartMatchFiltersPanel } from '@/components/smart-match/smart-match-filters'
+import { SmartMatchResults } from '@/components/smart-match/smart-match-results'
+import { SmartMatchSearchBar } from '@/components/smart-match/smart-match-search'
 import {
   type FiltersState,
   EMPTY_FILTERS,
@@ -33,7 +33,7 @@ import {
   filtersFromParsed,
   mergeDealPrefills,
   constraintChips,
-} from '@/app/dashboard/smart-match/smart-match-shell-helpers'
+} from '@/components/smart-match/smart-match-shell-helpers'
 
 /* ---------- Hauptkomponente ---------- */
 

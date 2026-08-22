@@ -17,14 +17,7 @@ import { canViewComplianceReferenceSegment } from '@/lib/references/library/refe
 
 export const dynamic = 'force-dynamic'
 
-export default async function ReferencesHubPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ view?: string }>
-}) {
-  const params = await searchParams
-  if (params.view === 'match') redirect(ROUTES.match)
-
+export default async function ReferencesHubPage() {
   const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
 

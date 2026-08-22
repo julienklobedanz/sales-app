@@ -16,7 +16,7 @@ import type { DealWithReferences } from '../types'
 
 const SmartMatchShell = dynamic(
   () =>
-    import('@/app/dashboard/smart-match/smart-match-shell').then(
+    import('@/components/smart-match/smart-match-shell').then(
       (m) => m.SmartMatchShell,
     ),
   {

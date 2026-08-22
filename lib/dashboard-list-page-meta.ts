@@ -19,7 +19,6 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
   if (!pathname) return false
 
   if (pathname === ROUTES.home) return false
-  if (pathname.startsWith(ROUTES.match)) return false
   if (pathname === ROUTES.marketSignals) return false
   if (pathname === ROUTES.marketSignalsManage) return false
 

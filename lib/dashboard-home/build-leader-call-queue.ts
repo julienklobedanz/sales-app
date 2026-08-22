@@ -1,5 +1,6 @@
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { COPY } from '@/lib/copy'
+import { dealMatchHref } from '@/lib/deals/deal-match-href'
 import { ROUTES } from '@/lib/routes'
 import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
 import type { LeaderCallQueueRow } from '@/lib/dashboard-home/dashboard-home-types'
@@ -178,7 +179,7 @@ export function buildLeaderCallQueueRow(input: {
       : null,
     referencePersonMatch: match?.personMatchHint ?? false,
     accountHref: ROUTES.accountsDetail(candidate.companyId),
-    matchHref: ROUTES.matchWithDeal(deal.dealId),
+    matchHref: dealMatchHref(deal.dealId),
     tone,
     perfectReference,
   }

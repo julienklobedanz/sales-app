@@ -5,6 +5,7 @@ import type {
   SalesRepDashboardModel,
 } from '@/lib/dashboard-home/dashboard-home-types'
 import { formatDealVolume } from '@/lib/format'
+import { dealMatchHref } from '@/lib/deals/deal-match-href'
 import { ROUTES } from '@/lib/routes'
 
 type QueueTone = DashboardQueueTone
@@ -67,7 +68,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
       title: `${deal.company_name ?? deal.title} — ${copy.queueNoProof}`,
       meta: dealLabel(deal),
       ctaLabel: copy.queueFindProof,
-      href: ROUTES.matchWithDeal(deal.id),
+      href: dealMatchHref(deal.id),
     })
   }
 
@@ -79,7 +80,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
         d.linkedCount === 1),
   )
   for (const deal of warnDeals) {
-    if (items.some((i) => i.href === ROUTES.matchWithDeal(deal.id))) continue
+    if (items.some((i) => i.href === dealMatchHref(deal.id))) continue
     items.push({
       id: `deal-warn-${deal.id}`,
       tone: 'warn',
@@ -91,7 +92,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
         .filter(Boolean)
         .join(' · '),
       ctaLabel: copy.queueFindProof,
-      href: ROUTES.matchWithDeal(deal.id),
+      href: dealMatchHref(deal.id),
     })
   }
 

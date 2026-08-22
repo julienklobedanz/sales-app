@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ReferenceRow } from './actions'
-import { ROUTES } from '@/lib/routes'
 import {
   isSalesAppView,
   userCanCreateReference,
@@ -207,12 +206,6 @@ export function DashboardOverview({
     },
     [router, searchParams],
   )
-
-  useEffect(() => {
-    if (searchParams.get('view') === 'match') {
-      router.replace(ROUTES.match)
-    }
-  }, [router, searchParams])
 
   useEffect(() => {
     if (!canViewComplianceSegment && libraryMode === 'certificates') {

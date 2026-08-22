@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { DealWithReferences } from '../types'
 import { DealCockpitHeader } from './deal-cockpit-header'
 import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
@@ -18,6 +19,12 @@ import type { OrgDateDisplayFormat } from '@/lib/format'
 import type { DealReferenceSuggestion } from '@/lib/deals/suggest-deal-reference-matches'
 import { suggestReferencesForDealAction } from '../actions'
 import { DealReferenceSuggestionsRefreshProvider } from './deal-reference-suggestions-refresh'
+import { buildCollectionObjectUrl } from '@/lib/dashboard/use-collection-object-selection'
+import {
+  DEAL_MATCH_PARAM,
+  DEAL_MATCH_PARAM_VALUE,
+  parseDealMatchOpen,
+} from '@/lib/deals/deal-match-href'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -48,9 +55,24 @@ export function DealCockpitClient({
   initialReferenceSuggestions?: DealReferenceSuggestion[]
 }) {
   const showRfp = isRfpDeal(deal)
-  const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const matchDrawerOpen = parseDealMatchOpen(searchParams)
   const [referenceSuggestions, setReferenceSuggestions] = useState(
     initialReferenceSuggestions,
+  )
+
+  const setMatchDrawerOpen = useCallback(
+    (open: boolean) => {
+      router.replace(
+        buildCollectionObjectUrl(pathname, searchParams, {
+          [DEAL_MATCH_PARAM]: open ? DEAL_MATCH_PARAM_VALUE : null,
+        }),
+        { scroll: false },
+      )
+    },
+    [router, pathname, searchParams],
   )
 
   useEffect(() => {
