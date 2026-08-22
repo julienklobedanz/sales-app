@@ -16,11 +16,6 @@ function setOpenState(next: boolean | ((prev: boolean) => boolean)) {
   for (const l of listeners) l()
 }
 
-/** Öffnet die Palette mit vorausgefüllter Suche (z. B. Icebreaker auf dem Home-Screen). */
-export function openCommandPaletteWithQuery(query: string) {
-  pendingQuery = query.trim()
-  setOpenState(true)
-}
 
 export function consumeCommandPalettePendingQuery(): string {
   const q = pendingQuery ?? ''

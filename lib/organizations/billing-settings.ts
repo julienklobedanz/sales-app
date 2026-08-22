@@ -33,10 +33,3 @@ export function parseOrganizationBillingSettings(
         : '',
   }
 }
-
-export function parseInviteAllowedDomains(raw: string): string[] {
-  return raw
-    .split(/[,\s]+/)
-    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
-    .filter(Boolean)
-}

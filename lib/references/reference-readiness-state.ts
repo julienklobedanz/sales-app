@@ -245,8 +245,3 @@ export function resolveReferenceReadinessState(
     showStaleHint: false,
   }
 }
-
-export function formatReadinessEmpty(value: string | null | undefined): string | null {
-  const t = typeof value === 'string' ? value.trim() : ''
-  return t.length > 0 ? t : null
-}

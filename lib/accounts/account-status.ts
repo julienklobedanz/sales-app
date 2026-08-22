@@ -50,10 +50,3 @@ export const ACCOUNT_STATUS_FORM_OPTIONS: {
       'Kritisch markieren (z. B. Champion verlässt das Unternehmen) – sofortige Aufmerksamkeit.',
   },
 ]
-
-export function accountStatusFromDb(raw: string | null): AccountStatusFormValue {
-  if (raw === 'warmup') return 'target'
-  if (raw === 'expansion') return 'active_customer'
-  const n = normalizeAccountStatus(raw)
-  return n ?? '__none__'
-}

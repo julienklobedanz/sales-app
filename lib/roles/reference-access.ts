@@ -44,19 +44,6 @@ export function userCanEditReference(
   )
 }
 
-export function userCanAnonymizeReference(
-  functionRole: FunctionRole,
-  systemRole: SystemRole,
-  capabilityOverrides: Partial<Record<Capability, boolean>> = {},
-): boolean {
-  return hasCapability(
-    functionRole,
-    systemRole,
-    capabilityOverrides,
-    'anonymize_reference',
-  )
-}
-
 /** Vertriebs-UI-Layout (Legacy `sales` ohne DB-Spalten-Vergleich). */
 export function isSalesAppView(
   systemRole: SystemRole,

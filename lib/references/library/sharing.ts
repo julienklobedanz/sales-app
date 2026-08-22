@@ -14,7 +14,4 @@ export {
   resetSharedPortfolioManageTokenImpl,
   updateShareLinkSecurityByReferenceImpl,
 } from '@/lib/references/library/sharing-manage'
-export {
-  getPortfolioViewSessionsForReferenceImpl,
-  getReferencesByIdsImpl,
-} from '@/lib/references/library/sharing-queries'
+export { getPortfolioViewSessionsForReferenceImpl } from '@/lib/references/library/sharing-queries'

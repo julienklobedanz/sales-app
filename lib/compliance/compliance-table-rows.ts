@@ -60,10 +60,3 @@ export function filterComplianceDocumentsForTable(args: {
 
   return rows.filter((doc) => matchingTypes.has(doc.document_type))
 }
-
-export function countArchivedVersionsForType(
-  documents: ComplianceDocumentRow[],
-  documentType: string,
-): number {
-  return documents.filter((d) => d.document_type === documentType && !d.is_current).length
-}

@@ -74,11 +74,3 @@ export function buildHeroKeyTakeaways(
 
   return takeaways
 }
-
-export function recommendationBadgeClass(
-  tone: ReturnType<typeof winProbabilityTone>,
-): string {
-  if (tone === 'go') return 'bg-emerald-600 text-white'
-  if (tone === 'caution') return 'bg-amber-500 text-white'
-  return 'bg-red-600 text-white'
-}

@@ -197,20 +197,3 @@ export function buildPortfolioSupplementalHtml(portfolio: {
   </tr>
 </table>`
 }
-
-export function buildConfirmationPortfolioSupplementalHtml(portfolio: {
-  manageUrl: string
-  publicPreviewUrl: string
-}): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-top:1px solid #e2e8f0;">
-  <tr>
-    <td style="padding-top:24px;">
-      <p style="margin:0 0 12px;font-size:16px;font-weight:600;color:#0f172a;">Ihre persönlichen Links</p>
-      <p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#334155;">Mit dem <strong>ersten Link</strong> können Sie Ihre Freigabe und Anmerkungen jederzeit anpassen. Der <strong>zweite Link</strong> zeigt die Kundenansicht und ermöglicht Ihnen, den öffentlichen Zugriff bei Bedarf <strong>sofort zu sperren</strong>. Bitte den zweiten Link nicht an Dritte weiterleiten.</p>
-      ${renderCtas([{ label: 'Persönlicher Sperrlink', href: portfolio.manageUrl, variant: 'warning' }])}
-      <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b;">Öffentliche Kundenansicht ohne Sperrrecht:<br/>
-        <a href="${escapeRefstackEmailHtml(portfolio.publicPreviewUrl)}" style="color:#2563eb;word-break:break-all;">${escapeRefstackEmailHtml(portfolio.publicPreviewUrl)}</a></p>
-    </td>
-  </tr>
-</table>`
-}

@@ -14,10 +14,6 @@ export function revalidateOrgReferences(orgId: string): void {
   revalidateOrgCaches(orgId, ['references', 'kpis'])
 }
 
-export function revalidateOrgCompanies(orgId: string): void {
-  revalidateOrgCaches(orgId, ['companies'])
-}
-
 export function revalidateOrgCompliance(orgId: string): void {
   revalidateOrgCaches(orgId, ['compliance'])
 }

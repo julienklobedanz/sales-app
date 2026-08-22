@@ -33,10 +33,6 @@ Regeln:
 Antworte NUR mit JSON:
 {"minVolumeEur":null,"industryId":null,"monthsBack":null,"excludeYears":[],"excludeIndustryIds":[],"excludeTerms":[]}`
 
-function emptyParsed(): ParsedSmartMatchConstraints {
-  return parseSmartMatchQuery('')
-}
-
 function coerceParsed(raw: unknown): ParsedSmartMatchConstraints | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
@@ -196,8 +192,4 @@ export async function resolveSmartMatchConstraints(
     log.warn('smartMatchParse.failed', {}, e instanceof Error ? e : new Error(String(e)))
     return heuristic
   }
-}
-
-export function emptySmartMatchConstraints(): ParsedSmartMatchConstraints {
-  return emptyParsed()
 }

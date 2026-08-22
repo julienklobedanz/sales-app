@@ -253,50 +253,6 @@ export function MeetingPrepOverlayDialog({
   )
 }
 
-export function MeetingPrepCompanyPicker({
-  open,
-  hits,
-  onPick,
-  onCancel,
-}: {
-  open: boolean
-  hits: CompanySearchHit[]
-  onPick: (hit: CompanySearchHit) => void
-  onCancel: () => void
-}) {
-  const c = COPY.accounts.lens.briefing
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent className="sm:max-w-md" overlayClassName="bg-foreground/60">
-        <DialogHeader>
-          <DialogTitle>{c.pickAccountTitle}</DialogTitle>
-          <DialogDescription>{c.pickAccountDescription}</DialogDescription>
-        </DialogHeader>
-        <ul className="max-h-64 space-y-1 overflow-y-auto">
-          {hits.map((hit) => (
-            <li key={hit.id}>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-muted"
-                onClick={() => onPick(hit)}
-              >
-                <CompanyLogo
-                  src={hit.logoUrl}
-                  companyId={hit.id}
-                  fallbackText={hit.name}
-                  containerClassName="size-8 shrink-0 rounded-md"
-                  fallbackIconSize={16}
-                />
-                <span className="text-sm font-medium">{hit.name}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function useMeetingPrepFlow() {
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [overlayTitle, setOverlayTitle] = useState('')
@@ -354,21 +310,4 @@ export async function runCreateMeetingPrep(
     return
   }
   flow.openWithSnapshot(query, result.snapshot)
-}
-
-export async function runLoadMeetingPrepSession(
-  sessionId: string,
-  title: string,
-  flow: ReturnType<typeof useMeetingPrepFlow>,
-) {
-  const { loadMeetingPrepSessionAction } =
-    await import('@/app/dashboard/meeting-prep/actions')
-  flow.openLoading(title)
-  const result = await loadMeetingPrepSessionAction(sessionId)
-  if ('error' in result) {
-    flow.setOverlayOpen(false)
-    toast.error(result.error)
-    return
-  }
-  flow.openWithSnapshot(result.title, result.snapshot)
 }

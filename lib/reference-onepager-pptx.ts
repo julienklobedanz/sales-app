@@ -169,14 +169,6 @@ export function extractSolutionBulletsForPptx(
   return extractStoryBulletsForPptx(value, { splitOnPeriod: true })
 }
 
-/** @deprecated Nur noch für Tests — Layout nutzt feste Koordinaten */
-export function extractBulletPoints(
-  value: string | null | undefined,
-  options?: { max?: number },
-): string[] {
-  const max = options?.max ?? 5
-  return extractChallengeBulletsForPptx(value).slice(0, max)
-}
 
 function charsPerLine(boxWidthIn: number, fontSizePt: number): number {
   const avgCharPt = fontSizePt * 0.5
