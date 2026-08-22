@@ -12,7 +12,7 @@ export type CustomerApprovalScopeSelection = {
   referenceCallFrequency: ReferenceCallFrequency
 }
 
-export const REFERENCE_CALL_FREQUENCY_OPTIONS: {
+const REFERENCE_CALL_FREQUENCY_OPTIONS: {
   value: ReferenceCallFrequency
   label: string
 }[] = [

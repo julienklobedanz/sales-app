@@ -15,7 +15,7 @@ import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { getIndustryLabelDe } from '@/lib/constants/industries'
 import { cn } from '@/lib/utils'
 
-export function accountsMoreFiltersActive(args: {
+function accountsMoreFiltersActive(args: {
   favoritesOnly: boolean
   industryFilter: string
   locationFilter: string

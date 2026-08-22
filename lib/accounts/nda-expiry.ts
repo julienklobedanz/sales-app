@@ -5,7 +5,7 @@
 export const NDA_EXPIRY_WARNING_DAYS = 30
 
 /** Kritische Stufe innerhalb des Vorwarnfensters (Erinnerung mit höherer Priorität). */
-export const NDA_EXPIRY_CRITICAL_DAYS = 7
+const NDA_EXPIRY_CRITICAL_DAYS = 7
 
 export type NdaExpiryUrgency = 'expired' | 'critical' | 'warning'
 

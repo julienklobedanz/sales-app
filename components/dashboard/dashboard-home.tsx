@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 const DISMISS_STORAGE_KEY = 'refstack:first-steps-dismissed'
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
-export type FirstStepsProgress = {
+type FirstStepsProgress = {
   hasAccounts: boolean
   hasReferences: boolean
   hasTeamInvites: boolean

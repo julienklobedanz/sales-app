@@ -1,8 +1,6 @@
 import { daysUntil, formatCountdown } from '@/lib/deal-desk/timeline-display'
 import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 
-export const DEFAULT_DEADLINE_TIMEZONE = 'Europe/Berlin'
-
 export type DealDeadlineRow = {
   id: string
   deal_id: string

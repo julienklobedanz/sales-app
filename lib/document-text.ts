@@ -21,13 +21,3 @@ export {
 } from '@/lib/document-extraction'
 
 export { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
-
-export {
-  extractPlainTextFromFile,
-  type ExtractPlainTextResult,
-} from '@/lib/extract-document-plain-text'
-
-export type {
-  ExtractedReferenceData,
-  ExtractDataFromDocumentResult,
-} from '@/lib/references/extract-types'

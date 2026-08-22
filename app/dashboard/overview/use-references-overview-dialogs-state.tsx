@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useRef, useState } from 'react'
 import type { DeletedReferenceRow, ReferenceRow } from '@/app/dashboard/actions'
 import type { Profile } from '@/app/dashboard/dashboard-types'
 import {
@@ -144,10 +144,3 @@ export function useReferencesOverviewDialogsState() {
     renderDialogs,
   }
 }
-
-export type ReferencesOverviewDialogsState = ReturnType<
-  typeof useReferencesOverviewDialogsState
->
-
-/** Re-export for callers that need the setter type. */
-export type SetSelectedRefIds = Dispatch<SetStateAction<Set<string>>>

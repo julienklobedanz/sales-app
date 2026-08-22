@@ -25,14 +25,14 @@ export type MeetingPrepReferenceRow = {
   href: string
 }
 
-export type MeetingPrepSignalReferencePair = {
+type MeetingPrepSignalReferencePair = {
   signalLabel: string
   referenceTitle: string
   referenceId: string
   similarity: number
 }
 
-export type MeetingPrepDealRow = {
+type MeetingPrepDealRow = {
   id: string
   title: string
   status: string
@@ -55,15 +55,6 @@ export type MeetingPrepSnapshot = {
   references: MeetingPrepReferenceRow[]
   signalReferencePairs: MeetingPrepSignalReferencePair[]
   talkingPoints: string[]
-}
-
-export type MeetingPrepSessionListItem = {
-  id: string
-  title: string
-  companyId: string | null
-  companyNameQuery: string
-  createdAt: string
-  companyLogoUrl: string | null
 }
 
 export type CompanySearchHit = {

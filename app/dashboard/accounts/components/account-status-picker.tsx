@@ -28,7 +28,7 @@ const SELECTABLE_STATUSES = ACCOUNT_STATUS_FORM_OPTIONS.filter(
   (o) => o.value !== '__none__',
 )
 
-export function AccountStatusBadge({
+function AccountStatusBadge({
   status,
   className,
 }: {

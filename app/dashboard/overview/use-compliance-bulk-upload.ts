@@ -23,7 +23,6 @@ import {
 } from './compliance-bulk-upload-helpers'
 import {
   FILE_DRAG_MIME,
-  type BulkFileItem,
   type BulkGroup,
 } from './compliance-bulk-upload-types'
 
@@ -387,5 +386,3 @@ export function useComplianceBulkUpload(onOpenChange: (open: boolean) => void) {
     mergeSelectedAndClear,
   }
 }
-
-export type { BulkFileItem, BulkGroup }

@@ -13,7 +13,7 @@ export type SmeExpertOption = {
   email?: string | null
 }
 
-export const SME_DEFAULT_EXPERTS: SmeExpertOption[] = [
+const SME_DEFAULT_EXPERTS: SmeExpertOption[] = [
   {
     id: 'ex-ck',
     name: 'Christian K.',

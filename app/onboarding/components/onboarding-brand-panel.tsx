@@ -1,4 +1,1 @@
-export {
-  AuthBrandPanel as OnboardingBrandPanel,
-  type AuthBrandContent,
-} from '@/components/auth-brand-panel'
+export { AuthBrandPanel as OnboardingBrandPanel } from '@/components/auth-brand-panel'

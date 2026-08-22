@@ -22,7 +22,7 @@ import { log } from '@/lib/observability/logger'
 
 export type NotificationInboxGroup = 'signals' | 'approvals' | 'other'
 
-export type NotificationTypeKind =
+type NotificationTypeKind =
   | 'move'
   | 'executive'
   | 'company'

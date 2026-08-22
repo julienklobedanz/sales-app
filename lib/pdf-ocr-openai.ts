@@ -8,7 +8,7 @@ import { formatOpenAiHttpError, isOpenAiQuotaError } from '@/lib/openai-api-erro
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-export const PDF_OCR_MAX_PAGES = 40
+const PDF_OCR_MAX_PAGES = 40
 const OCR_BATCH_PAGES = 4
 const OCR_MODEL = 'gpt-4o-mini'
 const RENDER_SCALE = 1.5

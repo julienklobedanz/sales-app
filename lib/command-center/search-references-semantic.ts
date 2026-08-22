@@ -16,8 +16,8 @@ import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 import { log } from '@/lib/observability/logger'
 import { withTiming } from '@/lib/observability/timing'
 
-export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
-export const HOME_SEMANTIC_MATCH_COUNT = 12
+const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
+const HOME_SEMANTIC_MATCH_COUNT = 12
 
 type SemanticSearchParams = {
   supabase: SupabaseClient

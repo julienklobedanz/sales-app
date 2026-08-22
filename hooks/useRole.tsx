@@ -7,7 +7,7 @@ import { hasCapability } from '@/lib/roles/capability-access'
 
 export type { SystemRole, FunctionRole, Capability }
 
-export type RoleContextValue = {
+type RoleContextValue = {
   systemRole: SystemRole
   functionRole: FunctionRole
   capabilities: Partial<Record<Capability, boolean>>

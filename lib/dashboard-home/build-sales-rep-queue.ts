@@ -7,7 +7,7 @@ import type {
 import { formatDealVolume } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
 
-export type QueueTone = DashboardQueueTone
+type QueueTone = DashboardQueueTone
 
 export type SalesRepQueueItem = {
   id: string

@@ -12,7 +12,3 @@ export type HomepageSemanticReferenceHit = {
   /** ISO-Timestamp für Meta-Zeile (Aktualität). */
   createdAt: string | null
 }
-
-export type HomepageSemanticSearchResult =
-  | { success: true; query: string; hits: HomepageSemanticReferenceHit[] }
-  | { success: false; query: string; error: string }

@@ -1,4 +1,4 @@
-export type MatchStrengthTier = 'excellent' | 'good' | 'moderate' | 'low'
+type MatchStrengthTier = 'excellent' | 'good' | 'moderate' | 'low'
 
 export type MatchStrengthDisplay = {
   tier: MatchStrengthTier

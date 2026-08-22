@@ -1,6 +1,6 @@
 import type { PartnerCategory } from '@/lib/accounts/account-entity'
 
-export const ACCOUNTS_IMPORT_NAME_KEYS = [
+const ACCOUNTS_IMPORT_NAME_KEYS = [
   'name',
   'Name',
   'account',
@@ -9,21 +9,21 @@ export const ACCOUNTS_IMPORT_NAME_KEYS = [
   'Unternehmen',
 ] as const
 
-export const ACCOUNTS_IMPORT_WEBSITE_KEYS = [
+const ACCOUNTS_IMPORT_WEBSITE_KEYS = [
   'website',
   'Website',
   'domain',
   'Domain',
 ] as const
 
-export const ACCOUNTS_IMPORT_INDUSTRY_KEYS = [
+const ACCOUNTS_IMPORT_INDUSTRY_KEYS = [
   'industry',
   'Industry',
   'branche',
   'Branche',
 ] as const
 
-export const ACCOUNTS_IMPORT_HEADQUARTERS_KEYS = [
+const ACCOUNTS_IMPORT_HEADQUARTERS_KEYS = [
   'headquarters',
   'Headquarters',
   'hq',
@@ -32,7 +32,7 @@ export const ACCOUNTS_IMPORT_HEADQUARTERS_KEYS = [
   'Standort',
 ] as const
 
-export const ACCOUNTS_IMPORT_EMPLOYEE_KEYS = [
+const ACCOUNTS_IMPORT_EMPLOYEE_KEYS = [
   'employee_count',
   'Employee Count',
   'employees',
@@ -41,7 +41,7 @@ export const ACCOUNTS_IMPORT_EMPLOYEE_KEYS = [
   'Mitarbeiter',
 ] as const
 
-export const ACCOUNTS_IMPORT_PARTNER_CATEGORY_KEYS = [
+const ACCOUNTS_IMPORT_PARTNER_CATEGORY_KEYS = [
   'partner_category',
   'Partner Category',
   'Kategorie',

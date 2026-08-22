@@ -7,8 +7,6 @@ import { sendCustomerControlLinkEmail } from '@/lib/references/customer-control-
 import { log } from '@/lib/observability/logger'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 
-import type { ReferenceRow } from '@/app/dashboard/actions'
-
 export type CreateSharedPortfolioRecipient = {
   label: string
   visitorEmail?: string | null
@@ -68,36 +66,6 @@ export async function fetchOrgWorkflowJson(
     .eq('id', organizationId)
     .single()
   return data?.workflow_settings ?? {}
-}
-
-/** Mapping alter/legacy Status-Werte auf das 4-Status-Modell (Daten-Wiederherstellung) */
-const STATUS_MAP: Record<string, ReferenceRow['status']> = {
-  draft: 'draft',
-  internal_only: 'internal_only',
-  approved: 'approved',
-  anonymized: 'anonymized',
-  pending: 'internal_only',
-  external: 'approved',
-  internal: 'internal_only',
-  anonymous: 'anonymized',
-  restricted: 'internal_only',
-}
-const VALID_STATUSES: ReferenceRow['status'][] = [
-  'draft',
-  'internal_only',
-  'approved',
-  'anonymized',
-]
-export function normalizeStatus(raw: unknown): ReferenceRow['status'] {
-  const s = String(raw ?? '')
-    .toLowerCase()
-    .trim()
-  return (
-    STATUS_MAP[s] ??
-    (VALID_STATUSES.includes(s as ReferenceRow['status'])
-      ? (s as ReferenceRow['status'])
-      : 'draft')
-  )
 }
 
 export async function deactivateActiveSharesForReferences(referenceIds: string[]) {

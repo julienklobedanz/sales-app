@@ -55,7 +55,7 @@ export function normalizeDomain(input: string): string {
 }
 
 /** Leitet eine Domain aus der Eingabe ab: "siemens.de" → "siemens.de", "BMW" → "bmw.com" */
-export function inputToDomain(input: string): string | null {
+function inputToDomain(input: string): string | null {
   const t = input.trim()
   if (!t) return null
   const normalized = normalizeDomain(t)

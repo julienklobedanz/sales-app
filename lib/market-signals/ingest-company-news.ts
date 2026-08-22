@@ -36,7 +36,7 @@ import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 
 export { isActiveDealStatus }
 
-export type CompanyNewsIngestCompanyRow = {
+type CompanyNewsIngestCompanyRow = {
   id: string
   organization_id: string
   name: string

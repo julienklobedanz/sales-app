@@ -1,18 +1,18 @@
 /** Vorwarnfenster für Vertragsende → At Risk + Primary Line (Monate). */
-export const CONTRACT_END_WARNING_MONTHS = 9
+const CONTRACT_END_WARNING_MONTHS = 9
 
 /** Innerhalb dieses Fensters: Primary-Zeile rot statt amber. */
-export const CONTRACT_END_CRITICAL_DAYS = 180
+const CONTRACT_END_CRITICAL_DAYS = 180
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-export function contractEndWarningDays(
+function contractEndWarningDays(
   months: number = CONTRACT_END_WARNING_MONTHS,
 ): number {
   return Math.round(months * 30.4375)
 }
 
-export function daysUntilDate(isoDate: string, now: Date = new Date()): number | null {
+function daysUntilDate(isoDate: string, now: Date = new Date()): number | null {
   if (!isoDate.trim()) return null
   const end = new Date(isoDate.includes('T') ? isoDate : `${isoDate}T12:00:00`)
   if (Number.isNaN(end.getTime())) return null

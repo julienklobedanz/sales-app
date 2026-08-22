@@ -1,5 +1,5 @@
 /** Reserved slugs that must not be claimed as tenant subdomains. */
-export const RESERVED_SUBDOMAINS = new Set([
+const RESERVED_SUBDOMAINS = new Set([
   'www',
   'app',
   'api',

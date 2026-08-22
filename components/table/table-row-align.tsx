@@ -6,9 +6,9 @@ import { TableCell } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 /** Einheitliche Innenhöhe pro Datenzeile (entspricht Logo/Checkbox). */
-export const TABLE_ROW_INNER_HEIGHT_CLASS = 'min-h-9'
+const TABLE_ROW_INNER_HEIGHT_CLASS = 'min-h-9'
 
-export const TABLE_DATA_CELL_CLASS = 'align-middle p-2'
+const TABLE_DATA_CELL_CLASS = 'align-middle p-2'
 
 export function TableRowAlign({
   children,

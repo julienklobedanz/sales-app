@@ -1,11 +1,6 @@
 import type { ReactNode } from 'react'
 
-import {
-  SHOWCASE_FIELD_LOCKED_LABEL,
-  ShowcaseLockedFieldIcon,
-} from '@/lib/public-portfolio/showcase-locked-field-icon'
-
-export { SHOWCASE_FIELD_LOCKED_LABEL }
+import { ShowcaseLockedFieldIcon } from '@/lib/public-portfolio/showcase-locked-field-icon'
 
 export function showcaseFieldDisplay(
   raw: string | null | undefined,

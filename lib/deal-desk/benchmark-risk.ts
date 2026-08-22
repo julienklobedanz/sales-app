@@ -10,7 +10,7 @@ export type BenchmarkRiskCriterionId =
   | 'unconditional_terms'
   | 'recycled_old_document'
 
-export type BenchmarkRiskClass = 'ko' | 'strong' | 'weak'
+type BenchmarkRiskClass = 'ko' | 'strong' | 'weak'
 
 export type BenchmarkRiskCriterionDef = {
   id: BenchmarkRiskCriterionId
@@ -20,7 +20,7 @@ export type BenchmarkRiskCriterionDef = {
   tooltipClassLabel: string
 }
 
-export const BENCHMARK_RISK_CRITERIA: Record<
+const BENCHMARK_RISK_CRITERIA: Record<
   BenchmarkRiskCriterionId,
   BenchmarkRiskCriterionDef
 > = {

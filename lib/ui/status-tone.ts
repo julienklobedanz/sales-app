@@ -31,5 +31,3 @@ export const statusToneFill = {
   info: 'bg-status-info text-status-info-foreground',
   muted: 'bg-muted-foreground/80 text-primary-foreground',
 } as const
-
-export type StatusTone = keyof typeof statusTone

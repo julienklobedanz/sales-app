@@ -10,7 +10,7 @@ export const shellOuterClass =
 export const shellFrameClass = 'flex h-full min-h-0 w-full flex-1 items-stretch gap-3'
 
 /** Weiße Insel mit abgerundeten Ecken — ohne grauen Außenrand. */
-export const shellPanelClass =
+const shellPanelClass =
   'flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl bg-[color:var(--shell-inner)] shadow-sm'
 
 export const shellSidebarPanelClass = `${shellPanelClass} hidden h-full w-[var(--shell-sidebar-width,18rem)] shrink-0 transition-[width] duration-200 ease-linear md:flex`

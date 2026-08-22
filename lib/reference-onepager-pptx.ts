@@ -205,7 +205,7 @@ function mimeToPptxImagePrefix(contentType: string): string | null {
 /**
  * PptxGenJS erwartet `image/png;base64,...` (ohne `data:`-Prefix) oder eine gültige http(s)-URL.
  */
-export async function resolvePptxLogoSource(
+async function resolvePptxLogoSource(
   url: string | null | undefined,
 ): Promise<{ kind: 'data'; value: string } | { kind: 'path'; value: string } | null> {
   const trimmed = String(url ?? '').trim()

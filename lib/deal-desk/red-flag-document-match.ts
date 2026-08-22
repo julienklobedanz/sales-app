@@ -13,11 +13,11 @@ const CONTRACT_NAME_PATTERN =
 const LEGAL_FLAG_PATTERN =
   /haftung|pönale|penalty|sla|vertrag|liability|schadens|konventional|festpreis|garantie/i
 
-export function isContractLikeDocument(fileName: string): boolean {
+function isContractLikeDocument(fileName: string): boolean {
   return CONTRACT_NAME_PATTERN.test(fileName)
 }
 
-export function resolveDocumentByFileName(
+function resolveDocumentByFileName(
   fileName: string | null | undefined,
   documents: DealDeskDocumentRef[],
 ): DealDeskDocumentRef | null {
@@ -32,7 +32,7 @@ export function resolveDocumentByFileName(
 }
 
 /** Ordnet eine Red Flag dem wahrscheinlichsten Vertrags-/Anhang-Dokument zu. */
-export function guessSourceDocumentForRedFlag(
+function guessSourceDocumentForRedFlag(
   flag: Pick<DealDeskRedFlag, 'title' | 'excerpt' | 'pageHint' | 'sourceFileName'>,
   documents: DealDeskDocumentRef[],
 ): DealDeskDocumentRef | null {

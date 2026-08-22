@@ -97,14 +97,3 @@ export function kpisForPublicReference(
 
   return out
 }
-
-export type PublicPortfolioPdfLayout = {
-  scale: number
-  canvasWidthPt: number
-  summaryMax: number
-  challengeMax: number
-  solutionMax: number
-  quoteMax: number
-  titleMax: number
-  tagLimit: number
-}

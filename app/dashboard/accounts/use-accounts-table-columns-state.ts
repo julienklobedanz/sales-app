@@ -20,7 +20,7 @@ import {
 
 const ALLOWED = new Set<string>(ACCOUNT_COLUMN_KEYS)
 
-export function normalizeAccountColumnOrder(parsed: unknown): AccountColumnKey[] {
+function normalizeAccountColumnOrder(parsed: unknown): AccountColumnKey[] {
   const seen = new Set<string>()
   const result: AccountColumnKey[] = []
   if (Array.isArray(parsed)) {

@@ -27,14 +27,14 @@ export function formatOutreachEmail(parts: {
   return `${greeting}\n\n${body}\n\n\n${closing}\n${sender}`
 }
 
-export function recipientLastName(fullName: string | null | undefined): string | null {
+function recipientLastName(fullName: string | null | undefined): string | null {
   const trimmed = String(fullName ?? '').trim()
   if (!trimmed) return null
   const parts = trimmed.split(/\s+/).filter(Boolean)
   return parts.length ? parts[parts.length - 1]! : null
 }
 
-export function buildOutreachGreeting(
+function buildOutreachGreeting(
   recipientFullName: string | null | undefined,
 ): string {
   const last = recipientLastName(recipientFullName)

@@ -98,7 +98,7 @@ function orgHasAnyComplianceEvidence(docs: OrgComplianceDoc[], refDate: Date): b
   return docs.some((d) => isDocValid(d, refDate))
 }
 
-export function requirementDocTypes(text: string): string[] | null {
+function requirementDocTypes(text: string): string[] | null {
   const types = new Set<string>()
   for (const { pattern, types: docTypes } of REQUIREMENT_DOC_PATTERNS) {
     if (pattern.test(text)) {

@@ -89,20 +89,3 @@ export function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): stri
 
   return lines.join('\n\n')
 }
-
-/** Spalten, deren Änderung ein neues Embedding auslösen soll. */
-export const REFERENCE_EMBEDDING_TRIGGER_FIELDS = [
-  'title',
-  'industry',
-  'customer_challenge',
-  'our_solution',
-  'summary',
-  'volume_eur',
-  'tags',
-  'country',
-  'contract_type',
-  'incumbent_provider',
-  'competitors',
-  'project_status',
-  'company_id',
-] as const

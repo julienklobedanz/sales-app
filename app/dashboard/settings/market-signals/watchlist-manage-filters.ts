@@ -2,7 +2,7 @@ import type { CompanyWatchSegment } from '@/app/dashboard/settings/market-signal
 
 import type { ManageCompany, WatchedStakeholder } from './watchlist-manage-types'
 
-export function isBestandskunde(accountStatus: string | null): boolean {
+function isBestandskunde(accountStatus: string | null): boolean {
   const s = String(accountStatus ?? '').trim()
   return s === 'active_customer' || s === 'former_customer' || s === 'at_risk'
 }

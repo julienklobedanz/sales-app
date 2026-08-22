@@ -5,7 +5,7 @@ export type PdfExportSettings = {
   pdf_logo_enabled?: boolean
 }
 
-export function parsePdfTemplateParam(raw: string | null): PdfTemplate | null {
+function parsePdfTemplateParam(raw: string | null): PdfTemplate | null {
   if (raw === 'detail' || raw === 'anonymized' || raw === 'one_pager') return raw
   return null
 }

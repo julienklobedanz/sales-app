@@ -80,5 +80,3 @@ export async function extractEligibilityCriteriaFromRfpText(
     return { error: message }
   }
 }
-
-export { parseEligibilityCriteriaResponse }

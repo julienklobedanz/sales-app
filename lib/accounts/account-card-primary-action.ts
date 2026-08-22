@@ -16,7 +16,7 @@ export type AccountCardPrimaryKind =
   | 'signal'
   | 'fallback'
 
-export type AccountCardPrimaryTone = 'danger' | 'warning' | 'neutral' | 'opportunity'
+type AccountCardPrimaryTone = 'danger' | 'warning' | 'neutral' | 'opportunity'
 
 export type AccountCardPrimaryAction = {
   kind: AccountCardPrimaryKind

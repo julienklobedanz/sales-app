@@ -55,7 +55,7 @@ export function normalizeTeamInvitesOnBack(invites: TeamInviteRow[]): TeamInvite
   return result.slice(0, ONBOARDING_MAX_TEAM_INVITES)
 }
 
-export function removeLastInviteRow(invites: TeamInviteRow[]): TeamInviteRow[] {
+function removeLastInviteRow(invites: TeamInviteRow[]): TeamInviteRow[] {
   if (invites.length <= ONBOARDING_DEFAULT_TEAM_INVITES) return invites
   return invites.slice(0, -1)
 }

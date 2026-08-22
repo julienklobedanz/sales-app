@@ -8,7 +8,7 @@ type OpenAiErrorShape = {
   code?: string
 }
 
-export function parseOpenAiErrorJson(raw: string): OpenAiErrorShape {
+function parseOpenAiErrorJson(raw: string): OpenAiErrorShape {
   try {
     const j = JSON.parse(raw) as { error?: OpenAiErrorShape }
     if (j?.error && typeof j.error === 'object') return j.error

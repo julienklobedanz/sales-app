@@ -34,7 +34,7 @@ function isMissingNormalizedTableError(message: string | undefined): boolean {
   )
 }
 
-export async function loadNormalizedWorkspaceOverlaysBatch(
+async function loadNormalizedWorkspaceOverlaysBatch(
   supabase: DbClient,
   projectIds: string[],
   organizationId: string,

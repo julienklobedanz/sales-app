@@ -18,7 +18,7 @@ export function isSupportedReferenceImageMime(
   return /\.(png|jpe?g|webp)$/i.test(fileName ?? '')
 }
 
-export function resolveImageMimeType(
+function resolveImageMimeType(
   mimeType: string | null | undefined,
   fileName?: string,
 ): 'image/png' | 'image/jpeg' | 'image/webp' {

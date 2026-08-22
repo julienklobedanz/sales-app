@@ -2,7 +2,7 @@
 
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
 
-export const WIN_PROBABILITY_THRESHOLDS = {
+const WIN_PROBABILITY_THRESHOLDS = {
   /** Ab diesem Wert: Grün — klare GO-Empfehlung */
   goMin: 70,
   /** Ab diesem Wert (unter goMin): Gelb/Amber — prüfen, Risiken abwägen */

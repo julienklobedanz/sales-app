@@ -4,7 +4,7 @@ import { isLowValueRssTitle } from '@/lib/market-signals/sales-signal-relevance'
 
 type DbClient = SupabaseClient<Database>
 
-export async function getFocusCompanyIdsForOrg(
+async function getFocusCompanyIdsForOrg(
   supabase: DbClient,
   organizationId: string,
   maxCompanies = 40,
@@ -19,7 +19,7 @@ export async function getFocusCompanyIdsForOrg(
   return (data ?? []).map((r) => r.id).filter(Boolean)
 }
 
-export async function getOrgCompanyIds(
+async function getOrgCompanyIds(
   supabase: DbClient,
   organizationId: string,
 ): Promise<string[]> {
@@ -32,13 +32,13 @@ export async function getOrgCompanyIds(
   return (data ?? []).map((r) => r.id).filter(Boolean)
 }
 
-export type PurgeLowValueResult = {
+type PurgeLowValueResult = {
   accountNewsDeleted: number
   executiveDeleted: number
 }
 
 /** Entfernt Stellenanzeigen und anderes RSS-Rauschen anhand der Titel-Heuristik. */
-export async function purgeLowValueMarketSignals(
+async function purgeLowValueMarketSignals(
   supabase: DbClient,
   companyIds: string[],
 ): Promise<PurgeLowValueResult> {
@@ -95,7 +95,7 @@ export async function purgeLowValueMarketSignals(
   return { accountNewsDeleted, executiveDeleted }
 }
 
-export type PurgeRssIngestResult = {
+type PurgeRssIngestResult = {
   accountNewsDeleted: number
   executiveDeleted: number
 }
@@ -104,7 +104,7 @@ export type PurgeRssIngestResult = {
  * Löscht RSS-ingestierte Zeilen für einen Neu-Abruf (Dedupe-Blockade aufheben).
  * Manuelle Einträge (ohne content_hash / ingest_source != RSS) bleiben erhalten.
  */
-export async function purgeRssIngestedSignalsForCompanies(
+async function purgeRssIngestedSignalsForCompanies(
   supabase: DbClient,
   companyIds: string[],
 ): Promise<PurgeRssIngestResult> {

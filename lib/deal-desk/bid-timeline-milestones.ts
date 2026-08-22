@@ -65,7 +65,7 @@ function milestonePriority(title: string, kind: TimelineItemKind): number {
   return 50
 }
 
-export function shortenBidMilestoneLabel(title: string): string {
+function shortenBidMilestoneLabel(title: string): string {
   const kind = getTimelineItemKind(title)
   if (kind === 'qa') return 'Fragen'
   if (isParticipationMilestone(title)) return 'Teilnahme'

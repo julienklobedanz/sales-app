@@ -1,5 +1,5 @@
 /** DB-Werte für `companies.account_status` (snake_case). */
-export const ACCOUNT_STATUS_VALUES = [
+const ACCOUNT_STATUS_VALUES = [
   'target',
   'active_customer',
   'former_customer',

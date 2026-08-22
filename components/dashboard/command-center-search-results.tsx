@@ -19,7 +19,6 @@ import { formatIndustryDisplay } from '@/lib/constants/industries'
 import {
   COMMAND_SEARCH_GROUP_LABELS,
   COMMAND_SEARCH_GROUP_ORDER,
-  formatReferenceListLabel,
   hasAnyCommandSearchHit,
   type CommandSearchGroups,
   type CommandSearchResult,
@@ -301,5 +300,3 @@ function AvatarInitials({ name }: { name: string }) {
     </span>
   )
 }
-
-export { formatReferenceListLabel }

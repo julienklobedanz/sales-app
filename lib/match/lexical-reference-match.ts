@@ -57,7 +57,7 @@ export function escapeIlikePattern(raw: string): string {
 }
 
 /** Kleinschreibung + Bindestriche/Spaces entfernen (Passagierfluss-Analyse ↔ passagierfluss). */
-export function normalizeLexicalText(value: string): string {
+function normalizeLexicalText(value: string): string {
   return value
     .trim()
     .toLowerCase()

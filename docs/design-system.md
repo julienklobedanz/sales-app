@@ -435,3 +435,9 @@ Kein Bauteil. Eine Zeile fasst nichts ein. Markup wie in den Stammdaten (WHATWG:
 - Ein Paar in einer Menge: Teil derselben `dl`, nicht eine Mini-Karte
 
 **Kein Klassen-Wächter.** `text-xs uppercase` trifft Eyebrows und Metriken. Die Regel halten diese Dokumentation und Outline-Tests (`getByRole('term')`) für repräsentative Sichten.
+
+#### 11.5 Generator-Fläche `components/ui`
+
+`knip.json` ignoriert ungenutzte **Exporte und Typen** unter `components/ui/**`, nicht ungenutzte **Dateien**. Der Ordner ist Vokabular, keine Verwendungsliste: ein Slot ohne Aufrufer (Sidebar\*, ContextMenu\*, `CardFooter`, `SelectScrollDownButton`, …) bleibt Teil des Primitivs, damit `npx shadcn add` und `shadcn diff` die Datei wiedererkennen. Ein entferntes `export` wäre eine ungenutzte lokale Funktion — das hieße löschen, und der Generator füllt den Slot wieder auf.
+
+Die Karte (§11.1) sitzt in derselben Fläche. `card.tsx` ist mit eigenen Klassen (`rounded-lg`, `p-4`, `border-border`) und dem `as`-Prop an `CardTitle` bereits ein Fork; solange `shadcn diff` die Datei noch sinnvoll vergleicht, gilt die Ausnahme weiter. Sobald ein Primitiv so weit umgebaut ist, dass der Vergleich nichts mehr trägt, ist die Datei unsere und fällt aus `ignoreIssues`.

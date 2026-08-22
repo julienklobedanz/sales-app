@@ -28,7 +28,7 @@ function parseCertifiedRoles(raw: unknown): CapabilityProfile['certifiedRoles'] 
   return out.length ? out : undefined
 }
 
-export function parseCapabilityProfile(raw: unknown): CapabilityProfile {
+function parseCapabilityProfile(raw: unknown): CapabilityProfile {
   if (!raw || typeof raw !== 'object') return {}
   const o = raw as Record<string, unknown>
 

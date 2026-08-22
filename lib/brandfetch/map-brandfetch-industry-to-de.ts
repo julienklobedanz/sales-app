@@ -212,7 +212,7 @@ const INDUSTRIES_MAP: { id: string; keywords: string[] }[] = [
 const INDUSTRY_DEFAULT_ID = 'other'
 
 /** Alle Brandfetch-Industry-Namen zu einem String (für Keyword-Matching). */
-export function joinBrandfetchIndustryNames(
+function joinBrandfetchIndustryNames(
   industries: { name?: string | null }[] | null | undefined,
 ): string | null {
   if (!industries?.length) return null

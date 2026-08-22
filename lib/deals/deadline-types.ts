@@ -6,9 +6,7 @@ export type DealDeadlineKind =
   | 'custom'
   | 'internal_review'
 
-export type DealDeadlineSource = 'rfp' | 'manual'
-
-export const CANONICAL_RFP_DEADLINE_KINDS: ReadonlySet<DealDeadlineKind> = new Set([
+const CANONICAL_RFP_DEADLINE_KINDS: ReadonlySet<DealDeadlineKind> = new Set([
   'submission',
   'questions',
   'presentation',

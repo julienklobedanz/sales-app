@@ -7,16 +7,9 @@ import {
   type ApprovalBadge,
 } from '@/lib/references/reference-approval-display'
 
-export {
-  approvedScopeBadge,
-  resolveFreigabestatusCardBadges,
-  resolveWorkflowStatusBadges,
-  type ApprovalBadge as WorkflowStatusBadge,
-} from '@/lib/references/reference-approval-display'
-
 /** UI-Zustände der Freigabestatus-Card (Detailansicht). */
 
-export type ReferenceReadinessPhase =
+type ReferenceReadinessPhase =
   | 'request_approval'
   | 'internal_start'
   | 'prepare_customer'
@@ -27,7 +20,7 @@ export type ReferenceReadinessPhase =
   | 'expired'
   | 'idle'
 
-export type ReadinessBadge = ApprovalBadge
+type ReadinessBadge = ApprovalBadge
 
 export type ReferenceReadinessStateInput = {
   referenceStatus: string

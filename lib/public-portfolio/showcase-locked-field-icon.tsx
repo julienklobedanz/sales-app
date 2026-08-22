@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-export const SHOWCASE_FIELD_LOCKED_LABEL = 'Angabe nicht freigegeben'
+const SHOWCASE_FIELD_LOCKED_LABEL = 'Angabe nicht freigegeben'
 
 export function ShowcaseLockedFieldIcon() {
   return (

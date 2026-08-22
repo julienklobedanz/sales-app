@@ -1,7 +1,7 @@
 import { ROUTES } from '@/lib/routes'
 
 /** Query-Parameter für die Partner-Listenansicht unter /dashboard/accounts */
-export const ACCOUNTS_VIEW_PARAM = 'view'
+const ACCOUNTS_VIEW_PARAM = 'view'
 
 export type AccountsListView = 'account' | 'partner'
 

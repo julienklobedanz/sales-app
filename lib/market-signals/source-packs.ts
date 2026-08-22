@@ -195,7 +195,7 @@ export const INDUSTRY_SOURCE_PACKS: Record<string, SourcePackDomain[]> = {
   ],
 }
 
-export function normalizeSourceHost(raw: string | null | undefined): string {
+function normalizeSourceHost(raw: string | null | undefined): string {
   const s = String(raw ?? '')
     .trim()
     .toLowerCase()
@@ -213,7 +213,7 @@ export function getIndustrySourcePack(
   return INDUSTRY_SOURCE_PACKS[id] ?? INDUSTRY_SOURCE_PACKS.other
 }
 
-export function isHostInSourcePack(
+function isHostInSourcePack(
   urlOrHost: string | null | undefined,
   pack: SourcePackDomain[],
 ): boolean {
@@ -234,7 +234,7 @@ export function isPeoplePackHost(urlOrHost: string | null | undefined): boolean 
 }
 
 /** Chunk Domains für Google-News site:-OR-Queries (Längenlimit). */
-export function chunkDomains(domains: string[], size = 4): string[][] {
+function chunkDomains(domains: string[], size = 4): string[][] {
   const clean = domains.map((d) => normalizeSourceHost(d)).filter(Boolean)
   const chunks: string[][] = []
   for (let i = 0; i < clean.length; i += size) {

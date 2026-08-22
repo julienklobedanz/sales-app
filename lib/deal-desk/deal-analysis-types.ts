@@ -4,7 +4,7 @@ import type { BenchmarkRiskAnalysis } from '@/lib/deal-desk/benchmark-risk'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
 
-export type BidTeamRoleKey =
+type BidTeamRoleKey =
   | 'sales_lead'
   | 'solution_manager'
   | 'bid_manager'
@@ -158,7 +158,7 @@ export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   ],
 }
 
-export const BID_TEAM_ROLE_DEFS: {
+const BID_TEAM_ROLE_DEFS: {
   key: BidTeamRoleKey
   label: string
   description: string

@@ -41,7 +41,7 @@ function sentenceCount(text: string): number {
   return text.split(/(?<=[.!?])\s+/).filter((part) => part.trim().length > 0).length
 }
 
-export async function generateApprovalQuoteWithLlm(input: {
+async function generateApprovalQuoteWithLlm(input: {
   orgName: string
   referenceTitle?: string | null
   summary?: string | null

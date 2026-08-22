@@ -8,13 +8,13 @@ import { createIntegrationAnonClient } from '@/lib/test/integration-supabase'
 type SystemRole = Database['public']['Enums']['system_role']
 type FunctionRole = Database['public']['Enums']['function_role']
 
-export type IntegrationTestUser = {
+type IntegrationTestUser = {
   id: string
   email: string
   password: string
 }
 
-export type IntegrationReferenceFixtures = {
+type IntegrationReferenceFixtures = {
   draftByAdminId: string
   approvedId: string
   ndaId: string

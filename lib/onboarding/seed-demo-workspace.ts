@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { asJson, asTableInsert } from '@/lib/supabase/db-types'
 import { log } from '@/lib/observability/logger'
 
-export const DEMO_SEED_TITLE_PREFIX = 'Beispiel · '
+const DEMO_SEED_TITLE_PREFIX = 'Beispiel · '
 
 export type DemoSeedRecord = {
   seededAt: string

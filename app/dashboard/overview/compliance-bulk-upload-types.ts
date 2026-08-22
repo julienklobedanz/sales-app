@@ -1,5 +1,3 @@
-import type { ComplianceDocumentTypeOption } from '@/lib/compliance/document-types'
-
 export const DIALOG_CLASS =
   'flex max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:max-w-[90vw] lg:max-w-7xl'
 
@@ -28,10 +26,3 @@ export type BulkGroup = {
   typeAutoFilled: boolean
   files: BulkFileItem[]
 }
-
-export type ComplianceBulkUploadDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-export type { ComplianceDocumentTypeOption }

@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
-export type NewsroomEntry = {
+type NewsroomEntry = {
   id: string
   name: string
   urls: string[]

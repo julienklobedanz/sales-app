@@ -4,7 +4,7 @@ import { autoGroupBulkImportByFileName } from '@/lib/references/bulk-import-grou
 import type { BulkImportGroupItem } from './bulk-import-types'
 import type { Dispatch, SetStateAction } from 'react'
 
-export async function previewBulkImportFile(file: File) {
+async function previewBulkImportFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   try {

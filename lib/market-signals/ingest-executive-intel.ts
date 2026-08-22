@@ -50,7 +50,7 @@ function normalizeCompanyMatchKey(name: string | null | undefined): string {
 }
 
 /** Breite Suche: Person + Firma (Google News Index). */
-export function rssQueryPersonAndCompany(
+function rssQueryPersonAndCompany(
   personName: string,
   companyName: string,
 ): string {

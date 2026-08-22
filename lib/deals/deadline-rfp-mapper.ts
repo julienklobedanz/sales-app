@@ -30,7 +30,7 @@ export function timelineDueToIso(
   return `${datePart}T12:00:00.000Z`
 }
 
-export function mapTimelineItemToRfpDeadlineRow(
+function mapTimelineItemToRfpDeadlineRow(
   dealId: string,
   item: DealDeskTimelineItem,
 ): RfpDeadlineUpsertRow | null {

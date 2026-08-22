@@ -31,7 +31,7 @@ export type ReferenceFormSharedFieldState = {
   tags: string[]
 }
 
-export function appendSharedReferenceFields(
+function appendSharedReferenceFields(
   fd: FormData,
   state: ReferenceFormSharedFieldState,
 ) {

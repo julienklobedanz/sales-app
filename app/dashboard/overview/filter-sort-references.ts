@@ -58,7 +58,7 @@ export function buildReferenceFilterOptions(
   }
 }
 
-export function getReferenceSortValue(
+function getReferenceSortValue(
   ref: ReferenceRow,
   key: (typeof COLUMN_KEYS)[number],
   companyIndustryById: Map<string, string>,
