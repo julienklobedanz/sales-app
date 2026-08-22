@@ -54,16 +54,16 @@ describe('countEnclosureHits', () => {
 })
 
 describe('isAllowlisted', () => {
-  it('allows QR well, collection chrome, dropzones, skeletons, loading', () => {
+  it('allows QR well, collection chrome, skeletons, loading — not dropzones', () => {
     expect(isAllowlisted('components/dashboard/settings-totp-mfa-card.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/collection-read-layout.tsx')).toBe(true)
     expect(isAllowlisted('app/dashboard/overview/references-data-table.tsx')).toBe(true)
     expect(isAllowlisted('app/dashboard/deals/cockpit/deal-document-dropzone.tsx')).toBe(
-      true,
+      false,
     )
     expect(
       isAllowlisted('app/dashboard/references/components/reference-onboarding-empty-state.tsx'),
-    ).toBe(true)
+    ).toBe(false)
     expect(isAllowlisted('components/dashboard/shell/app-sidebar.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/match-result-skeleton.tsx')).toBe(true)
     expect(isAllowlisted('app/dashboard/settings/loading.tsx')).toBe(true)

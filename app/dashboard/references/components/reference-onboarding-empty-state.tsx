@@ -7,9 +7,9 @@ import { CirclePlus } from '@hugeicons/core-free-icons'
 import { UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { Ablage } from '@/components/ui/ablage'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
-import { cn } from '@/lib/utils'
 
 const ACCEPTED_EXTENSIONS = ['.pdf', '.pptx', '.ppt', '.png', '.jpg', '.jpeg', '.webp']
 const ACCEPTED_MIME_TYPES = new Set([
@@ -99,9 +99,16 @@ export function ReferenceOnboardingEmptyState({
             }}
           />
 
-          <button
-            type="button"
+          <Ablage
+            role="button"
+            tabIndex={0}
             onClick={openFilePicker}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                openFilePicker()
+              }
+            }}
             onDragEnter={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -126,10 +133,8 @@ export function ReferenceOnboardingEmptyState({
                 handleFiles(Array.from(e.dataTransfer.files))
               }
             }}
-            className={cn(
-              'group mb-6 flex w-full max-w-xl cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-10 transition-colors hover:bg-blue-50',
-              dragOver && 'border-blue-400 bg-blue-50',
-            )}
+            state={dragOver ? 'active' : 'rest'}
+            className="group mb-6 flex w-full max-w-xl flex-col items-center justify-center p-10"
           >
             <UploadCloud
               className="mb-4 h-12 w-12 text-blue-600 transition-transform group-hover:scale-105"
@@ -138,7 +143,7 @@ export function ReferenceOnboardingEmptyState({
             <span className="font-semibold text-blue-900">
               Klicke hier oder ziehe Dateien (PDF, PPTX) hinein
             </span>
-          </button>
+          </Ablage>
 
           <div className="flex items-center justify-center gap-4 text-sm">
             {onCreateManual ? (

@@ -3,6 +3,7 @@
 import type { DragEvent, RefObject } from 'react'
 import { UploadIcon } from '@hugeicons/core-free-icons'
 
+import { Ablage } from '@/components/ui/ablage'
 import { AppIcon } from '@/lib/icons'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { cn } from '@/lib/utils'
@@ -27,7 +28,7 @@ export function BulkImportDropzone({
   }
 
   return (
-    <div
+    <Ablage
       role="button"
       tabIndex={0}
       onClick={() => !loading && dropRef.current?.click()}
@@ -38,7 +39,7 @@ export function BulkImportDropzone({
       }}
       onDrop={handleFileDrop}
       className={cn(
-        'flex w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60',
+        'flex w-full min-w-0 items-center justify-center text-muted-foreground',
         compact
           ? 'h-10 gap-2 px-3 text-left text-xs sm:text-sm'
           : 'min-h-[160px] flex-col gap-2 p-6 text-center text-sm',
@@ -50,6 +51,6 @@ export function BulkImportDropzone({
           ? `Weitere Dateien ablegen oder klicken (max. ${BULK_IMPORT_MAX_FILES})`
           : `Dateien hier ablegen oder klicken (max. ${BULK_IMPORT_MAX_FILES})`}
       </span>
-    </div>
+    </Ablage>
   )
 }
