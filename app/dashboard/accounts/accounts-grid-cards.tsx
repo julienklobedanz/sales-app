@@ -123,11 +123,11 @@ function AccountCardBody({
                   />
                 </button>
               </AccountsToolbarTooltip>
-              <AccountsToolbarTooltip label="Bearbeiten">
+              <AccountsToolbarTooltip label={COPY.accounts.editButton}>
                 <button
                   type="button"
                   className="inline-flex size-6 items-center justify-center rounded-full border border-border/80 bg-background text-muted-foreground shadow-sm hover:bg-muted/70"
-                  aria-label="Account bearbeiten"
+                  aria-label={COPY.accounts.editDialogTitle}
                   onClick={(e) => {
                     e.stopPropagation()
                     onEdit()
@@ -315,11 +315,11 @@ export function AccountGridCard({
                   />
                 </button>
               </AccountsToolbarTooltip>
-              <AccountsToolbarTooltip label="Bearbeiten">
+              <AccountsToolbarTooltip label={COPY.accounts.editButton}>
                 <button
                   type="button"
                   className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
-                  aria-label="Account bearbeiten"
+                  aria-label={COPY.accounts.editDialogTitle}
                   onClick={(e) => {
                     e.stopPropagation()
                     onEdit()

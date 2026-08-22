@@ -16,9 +16,7 @@ export type ReferenceInternalFrameSlotId =
 export type ReferenceInternalFrameSlotFill = 'filled' | 'empty'
 
 /** Der Kern liest die Listenzeile, nicht das Nachlade-Payload. */
-const REFERENCE_INTERNAL_FRAME_CONTENT_SOURCES = ['list-row'] as const
-export type ReferenceInternalFrameContentSource =
-  (typeof REFERENCE_INTERNAL_FRAME_CONTENT_SOURCES)[number]
+export type ReferenceInternalFrameContentSource = 'list-row'
 
 export function isReferenceInternalFrameHost(
   host: string,

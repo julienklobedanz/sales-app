@@ -1,6 +1,7 @@
 'use server'
 
 import { fetchNdaExpiryInboxCandidates } from '@/app/dashboard/notifications/nda-inbox'
+import { COPY } from '@/lib/copy'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { formatRelativeTimeDe } from '@/lib/relative-time-de'
@@ -472,7 +473,7 @@ export async function getInboxNotificationsImpl(
         text: personName
           ? shortHook(signalSummary, 160)
           : shortHook(`Signal bei ${co.name}. ${signalSummary}`, 160),
-        category: 'Executive Tracking',
+        category: COPY.marketSignals.executiveSection,
         typeLabel: type.typeLabel,
         typeKind: type.typeKind,
         group: 'signals' as const,
@@ -529,7 +530,7 @@ export async function getInboxNotificationsImpl(
         id: `market_news:${String(row.id)}`,
         title: headline,
         text: signalSummary,
-        category: 'Company Update',
+        category: COPY.marketSignals.newsSection,
         typeLabel: type.typeLabel,
         typeKind: type.typeKind,
         group: 'signals' as const,

@@ -13,7 +13,7 @@ Neun Feature-PRs liegen parallel gegen denselben `main`-Stand (#71–#79). Merge
 
 **T3** war der Entscheidungs-Schnitt (D1–D3, D6), nicht der 447er-Sweep. Die Abnahme „keine selbstgebaute farbige Pill in `app/`“ ist damit **nicht** erfüllt. Der Rest (Queue-Punkte, Win-Probability-Ringe, Topic-Badges, SME-Blau, Draft-Dots, übrige semantische Paletten) ist ein **eigener Schnitt mit eigenen Entscheidungen**.
 
-**T8 Phase 1** zählt und warnt (Exit 0). Phase 2 (`--fail`) erst nach dem T3-Rest, nicht nach T1. Referenz für den Neutral-Abbau: [`scripts/t1-neutral-tokens.py`](../scripts/t1-neutral-tokens.py) (fünf Mapping-Zeilen aus §7, keine Fallbacks).
+**T8 Phase 1** zählt und warnt (Exit 0). Phase 2 (`--fail`) erst nach dem T3-Rest, nicht nach T1. Das T1-Neutral-Mapping (fünf Zeilen aus §7, keine Fallbacks) ist gelaufen und das Einmal-Skript entfernt.
 
 ---
 

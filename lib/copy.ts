@@ -1,29 +1,19 @@
 export const COPY = {
   nav: {
     accounts: 'Accounts',
-    partners: 'Partner',
     deals: 'Deals',
     dealsExpandAria: 'Deine Deals aufklappen',
     dealsCollapseAria: 'Deine Deals zuklappen',
     dealsMineEmpty: 'Keine eigenen aktiven Deals',
     references: 'Referenzen',
     marketSignals: 'Marktsignale',
-    dealDesk: 'Deal Desk',
     match: 'Smart Match',
-    insights: 'Insights',
-    settings: 'Einstellungen',
   },
   pages: {
     dashboard: 'Home',
-    references: 'Referenzen',
-    marketSignals: 'Marktsignale',
-    dealDesk: 'Deal Desk',
-    match: 'Smart Match',
   },
   misc: {
-    matches: 'Treffer',
     workspace: 'Arbeitsbereich',
-    team: 'Team',
   },
   notifications: {
     title: 'Benachrichtigungen',
@@ -48,7 +38,6 @@ export const COPY = {
   roles: {
     accountManager: 'Account Manager',
     salesManager: 'Sales Manager',
-    readOnly: 'Nur Lesen',
   },
   roleDimensions: {
     systemRoles: {
@@ -92,8 +81,6 @@ export const COPY = {
     roleSwitcherReset: 'Anzeige zurücksetzen',
     rolesPermissions: {
       title: 'Rollen & Rechte',
-      description:
-        'Org-weite Vorgaben für Sichtbarkeit und Freigabe. Ohne Konfiguration gelten die Standardwerte aus dem Rollenmodell.',
       salesSeesDraftsLabel: 'Sales Rep sieht Entwürfe',
       salesSeesDraftsHint:
         'Wenn aktiv, dürfen Sales Reps Entwürfe in der Datenbank sehen — wirkt in RLS und Suche.',
@@ -141,8 +128,6 @@ export const COPY = {
   table: {
     empty: 'Keine Ergebnisse.',
     rowsPerPage: 'Ergebnisse pro Seite',
-    columns: 'Spalten',
-    view: 'Ansicht',
   },
   references: {
     contextSelect: 'Selektieren',
@@ -153,12 +138,9 @@ export const COPY = {
     exportAsPptxPending: 'PPTX wird erstellt…',
   },
   deals: {
-    contextSelect: 'Selektieren',
     contextOpen: 'Deal öffnen',
     contextOpenNewTab: 'In neuem Tab öffnen',
     searchPlaceholder: 'Deals durchsuchen (Titel, Account, AM) …',
-    createManual: 'Manuell',
-    createImport: 'Importieren',
     newDealButton: 'Deal anlegen',
     filterStatusAll: 'Alle Status',
     filterStatusNegotiation: 'Verhandlung',
@@ -620,7 +602,6 @@ export const COPY = {
     signalTypeMove: 'Move',
     executiveSection: 'Executive Tracking',
     newsSection: 'Company Update',
-    championSection: 'Executive Tracking',
     manage: 'Verwalten',
     filterAccount: 'Account',
     filterAccountAll: 'Alle Accounts',
@@ -681,7 +662,6 @@ export const COPY = {
     placeholder: 'Suche nach Referenzen, Deals, Accounts…',
     searchLoading: 'Suche läuft…',
     searchEmpty: 'Keine Ergebnisse gefunden.',
-    quickActions: 'Schnellaktionen',
     recents: 'Zuletzt besucht',
     noRecentsYet: 'Noch keine Einträge',
     actionStartMatch: 'Smart Match',

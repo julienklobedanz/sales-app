@@ -1,6 +1,4 @@
-const UI_LOCALES = ['de', 'en'] as const
-
-export type UiLocale = (typeof UI_LOCALES)[number]
+export type UiLocale = 'de' | 'en'
 
 export const UI_LOCALE_COOKIE = 'refstack_ui_locale'
 

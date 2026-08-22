@@ -23,7 +23,8 @@
     "knip": "knip --no-progress",
     "check:palette": "node scripts/check-raw-palette-classes.mjs",
     "check:enclosures": "node scripts/check-enclosure-classes.mjs --fail",
-    "check:dark": "node scripts/check-dark-variants.mjs --fail"
+    "check:dark": "node scripts/check-dark-variants.mjs --fail",
+    "check:copy": "node scripts/check-copy-keys.mjs --fail"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",

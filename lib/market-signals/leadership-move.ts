@@ -1,3 +1,5 @@
+import { COPY } from '@/lib/copy'
+
 /**
  * Erkennt Leadership-/Job-Moves aus News-Titeln (DE/EN).
  *
@@ -179,5 +181,5 @@ export function formatSignalSourceLabel(input: {
     }
   }
 
-  return !isGenericGoogleNews && label ? label : 'Quelle'
+  return !isGenericGoogleNews && label ? label : COPY.marketSignals.sourcePrefix
 }
