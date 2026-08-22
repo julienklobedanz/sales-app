@@ -13,7 +13,6 @@ export const DASHBOARD_PAGE_SUBTITLE_CLASS = 'mt-1 text-sm text-muted-foreground
 export function routeExcludesDashboardContentPadding(pathname: string | null): boolean {
   if (!pathname) return false
   if (pathname === ROUTES.deals.new || pathname === ROUTES.references.new) return true
-  if (pathname === ROUTES.match) return true
   const parts = pathname.split('/').filter(Boolean)
   if (parts[0] === 'dashboard' && parts[1] === 'accounts' && parts.length >= 3) {
     return true

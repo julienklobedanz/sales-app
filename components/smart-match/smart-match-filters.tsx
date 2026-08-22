@@ -20,7 +20,7 @@ import {
   volumeFilterLabel,
   statusFilterLabel,
   recencyFilterLabel,
-} from '@/app/dashboard/smart-match/smart-match-shell-helpers'
+} from '@/components/smart-match/smart-match-shell-helpers'
 
 function FilterMenu({
   label,

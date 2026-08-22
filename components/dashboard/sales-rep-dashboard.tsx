@@ -16,6 +16,7 @@ import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import { dealMatchHref } from '@/lib/deals/deal-match-href'
 import { ROUTES } from '@/lib/routes'
 
 function aggregateShareBars(
@@ -188,7 +189,7 @@ export function SalesRepDashboard({
                               href={
                                 deal.company_id
                                   ? ROUTES.accountsDetail(deal.company_id)
-                                  : ROUTES.matchWithDeal(deal.id)
+                                  : dealMatchHref(deal.id)
                               }
                               className="shrink-0 rounded-full border border-amber-300/80 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
                             >
@@ -213,7 +214,7 @@ export function SalesRepDashboard({
                           size="sm"
                           className="h-7 text-xs"
                         >
-                          <Link href={ROUTES.matchWithDeal(deal.id)}>
+                          <Link href={dealMatchHref(deal.id)}>
                             {c.coverageSignalCta}
                           </Link>
                         </Button>

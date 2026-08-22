@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Handshake, Sparkles, Plus } from '@hugeicons/core-free-icons'
+import { FileText, Handshake, Plus } from '@hugeicons/core-free-icons'
 
 import {
   CommandDialog,
@@ -260,16 +260,6 @@ export function CommandPalette() {
           router.push(ROUTES.accountsCreate)
         },
         visible: canCreate,
-      },
-      {
-        key: 'match',
-        label: COPY.commandPalette.actionStartMatch,
-        icon: <AppIcon icon={Sparkles} size={14} />,
-        onSelect: () => {
-          setOpen(false)
-          router.push(ROUTES.match)
-        },
-        visible: true,
       },
     ]
     return base.filter((x) => x.visible)

@@ -16,7 +16,7 @@ import {
 import { CompanyLogo } from '@/components/ui/company-logo'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { cn } from '@/lib/utils'
-import { SUGGESTIONS } from '@/app/dashboard/smart-match/smart-match-shell-helpers'
+import { SUGGESTIONS } from '@/components/smart-match/smart-match-shell-helpers'
 
 export function SmartMatchSearchBar({
   embedded,

@@ -51,10 +51,6 @@ export const ROUTES = {
   marketSignals: '/dashboard/market-signals',
   /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
   marketSignalsManage: '/dashboard/settings/market-signals',
-  match: '/dashboard/smart-match',
-  /** Semantische Suche mit Deal-Kontext (`matchReferences`). */
-  matchWithDeal: (dealId: string) =>
-    `/dashboard/smart-match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
   /** Referenzanfrage (Deal-Kontext); Legacy `/dashboard/request` leitet hierher. */
   request: '/dashboard/deals/request/new',
@@ -69,12 +65,6 @@ export const REVALIDATE = {
 
 /** Permanente Weiterleitungen (alte URLs → aktuelle Struktur), siehe `next.config`. */
 export const LEGACY_REDIRECTS = [
-  { source: '/dashboard/match', destination: '/dashboard/smart-match', permanent: false },
-  {
-    source: '/dashboard/match/:path*',
-    destination: '/dashboard/smart-match/:path*',
-    permanent: false,
-  },
   {
     source: '/dashboard/evidence',
     destination: '/dashboard/references',

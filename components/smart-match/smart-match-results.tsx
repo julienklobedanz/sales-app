@@ -5,7 +5,7 @@ import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-c
 import { Hinweis } from '@/components/ui/hinweis'
 import type { MatchReferenceHit } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
-import { dealContextString } from '@/app/dashboard/smart-match/smart-match-shell-helpers'
+import { dealContextString } from '@/components/smart-match/smart-match-shell-helpers'
 
 export function SmartMatchResults({
   loading,

@@ -42,7 +42,7 @@ export function RoleHomeDashboard({
           functionRole={functionRole}
           subtitle={COPY.dashboard.home.salesRep.subtitle}
           ctaLabel={COPY.dashboard.home.salesRep.cta}
-          ctaHref={ROUTES.match}
+          ctaHref={ROUTES.references.root}
           ctaIcon={Search01Icon}
           thin={thin}
           thinBannerText={COPY.dashboard.home.thinBanner}

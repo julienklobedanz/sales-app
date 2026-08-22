@@ -643,7 +643,6 @@ export const COPY = {
     searchEmpty: 'Keine Ergebnisse gefunden.',
     recents: 'Zuletzt besucht',
     noRecentsYet: 'Noch keine Einträge',
-    actionStartMatch: 'Smart Match',
     actionNewReference: 'Neue Referenz erstellen',
     actionNewAccount: 'Account erstellen',
     /** Anzeige in der Suche, wenn keine Firma verknüpft ist */
