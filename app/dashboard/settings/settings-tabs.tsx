@@ -51,7 +51,6 @@ export function SettingsTabs({
       digestTimezone: string
       digestLocalTime: string
       emailInstantMarketSignals: boolean
-      browserPushMarketSignals: boolean
     }
   }
   org: {

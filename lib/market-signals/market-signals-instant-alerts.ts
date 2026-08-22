@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '@/lib/database.types'
 import { Resend } from 'resend'
-import webpush from 'web-push'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -27,18 +26,6 @@ function getResend(): Resend | null {
 
 function mailFrom(): string {
   return getRefstackResendFrom()
-}
-
-let webPushConfigured = false
-function ensureWebPushConfigured(): boolean {
-  if (webPushConfigured) return true
-  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
-  const priv = process.env.VAPID_PRIVATE_KEY?.trim()
-  const subject = process.env.VAPID_SUBJECT?.trim() || 'mailto:hello@refstack.io'
-  if (!pub || !priv) return false
-  webpush.setVapidDetails(subject, pub, priv)
-  webPushConfigured = true
-  return true
 }
 
 function orgIdFromCompaniesJoin(companies: unknown): string {
@@ -123,16 +110,15 @@ function buildInstantEmailHtml(input: {
 }
 
 /**
- * Nach Ingest: gebündelte Sofort-E-Mail und/oder Web Push pro Nutzer (nur priorisierte Companies).
+ * Nach Ingest: gebündelte Sofort-E-Mail pro Nutzer (nur priorisierte Companies).
  */
 export async function notifyInstantMarketSignalsAfterIngest(
   admin: AdminClient,
   opts: { sinceIso: string; organizationId?: string | null },
-): Promise<{ emailed: number; pushed: number; skipped: boolean; errors: string[] }> {
+): Promise<{ emailed: number; skipped: boolean; errors: string[] }> {
   const { sinceIso, organizationId } = opts
   const errors: string[] = []
   let emailed = 0
-  let pushed = 0
 
   let newsQuery = admin
     .from('market_signal_account_news')
@@ -151,7 +137,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
   if (organizationId) {
     const cids = await companyIdsForOrganization(admin, organizationId)
     if (!cids.length) {
-      return { emailed: 0, pushed: 0, skipped: true, errors }
+      return { emailed: 0, skipped: true, errors }
     }
     newsQuery = newsQuery.in('company_id', cids)
     execQuery = execQuery.in('company_id', cids)
@@ -197,11 +183,10 @@ export async function notifyInstantMarketSignalsAfterIngest(
   }
 
   if (byOrg.size === 0) {
-    return { emailed: 0, pushed: 0, skipped: true, errors }
+    return { emailed: 0, skipped: true, errors }
   }
 
   const resend = getResend()
-  const pushOk = ensureWebPushConfigured()
 
   const appOrigin = getAppOrigin()
 
@@ -213,27 +198,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
       .select('id, system_role, function_role, notification_settings, full_name')
       .eq('organization_id', orgIdKey)
 
-    const userIds = (profiles ?? []).map((p) => p.id).filter(Boolean)
-    if (!userIds.length) continue
-
-    const { data: subs } = await admin
-      .from('push_subscriptions')
-      .select('user_id, endpoint, p256dh, auth')
-      .in('user_id', userIds)
-
-    const subsByUser = new Map<
-      string,
-      { endpoint: string; p256dh: string; auth: string }[]
-    >()
-    for (const s of subs ?? []) {
-      if (!s.user_id) continue
-      if (!subsByUser.has(s.user_id)) subsByUser.set(s.user_id, [])
-      subsByUser.get(s.user_id)!.push({
-        endpoint: s.endpoint,
-        p256dh: s.p256dh,
-        auth: s.auth,
-      })
-    }
+    if (!(profiles ?? []).length) continue
 
     for (const prof of profiles ?? []) {
       const userId = prof.id
@@ -241,9 +206,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
       const settings = notificationSettingsRecord(prof.notification_settings)
 
       const wantEmail = settings.email_instant_market_signals === true
-      const wantPushPref = settings.browser_push_market_signals === true
-      const hasSubs = (subsByUser.get(userId)?.length ?? 0) > 0
-      if (!wantEmail && !(wantPushPref && hasSubs && pushOk)) continue
+      if (!wantEmail) continue
 
       const role = marketSignalsDigestRoleFromProfile(prof)
       const allowed = await resolveAllowedCompanyIdsForMarketSignals(
@@ -279,39 +242,8 @@ export async function notifyInstantMarketSignalsAfterIngest(
           else emailed += 1
         }
       }
-
-      if (wantPushPref && pushOk && hasSubs) {
-        const title = 'Neue Markt-Signale'
-        const body = `${total} Hinweis${total === 1 ? '' : 'e'} (${newsF.length} News · ${execF.length} Executive)`
-        const url = `${appOrigin.replace(/\/$/, '')}${ROUTES.marketSignals}`
-        const payload = JSON.stringify({ title, body, url })
-        for (const sub of subsByUser.get(userId) ?? []) {
-          try {
-            await webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              payload,
-              { TTL: 86_400 },
-            )
-            pushed += 1
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e)
-            const status =
-              e && typeof e === 'object' && 'statusCode' in e
-                ? Number((e as { statusCode?: unknown }).statusCode)
-                : NaN
-            if (status === 404 || status === 410) {
-              await admin
-                .from('push_subscriptions')
-                .delete()
-                .eq('user_id', userId)
-                .eq('endpoint', sub.endpoint)
-            }
-            errors.push(`push: ${msg}`)
-          }
-        }
-      }
     }
   }
 
-  return { emailed, pushed, skipped: false, errors: errors.slice(0, 40) }
+  return { emailed, skipped: false, errors: errors.slice(0, 40) }
 }

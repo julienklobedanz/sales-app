@@ -10,7 +10,6 @@
     "scripts/seed-*.{ts,mjs,js}",
     "scripts/backfill-*.{ts,mjs,js}",
     "scripts/overhaul-legacy-references.ts",
-    "public/sw.js",
     "supabase/functions/**/*.ts"
   ],
   "project": [
