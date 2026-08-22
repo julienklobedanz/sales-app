@@ -165,7 +165,7 @@ export function ReferenceFormFilesSection({
                 />
               </div>
               {incumbentSuggestions.length > 0 && incumbentInputValue.trim() && (
-                <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
+                <div className="absolute z-20 mt-1 w-full rounded-md border border-input bg-popover text-sm shadow-md">
                   <Command>
                     <CommandList>
                       {incumbentSuggestions.map((name) => (
@@ -282,7 +282,7 @@ export function ReferenceFormFilesSection({
                     className="w-full border-0 bg-transparent p-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
                   />
                   {competitorSuggestions.length > 0 && competitorInputValue.trim() && (
-                    <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
+                    <div className="absolute z-20 mt-1 w-full rounded-md border border-input bg-popover text-sm shadow-md">
                       <Command>
                         <CommandList>
                           {competitorSuggestions.map((name) => (

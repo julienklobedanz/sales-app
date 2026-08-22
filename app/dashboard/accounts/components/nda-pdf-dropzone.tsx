@@ -4,8 +4,8 @@ import { useRef, useState } from 'react'
 import { UploadIcon, Loader } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
+import { Ablage } from '@/components/ui/ablage'
 import { AppIcon } from '@/lib/icons'
-import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 
 function isPdfFile(file: File): boolean {
@@ -46,19 +46,12 @@ export function NdaPdfDropzone({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>Vertragsdokument (PDF)</Label>
-      <div
+      <Ablage
         role="button"
         tabIndex={busy ? -1 : 0}
         aria-disabled={busy}
-        className={cn(
-          'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
-          dragOver && !busy
-            ? 'border-primary bg-primary/5'
-            : 'border-border bg-muted/40',
-          busy
-            ? 'cursor-not-allowed opacity-60'
-            : 'cursor-pointer hover:border-border hover:bg-muted/80',
-        )}
+        state={busy ? 'disabled' : dragOver ? 'active' : 'rest'}
+        className="w-full px-4 py-6 text-center"
         onClick={() => !busy && inputRef.current?.click()}
         onKeyDown={(e) => {
           if (busy) return
@@ -128,7 +121,7 @@ export function NdaPdfDropzone({
             </p>
           </div>
         )}
-      </div>
+      </Ablage>
       <input
         id={id}
         ref={inputRef}

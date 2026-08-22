@@ -4,9 +4,9 @@ import { useRef, useState } from 'react'
 import { UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
+import { Ablage } from '@/components/ui/ablage'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import { cn } from '@/lib/utils'
 import type { DealDocumentKind } from '@/lib/deals/deal-document-kinds'
 import { validateDealDocumentUpload } from '@/lib/deals/deal-document-upload'
 
@@ -37,17 +37,12 @@ export function DealDocumentDropzone({
   }
 
   return (
-    <div
+    <Ablage
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
-      className={cn(
-        'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
-        dragOver && !disabled
-          ? 'border-primary/50 bg-muted/60'
-          : 'border-border bg-muted/30',
-        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-muted/50',
-      )}
+      state={disabled ? 'disabled' : dragOver ? 'active' : 'rest'}
+      className="w-full px-4 py-6 text-center"
       onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
         if (disabled) return
@@ -99,6 +94,6 @@ export function DealDocumentDropzone({
           e.target.value = ''
         }}
       />
-    </div>
+    </Ablage>
   )
 }

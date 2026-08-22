@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
+import { Ablage } from '@/components/ui/ablage'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
@@ -38,16 +39,13 @@ export function ComplianceMultiPdfDropzone({
   }
 
   return (
-    <div
+    <Ablage
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
+      state={disabled ? 'disabled' : dragOver ? 'active' : 'rest'}
       className={cn(
-        'flex w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed transition-colors',
-        dragOver && !disabled
-          ? 'border-primary/50 bg-primary/5'
-          : 'border-muted-foreground/30 bg-muted/20 hover:border-muted-foreground/50 hover:bg-muted/30',
-        disabled ? 'pointer-events-none cursor-not-allowed opacity-60' : '',
+        'flex w-full min-w-0 items-center justify-center',
         compact
           ? 'h-10 gap-2 px-3 text-left text-xs sm:text-sm'
           : 'min-h-[160px] flex-col gap-2 p-6 text-center',
@@ -115,6 +113,6 @@ export function ComplianceMultiPdfDropzone({
           </p>
         </div>
       )}
-    </div>
+    </Ablage>
   )
 }

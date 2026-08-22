@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * §11.1 enclosure guard — counts `rounded-*` + `border` class combinations
- * outside the enclosure primitives (Card, Group, Option, Hinweis).
+ * outside the enclosure primitives (Card, Group, Option, Hinweis, Ablage).
  *
  * Phase 1 (default): print the count and exit 0.
  * Phase 2: `node scripts/check-enclosure-classes.mjs --fail` (or ENCLOSURE_GUARD_FAIL=1).
@@ -28,8 +28,7 @@ const CLASS_PATTERNS = [
 
 /**
  * Lasting exceptions — not the migration backlog.
- * Dropzones until a Dropzone primitive exists. Chrome, fields and logo tiles
- * after §11.3: not empty surfaces, not enclosure primitives.
+ * Chrome, fields and logo tiles after §11.3: not empty surfaces, not enclosure primitives.
  */
 export const ENCLOSURE_ALLOWLIST = new Set([
   // chrome
@@ -48,14 +47,6 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   'app/dashboard/dashboard-overview.tsx',
   'app/dashboard/deals/deals-client.tsx',
   'app/dashboard/settings/sticky-save-bar.tsx',
-  // dropzone until primitive
-  'app/dashboard/deals/cockpit/deal-document-dropzone.tsx',
-  'app/dashboard/accounts/components/nda-pdf-dropzone.tsx',
-  'app/dashboard/overview/bulk-import-dropzone.tsx',
-  'app/dashboard/overview/compliance-multi-pdf-dropzone.tsx',
-  'app/dashboard/references/components/reference-onboarding-empty-state.tsx',
-  'lib/references/reference-form/reference-form-files-section.tsx',
-  'lib/references/reference-form/reference-form-fields.tsx',
   // field
   'app/dashboard/accounts/components/company-name-suggest-field.tsx',
   'app/dashboard/references/[id]/approval-contact-suggest-field.tsx',

@@ -320,7 +320,7 @@ Der Wunsch nach „Notizen", „Strategie" oder „Nächsten Schritten" an einer
 
 ### 11) Bausteine: wie ein Gegenstand innen aufgebaut ist
 
-§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis, Überschrift, Leerzustand, Faktzeile. Eingeführt 19.08.2026.
+§1–§9 ordnen die Atome. §10 ordnet die Seiten. Dieser Abschnitt ordnet die Ebene dazwischen: Karte, Gruppe, Option, Hinweis, Ablagefläche, Überschrift, Leerzustand, Faktzeile. Eingeführt 19.08.2026.
 
 #### 11.1 Die Karte
 
@@ -336,6 +336,7 @@ Nicht jeder Kasten mit Rahmen ist eine Karte:
 | **Gruppe** | fasst Bedienelemente zusammen, kein eigener Gegenstand | `<Group>` — oder `<TabsList>`, wo schon `role="tablist"` |
 | **Option** | auswählbar, Teil einer Menge | `<Option>` |
 | **Hinweis** | eine Aussage, kein Gegenstand | `<Hinweis>` |
+| **Ablage** | hier kann etwas fallen gelassen werden | `<Ablage>` — gestrichelt |
 | **entfällt** | Rahmen ohne Gegenstand — Dekoration | Rahmen entfernen |
 
 **Voreinstellungen der Karte** (`components/ui/card.tsx`):
@@ -364,7 +365,9 @@ Eine Kartenfläche, nicht mehrere. `bg-muted/20`, `/30` und `/40` sind keine Kar
 
 **Hinweis** (`components/ui/hinweis.tsx`): `rounded-md border p-2 text-xs`. `tone`: `muted` (Default) · `destructive` · `warning` (Status-Tokens, keine Roh-Palette). Kein `role="alert"` von selbst.
 
-**Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 2 (`--fail`): CI bricht ab, wenn der Zähler über der Allowlist liegt. Dauerhafte Ausnahmen: Dropzones (bis ein eigenes Bauteil existiert), Chrome, Logo-Fallbacks. Felder nutzen `border-input` und fallen so aus dem Raster.
+**Ablage** (`components/ui/ablage.tsx`): siehe §11.6.
+
+**Wächter:** `npm run check:enclosures` (`scripts/check-enclosure-classes.mjs`). Meldet `rounded-*` + `border` außerhalb der Bauteile. Phase 2 (`--fail`): CI bricht ab, wenn der Zähler über der Allowlist liegt. Dauerhafte Ausnahmen: Chrome, Logo-Fallbacks. Felder nutzen `border-input` und fallen so aus dem Raster.
 
 #### 11.2 Überschriften
 
@@ -405,7 +408,7 @@ Karten-h2 und Seiten-h2 sind Geschwister. Konkurrenz entsteht nur, wenn zwei `h1
 | **Filter leer** | die Menge existiert, die aktuelle Suche trifft nichts | Schale bleibt, Satz „Keine Treffer“, keine Dropzone |
 | **Baustein leer, Schale bleibt** | Slot ist Teil der Seitengrammatik (Home-Karte, navigierbarer Bereich, Linsen-Kern) | Schale rendern, innen ein Satz; Aktion nur wenn die Rolle sie darf |
 | **Baustein leer, Abschnitt entfällt** | optionaler Kontext des Objekts (§10.2) | nicht rendern, kein „—“ |
-| **Dropzone** | hier kann etwas abgelegt werden | gestrichelt — Bedeutungsträger nur hier |
+| **Dropzone** | hier kann etwas abgelegt werden | `<Ablage>` — gestrichelt, Bedeutungsträger nur hier |
 | **Laden** | Warten, nicht leer | Satz ohne Extra-Rahmen |
 
 **Gestrichelt** heißt *hier kann etwas hin*. Bei einem leeren Baustein ist es eine geliehene Dropzone-Optik ohne Ablageziel — Rahmen ohne Gegenstand (§11.1). Provisorien („noch nicht verknüpft“) ebenfalls ohne Gestricheltes.
@@ -447,3 +450,31 @@ Die Karte (§11.1) sitzt in derselben Fläche. `card.tsx` ist mit eigenen Klasse
 Aufgelöst werden direkte Ketten (`COPY.a.b.c`), dynamischer Zugriff (`COPY.a.b[ausdruck]` wertet den Teilbaum `a.b` vollständig als gelesen) und lokale Aliase (`const c = COPY.a.b`, danach `c.key`). Ein Alias, der die Datei verlässt (exportiert oder weitergereicht), wertet den Teilbaum als gelesen.
 
 **Nicht auflösbar** sind Zugriffe, denen der Wächter keinen Pfad zuordnen kann — etwa `COPY[variable]` oder Destrukturierung. Sie werden gezählt und namentlich ausgegeben, lassen den Lauf aber grün. Ein Wächter, der Fehlalarme produziert, wird ignoriert.
+
+#### 11.6 Die Ablagefläche
+
+**Eine Ablage ist ein Bauteil, kein gestrichelter Kasten.** Wer eine Fläche zeichnet, auf der Dateien landen sollen, benutzt `<Ablage>`. Wer einen Gegenstand mit Titel einfasst, bleibt bei der Karte.
+
+**Woran man eine Ablage erkennt:** Sie bedeutet *hier kannst du etwas fallen lassen*. Die Form trägt die Bedeutung: `border-dashed` statt durchgezogen. Ein leerer Baustein, der gestrichelt aussieht, ohne Ablageziel zu sein, ist geliehene Optik — Rahmen ohne Gegenstand (§11.1, §11.3).
+
+Nicht jede gestrichelte Fläche ist eine Ablage, und eine Ablage ist keine Karte:
+
+| Was | Erkennbar an | Bauteil |
+|---|---|---|
+| **Karte** | eigener Gegenstand, meist mit Titel | `<Card>` — durchgezogener Rahmen |
+| **Ablage** | Dropziel, kein eigener Gegenstand | `<Ablage>` — gestrichelt |
+| **Baustein leer** | Slot ohne Inhalt, nichts abzulegen | Schale bleibt, Satz innen, kein Gestricheltes |
+
+**Voreinstellungen** (`components/ui/ablage.tsx`):
+
+| | Wert |
+|---|---|
+| Radius | `rounded-lg` |
+| Rahmen | `border-2 border-dashed` |
+| Ruhe | `border-muted-foreground/30 bg-muted/20` |
+| Aktiv (Datei schwebt) | `border-primary bg-primary/5` |
+| Deaktiviert | `opacity-60`, keine Zeigerereignisse |
+
+Die drei Zustände sind die, die die Aufrufer brauchen. Innenabstand, Ausrichtung und Inhalt setzt der Aufrufer. Die Ablage-Logik (Drag, Dateiprüfung, Fortschritt) bleibt beim Aufrufer — das Bauteil fasst ein, es empfängt nicht.
+
+**Prüfkriterium:** Kein `rounded-*` + `border-dashed` außerhalb von `<Ablage>`. Der Wächter (§11.1) zählt das.

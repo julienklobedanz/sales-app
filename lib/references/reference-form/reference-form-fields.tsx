@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Building2, Loader } from '@hugeicons/core-free-icons'
 
+import { Ablage } from '@/components/ui/ablage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -75,7 +76,7 @@ export function FileDropZone({
         onChange={handleChange}
         aria-hidden
       />
-      <div
+      <Ablage
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleClick()}
@@ -83,11 +84,8 @@ export function FileDropZone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-          isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50'
-        } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+        state={disabled ? 'disabled' : isDragging ? 'active' : 'rest'}
+        className="flex min-h-[100px] flex-col items-center justify-center gap-2 p-4 text-center"
       >
         {displayName ? (
           <>
@@ -111,7 +109,7 @@ export function FileDropZone({
             PDF hier ablegen oder klicken zum Auswählen
           </span>
         )}
-      </div>
+      </Ablage>
     </div>
   )
 }
@@ -190,7 +188,7 @@ export function MagicImportDropzone({
         onChange={handleChange}
         aria-hidden
       />
-      <div
+      <Ablage
         role="button"
         tabIndex={0}
         onKeyDown={(e) =>
@@ -200,13 +198,8 @@ export function MagicImportDropzone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={[
-          'flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
-          isDragging && !loading
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/30 bg-muted/20 hover:border-muted-foreground/50 hover:bg-muted/30',
-          disabled || loading ? 'pointer-events-none opacity-70' : '',
-        ].join(' ')}
+        state={disabled || loading ? 'disabled' : isDragging ? 'active' : 'rest'}
+        className="flex min-h-[100px] flex-col items-center justify-center gap-2 p-6 text-center"
       >
         {loading ? (
           <>
@@ -230,7 +223,7 @@ export function MagicImportDropzone({
             </p>
           </>
         )}
-      </div>
+      </Ablage>
     </div>
   )
 }
