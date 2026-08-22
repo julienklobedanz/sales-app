@@ -441,3 +441,9 @@ Kein Bauteil. Eine Zeile fasst nichts ein. Markup wie in den Stammdaten (WHATWG:
 `knip.json` ignoriert ungenutzte **Exporte und Typen** unter `components/ui/**`, nicht ungenutzte **Dateien**. Der Ordner ist Vokabular, keine Verwendungsliste: ein Slot ohne Aufrufer (Sidebar\*, ContextMenu\*, `CardFooter`, `SelectScrollDownButton`, …) bleibt Teil des Primitivs, damit `npx shadcn add` und `shadcn diff` die Datei wiedererkennen. Ein entferntes `export` wäre eine ungenutzte lokale Funktion — das hieße löschen, und der Generator füllt den Slot wieder auf.
 
 Die Karte (§11.1) sitzt in derselben Fläche. `card.tsx` ist mit eigenen Klassen (`rounded-lg`, `p-4`, `border-border`) und dem `as`-Prop an `CardTitle` bereits ein Fork; solange `shadcn diff` die Datei noch sinnvoll vergleicht, gilt die Ausnahme weiter. Sobald ein Primitiv so weit umgebaut ist, dass der Vergleich nichts mehr trägt, ist die Datei unsere und fällt aus `ignoreIssues`.
+
+**Copy-Wächter:** `npm run check:copy` (`scripts/check-copy-keys.mjs`). Zählt Blatt-Schlüssel in `lib/copy.ts` gegen Leser in `app/`, `components/`, `lib/` und `hooks/`. Die Prüfung läuft am **Pfad** (`accounts.title`), nicht am letzten Bezeichner (`title`): gleichnamige Blätter in verschiedenen Gruppen maskieren sich sonst gegenseitig — eine Namensprüfung meldete 75 ungelesene Schlüssel, die Pfadprüfung 141. `--fail` in CI scheitert nur bei ungelesenen Blättern.
+
+Aufgelöst werden direkte Ketten (`COPY.a.b.c`), dynamischer Zugriff (`COPY.a.b[ausdruck]` wertet den Teilbaum `a.b` vollständig als gelesen) und lokale Aliase (`const c = COPY.a.b`, danach `c.key`). Ein Alias, der die Datei verlässt (exportiert oder weitergereicht), wertet den Teilbaum als gelesen.
+
+**Nicht auflösbar** sind Zugriffe, denen der Wächter keinen Pfad zuordnen kann — etwa `COPY[variable]` oder Destrukturierung. Sie werden gezählt und namentlich ausgegeben, lassen den Lauf aber grün. Ein Wächter, der Fehlalarme produziert, wird ignoriert.

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
+import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { buildRefstackEmailHtml } from '@/lib/email/refstack-email-layout'
 import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
@@ -210,9 +211,9 @@ export function buildMarketSignalsDigestEmailHtml(input: {
     badge: 'Markt-Signale',
     greeting: `Hallo ${escapeHtml(recipientName || 'du')},`,
     bodyHtml: `<p style="margin:0 0 16px;">Hier ist dein täglicher Überblick zu <strong>Markt-Signalen</strong>: Sales sieht Favoriten; Admin und Account-Manager zusätzlich Accounts mit aktivem Deal.</p>
-      <h2 style="font-size:16px;margin:20px 0 8px 0;">Company Update</h2>
+      <h2 style="font-size:16px;margin:20px 0 8px 0;">${COPY.marketSignals.newsSection}</h2>
       ${newsBlock}
-      <h2 style="font-size:16px;margin:20px 0 8px 0;">Executive Tracking</h2>
+      <h2 style="font-size:16px;margin:20px 0 8px 0;">${COPY.marketSignals.executiveSection}</h2>
       ${execBlock}`,
     ctas: [{ label: 'Alle Signale im Dashboard', href: signalsUrl }],
     supplementalHtml:

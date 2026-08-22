@@ -1,15 +1,17 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "app/**/*.{ts,tsx}",
-    "middleware.ts",
-    "scripts/**/*.{ts,mjs,js}",
+    "app/**/{page,layout,route,loading,error,template,default,global-error,not-found}.{ts,tsx}",
+    "scripts/check-raw-palette-classes.mjs",
+    "scripts/check-enclosure-classes.mjs",
+    "scripts/check-dark-variants.mjs",
+    "scripts/check-copy-keys.mjs",
+    "scripts/verify-launch-env.mjs",
+    "scripts/seed-*.{ts,mjs,js}",
+    "scripts/backfill-*.{ts,mjs,js}",
+    "scripts/overhaul-legacy-references.ts",
     "public/sw.js",
-    "supabase/functions/**/*.ts",
-    "vitest.config.ts",
-    "vitest.integration.config.ts",
-    "tests/integration/vitest.setup.ts",
-    "tests/components/vitest.setup.ts"
+    "supabase/functions/**/*.ts"
   ],
   "project": [
     "app/**/*.{ts,tsx}",
@@ -17,15 +19,13 @@
     "components/**/*.{ts,tsx}",
     "hooks/**/*.{ts,tsx}",
     "scripts/**/*.{ts,mjs,js}",
-    "public/sw.js",
+    "app/**/*.css",
+    "styles/**/*.css",
     "supabase/functions/**/*.ts"
   ],
   "ignore": ["lib/database.types.ts", "lib/supabase.ts"],
   "ignoreDependencies": [
     "server-only",
-    "shadcn",
-    "tailwindcss",
-    "tw-animate-css",
     "@radix-ui/react-checkbox",
     "@radix-ui/react-collapsible",
     "pdfjs-dist"
@@ -33,11 +33,6 @@
   "ignoreBinaries": ["supabase"],
   "tags": ["-public"],
   "ignoreIssues": {
-    "lib/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
-    "components/ui/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
-    "hooks/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"],
-    "app/**/actions.ts": ["exports", "types"],
-    "app/**/*-actions.ts": ["exports", "types"],
-    "app/**/*-impl.ts": ["exports", "types"]
+    "components/ui/**/*.{ts,tsx}": ["exports", "types", "nsExports", "nsTypes"]
   }
 }

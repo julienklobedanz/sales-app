@@ -94,6 +94,12 @@ jobs:
       - name: Dark variant guard (phase 2)
         run: npm run check:dark
 
+      - name: Copy key guard
+        run: npm run check:copy
+
+      - name: Dead-code guard (knip)
+        run: npm run knip
+
       - name: Lint
         run: npm run lint
 

@@ -3,6 +3,7 @@ import type { Database, Json } from '@/lib/database.types'
 import { Resend } from 'resend'
 import webpush from 'web-push'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
+import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import {
   buildRefstackEmailHtml,
@@ -91,7 +92,7 @@ function buildInstantEmailHtml(input: {
   const newsBlock =
     news.length === 0
       ? ''
-      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Company Update</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${news
+      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">${COPY.marketSignals.newsSection}</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${news
           .map(
             (n) =>
               `<li style="margin-bottom:8px;"><strong>${escapeHtml(n.companyName)}</strong><br/>${escapeHtml(n.body)}</li>`,
@@ -101,7 +102,7 @@ function buildInstantEmailHtml(input: {
   const execBlock =
     executives.length === 0
       ? ''
-      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Executive</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${executives
+      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">${COPY.marketSignals.executiveSection}</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${executives
           .map(
             (e) =>
               `<li style="margin-bottom:8px;"><strong>${escapeHtml(e.personName)}</strong> · ${escapeHtml(e.companyName)}<br/>${escapeHtml(e.summary)}</li>`,

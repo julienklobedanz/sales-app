@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 
+import { COPY } from '@/lib/copy'
 import {
   buildRefstackEmailHtml,
   escapeRefstackEmailHtml,
@@ -26,13 +27,13 @@ export function formatTeamInviteRoleLabel(
 export function humanizeTeamInviteEmailError(message?: string | null): string {
   const msg = message?.trim()
   if (!msg) {
-    return 'Einladung ist gespeichert, aber E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY in der Server-Umgebung).'
+    return COPY.settings.teamInviteSavedEmailMissingKey
   }
   if (/api key is invalid/i.test(msg) || /invalid api key/i.test(msg)) {
     return 'Einladung ist gespeichert, aber der E-Mail-Versand ist aktuell nicht korrekt konfiguriert.'
   }
   if (/RESEND_API_KEY/i.test(msg)) {
-    return 'Einladung ist gespeichert, aber E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY in der Server-Umgebung).'
+    return COPY.settings.teamInviteSavedEmailMissingKey
   }
   return msg
 }

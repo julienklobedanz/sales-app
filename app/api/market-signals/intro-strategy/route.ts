@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { z } from 'zod'
 
+import { COPY } from '@/lib/copy'
 import {
   buildHeuristicOutreachDraft,
   normalizeOutreachDraftText,
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
             content: [
               `Signal-Überschrift: ${parsed.data.headline}`,
               `Account: ${parsed.data.companyName}`,
-              `Signal-Art: ${parsed.data.signalKind === 'exec' ? 'Executive Update' : 'Company Update'}`,
+              `Signal-Art: ${parsed.data.signalKind === 'exec' ? 'Executive Update' : COPY.marketSignals.newsSection}`,
               `Kontext / Warum jetzt: ${parsed.data.summarySnippet}`,
               `Empfänger: ${parsed.data.recipientFullName?.trim() || 'unbekannt — Platzhalter [Name] nutzen'}`,
               `Referenzen: werden separat angehängt — hier nicht nennen`,
