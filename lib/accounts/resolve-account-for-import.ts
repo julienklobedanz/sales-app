@@ -127,45 +127,6 @@ async function lookupBrandfetch(rawName: string): Promise<BrandfetchLookup> {
   return { domain, data: fetched.success ? fetched.data : null }
 }
 
-export type BulkImportRowInput = {
-  name: string
-  website: string
-  industry: string
-  headquarters: string
-  employeeCount: number | null
-}
-
-export type BulkImportRowEnriched = BulkImportRowInput & {
-  logo_url: string | null
-  description: string | null
-}
-
-/** Excel-Import: leere Spalten per Brandfetch (Name → Domain-Suche) auffüllen. */
-export async function enrichBulkImportRowFromBrandfetch(
-  row: BulkImportRowInput,
-): Promise<BulkImportRowEnriched> {
-  const lookup = await lookupBrandfetchForCompany(row.name, row.website || null)
-  const data = lookup.data
-  if (!data) {
-    return { ...row, logo_url: null, description: null }
-  }
-
-  const employeeCount =
-    row.employeeCount != null && Number.isFinite(row.employeeCount)
-      ? row.employeeCount
-      : data.employeeCount
-
-  return {
-    name: data.companyName?.trim() || row.name,
-    website: row.website || data.websiteUrl || '',
-    industry: row.industry || data.industry || '',
-    headquarters: row.headquarters || data.headquarters || '',
-    employeeCount: employeeCount ?? null,
-    logo_url: rewriteBrandfetchLogoUrlForLightBackground(data.logoUrl ?? null),
-    description: data.description ?? null,
-  }
-}
-
 /** Website-Domain zuerst, sonst Namenssuche (+ TLD-Raten). */
 async function lookupBrandfetchForCompany(
   rawName: string,
