@@ -33,8 +33,6 @@ export function AccountsCollectionToolbar({
   onNdaFilterChange,
   canCreateAccount,
   onCreate,
-  onImport,
-  importing,
   layout,
   onLayoutChange,
   industryFilter,
@@ -55,8 +53,6 @@ export function AccountsCollectionToolbar({
   onNdaFilterChange: (value: AccountsNdaFilter) => void
   canCreateAccount: boolean
   onCreate: () => void
-  onImport: () => void
-  importing: boolean
   layout: ReferenceLayoutMode
   onLayoutChange: (mode: ReferenceLayoutMode) => void
   industryFilter: string
@@ -126,9 +122,6 @@ export function AccountsCollectionToolbar({
             <CollectionPrimaryAction
               label={COPY.accounts.addAccount}
               onCreate={onCreate}
-              onImport={onImport}
-              canImport
-              importing={importing}
             />
           ),
         'collection-columns': (

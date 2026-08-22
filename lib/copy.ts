@@ -321,20 +321,6 @@ export const COPY = {
   accounts: {
     searchCompaniesPlaceholder: 'Firma suchen …',
     addAccount: 'Account hinzufügen',
-    importTemplateDownload: 'Excel-Vorlage herunterladen',
-    importCancel: 'Abbrechen',
-    importRemoveFile: 'Datei entfernen',
-    importInvalidFile: 'Bitte eine CSV- oder Excel-Datei (.csv, .xlsx, .xls) wählen.',
-    importInProgress: 'Import läuft …',
-    importAccount: {
-      title: 'Accounts importieren',
-      description:
-        'Pro Zeile reicht der Firmenname in Spalte A — Website, Branche, Standort, Logo und Mitarbeiterzahl werden beim Import per Brandfetch ergänzt. Weitere Spalten sind optional.',
-      dropzoneTitle: 'CSV oder Excel hierher ziehen',
-      dropzoneHint: 'oder klicken, um eine Datei vom Gerät zu wählen',
-      fileSelectedHint: 'Klicken oder ziehen zum Ersetzen',
-      submit: 'Importieren',
-    },
     createDialogNameHint:
       'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
     createDialogSuggestLocal: 'Bereits angelegt',

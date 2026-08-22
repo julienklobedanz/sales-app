@@ -51,7 +51,6 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   // dropzone until primitive
   'app/dashboard/deals/cockpit/deal-document-dropzone.tsx',
   'app/dashboard/accounts/components/nda-pdf-dropzone.tsx',
-  'app/dashboard/accounts/components/accounts-import-dialog.tsx',
   'app/dashboard/overview/bulk-import-dropzone.tsx',
   'app/dashboard/overview/compliance-multi-pdf-dropzone.tsx',
   'app/dashboard/references/components/reference-onboarding-empty-state.tsx',

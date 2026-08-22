@@ -6,10 +6,7 @@ import type {
 } from './account-action-types'
 import { getReferencesByCompanyIdImpl } from './account-match-impl'
 import { getActiveDealsByCompanyIdImpl } from './account-deals-impl'
-import {
-  createCompanyImpl,
-  bulkCreateCompaniesFromSheetImpl,
-} from './account-crud-impl'
+import { createCompanyImpl } from './account-crud-impl'
 
 export type {
   CompanyRefRow,
@@ -39,16 +36,4 @@ export async function createCompany(payload: {
   account_status?: string | null
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   return createCompanyImpl(payload)
-}
-
-export async function bulkCreateCompaniesFromSheet(
-  fileBuffer: Uint8Array,
-): Promise<{
-  success: boolean
-  createdCount: number
-  skippedCount: number
-  failedCount: number
-  error?: string
-}> {
-  return bulkCreateCompaniesFromSheetImpl(fileBuffer)
 }

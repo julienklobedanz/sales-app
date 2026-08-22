@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { toast } from 'sonner'
 
 import { AppDataTable } from '@/components/ui/app-data-table'
 import { CollectionReadLayout } from '@/components/dashboard/collection-read-layout'
@@ -14,13 +13,11 @@ import type { AccountsNdaFilter } from '@/lib/accounts/account-collection-column
 import { ACCOUNT_DEFAULT_VISIBLE } from '@/lib/accounts/account-collection-columns'
 import { useCollectionObjectSelection } from '@/lib/dashboard/use-collection-object-selection'
 import type { ReferenceLayoutMode } from '@/app/dashboard/overview/reference-layout-switch'
-import { bulkCreateCompaniesFromSheet } from './actions'
 import { AccountsCollectionToolbar } from './accounts-collection-toolbar'
 import { filterAccountCollectionRows } from './accounts-collection-filter'
 import { buildAccountsTableColumns } from './accounts-table-columns'
 import { AccountLensPane, type AccountLensPayload } from './account-lens-pane'
 import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-empty-state'
-import { AccountsImportDialog } from './components/accounts-import-dialog'
 import { CreateAccountDialog } from './create-account-dialog'
 import { useAccountsTableColumnsState } from './use-accounts-table-columns-state'
 import type { CompanyCard, ReferencesFilter } from './accounts-collection-types'
@@ -46,8 +43,6 @@ export function AccountsCollection({
   const [locationFilter, setLocationFilter] = useState('all')
   const [referencesFilter, setReferencesFilter] = useState<ReferencesFilter>('any')
   const [createOpen, setCreateOpen] = useState(false)
-  const [importDialogOpen, setImportDialogOpen] = useState(false)
-  const [importing, setImporting] = useState(false)
   const [columnResetKey, setColumnResetKey] = useState(0)
   const {
     columnOrder,
@@ -120,25 +115,6 @@ export function AccountsCollection({
     })
   }
 
-  async function handleBulkImport(file: File): Promise<boolean> {
-    setImporting(true)
-    try {
-      const bytes = new Uint8Array(await file.arrayBuffer())
-      const result = await bulkCreateCompaniesFromSheet(bytes)
-      if (!result.success) {
-        toast.error(result.error ?? 'Import fehlgeschlagen.')
-        return false
-      }
-      toast.success(
-        `${result.createdCount} Accounts importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`,
-      )
-      router.refresh()
-      return true
-    } finally {
-      setImporting(false)
-    }
-  }
-
   const toolbar = (
     <AccountsCollectionToolbar
       search={search}
@@ -147,8 +123,6 @@ export function AccountsCollection({
       onNdaFilterChange={setNdaFilter}
       canCreateAccount={canCreateAccount}
       onCreate={() => setCreateOpen(true)}
-      onImport={() => setImportDialogOpen(true)}
-      importing={importing}
       layout={layout}
       onLayoutChange={setLayout}
       industryFilter={industryFilter}
@@ -225,12 +199,6 @@ export function AccountsCollection({
         </div>
       )}
       <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <AccountsImportDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        importing={importing}
-        onImport={handleBulkImport}
-      />
     </TooltipProvider>
   )
 }
