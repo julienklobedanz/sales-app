@@ -1,5 +1,3 @@
-export type { AccountStatusValue } from '@/lib/accounts/account-status'
-
 export type CompanyRefRow = {
   id: string
   title: string

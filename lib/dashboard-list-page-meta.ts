@@ -1,9 +1,5 @@
 import { COPY } from '@/lib/copy'
 import {
-  accountsListTitle,
-  type AccountsListView,
-} from '@/lib/accounts/accounts-list-view'
-import {
   referenceLibraryTitle,
   type ReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode'
@@ -25,9 +21,7 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
   if (pathname === ROUTES.home) return false
   if (pathname.startsWith(ROUTES.match)) return false
   if (pathname === ROUTES.marketSignals) return false
-  if (pathname.startsWith(ROUTES.insights)) return false
   if (pathname === ROUTES.marketSignalsManage) return false
-  if (pathname.startsWith(ROUTES.dealDesk)) return false
 
   if (pathname === ROUTES.deals.new || pathname === ROUTES.deals.requestNew) return false
   if (pathname === ROUTES.references.new) return false
@@ -52,14 +46,13 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
 export function getDashboardListPageMeta(
   pathname: string | null,
   context: {
-    accountsListView: AccountsListView
     referenceLibraryMode: ReferenceLibraryMode
   },
 ): DashboardListPageMeta | null {
   if (!pathname || !shouldShowDashboardListPageHeader(pathname)) return null
 
   if (pathname === ROUTES.accounts) {
-    return { title: accountsListTitle(context.accountsListView) }
+    return { title: 'Accounts' }
   }
 
   if (pathname === ROUTES.references.root) {

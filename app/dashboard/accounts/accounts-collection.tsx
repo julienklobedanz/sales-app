@@ -42,7 +42,6 @@ export function AccountsCollection({
   const canCreateAccount = isAdmin || isAccountManager
   const [search, setSearch] = useState('')
   const [ndaFilter, setNdaFilter] = useState<AccountsNdaFilter>('all')
-  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [industryFilter, setIndustryFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [referencesFilter, setReferencesFilter] = useState<ReferencesFilter>('any')
@@ -83,7 +82,6 @@ export function AccountsCollection({
       filterAccountCollectionRows(companies, {
         search,
         ndaFilter,
-        favoritesOnly,
         industryFilter,
         locationFilter,
         referencesFilter,
@@ -92,7 +90,6 @@ export function AccountsCollection({
       companies,
       search,
       ndaFilter,
-      favoritesOnly,
       industryFilter,
       locationFilter,
       referencesFilter,
@@ -111,7 +108,7 @@ export function AccountsCollection({
     searchParams.get('previewOnboarding') === '1'
   const showOnboarding =
     previewOnboarding ||
-    (companies.length === 0 && !search.trim() && ndaFilter === 'all' && !favoritesOnly)
+    (companies.length === 0 && !search.trim() && ndaFilter === 'all')
 
   function setLayout(mode: ReferenceLayoutMode) {
     const next = new URLSearchParams(searchParams.toString())
@@ -127,7 +124,7 @@ export function AccountsCollection({
     setImporting(true)
     try {
       const bytes = new Uint8Array(await file.arrayBuffer())
-      const result = await bulkCreateCompaniesFromSheet(bytes, { entityKind: 'account' })
+      const result = await bulkCreateCompaniesFromSheet(bytes)
       if (!result.success) {
         toast.error(result.error ?? 'Import fehlgeschlagen.')
         return false
@@ -154,8 +151,6 @@ export function AccountsCollection({
       importing={importing}
       layout={layout}
       onLayoutChange={setLayout}
-      favoritesOnly={favoritesOnly}
-      onFavoritesOnlyChange={setFavoritesOnly}
       industryFilter={industryFilter}
       onIndustryFilterChange={setIndustryFilter}
       industryOptions={industryOptions}
@@ -233,7 +228,6 @@ export function AccountsCollection({
       <AccountsImportDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
-        entityKind="account"
         importing={importing}
         onImport={handleBulkImport}
       />

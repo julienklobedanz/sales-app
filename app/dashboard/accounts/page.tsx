@@ -1,15 +1,11 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { AccountsGrid } from './accounts-grid'
 import { AccountsCollection } from './accounts-collection'
 import { getReferencesByCompanyId, getActiveDealsByCompanyId } from './actions'
 import { getNdaAgreementsByCompanyId } from './nda-actions'
 import { accountLensLoads } from '@/lib/accounts/account-lens'
-import {
-  parseAccountsCollectionLayout,
-  parseAccountsListView,
-} from '@/lib/accounts/accounts-list-view'
+import { parseAccountsCollectionLayout } from '@/lib/accounts/accounts-list-view'
 import {
   resolveNdaDisplayStatus,
   type NdaDisplayStatus,
@@ -486,12 +482,11 @@ export default async function AccountsPage({
       return typeof value === 'string' ? value : null
     },
   }
-  const listView = parseAccountsListView(paramBag)
   const layout = parseAccountsCollectionLayout(paramBag)
   const selectedId = typeof sp.id === 'string' ? sp.id : null
 
   let lensPayload = null
-  if (listView !== 'partner' && layout === 'inbox' && selectedId) {
+  if (layout === 'inbox' && selectedId) {
     const [references, activeDeals, ndaResult] = await Promise.all([
       accountLensLoads('references')
         ? getReferencesByCompanyId(selectedId)
@@ -510,21 +505,13 @@ export default async function AccountsPage({
     }
   }
 
-  const accountCompanies = enrichedCompanies.filter(
-    (c) => (c.entity_kind ?? 'account') !== 'partner',
-  )
-
   return (
     <div className="flex flex-col space-y-6">
-      {listView === 'partner' ? (
-        <AccountsGrid companies={enrichedCompanies} />
-      ) : (
-        <AccountsCollection
-          companies={accountCompanies}
-          lensPayload={lensPayload}
-          layout={layout}
-        />
-      )}
+      <AccountsCollection
+        companies={enrichedCompanies}
+        lensPayload={lensPayload}
+        layout={layout}
+      />
     </div>
   )
 }

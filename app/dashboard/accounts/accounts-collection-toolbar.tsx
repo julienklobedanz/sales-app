@@ -37,8 +37,6 @@ export function AccountsCollectionToolbar({
   importing,
   layout,
   onLayoutChange,
-  favoritesOnly,
-  onFavoritesOnlyChange,
   industryFilter,
   onIndustryFilterChange,
   industryOptions,
@@ -61,8 +59,6 @@ export function AccountsCollectionToolbar({
   importing: boolean
   layout: ReferenceLayoutMode
   onLayoutChange: (mode: ReferenceLayoutMode) => void
-  favoritesOnly: boolean
-  onFavoritesOnlyChange: (value: boolean) => void
   industryFilter: string
   onIndustryFilterChange: (value: string) => void
   industryOptions: string[]
@@ -112,8 +108,6 @@ export function AccountsCollectionToolbar({
         ),
         'collection-filter-more': (
           <AccountsMoreFiltersMenu
-            favoritesOnly={favoritesOnly}
-            onFavoritesOnlyChange={onFavoritesOnlyChange}
             industryFilter={industryFilter}
             onIndustryFilterChange={onIndustryFilterChange}
             industryOptions={industryOptions}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  normalizePartnerCategoryFromImport,
   parseAccountsImportRow,
   parseEmployeeCountFromImport,
   pickSheetRowValue,
@@ -26,45 +25,24 @@ describe('parseEmployeeCountFromImport', () => {
   })
 })
 
-describe('normalizePartnerCategoryFromImport', () => {
-  it('maps German and English aliases', () => {
-    expect(normalizePartnerCategoryFromImport('Subunternehmer')).toBe('sub')
-    expect(normalizePartnerCategoryFromImport('Technologie')).toBe('tech')
-    expect(normalizePartnerCategoryFromImport('')).toBe('other')
-  })
-})
-
 describe('parseAccountsImportRow', () => {
   it('skips rows without a name', () => {
-    expect(parseAccountsImportRow({ Website: 'https://a.de' }, 'account')).toBeNull()
+    expect(parseAccountsImportRow({ Website: 'https://a.de' })).toBeNull()
   })
 
-  it('parses account rows without partner category', () => {
+  it('parses account rows', () => {
     expect(
-      parseAccountsImportRow(
-        {
-          Name: 'Acme',
-          Branche: 'IT',
-          Mitarbeiter: '50',
-        },
-        'account',
-      ),
+      parseAccountsImportRow({
+        Name: 'Acme',
+        Branche: 'IT',
+        Mitarbeiter: '50',
+      }),
     ).toEqual({
       name: 'Acme',
       website: '',
       industry: 'IT',
       headquarters: '',
       employeeCount: 50,
-      partnerCategory: null,
-    })
-  })
-
-  it('parses partner rows with category', () => {
-    expect(
-      parseAccountsImportRow({ Name: 'Partner AG', Kategorie: 'legal' }, 'partner'),
-    ).toMatchObject({
-      name: 'Partner AG',
-      partnerCategory: 'legal',
     })
   })
 })

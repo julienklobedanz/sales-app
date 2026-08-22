@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 import {
   DASHBOARD_PAGE_SUBTITLE_CLASS,
@@ -11,11 +11,6 @@ import {
   getDashboardListPageMeta,
   shouldShowDashboardListPageHeader,
 } from '@/lib/dashboard-list-page-meta'
-import { parseAccountsListView } from '@/lib/accounts/accounts-list-view'
-import {
-  syncAccountsListViewFromUrl,
-  useAccountsListView,
-} from '@/lib/accounts/accounts-list-view-store'
 import { loadReferenceLibraryModeFromStorage } from '@/lib/references/library/reference-library-mode'
 import {
   syncReferenceLibraryModeFromStorage,
@@ -25,13 +20,7 @@ import { ROUTES } from '@/lib/routes'
 
 export function DashboardListPageHeader() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const accountsListView = useAccountsListView()
   const referenceLibraryMode = useReferenceLibraryMode()
-
-  useEffect(() => {
-    syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
-  }, [searchParams])
 
   useEffect(() => {
     if (pathname === ROUTES.references.root) {
@@ -42,7 +31,6 @@ export function DashboardListPageHeader() {
   if (!shouldShowDashboardListPageHeader(pathname)) return null
 
   const meta = getDashboardListPageMeta(pathname, {
-    accountsListView,
     referenceLibraryMode,
   })
   if (!meta) return null

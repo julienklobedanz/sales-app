@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,18 +10,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { COPY } from '@/lib/copy'
-import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { getIndustryLabelDe } from '@/lib/constants/industries'
 import { cn } from '@/lib/utils'
 
 function accountsMoreFiltersActive(args: {
-  favoritesOnly: boolean
   industryFilter: string
   locationFilter: string
   referencesFilter: 'any' | 'with' | 'without'
 }): boolean {
   return (
-    args.favoritesOnly ||
     args.industryFilter !== 'all' ||
     args.locationFilter !== 'all' ||
     args.referencesFilter !== 'any'
@@ -30,8 +26,6 @@ function accountsMoreFiltersActive(args: {
 }
 
 export function AccountsMoreFiltersMenu(props: {
-  favoritesOnly: boolean
-  onFavoritesOnlyChange: (value: boolean) => void
   industryFilter: string
   onIndustryFilterChange: (value: string) => void
   industryOptions: string[]
@@ -56,12 +50,6 @@ export function AccountsMoreFiltersMenu(props: {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[min(100vw-2rem,18rem)] p-1">
-        <FilterMenuCheckboxOption
-          label={COPY.dashboard.tooltipFavorites}
-          selected={props.favoritesOnly}
-          onSelect={() => props.onFavoritesOnlyChange(!props.favoritesOnly)}
-        />
-        <DropdownMenuSeparator />
         <FilterSection
           label="Branche"
           value={props.industryFilter}
@@ -95,15 +83,6 @@ export function AccountsMoreFiltersMenu(props: {
           selected={props.referencesFilter === 'without'}
           onSelect={() => props.onReferencesFilterChange('without')}
         />
-        <DropdownMenuSeparator />
-        <div className="px-2 py-1.5">
-          <Link
-            href={accountsListHref('partner')}
-            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-          >
-            {COPY.accounts.partnerLink}
-          </Link>
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

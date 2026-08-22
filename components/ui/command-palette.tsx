@@ -81,7 +81,7 @@ function pushRecentFromSearch(item: CommandSearchResult | DealHit | RecentItem) 
     })
     return
   }
-  if (item.kind === 'account' || item.kind === 'partner') {
+  if (item.kind === 'account') {
     pushCommandRecent({
       kind: 'account',
       id: item.id,

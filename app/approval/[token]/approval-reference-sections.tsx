@@ -1,6 +1,6 @@
 'use client'
 
-import { BidOverviewCollapsibleCard } from '@/app/dashboard/deal-desk/components/bid-overview-collapsible-card'
+import { BidOverviewCollapsibleCard } from '@/components/deal-desk/bid-overview-collapsible-card'
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
 
 export function ApprovalReferenceSections({

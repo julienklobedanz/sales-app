@@ -105,7 +105,6 @@ export function CommandCenterSearchResults({
 export function SearchResultRow({ item }: { item: CommandSearchResult }) {
   switch (item.kind) {
     case 'account':
-    case 'partner':
       return (
         <>
           <span className="flex min-w-0 items-center gap-3">

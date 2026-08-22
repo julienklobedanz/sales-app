@@ -51,10 +51,6 @@ export const ROUTES = {
   marketSignals: '/dashboard/market-signals',
   /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
   marketSignalsManage: '/dashboard/settings/market-signals',
-  insights: '/dashboard/insights',
-  dealDesk: '/dashboard/deal-desk',
-  dealDeskProject: (projectId: string) =>
-    `/dashboard/deal-desk?project=${encodeURIComponent(projectId)}`,
   match: '/dashboard/smart-match',
   /** Semantische Suche mit Deal-Kontext (`matchReferences`). */
   matchWithDeal: (dealId: string) =>

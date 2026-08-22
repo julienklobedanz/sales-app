@@ -1,20 +1,7 @@
 import { ROUTES } from '@/lib/routes'
 
-/** Query-Parameter für die Partner-Listenansicht unter /dashboard/accounts */
+/** Query-Parameter für die Lese-Ansicht unter /dashboard/accounts (`?view=lesen`). */
 const ACCOUNTS_VIEW_PARAM = 'view'
-
-export type AccountsListView = 'account' | 'partner'
-
-export function parseAccountsListView(
-  searchParams:
-    | URLSearchParams
-    | { get: (key: string) => string | null }
-    | null
-    | undefined,
-): AccountsListView {
-  const raw = searchParams?.get(ACCOUNTS_VIEW_PARAM)
-  return raw === 'partner' ? 'partner' : 'account'
-}
 
 export type AccountsCollectionLayout = 'table' | 'inbox'
 
@@ -40,24 +27,6 @@ export function accountsReadHref(id: string, extra?: Record<string, string>): st
   return `${ROUTES.accounts}?${params.toString()}`
 }
 
-export function accountsListHref(view: AccountsListView = 'account'): string {
-  if (view === 'partner') {
-    return `${ROUTES.accounts}?${ACCOUNTS_VIEW_PARAM}=partner`
-  }
-  return ROUTES.accounts
-}
-
-export function accountsListTitle(view: AccountsListView): string {
-  return view === 'partner' ? 'Partner' : 'Accounts'
-}
-
-export function accountsDetailHref(
-  id: string,
-  listView: AccountsListView = 'account',
-): string {
-  const base = ROUTES.accountsDetail(id)
-  if (listView === 'partner') {
-    return `${base}?${ACCOUNTS_VIEW_PARAM}=partner`
-  }
-  return base
+export function accountsDetailHref(id: string): string {
+  return ROUTES.accountsDetail(id)
 }
