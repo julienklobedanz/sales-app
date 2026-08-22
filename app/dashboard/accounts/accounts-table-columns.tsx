@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { NdaStatusBadge } from './components/nda-status-badge'
-import type { CompanyCard } from './accounts-grid-types'
+import type { CompanyCard } from './accounts-collection-types'
 
 export function buildAccountsTableColumns(): ColumnDef<CompanyCard>[] {
   return [

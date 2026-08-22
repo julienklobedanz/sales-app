@@ -23,7 +23,7 @@ import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-e
 import { AccountsImportDialog } from './components/accounts-import-dialog'
 import { CreateAccountDialog } from './create-account-dialog'
 import { useAccountsTableColumnsState } from './use-accounts-table-columns-state'
-import type { CompanyCard, ReferencesFilter } from './accounts-grid-types'
+import type { CompanyCard, ReferencesFilter } from './accounts-collection-types'
 
 export function AccountsCollection({
   companies,

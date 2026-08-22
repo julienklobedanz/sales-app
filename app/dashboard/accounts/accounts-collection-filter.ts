@@ -1,6 +1,6 @@
 import { resolveIndustryId } from '@/lib/constants/industries'
 import type { AccountsNdaFilter } from '@/lib/accounts/account-collection-columns'
-import type { CompanyCard, ReferencesFilter } from './accounts-grid-types'
+import type { CompanyCard, ReferencesFilter } from './accounts-collection-types'
 
 export function filterAccountCollectionRows(
   companies: CompanyCard[],

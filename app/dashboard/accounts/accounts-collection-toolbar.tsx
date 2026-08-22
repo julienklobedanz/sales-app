@@ -24,7 +24,7 @@ import {
   type ReferenceLayoutMode,
 } from '@/app/dashboard/overview/reference-layout-switch'
 import { AccountsMoreFiltersMenu } from './accounts-more-filters-menu'
-import type { ReferencesFilter } from './accounts-grid-types'
+import type { ReferencesFilter } from './accounts-collection-types'
 
 export function AccountsCollectionToolbar({
   search,
