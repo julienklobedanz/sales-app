@@ -53,7 +53,6 @@ import {
   signOutAllSessions,
   signOutOtherSessions,
 } from '../actions'
-import { MarketSignalsPushCard } from '../market-signals-push-card'
 import { updateProfileNotificationSettings } from '../settings-consolidation-actions'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
@@ -78,7 +77,6 @@ type ProfileTabProps = {
       digestTimezone: string
       digestLocalTime: string
       emailInstantMarketSignals: boolean
-      browserPushMarketSignals: boolean
     }
   }
   register: RegisterSettingsTab
@@ -107,9 +105,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
   const [notifyInstantMarketSignals, setNotifyInstantMarketSignals] = useState(
     profile.notificationSettings.emailInstantMarketSignals,
   )
-  const [browserPushMarketSignals, setBrowserPushMarketSignals] = useState(
-    profile.notificationSettings.browserPushMarketSignals,
-  )
   const [profilePending, startProfileTransition] = useTransition()
   const [passwordPending, startPasswordTransition] = useTransition()
   const [profileCardDirty, setProfileCardDirty] = useState(false)
@@ -128,8 +123,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
     digestTimezone !== profile.notificationSettings.digestTimezone ||
     digestLocalTime !== profile.notificationSettings.digestLocalTime ||
     notifyInstantMarketSignals !==
-      profile.notificationSettings.emailInstantMarketSignals ||
-    browserPushMarketSignals !== profile.notificationSettings.browserPushMarketSignals
+      profile.notificationSettings.emailInstantMarketSignals
 
   function saveProfileNotifications() {
     startProfileTransition(async () => {
@@ -141,7 +135,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
         digestTimezone,
         digestLocalTime,
         emailInstantMarketSignals: notifyInstantMarketSignals,
-        browserPushMarketSignals,
       })
       if (!result.success) {
         toast.error(result.error)
@@ -212,7 +205,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                     <TableHead>Ereignis</TableHead>
                     <TableHead className="w-20 text-center">E-Mail</TableHead>
                     <TableHead className="w-20 text-center">In-App</TableHead>
-                    <TableHead className="w-20 text-center">Web-Push</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -230,12 +222,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                         onCheckedChange={setNotifyMarketSignalsDigest}
                       />
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Switch
-                        checked={browserPushMarketSignals}
-                        onCheckedChange={setBrowserPushMarketSignals}
-                      />
-                    </TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="whitespace-normal">Referenz-Anfragen</TableCell>
@@ -251,9 +237,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                         onCheckedChange={setNotifyNewMatch}
                       />
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Switch checked={false} onCheckedChange={() => {}} disabled />
-                    </TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="whitespace-normal">System-Updates</TableCell>
@@ -268,9 +251,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                         checked={notifyDigestEmptyDay}
                         onCheckedChange={setNotifyDigestEmptyDay}
                       />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Switch checked={false} onCheckedChange={() => {}} disabled />
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -335,8 +315,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                 />
               </div>
             </div>
-
-            <MarketSignalsPushCard />
           </CardContent>
         </Card>
 

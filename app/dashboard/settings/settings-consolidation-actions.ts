@@ -55,7 +55,6 @@ export async function updateProfileNotificationSettings(input: {
   digestTimezone: string
   digestLocalTime: string
   emailInstantMarketSignals: boolean
-  browserPushMarketSignals: boolean
 }): Promise<ActionResult> {
   const { supabase, user } = await getContext()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
@@ -81,7 +80,6 @@ export async function updateProfileNotificationSettings(input: {
     digest_timezone: normalizeDigestTimezone(input.digestTimezone),
     digest_local_time: normalizeDigestLocalTime(input.digestLocalTime),
     email_instant_market_signals: Boolean(input.emailInstantMarketSignals),
-    browser_push_market_signals: Boolean(input.browserPushMarketSignals),
   }
 
   const { error } = await supabase

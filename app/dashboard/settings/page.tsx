@@ -40,7 +40,6 @@ function parseProfileNotificationSettings(raw: unknown): {
   digestTimezone: string
   digestLocalTime: string
   emailInstantMarketSignals: boolean
-  browserPushMarketSignals: boolean
 } {
   if (!raw || typeof raw !== 'object') {
     return {
@@ -51,7 +50,6 @@ function parseProfileNotificationSettings(raw: unknown): {
       digestTimezone: DEFAULT_DIGEST_TIMEZONE,
       digestLocalTime: DEFAULT_DIGEST_LOCAL_TIME,
       emailInstantMarketSignals: false,
-      browserPushMarketSignals: false,
     }
   }
   const obj = raw as Record<string, unknown>
@@ -78,10 +76,6 @@ function parseProfileNotificationSettings(raw: unknown): {
     emailInstantMarketSignals:
       typeof obj.email_instant_market_signals === 'boolean'
         ? obj.email_instant_market_signals
-        : false,
-    browserPushMarketSignals:
-      typeof obj.browser_push_market_signals === 'boolean'
-        ? obj.browser_push_market_signals
         : false,
   }
 }

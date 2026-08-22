@@ -7,7 +7,7 @@ Dieses Runbook deckt die noch offenen, zielumgebungsabhängigen Punkte aus der t
 | Stufe       | Ziel                                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------------ |
 | **Minimum** | Sidebar-Routen ohne Mock-Fallback; Forgot-Password + Referenzbedarf-Mail; Build grün (`lint`/`test`/`build`) |
-| **Stretch** | Deal Desk ohne Mock, Market-Signals-Cron, Push, Stripe, echte Salesforce-URLs, Embedding-Trigger in Prod     |
+| **Stretch** | Deal Desk ohne Mock, Market-Signals-Cron, Stripe, echte Salesforce-URLs, Embedding-Trigger in Prod     |
 
 **Referenzumgebungen:** Staging-Supabase + Vercel Preview/Staging mit identischer Env wie Prod (ohne Secrets zu committen).
 
@@ -29,7 +29,6 @@ Dieses Runbook deckt die noch offenen, zielumgebungsabhängigen Punkte aus der t
 ### Optional je Feature-Scope
 
 - `OPENAI_API_KEY` (auch als **Supabase Edge Secret** für `generate-embedding`)
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_BILLING_RETURN_URL` (Stretch)
 - `CRON_SECRET`
 
@@ -85,7 +84,6 @@ Erwartung: `ok: true` und sinnvolle Zähler (`sent`, `skipped`, `errors`).
 ### Delivery
 
 - Resend: Mails kommen an.
-- Push: Browser-Abos vorhanden + VAPID korrekt + Push-Nachrichten kommen an.
 
 ## 4) Approval/Public E2E
 

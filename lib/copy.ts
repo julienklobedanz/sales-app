@@ -67,8 +67,6 @@ export const COPY = {
     teamOwnRoleDisabledHint: 'Deine eigene Rolle kannst du hier nicht ändern.',
     teamRemoveMemberTooltip: 'Mitglied entfernen',
     exportAsCsv: 'Als CSV exportieren',
-    pushEnable: 'Push aktivieren',
-    pushEnablePending: 'Wird eingerichtet …',
     signOutOtherDevices: 'Andere Geräte abmelden',
     signOutEverywhere: 'Überall abmelden',
     signOutEverywhereTitle: 'Überall abmelden?',

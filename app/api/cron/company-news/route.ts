@@ -58,7 +58,6 @@ export async function GET(request: Request) {
 
   let instant: {
     emailed: number
-    pushed: number
     skipped: boolean
     errors: string[]
   } | null = null
