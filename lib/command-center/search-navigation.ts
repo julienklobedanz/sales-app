@@ -5,11 +5,9 @@ import type { CommandSearchResult } from '@/lib/command-center/global-search'
 export function hrefForCommandSearchResult(result: CommandSearchResult): string {
   switch (result.kind) {
     case 'account':
-      return accountsDetailHref(result.id, 'account')
-    case 'partner':
-      return accountsDetailHref(result.id, 'partner')
+      return accountsDetailHref(result.id)
     case 'rfp':
-      return ROUTES.dealDeskProject(result.id)
+      return result.dealId ? ROUTES.deals.detailRfp(result.dealId) : ROUTES.deals.root
     case 'nda':
       return `${ROUTES.accountsDetail(result.companyId)}?openNda=1`
     case 'reference':

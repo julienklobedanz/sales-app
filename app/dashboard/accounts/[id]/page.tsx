@@ -20,15 +20,11 @@ export default async function AccountDetailPage({
 
   const { data: company } = await supabase
     .from('companies')
-    .select('id, entity_kind')
+    .select('id')
     .eq('id', id)
     .maybeSingle()
 
   if (!company) notFound()
-
-  if (company.entity_kind === 'partner') {
-    redirect(`${ROUTES.accounts}?view=partner`)
-  }
 
   const extra: Record<string, string> = {}
   if (sp.openNda === '1' || sp.openNda === 'true') extra.openNda = '1'

@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import type { AccountEntityKind } from '@/lib/accounts/account-entity'
 import {
   ACCOUNTS_IMPORT_ACCEPT,
   downloadAccountsImportTemplate,
@@ -26,7 +25,6 @@ import { cn } from '@/lib/utils'
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  entityKind: AccountEntityKind
   importing: boolean
   onImport: (file: File) => boolean | Promise<boolean>
 }
@@ -34,7 +32,6 @@ type Props = {
 export function AccountsImportDialog({
   open,
   onOpenChange,
-  entityKind,
   importing,
   onImport,
 }: Props) {
@@ -42,8 +39,7 @@ export function AccountsImportDialog({
   const [file, setFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
-  const isPartner = entityKind === 'partner'
-  const copy = isPartner ? COPY.accounts.importPartner : COPY.accounts.importAccount
+  const copy = COPY.accounts.importAccount
 
   function resetFile() {
     setFile(null)
@@ -88,7 +84,7 @@ export function AccountsImportDialog({
             className="w-full justify-center gap-2"
             disabled={importing}
             onClick={() => {
-              void downloadAccountsImportTemplate(entityKind).catch(() => {
+              void downloadAccountsImportTemplate().catch(() => {
                 toast.error('Vorlage konnte nicht geladen werden.')
               })
             }}

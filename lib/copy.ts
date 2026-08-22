@@ -322,13 +322,7 @@ export const COPY = {
   },
   accounts: {
     searchCompaniesPlaceholder: 'Firma suchen …',
-    searchPartnersPlaceholder: 'Partner suchen …',
     addAccount: 'Account hinzufügen',
-    addPartner: 'Partner hinzufügen',
-    bulkUploadTooltip:
-      'Accounts aus Excel- oder CSV-Datei importieren (Spalten z. B. Name, Website, Branche).',
-    bulkUploadTooltipPartner:
-      'Partner aus Excel- oder CSV-Datei importieren (Spalten z. B. Name, Website, Kategorie).',
     importTemplateDownload: 'Excel-Vorlage herunterladen',
     importCancel: 'Abbrechen',
     importRemoveFile: 'Datei entfernen',
@@ -343,18 +337,6 @@ export const COPY = {
       fileSelectedHint: 'Klicken oder ziehen zum Ersetzen',
       submit: 'Importieren',
     },
-    importPartner: {
-      title: 'Partner importieren',
-      description:
-        'Pro Zeile reicht der Name in Spalte A (optional Kategorie in F: sub, tech, legal, other). Alle anderen Felder werden per Brandfetch ergänzt.',
-      dropzoneTitle: 'CSV oder Excel hierher ziehen',
-      dropzoneHint: 'oder klicken, um eine Datei vom Gerät zu wählen',
-      fileSelectedHint: 'Klicken oder ziehen zum Ersetzen',
-      submit: 'Importieren',
-    },
-    tooltipFilter: 'Filtern',
-    tooltipFavorites: 'Favoriten',
-    alsoLinkedAccountHint: 'Auch als Account verknüpft',
     createDialogNameHint:
       'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
     createDialogSuggestLocal: 'Bereits angelegt',
@@ -365,13 +347,10 @@ export const COPY = {
       'Keine Treffer für diesen Namen. Namen weiter ausformulieren oder unten manuell anlegen.',
     createDialogOpenExisting:
       'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
-    editDialogTitle: 'Account bearbeiten',
-    editButton: 'Bearbeiten',
     quickCreateAccountTitle: 'Neuen Account anlegen',
     quickCreateAccountSubmit: 'Account anlegen und auswählen',
     quickCreateAccountHint:
       'Legt einen Account in deiner Organisation an und wählt ihn für diesen Deal aus.',
-    partnerLink: 'Partner',
     filterNdaAll: 'Alle NDA-Zustände',
     filterNdaActive: 'NDA aktiv',
     filterNdaExpiring: 'NDA läuft ab',

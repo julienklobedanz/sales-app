@@ -72,7 +72,7 @@ export function RoleHomeDashboard({
           functionRole={functionRole}
           subtitle={COPY.dashboard.home.salesLeader.subtitle}
           ctaLabel={COPY.dashboard.home.salesLeader.cta}
-          ctaHref={ROUTES.insights}
+          ctaHref={ROUTES.deals.root}
           thin={thin}
           thinBannerText={COPY.dashboard.home.thinBanner}
         >

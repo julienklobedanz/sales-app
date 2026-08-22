@@ -7,7 +7,6 @@ export function filterAccountCollectionRows(
   opts: {
     search: string
     ndaFilter: AccountsNdaFilter
-    favoritesOnly: boolean
     industryFilter: string
     locationFilter: string
     referencesFilter: ReferencesFilter
@@ -19,7 +18,6 @@ export function filterAccountCollectionRows(
     if (opts.ndaFilter !== 'all' && (company.nda_status ?? 'none') !== opts.ndaFilter) {
       return false
     }
-    if (opts.favoritesOnly && !company.is_favorite) return false
     if (
       opts.industryFilter !== 'all' &&
       resolveIndustryId(company.industry) !== opts.industryFilter

@@ -1,12 +1,8 @@
-import type { AccountEntityKind } from '@/lib/accounts/account-entity'
-
 export const ACCOUNTS_IMPORT_ACCEPT =
   '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv'
 
-export function accountsImportTemplateFilename(entityKind: AccountEntityKind): string {
-  return entityKind === 'partner'
-    ? 'partner-import-vorlage.xlsx'
-    : 'accounts-import-vorlage.xlsx'
+export function accountsImportTemplateFilename(): string {
+  return 'accounts-import-vorlage.xlsx'
 }
 
 export function isAccountsImportFile(file: File): boolean {
@@ -22,17 +18,15 @@ export function isAccountsImportFile(file: File): boolean {
 }
 
 /** Template-Download über Server-API (xlsx bleibt serverseitig). */
-export async function downloadAccountsImportTemplate(
-  entityKind: AccountEntityKind,
-): Promise<void> {
-  const res = await fetch(`/api/accounts/import-template?kind=${entityKind}`)
+export async function downloadAccountsImportTemplate(): Promise<void> {
+  const res = await fetch('/api/accounts/import-template')
   if (!res.ok) {
     throw new Error('Vorlage konnte nicht geladen werden.')
   }
   const blob = await res.blob()
   const filename =
     parseContentDispositionFilename(res.headers.get('Content-Disposition')) ??
-    accountsImportTemplateFilename(entityKind)
+    accountsImportTemplateFilename()
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

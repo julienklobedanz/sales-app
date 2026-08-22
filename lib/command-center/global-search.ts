@@ -18,13 +18,13 @@ import { log } from '@/lib/observability/logger'
 
 export type CommandSearchResult =
   | { kind: 'account'; id: string; title: string; logoUrl: string | null }
-  | { kind: 'partner'; id: string; title: string; logoUrl: string | null }
   | {
       kind: 'rfp'
       id: string
       title: string
       customerName: string | null
       statusLabel: string
+      dealId: string | null
     }
   | {
       kind: 'nda'
@@ -86,7 +86,6 @@ export type CommandSearchResult =
 
 export type CommandSearchGroups = {
   accounts: CommandSearchResult[]
-  partners: CommandSearchResult[]
   rfps: CommandSearchResult[]
   ndas: CommandSearchResult[]
   references: CommandSearchResult[]
@@ -98,7 +97,6 @@ export type CommandSearchGroups = {
 export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
   'references',
   'accounts',
-  'partners',
   'rfps',
   'ndas',
   'marketSignals',
@@ -108,7 +106,6 @@ export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
 
 export const COMMAND_SEARCH_GROUP_LABELS: Record<keyof CommandSearchGroups, string> = {
   accounts: 'Accounts',
-  partners: 'Partner',
   rfps: 'Offene RFPs & Ausschreibungen',
   ndas: 'NDA & Vertragsdokumente',
   references: 'Referenzen (Case Studies)',
@@ -173,7 +170,6 @@ export function hrefForGlobalSearchResult(result: {
 export function emptyCommandSearchGroups(): CommandSearchGroups {
   return {
     accounts: [],
-    partners: [],
     rfps: [],
     ndas: [],
     references: [],
@@ -187,7 +183,7 @@ export function hasAnyCommandSearchHit(groups: CommandSearchGroups): boolean {
   return COMMAND_SEARCH_GROUP_ORDER.some((key) => groups[key].length > 0)
 }
 
-/** Accounts/Partner-Gruppe: keine Doppelten (gleiche ID oder gleicher Name). */
+/** Accounts-Gruppe: keine Doppelten (gleiche ID oder gleicher Name). */
 function dedupeCompanySearchResults<T extends { id: string; title: string }>(
   items: T[],
 ): T[] {
@@ -250,12 +246,12 @@ export async function searchCommandCenter(
       deskOr
         ? supabase
             .from('deal_desk_projects')
-            .select('id,project_name,customer_name,analysis_status')
+            .select('id,deal_id,project_name,customer_name,analysis_status')
             .or(deskOr)
             .limit(6)
         : supabase
             .from('deal_desk_projects')
-            .select('id,project_name,customer_name,analysis_status')
+            .select('id,deal_id,project_name,customer_name,analysis_status')
             .limit(0),
       fetchNdaSearchRows(supabase, ndaOr, likePat),
       supabase
@@ -300,25 +296,15 @@ export async function searchCommandCenter(
   const groups = emptyCommandSearchGroups()
 
   const accountCandidates: Extract<CommandSearchResult, { kind: 'account' }>[] = []
-  const partnerCandidates: Extract<CommandSearchResult, { kind: 'partner' }>[] = []
   for (const row of accountsRes.data ?? []) {
-    const entityKind =
-      'entity_kind' in row && typeof row.entity_kind === 'string'
-        ? row.entity_kind
-        : 'account'
-    const base = {
+    accountCandidates.push({
+      kind: 'account',
       id: row.id,
       title: String(row.name ?? ''),
       logoUrl: row.logo_url ?? null,
-    }
-    if (entityKind === 'partner') {
-      partnerCandidates.push({ kind: 'partner', ...base })
-    } else {
-      accountCandidates.push({ kind: 'account', ...base })
-    }
+    })
   }
   groups.accounts.push(...dedupeCompanySearchResults(accountCandidates))
-  groups.partners.push(...dedupeCompanySearchResults(partnerCandidates))
 
   for (const row of deskRes.data ?? []) {
     const title = String(row.project_name ?? 'Projekt')
@@ -328,6 +314,7 @@ export async function searchCommandCenter(
       title,
       customerName: (row.customer_name as string | null) ?? null,
       statusLabel: rfpStatusLabel(String(row.analysis_status ?? 'pending')),
+      dealId: (row.deal_id as string | null) ?? null,
     })
   }
 

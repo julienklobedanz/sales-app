@@ -1,20 +1,6 @@
-export type AccountEntityKind = 'account' | 'partner'
-
-export type PartnerCategory = 'sub' | 'tech' | 'legal' | 'other'
-
-export const PARTNER_CATEGORY_OPTIONS: { value: PartnerCategory; label: string }[] = [
-  { value: 'sub', label: 'Subunternehmer' },
-  { value: 'tech', label: 'Tech' },
-  { value: 'legal', label: 'Legal' },
-  { value: 'other', label: 'Sonstiges' },
-]
-
-export function partnerCategoryLabel(value: string | null | undefined): string | null {
-  if (!value) return null
-  return PARTNER_CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? value
-}
-
 import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from './nda-expiry'
+
+export type AccountEntityKind = 'account' | 'partner'
 
 export type NdaDisplayStatus = 'active' | 'expiring' | 'none'
 

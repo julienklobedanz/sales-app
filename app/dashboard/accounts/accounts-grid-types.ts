@@ -27,8 +27,4 @@ export type CompanyCard = {
   sort_urgency_at?: string | null
 }
 
-export type EmployeeBand = 'any' | 'unknown' | 's_50' | 'm_200' | 'l_1000' | 'xl'
-
 export type ReferencesFilter = 'any' | 'with' | 'without'
-
-export type SortMode = 'activity' | 'az'
