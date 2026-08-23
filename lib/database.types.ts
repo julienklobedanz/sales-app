@@ -1032,36 +1032,30 @@ export type Database = {
           category: string | null
           created_at: string
           deal_id: string
-          first_seen_at: string
           id: string
-          last_seen_at: string
           normalized_text: string
           organization_id: string
-          status: string
+          source_document_id: string
           text: string
         }
         Insert: {
           category?: string | null
           created_at?: string
           deal_id: string
-          first_seen_at?: string
           id?: string
-          last_seen_at?: string
           normalized_text: string
           organization_id: string
-          status?: string
+          source_document_id: string
           text: string
         }
         Update: {
           category?: string | null
           created_at?: string
           deal_id?: string
-          first_seen_at?: string
           id?: string
-          last_seen_at?: string
           normalized_text?: string
           organization_id?: string
-          status?: string
+          source_document_id?: string
           text?: string
         }
         Relationships: [
@@ -1077,6 +1071,13 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_requirements_source_document_id_fkey'
+            columns: ['source_document_id']
+            isOneToOne: false
+            referencedRelation: 'deal_documents'
             referencedColumns: ['id']
           },
         ]

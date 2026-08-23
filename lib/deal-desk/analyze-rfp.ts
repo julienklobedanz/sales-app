@@ -49,6 +49,8 @@ export type AnalyzeRfpInput = {
   projectDocuments?: AnalyzeRfpProjectDocument[]
   /** `quick` = Timeline + Eignung; `full` = komplette Pipeline. */
   stage?: 'quick' | 'full'
+  /** Wenn gesetzt: keine Extraktion; Coverage/Verdikte nutzen diese ids (Zeilen-UUIDs). */
+  requirements?: ExtractedRfpRequirement[]
 }
 
 export type AnalyzeRfpResult = {
@@ -84,6 +86,7 @@ export async function analyzeRfp(
     deal,
     projectDocuments = [],
     stage = 'full',
+    requirements: givenRequirements,
   } = input
 
   const timelineRes = await extractTimelineFromRfpText(apiKey, mergedText)
@@ -119,9 +122,15 @@ export async function analyzeRfp(
     }
   }
 
-  const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
-  if ('error' in extracted) {
-    return { error: extracted.error, isQuotaError: quotaFromError(extracted.error) }
+  let requirements: ExtractedRfpRequirement[]
+  if (givenRequirements !== undefined) {
+    requirements = givenRequirements
+  } else {
+    const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
+    if ('error' in extracted) {
+      return { error: extracted.error, isQuotaError: quotaFromError(extracted.error) }
+    }
+    requirements = extracted.requirements
   }
 
   const { coverage, verdicts: rfpVerdicts } = await buildRfpCoverageWithRelevance(
@@ -135,7 +144,7 @@ export async function analyzeRfp(
         industry: null,
         volume: null,
       },
-      requirements: extracted.requirements,
+      requirements,
     },
   )
 
@@ -170,7 +179,7 @@ export async function analyzeRfp(
     apiKey,
     projectName,
     fileNames,
-    requirements: extracted.requirements,
+    requirements,
     coverage,
     rfpVerdicts,
     risk: { ...riskResult, redFlags: linkedRedFlags },
@@ -183,7 +192,7 @@ export async function analyzeRfp(
 
   return {
     snapshot,
-    requirements: extracted.requirements,
+    requirements,
     coverage,
     eligibilityCriteria,
     rfpVerdicts,

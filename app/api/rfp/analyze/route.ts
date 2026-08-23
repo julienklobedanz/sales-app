@@ -5,7 +5,11 @@ import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
-import { persistDealRfpRequirements } from '@/lib/deals/persist-deal-rfp-requirements'
+import { loadOrCreateDealRfpRequirementsForDocument } from '@/lib/deals/persist-deal-rfp-requirements'
+import {
+  extractRequirementsFromRfpText,
+  type ExtractedRfpRequirement,
+} from '@/lib/rfp-requirements'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
 import { extractRfpPlainTextFromFile } from '@/lib/document-text'
@@ -231,6 +235,21 @@ export async function POST(req: NextRequest) {
 
   const mergedText = accountContextPrefix + plain.text
   const fileNames = [dealDoc.file_name || 'document']
+  const stage = body.stage === 'quick' ? 'quick' : 'full'
+
+  let requirements: ExtractedRfpRequirement[] | undefined
+  if (stage !== 'quick') {
+    const persisted = await loadOrCreateDealRfpRequirementsForDocument(supabase, {
+      dealId,
+      organizationId: orgId,
+      sourceDocumentId: dealDoc.id,
+      extract: () => extractRequirementsFromRfpText(apiKey, mergedText),
+    })
+    if (persisted.error) {
+      return fail(persisted.error, 422)
+    }
+    requirements = persisted.requirements
+  }
 
   const analyzed = await analyzeRfp({
     apiKey,
@@ -253,7 +272,8 @@ export async function POST(req: NextRequest) {
         mime_type: dealDoc.mime_type,
       },
     ],
-    stage: body.stage === 'quick' ? 'quick' : 'full',
+    stage,
+    requirements,
   })
 
   if ('error' in analyzed) {
@@ -281,18 +301,6 @@ export async function POST(req: NextRequest) {
 
   if (doneError) {
     return fail(doneError.message)
-  }
-
-  const persistedRequirements = await persistDealRfpRequirements(supabase, {
-    dealId,
-    organizationId: orgId,
-    requirements: analyzed.requirements,
-  })
-  if (persistedRequirements.error) {
-    return NextResponse.json(
-      { success: false, error: persistedRequirements.error },
-      { status: 500 },
-    )
   }
 
   await syncRfpDeadlinesFromTimeline(supabase, {

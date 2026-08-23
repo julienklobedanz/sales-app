@@ -17,6 +17,7 @@ describeIntegration('deal_rfp_requirements RLS', () => {
   let fixtures: IntegrationOrgFixtures
   let admin: ReturnType<typeof createIntegrationServiceClient>
   let dealId: string
+  let dealDocumentId: string
   let requirementId: string
   let orgBUser: { id: string; email: string; password: string }
 
@@ -57,14 +58,31 @@ describeIntegration('deal_rfp_requirements RLS', () => {
     if (!deal.data?.id) throw new Error(deal.error?.message ?? 'Deal fehlgeschlagen')
     dealId = deal.data.id
 
+    const dealDoc = await admin
+      .from('deal_documents')
+      .insert({
+        deal_id: dealId,
+        organization_id: fixtures.orgAId,
+        file_name: 'rfp.pdf',
+        kind: 'ausschreibung',
+        storage_path: `org/${fixtures.orgAId}/deals/${dealId}/rfp.pdf`,
+        mime_type: 'application/pdf',
+      })
+      .select('id')
+      .single()
+    if (!dealDoc.data?.id) {
+      throw new Error(dealDoc.error?.message ?? 'Deal-Dokument fehlgeschlagen')
+    }
+    dealDocumentId = dealDoc.data.id
+
     const requirement = await admin
       .from('deal_rfp_requirements')
       .insert({
         deal_id: dealId,
         organization_id: fixtures.orgAId,
+        source_document_id: dealDocumentId,
         text: 'ISO 27001 Zertifikat',
         normalized_text: 'iso 27001 zertifikat',
-        status: 'aktiv',
       })
       .select('id')
       .single()
@@ -77,6 +95,9 @@ describeIntegration('deal_rfp_requirements RLS', () => {
   afterAll(async () => {
     if (requirementId) {
       await admin.from('deal_rfp_requirements').delete().eq('id', requirementId)
+    }
+    if (dealDocumentId) {
+      await admin.from('deal_documents').delete().eq('id', dealDocumentId)
     }
     if (dealId) {
       await admin.from('deals').delete().eq('id', dealId)

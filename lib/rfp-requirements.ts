@@ -47,7 +47,7 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
           { role: 'system', content: prompt },
           { role: 'user', content: body },
         ],
-        temperature: 0.2,
+        temperature: 0,
         max_tokens: 4096,
         response_format: { type: 'json_object' },
       }),
