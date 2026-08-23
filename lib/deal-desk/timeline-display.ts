@@ -17,7 +17,7 @@ export function normalizeDueTime(value: unknown): string | null {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
-export function formatDateDe(iso: string): string {
+function formatDateDe(iso: string): string {
   const d = new Date(`${iso.slice(0, 10)}T12:00:00`)
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')

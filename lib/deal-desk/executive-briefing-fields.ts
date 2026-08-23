@@ -36,7 +36,7 @@ export type DealDeskExecutiveBriefingFields = {
   projectOverviewPlain: string | null
 }
 
-export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
+const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   submissionDeadline: null,
   desiredServiceStart: null,
   expectedDealVolume: null,

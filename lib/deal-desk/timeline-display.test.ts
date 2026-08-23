@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildBidTimelineIcsContent } from './bid-timeline-ics'
-import type { DealDeskTimelineItem } from './deal-analysis-types'
 import { formatDealDeadlineLabel, normalizeDueTime } from './timeline-display'
 
 describe('normalizeDueTime', () => {
@@ -38,52 +36,5 @@ describe('formatDealDeadlineLabel', () => {
       now,
     )
     expect(label).toBe('15.07.2026 (in 46 Tagen) | Shortlist-Pitch')
-  })
-})
-
-describe('buildBidTimelineIcsContent', () => {
-  it('uses all-day DATE events even when dueTime is present', () => {
-    const items: DealDeskTimelineItem[] = [
-      {
-        id: 'tl-1',
-        title: 'Q&A',
-        dueDate: '2026-06-12',
-        dueTime: '13:00',
-      },
-    ]
-    const ics = buildBidTimelineIcsContent({
-      customerName: 'Kunde',
-      rfpTitle: 'RFP',
-      items,
-      projectId: 'p1',
-    })
-    expect(ics).toContain('DTSTART;VALUE=DATE:20260612')
-    expect(ics).toContain('DTEND;VALUE=DATE:20260613')
-    expect(ics).not.toMatch(/DTSTART:\d{8}T\d{6}/)
-    expect(ics).toContain('Uhrzeit im RFP: 13:00')
-  })
-
-  it('excludes planned service start from calendar export', () => {
-    const items: DealDeskTimelineItem[] = [
-      {
-        id: 'tl-qa',
-        title: 'Q&A / Rückfragenfrist',
-        dueDate: '2026-06-12',
-      },
-      {
-        id: 'tl-start',
-        title: 'Geplanter Servicebeginn',
-        dueDate: '2026-09-01',
-      },
-    ]
-    const ics = buildBidTimelineIcsContent({
-      customerName: 'Kunde',
-      rfpTitle: 'RFP',
-      items,
-    })
-    expect(ics).toContain('Q&A')
-    expect(ics).toContain('DTSTART;VALUE=DATE:20260612')
-    expect(ics).not.toContain('Servicebeginn')
-    expect(ics).not.toContain('20260901')
   })
 })
