@@ -24,7 +24,7 @@ import { FileDropZone } from '@/lib/references/reference-form/reference-form-fie
 import {
   getCompetitorSuggestions,
   getIncumbentSuggestions,
-} from '@/app/dashboard/actions'
+} from '@/app/(app)/actions'
 
 export type ReferenceFormFilesSectionProps = Pick<
   ReferenceFormViewModel,

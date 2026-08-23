@@ -22,7 +22,7 @@ describe('isExcludedPath', () => {
 
   it('scans app, components, and lib production files', () => {
     expect(isExcludedPath('components/deal-status-badge.tsx')).toBe(false)
-    expect(isExcludedPath('app/dashboard/deals/page.tsx')).toBe(false)
+    expect(isExcludedPath('app/(app)/deals/page.tsx')).toBe(false)
     expect(isExcludedPath('lib/ui/status-tone.ts')).toBe(false)
   })
 })
@@ -71,7 +71,7 @@ describe('isPaletteAllowlisted', () => {
 
 describe('zoneFor', () => {
   it('maps inventory zones', () => {
-    expect(zoneFor('app/dashboard/page.tsx')).toBe('app')
+    expect(zoneFor('app/(app)/page.tsx')).toBe('app')
     expect(zoneFor('components/deal-status-badge.tsx')).toBe('components')
     expect(zoneFor('lib/copy.ts')).toBe('lib')
   })

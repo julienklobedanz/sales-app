@@ -1,7 +1,7 @@
 import type {
   AccountNewsRow,
   ExecutiveTrackingRow,
-} from '@/app/dashboard/market-signals/data'
+} from '@/app/(app)/market-signals/data'
 import { sanitizeCompellingEventForDisplay } from '@/lib/market-signals/compelling-event'
 import { formatSignalSourceLabel } from '@/lib/market-signals/leadership-move'
 import type { MarketSignalBadge } from '@/lib/market-signals/signal-badge'

@@ -18,7 +18,7 @@ import type {
   ExternalContactDisplay,
 } from '@/lib/references/reference-form/reference-form-types'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
-import { CreateContactDialog } from '@/app/dashboard/references/new/create-contact-dialog'
+import { CreateContactDialog } from '@/app/(app)/references/new/create-contact-dialog'
 
 export type ReferenceFormContactsSectionProps = Pick<
   ReferenceFormViewModel,

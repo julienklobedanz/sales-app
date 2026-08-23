@@ -29,7 +29,7 @@ import {
   type ReferenceContentSurface,
 } from '@/lib/references/reference-content-fields'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
-import { updateReferenceAssetCategory } from '@/app/dashboard/actions'
+import { updateReferenceAssetCategory } from '@/app/(app)/actions'
 
 export type { ReferenceContentFile } from '@/lib/references/reference-content-fields'
 

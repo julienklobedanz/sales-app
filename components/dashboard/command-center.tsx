@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Building2, FileText, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { searchHomepageUniversalAction } from '@/app/dashboard/command-center/actions'
+import { searchHomepageUniversalAction } from '@/app/(app)/command-center/actions'
 import { CommandCenterHomepageResults } from '@/components/dashboard/command-center-homepage-results'
 import { CommandCenterResultsSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { useRole } from '@/hooks/useRole'

@@ -7,32 +7,32 @@ import { ROUTES } from './routes'
 
 describe('routeExcludesDashboardContentPadding', () => {
   it('bleed layout for new deal and new evidence', () => {
-    expect(routeExcludesDashboardContentPadding('/dashboard/deals/new')).toBe(true)
+    expect(routeExcludesDashboardContentPadding('/deals/new')).toBe(true)
     expect(routeExcludesDashboardContentPadding(ROUTES.references.new)).toBe(true)
   })
 
   it('bleed layout for account detail only, not list', () => {
-    expect(routeExcludesDashboardContentPadding('/dashboard/accounts')).toBe(false)
-    expect(routeExcludesDashboardContentPadding('/dashboard/accounts/uuid-here')).toBe(
+    expect(routeExcludesDashboardContentPadding('/accounts')).toBe(false)
+    expect(routeExcludesDashboardContentPadding('/accounts/uuid-here')).toBe(
       true,
     )
   })
 
   it('bleed layout for deal workspace so the rail can fill the height', () => {
     expect(
-      routeExcludesDashboardContentPadding('/dashboard/deals/abc/ausschreibung'),
+      routeExcludesDashboardContentPadding('/deals/abc/ausschreibung'),
     ).toBe(true)
     expect(
       routeExcludesDashboardContentPadding(
-        '/dashboard/deals/abc/ausschreibung/dokumente',
+        '/deals/abc/ausschreibung/dokumente',
       ),
     ).toBe(true)
-    expect(routeExcludesDashboardContentPadding('/dashboard/deals/abc')).toBe(false)
+    expect(routeExcludesDashboardContentPadding('/deals/abc')).toBe(false)
   })
 
   it('default padded layout for other dashboard routes', () => {
     expect(routeExcludesDashboardContentPadding(ROUTES.references.root)).toBe(false)
-    expect(routeExcludesDashboardContentPadding('/dashboard/deals')).toBe(false)
+    expect(routeExcludesDashboardContentPadding('/deals')).toBe(false)
     expect(routeExcludesDashboardContentPadding(null)).toBe(false)
   })
 })
@@ -46,12 +46,12 @@ describe('detailRouteNeedsBottomPadding', () => {
   })
 
   it('true for deal detail, false for workspace/request/new', () => {
-    expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc')).toBe(true)
-    expect(detailRouteNeedsBottomPadding('/dashboard/deals/abc/ausschreibung')).toBe(
+    expect(detailRouteNeedsBottomPadding('/deals/abc')).toBe(true)
+    expect(detailRouteNeedsBottomPadding('/deals/abc/ausschreibung')).toBe(
       false,
     )
-    expect(detailRouteNeedsBottomPadding('/dashboard/deals/new')).toBe(false)
-    expect(detailRouteNeedsBottomPadding('/dashboard/deals/request/new')).toBe(false)
+    expect(detailRouteNeedsBottomPadding('/deals/new')).toBe(false)
+    expect(detailRouteNeedsBottomPadding('/deals/request/new')).toBe(false)
   })
 
   it('false outside dashboard', () => {

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getDeals } from '@/app/dashboard/deals/actions'
+import { getDeals } from '@/app/(app)/deals/actions'
 import { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'

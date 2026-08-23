@@ -14,14 +14,10 @@ export function routeExcludesDashboardContentPadding(pathname: string | null): b
   if (!pathname) return false
   if (pathname === ROUTES.deals.new || pathname === ROUTES.references.new) return true
   const parts = pathname.split('/').filter(Boolean)
-  if (parts[0] === 'dashboard' && parts[1] === 'accounts' && parts.length >= 3) {
+  if (parts[0] === 'accounts' && parts.length >= 2) {
     return true
   }
-  if (
-    parts[0] === 'dashboard' &&
-    parts[1] === 'deals' &&
-    parts[3] === 'ausschreibung'
-  ) {
+  if (parts[0] === 'deals' && parts[2] === 'ausschreibung') {
     return true
   }
   return false
@@ -33,18 +29,17 @@ export function routeExcludesDashboardContentPadding(pathname: string | null): b
 export function detailRouteNeedsBottomPadding(pathname: string | null): boolean {
   if (!pathname) return false
   const parts = pathname.split('/').filter(Boolean)
-  if (parts[0] !== 'dashboard') return false
-  if (parts[1] === 'references' && parts[3] === 'edit') {
+  if (parts[0] === 'references' && parts[2] === 'edit') {
     return true
   }
-  if (parts[1] === 'deals' && parts[3] === 'ausschreibung') {
+  if (parts[0] === 'deals' && parts[2] === 'ausschreibung') {
     return false
   }
   if (
-    parts[1] === 'deals' &&
-    parts.length >= 3 &&
-    parts[2] !== 'new' &&
-    parts[2] !== 'request'
+    parts[0] === 'deals' &&
+    parts.length >= 2 &&
+    parts[1] !== 'new' &&
+    parts[1] !== 'request'
   ) {
     return true
   }

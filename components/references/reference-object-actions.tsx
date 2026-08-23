@@ -10,12 +10,12 @@ import {
   Pencil,
 } from '@hugeicons/core-free-icons'
 
-import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
-import { ShareLinkButton } from '@/app/dashboard/references/[id]/share-link-button'
+import { PdfExportDialog } from '@/app/(app)/references/[id]/pdf-export-dialog'
+import { ShareLinkButton } from '@/app/(app)/references/[id]/share-link-button'
 import {
   SperrAnsichtConfirmDialog,
   useSperrAnsicht,
-} from '@/app/dashboard/references/[id]/reference-readiness-showcase-links'
+} from '@/app/(app)/references/[id]/reference-readiness-showcase-links'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,

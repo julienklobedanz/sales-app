@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-import type { GeneralistDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import type { GeneralistDashboardModel } from '@/app/(app)/dashboard-home-data'
 import {
   Card,
   CardContent,

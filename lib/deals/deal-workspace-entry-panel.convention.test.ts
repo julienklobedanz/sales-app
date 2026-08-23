@@ -8,14 +8,14 @@ import { DEAL_WORKSPACE_ENTRY_PARAM } from '@/lib/deals/deal-workspace-areas'
 
 function readCockpit(name: string): string {
   return readFileSync(
-    path.join(process.cwd(), 'app/dashboard/deals/cockpit', name),
+    path.join(process.cwd(), 'app/(app)/deals/cockpit', name),
     'utf8',
   )
 }
 
 function readDealsComponent(name: string): string {
   return readFileSync(
-    path.join(process.cwd(), 'app/dashboard/deals/components', name),
+    path.join(process.cwd(), 'app/(app)/deals/components', name),
     'utf8',
   )
 }
@@ -29,7 +29,7 @@ describe('deal workspace entry panel conventions (§10.6)', () => {
 
   it('hält das Sheet beim Smart-Match-Aufrufer', () => {
     const src = readFileSync(
-      path.join(process.cwd(), 'app/dashboard/deals/components/match-result-card.tsx'),
+      path.join(process.cwd(), 'app/(app)/deals/components/match-result-card.tsx'),
       'utf8',
     )
     expect(src).toMatch(/AiDraftSheet/)
@@ -69,7 +69,7 @@ describe('deal workspace entry panel conventions (§10.6)', () => {
 
   it('encodiert eintrag in der URL, ohne # als Fragment', () => {
     const href = buildCollectionObjectUrl(
-      '/dashboard/deals/d1/ausschreibung/risiken',
+      '/deals/d1/ausschreibung/risiken',
       new URLSearchParams(),
       { [DEAL_WORKSPACE_ENTRY_PARAM]: 'ev:ISO 27001 Nachweise~2' },
     )

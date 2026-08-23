@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { companiesTag, complianceTag, kpisTag, referencesTag } from '@/lib/cache/tags'
-import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
+import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
 import type { ReferenceKpiCounts } from '@/lib/dashboard-home/dashboard-home-types'
 import type { Database } from '@/lib/database.types'
 import type { Tables } from '@/lib/supabase/db-types'

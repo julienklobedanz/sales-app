@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getDeals } from '@/app/dashboard/deals/actions'
-import type { DealRow } from '@/app/dashboard/deals/types'
+import { getDeals } from '@/app/(app)/deals/actions'
+import type { DealRow } from '@/app/(app)/deals/types'
 import { salesRepHomeReadsCareTables } from '@/lib/accounts/account-lens'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'

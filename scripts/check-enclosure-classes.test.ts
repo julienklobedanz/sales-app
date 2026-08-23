@@ -18,7 +18,7 @@ describe('isExcludedPath', () => {
 
   it('scans app, components (outside ui), and lib', () => {
     expect(isExcludedPath('components/reference-status-badge.tsx')).toBe(false)
-    expect(isExcludedPath('app/dashboard/deals/page.tsx')).toBe(false)
+    expect(isExcludedPath('app/(app)/deals/page.tsx')).toBe(false)
     expect(isExcludedPath('lib/copy.ts')).toBe(false)
   })
 })
@@ -57,17 +57,17 @@ describe('isAllowlisted', () => {
   it('allows QR well, collection chrome, skeletons, loading — not dropzones', () => {
     expect(isAllowlisted('components/dashboard/settings-totp-mfa-card.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/collection-read-layout.tsx')).toBe(true)
-    expect(isAllowlisted('app/dashboard/overview/references-data-table.tsx')).toBe(true)
-    expect(isAllowlisted('app/dashboard/deals/cockpit/deal-document-dropzone.tsx')).toBe(
+    expect(isAllowlisted('app/(app)/overview/references-data-table.tsx')).toBe(true)
+    expect(isAllowlisted('app/(app)/deals/cockpit/deal-document-dropzone.tsx')).toBe(
       false,
     )
     expect(
-      isAllowlisted('app/dashboard/references/components/reference-onboarding-empty-state.tsx'),
+      isAllowlisted('app/(app)/references/components/reference-onboarding-empty-state.tsx'),
     ).toBe(false)
     expect(isAllowlisted('components/dashboard/shell/app-sidebar.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/match-result-skeleton.tsx')).toBe(true)
-    expect(isAllowlisted('app/dashboard/settings/loading.tsx')).toBe(true)
-    expect(isAllowlisted('app/dashboard/deals/page.tsx')).toBe(false)
+    expect(isAllowlisted('app/(app)/settings/loading.tsx')).toBe(true)
+    expect(isAllowlisted('app/(app)/deals/page.tsx')).toBe(false)
   })
 })
 
@@ -79,7 +79,7 @@ describe('scanRepo', () => {
 
 describe('zoneFor', () => {
   it('maps inventory zones', () => {
-    expect(zoneFor('app/dashboard/page.tsx')).toBe('app')
+    expect(zoneFor('app/(app)/page.tsx')).toBe('app')
     expect(zoneFor('components/deal-status-badge.tsx')).toBe('components')
     expect(zoneFor('lib/copy.ts')).toBe('lib')
   })

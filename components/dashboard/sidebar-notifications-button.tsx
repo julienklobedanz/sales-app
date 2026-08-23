@@ -10,8 +10,8 @@ import {
   markAllNotificationReads,
   markNotificationRead,
   type DashboardNotificationItem,
-} from '@/app/dashboard/actions'
-import type { NotificationInboxGroup } from '@/app/dashboard/notifications/inbox'
+} from '@/app/(app)/actions'
+import type { NotificationInboxGroup } from '@/app/(app)/notifications/inbox'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useHydrated } from '@/hooks/use-hydrated'

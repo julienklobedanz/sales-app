@@ -12,7 +12,7 @@ import {
   OptionalLabel,
 } from '@/lib/references/reference-form/reference-form-labels'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
-import { generateSummaryFromStory } from '@/app/dashboard/actions'
+import { generateSummaryFromStory } from '@/app/(app)/actions'
 
 export type ReferenceFormStorySectionProps = Pick<
   ReferenceFormViewModel,

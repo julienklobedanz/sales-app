@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/routes'
 import { asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
+import { inviteByEmail } from '@/app/(app)/settings/invite-actions'
 import { seedDemoWorkspaceIfEmpty } from '@/lib/onboarding/seed-demo-workspace'
 import {
   isValidSalesPhone,

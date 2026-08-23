@@ -13,13 +13,13 @@ import {
 
 describe('deal workspace href', () => {
   it('legt die Unterroute ohne Hash an', () => {
-    expect(dealWorkspaceHref('deal-1')).toBe('/dashboard/deals/deal-1/ausschreibung')
+    expect(dealWorkspaceHref('deal-1')).toBe('/deals/deal-1/ausschreibung')
     expect(dealWorkspaceHref('deal-1')).not.toContain('#')
   })
 
   it('landet nach Promote auf /dokumente, nicht auf der Deal-Seite', () => {
     expect(dealWorkspaceLandingHref('deal-1')).toBe(
-      '/dashboard/deals/deal-1/ausschreibung/dokumente',
+      '/deals/deal-1/ausschreibung/dokumente',
     )
     expect(dealWorkspaceLandingHref('deal-1')).not.toBe(dealWorkspaceHref('deal-1'))
     expect(dealWorkspaceLandingHref('deal-1')).not.toBe(ROUTES.deals.detail('deal-1'))
@@ -59,13 +59,13 @@ describe('parseDealWorkspaceAreaFromPathname', () => {
   it('liest den Bereich aus der Unterroute', () => {
     expect(
       parseDealWorkspaceAreaFromPathname(
-        '/dashboard/deals/deal-1/ausschreibung/entwuerfe',
+        '/deals/deal-1/ausschreibung/entwuerfe',
       ),
     ).toBe('entwuerfe')
     expect(
-      parseDealWorkspaceAreaFromPathname('/dashboard/deals/deal-1/ausschreibung'),
+      parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung'),
     ).toBeNull()
-    expect(parseDealWorkspaceAreaFromPathname('/dashboard/deals/deal-1')).toBeNull()
+    expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1')).toBeNull()
   })
 })
 

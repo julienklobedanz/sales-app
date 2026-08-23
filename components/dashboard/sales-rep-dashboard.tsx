@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
-import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import type { SalesRepDashboardModel } from '@/app/(app)/dashboard-home-data'
 import { dealMatchHref } from '@/lib/deals/deal-match-href'
 import { ROUTES } from '@/lib/routes'
 

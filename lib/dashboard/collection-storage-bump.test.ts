@@ -6,14 +6,14 @@ import {
   COLUMN_SIZING_STORAGE_KEY,
   COLUMN_VISIBLE_STORAGE_KEY,
   DEFAULT_VISIBLE,
-} from '@/app/dashboard/overview/reference-overview-columns'
+} from '@/app/(app)/overview/reference-overview-columns'
 import {
   DEAL_COLUMN_SIZING_STORAGE_KEY,
   DEAL_COLUMNS_STORAGE_KEY,
   DEAL_DEFAULT_COLUMN_ORDER,
   DEAL_INITIAL_COLUMN_VISIBILITY,
-} from '@/app/dashboard/deals/deals-table-constants'
-import { normalizeDealColumnOrder } from '@/app/dashboard/deals/use-deals-table-columns-state'
+} from '@/app/(app)/deals/deals-table-constants'
+import { normalizeDealColumnOrder } from '@/app/(app)/deals/use-deals-table-columns-state'
 import {
   ACCOUNT_COLUMN_KEYS,
   ACCOUNT_COLUMNS_STORAGE_KEY,
@@ -24,9 +24,9 @@ import {
 
 describe('S3 column storage bump', () => {
   it('uses new keys and does not read v1/v2 predecessors', () => {
-    expect(COLUMN_ORDER_STORAGE_KEY).toBe('dashboard-overview-column-order-v2')
-    expect(COLUMN_VISIBLE_STORAGE_KEY).toBe('dashboard-overview-column-visible-v2')
-    expect(COLUMN_SIZING_STORAGE_KEY).toBe('dashboard-overview-column-sizing-v2')
+    expect(COLUMN_ORDER_STORAGE_KEY).toBe('refstack:references:column-order-v3')
+    expect(COLUMN_VISIBLE_STORAGE_KEY).toBe('refstack:references:column-visible-v3')
+    expect(COLUMN_SIZING_STORAGE_KEY).toBe('refstack:references:column-sizing-v3')
     expect(DEAL_COLUMNS_STORAGE_KEY).toBe('refstack:deals:column-order-v3')
     expect(DEAL_COLUMN_SIZING_STORAGE_KEY).toBe('refstack:deals:column-sizing-v2')
     expect(ACCOUNT_COLUMNS_STORAGE_KEY).toBe('refstack:accounts:column-order-v1')

@@ -5,15 +5,15 @@ import { AuthBrandPanel } from '@/components/auth-brand-panel'
 import { AuthShell } from '@/components/auth-shell'
 import { DashboardListPageHeader } from '@/components/dashboard/dashboard-list-page-header'
 import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
-import { ReferenceDetailHeader } from '@/app/dashboard/references/[id]/reference-detail-header'
-import { DealCockpitHeader } from '@/app/dashboard/deals/cockpit/deal-cockpit-header'
-import type { DealWithReferences } from '@/app/dashboard/deals/types'
+import { ReferenceDetailHeader } from '@/app/(app)/references/[id]/reference-detail-header'
+import { DealCockpitHeader } from '@/app/(app)/deals/cockpit/deal-cockpit-header'
+import type { DealWithReferences } from '@/app/(app)/deals/types'
 import { ShowcaseSingleReference } from '@/app/p/[slug]/showcase-single-reference'
 import type { PublicReference } from '@/app/p/actions'
 import { ApprovalReferenceSections } from '@/app/approval/[token]/approval-reference-sections'
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/dashboard/references',
+  usePathname: () => '/references',
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: vi.fn(),
@@ -23,11 +23,11 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-vi.mock('@/app/dashboard/actions', () => ({
+vi.mock('@/app/(app)/actions', () => ({
   toggleFavorite: vi.fn(),
 }))
 
-vi.mock('@/app/dashboard/deals/cockpit/deal-cockpit-actions', () => ({
+vi.mock('@/app/(app)/deals/cockpit/deal-cockpit-actions', () => ({
   DealCockpitActions: () => null,
 }))
 

@@ -7,12 +7,12 @@ import type {
   AccountNewsRow,
   ExecutiveTrackingRow,
   MarketSignalsPageModel,
-} from '@/app/dashboard/market-signals/data'
+} from '@/app/(app)/market-signals/data'
 import {
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
   matchReferencesForSignals,
-} from '@/app/dashboard/market-signals/actions'
+} from '@/app/(app)/market-signals/actions'
 import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
 import { parseLeadershipMoveFromTitle } from '@/lib/market-signals/leadership-move'

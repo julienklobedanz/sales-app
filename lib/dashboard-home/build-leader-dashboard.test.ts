@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DealRow } from '@/app/dashboard/deals/types'
+import type { DealRow } from '@/app/(app)/deals/types'
 import { buildLeaderRiskDeals } from '@/lib/dashboard-home/build-leader-dashboard'
 
 function deal(overrides: Partial<DealRow>): DealRow {

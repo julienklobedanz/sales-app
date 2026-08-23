@@ -5,7 +5,7 @@ import type {
   AdminDashboardModel,
   GeneralistDashboardModel,
   SalesRepDashboardModel,
-} from '@/app/dashboard/dashboard-home-data'
+} from '@/app/(app)/dashboard-home-data'
 import { AccountManagerDashboard } from '@/components/dashboard/account-manager-dashboard'
 import { CommandCenter } from '@/components/dashboard/command-center'
 import { GeneralistDashboard } from '@/components/dashboard/generalist-dashboard'

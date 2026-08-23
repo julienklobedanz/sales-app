@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
+import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
 import {
   filterComplianceDocumentsForTable,
   groupComplianceDocumentsForTable,

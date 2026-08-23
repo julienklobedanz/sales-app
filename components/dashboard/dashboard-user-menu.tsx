@@ -8,7 +8,7 @@ import { LogOut, SettingsIcon } from '@hugeicons/core-free-icons'
 import {
   clearDevPreviewRole,
   setDevPreviewRole,
-} from '@/app/dashboard/dev-preview-role-actions'
+} from '@/app/(app)/dev-preview-role-actions'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,

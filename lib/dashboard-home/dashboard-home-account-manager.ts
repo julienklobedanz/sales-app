@@ -17,7 +17,7 @@ import type {
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { loadReferenceKpis } from '@/lib/dashboard-home/dashboard-home-queries'
 import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'
-import { getDeals } from '@/app/dashboard/deals/actions'
+import { getDeals } from '@/app/(app)/deals/actions'
 import { ROUTES } from '@/lib/routes'
 
 const ADVOCATE_WARN_THRESHOLD = 3
