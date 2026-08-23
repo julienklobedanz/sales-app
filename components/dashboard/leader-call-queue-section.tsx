@@ -12,11 +12,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import type { AdminDashboardModel } from '@/app/(app)/dashboard-home-data'
 import {
   leaderCallQueueCompleteAction,
   leaderCallQueueSnoozeAction,
-} from '@/app/dashboard/dashboard-home-actions'
+} from '@/app/(app)/dashboard-home-actions'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { cn } from '@/lib/utils'

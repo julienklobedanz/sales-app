@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 
 import type { MatchReferenceHit } from '@/lib/match/match-types'
-import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-card'
+import { MatchResultCard } from '@/app/(app)/deals/components/match-result-card'
 import { SearchResultRow } from '@/components/dashboard/command-center-search-results'
 import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
 import {

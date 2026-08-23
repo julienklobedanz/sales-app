@@ -34,7 +34,7 @@ describe('isExcludedPath', () => {
     expect(isExcludedPath('lib/copy.ts')).toBe(true)
     expect(isExcludedPath('scripts/check-copy-keys.mjs')).toBe(true)
     expect(isExcludedPath('scripts/check-copy-keys.test.ts')).toBe(true)
-    expect(isExcludedPath('app/dashboard/accounts/page.tsx')).toBe(false)
+    expect(isExcludedPath('app/(app)/accounts/page.tsx')).toBe(false)
   })
 })
 

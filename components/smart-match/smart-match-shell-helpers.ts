@@ -4,7 +4,7 @@ import {
   resolveIndustryId,
 } from '@/lib/constants/industries'
 import type { MatchReferenceHit, MatchReferenceFilters } from '@/lib/match/match-types'
-import type { DealRow } from '@/app/dashboard/deals/types'
+import type { DealRow } from '@/app/(app)/deals/types'
 import { parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
 import type { ParsedSmartMatchConstraints } from '@/lib/match/parse-smart-match-query'
 import {

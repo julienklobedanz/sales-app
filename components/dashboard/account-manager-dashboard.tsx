@@ -13,7 +13,7 @@ import {
 } from '@/components/dashboard/dashboard-home-primitives'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import type { AccountManagerDashboardModel } from '@/app/(app)/dashboard-home-data'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { cn } from '@/lib/utils'

@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import type { DealStatus } from '@/app/dashboard/deals/types'
+import type { DealStatus } from '@/app/(app)/deals/types'
 import { statusTone } from '@/lib/ui/status-tone'
 import { cn } from '@/lib/utils'
 

@@ -1,11 +1,11 @@
 /**
- * Zentrale App-Routen – Navigation, Redirects, revalidatePath, Middleware-Vergleiche.
+ * Zentrale App-Routen – Navigation, revalidatePath, Middleware-Vergleiche.
  * Pfade nur hier ändern, dann Client, Server Actions und Config konsistent halten.
  */
 export const ROUTES = {
-  home: '/dashboard',
-  /** Dashboard mit erzwungener Erste-Schritte-Checkliste (nach Onboarding-Wizard). */
-  homeWelcome: '/dashboard?welcome=1',
+  home: '/',
+  /** Startseite mit erzwungener Erste-Schritte-Checkliste (nach Onboarding-Wizard). */
+  homeWelcome: '/?welcome=1',
   login: '/login',
   register: '/register',
   forgotPassword: '/forgot-password',
@@ -24,86 +24,41 @@ export const ROUTES = {
   /** Interne AM-Freigabe aus E-Mail */
   internalApproval: (token: string) => `/internal-approval/${token}`,
   internalApprovalPrefix: '/internal-approval',
-  accounts: '/dashboard/accounts',
-  accountsDetail: (id: string) => `/dashboard/accounts/${id}`,
-  accountsCreate: '/dashboard/accounts?create=1',
+  accounts: '/accounts',
+  accountsDetail: (id: string) => `/accounts/${id}`,
+  accountsCreate: '/accounts?create=1',
   deals: {
-    root: '/dashboard/deals',
-    new: '/dashboard/deals/new',
-    requestNew: '/dashboard/deals/request/new',
-    detail: (id: string) => `/dashboard/deals/${id}`,
+    root: '/deals',
+    new: '/deals/new',
+    requestNew: '/deals/request/new',
+    detail: (id: string) => `/deals/${id}`,
     /** Arbeitsbereich Ausschreibung (Unterroute, kein Hash). */
-    workspace: (id: string) => `/dashboard/deals/${id}/ausschreibung`,
+    workspace: (id: string) => `/deals/${id}/ausschreibung`,
     /** Alias von `workspace` — ersetzt Legacy-Tab „KI-Analyse" / `?tab=desk` / `#ausschreibung`. */
-    detailRfp: (id: string) => `/dashboard/deals/${id}/ausschreibung`,
+    detailRfp: (id: string) => `/deals/${id}/ausschreibung`,
     detailTab: (id: string, tab: 'overview' | 'desk' = 'overview') =>
-      tab === 'desk'
-        ? `/dashboard/deals/${id}/ausschreibung`
-        : `/dashboard/deals/${id}`,
+      tab === 'desk' ? `/deals/${id}/ausschreibung` : `/deals/${id}`,
   },
   references: {
-    root: '/dashboard/references',
-    new: '/dashboard/references/new',
-    newBulk: '/dashboard/references/new?bulk=true',
-    detail: (id: string) => `/dashboard/references/${id}`,
-    edit: (id: string) => `/dashboard/references/${id}/edit`,
+    root: '/references',
+    new: '/references/new',
+    newBulk: '/references/new?bulk=true',
+    detail: (id: string) => `/references/${id}`,
+    edit: (id: string) => `/references/${id}/edit`,
   },
-  marketSignals: '/dashboard/market-signals',
-  /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
-  marketSignalsManage: '/dashboard/settings/market-signals',
-  settings: '/dashboard/settings',
-  /** Referenzanfrage (Deal-Kontext); Legacy `/dashboard/request` leitet hierher. */
-  request: '/dashboard/deals/request/new',
+  marketSignals: '/market-signals',
+  /** Watchlist & Stakeholder-Überwachung. */
+  marketSignalsManage: '/settings/market-signals',
+  settings: '/settings',
+  /** Referenzanfrage (Deal-Kontext). */
+  request: '/deals/request/new',
 } as const
 
 /**
  * Pfade für `revalidatePath(..., 'page')` mit dynamischen Segmenten (Next.js App Router).
  */
 export const REVALIDATE = {
-  referenceEditPage: '/dashboard/references/[id]/edit',
+  referenceEditPage: '/references/[id]/edit',
+  /** Auth-Hülle `app/(app)/layout.tsx`. Nicht ROUTES.home — `/` + layout träfe die ganze App. */
+  appShellLayout: '/(app)',
 } as const
-
-/** Permanente Weiterleitungen (alte URLs → aktuelle Struktur), siehe `next.config`. */
-export const LEGACY_REDIRECTS = [
-  {
-    source: '/dashboard/evidence',
-    destination: '/dashboard/references',
-    permanent: false,
-  },
-  {
-    source: '/dashboard/evidence/:path*',
-    destination: '/dashboard/references/:path*',
-    permanent: false,
-  },
-  { source: '/dashboard/companies', destination: ROUTES.accounts, permanent: true },
-  {
-    source: '/dashboard/companies/:path*',
-    destination: '/dashboard/accounts/:path*',
-    permanent: true,
-  },
-  { source: '/dashboard/new', destination: ROUTES.references.new, permanent: true },
-  {
-    source: '/dashboard/edit/:id',
-    destination: '/dashboard/references/:id/edit',
-    permanent: true,
-  },
-  // Alte Concept-URL (W3); Lesezeichen weiter auf Referenzen leiten
-  {
-    source: '/dashboard/concepts/inbox-references',
-    destination: ROUTES.references.root,
-    permanent: true,
-  },
-  { source: '/dashboard/request', destination: ROUTES.request, permanent: true },
-  // Ehemalige Marktsignale-manage-URL (W4c) → Settings
-  {
-    source: '/dashboard/market-signals/manage',
-    destination: ROUTES.marketSignalsManage,
-    permanent: true,
-  },
-  // P3-3: alte KI-Entwurf-API → ai-draft
-  {
-    source: '/api/ki-entwurf/stream',
-    destination: '/api/ai-draft/stream',
-    permanent: false,
-  },
-] as const

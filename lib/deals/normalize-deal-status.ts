@@ -1,4 +1,4 @@
-import type { DealStatus } from '@/app/dashboard/deals/types'
+import type { DealStatus } from '@/app/(app)/deals/types'
 
 const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
   in_negotiation: 'negotiation',

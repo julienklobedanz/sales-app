@@ -1,5 +1,5 @@
 /**
- * Projektlaufzeit in Monaten — gleiche Logik wie in app/dashboard/references/dashboard.ts
+ * Projektlaufzeit in Monaten — gleiche Logik wie in app/(app)/references/dashboard.ts
  * (keine DB-Spalte `duration_months` auf `references`).
  */
 export function computeReferenceDurationMonths(params: {

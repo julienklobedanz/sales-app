@@ -7,9 +7,9 @@ import {
   attachOriginalDocumentToReference,
   createReference,
   fetchCompanyEnrichment,
-} from '@/app/dashboard/references/new/actions'
+} from '@/app/(app)/references/new/actions'
 import type { ExtractDataFromDocumentResult } from '@/lib/references/extract-types'
-import { updateReference } from '@/app/dashboard/actions'
+import { updateReference } from '@/app/(app)/actions'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { syncCompanyBrandfetchForEdit } from '@/lib/references/library/sync-company-brandfetch'
 import { log } from '@/lib/observability/logger'

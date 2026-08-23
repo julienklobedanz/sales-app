@@ -6,7 +6,7 @@ import { asReferenceStatus, type ReferenceStatus } from '@/lib/supabase/db-types
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 
-import type { ReferenceRow } from '@/app/dashboard/actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'

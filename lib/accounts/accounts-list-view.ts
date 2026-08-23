@@ -1,6 +1,6 @@
 import { ROUTES } from '@/lib/routes'
 
-/** Query-Parameter für die Lese-Ansicht unter /dashboard/accounts (`?view=lesen`). */
+/** Query-Parameter für die Lese-Ansicht unter /accounts (`?view=lesen`). */
 const ACCOUNTS_VIEW_PARAM = 'view'
 
 export type AccountsCollectionLayout = 'table' | 'inbox'

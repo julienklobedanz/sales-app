@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { DealRow } from '@/app/dashboard/deals/types'
+import type { DealRow } from '@/app/(app)/deals/types'
 import {
   ACTIVE_DEAL_STATUSES,
   type LeaderCallQueueRow,

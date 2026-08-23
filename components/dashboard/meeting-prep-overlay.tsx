@@ -295,7 +295,7 @@ export async function runCreateMeetingPrep(
   flow: ReturnType<typeof useMeetingPrepFlow>,
 ) {
   const { createMeetingPrepSessionAction } =
-    await import('@/app/dashboard/meeting-prep/actions')
+    await import('@/app/(app)/meeting-prep/actions')
   flow.openLoading(query)
   const result = await createMeetingPrepSessionAction({ query, companyId })
   if (!result.success) {

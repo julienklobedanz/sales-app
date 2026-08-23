@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import type { DealRow } from '@/app/dashboard/deals/types'
+import type { DealRow } from '@/app/(app)/deals/types'
 import { cn } from '@/lib/utils'
 import { SUGGESTIONS } from '@/components/smart-match/smart-match-shell-helpers'
 

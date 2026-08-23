@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import type { AdminDashboardModel } from '@/app/(app)/dashboard-home-data'
 import { LeaderCallQueueSection } from '@/components/dashboard/leader-call-queue-section'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'

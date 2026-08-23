@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { DealFactsCard } from '@/app/dashboard/deals/cockpit/deal-facts-card'
-import { DealRfpStammdatenSection } from '@/app/dashboard/deals/cockpit/deal-rfp-stammdaten-section'
+import { DealFactsCard } from '@/app/(app)/deals/cockpit/deal-facts-card'
+import { DealRfpStammdatenSection } from '@/app/(app)/deals/cockpit/deal-rfp-stammdaten-section'
 import { ApprovalCaseDataBar } from '@/app/approval/[token]/approval-case-data-bar'
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
-import type { DealWithReferences } from '@/app/dashboard/deals/types'
+import type { DealWithReferences } from '@/app/(app)/deals/types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { COPY } from '@/lib/copy'
 
@@ -18,11 +18,11 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-vi.mock('@/app/dashboard/deals/components/edit-deal-dialog', () => ({
+vi.mock('@/app/(app)/deals/components/edit-deal-dialog', () => ({
   EditDealDialog: () => null,
 }))
 
-vi.mock('@/app/dashboard/actions', () => ({
+vi.mock('@/app/(app)/actions', () => ({
   updateReferenceAssetCategory: vi.fn(),
 }))
 

@@ -8,12 +8,12 @@ import {
 describe('collection object selection', () => {
   it('patched die URL und löscht Keys bei null', () => {
     const params = new URLSearchParams('view=lesen&id=old')
-    expect(buildCollectionObjectUrl('/dashboard/accounts', params, { id: 'next' })).toBe(
-      '/dashboard/accounts?view=lesen&id=next',
+    expect(buildCollectionObjectUrl('/accounts', params, { id: 'next' })).toBe(
+      '/accounts?view=lesen&id=next',
     )
     expect(
-      buildCollectionObjectUrl('/dashboard/accounts', params, { id: null }),
-    ).toBe('/dashboard/accounts?view=lesen')
+      buildCollectionObjectUrl('/accounts', params, { id: null }),
+    ).toBe('/accounts?view=lesen')
   })
 
   it('erkennt ungültige Auswahl und löst das Objekt auf', () => {

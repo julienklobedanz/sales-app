@@ -3,7 +3,7 @@
 import { Linkedin01Icon } from '@hugeicons/core-free-icons'
 import { FileText, Folder, Loader2, ShieldCheck, TrendingUp, Trophy } from 'lucide-react'
 
-import { ComplianceDocumentTypeIcon } from '@/app/dashboard/overview/compliance-document-type-icon'
+import { ComplianceDocumentTypeIcon } from '@/app/(app)/overview/compliance-document-type-icon'
 import { AppIcon } from '@/lib/icons'
 
 import {

@@ -1,4 +1,4 @@
-import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
+import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
 import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 

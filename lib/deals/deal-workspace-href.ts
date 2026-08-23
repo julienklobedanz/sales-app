@@ -6,7 +6,7 @@ import {
 import { ROUTES } from '@/lib/routes'
 
 export function dealWorkspaceHref(dealId: string): string {
-  return `/dashboard/deals/${dealId}/ausschreibung`
+  return ROUTES.deals.workspace(dealId)
 }
 
 export function dealWorkspaceAreaHref(
@@ -77,10 +77,10 @@ export function parseDealWorkspaceAreaFromPathname(
   pathname: string,
 ): DealWorkspaceArea | null {
   const parts = pathname.split('/').filter(Boolean)
-  if (parts[0] !== 'dashboard' || parts[1] !== 'deals' || parts[3] !== 'ausschreibung') {
+  if (parts[0] !== 'deals' || parts[2] !== 'ausschreibung') {
     return null
   }
-  const slug = parts[4]
+  const slug = parts[3]
   return slug && isDealWorkspaceArea(slug) ? slug : null
 }
 

@@ -26,13 +26,11 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
   if (pathname === ROUTES.references.new) return false
 
   const parts = dashboardParts(pathname)
-  if (parts[0] !== 'dashboard') return false
+  if (parts[0] === 'accounts' && parts.length >= 2) return false
 
-  if (parts[1] === 'accounts' && parts.length >= 3) return false
+  if (parts[0] === 'deals' && parts.length >= 2) return false
 
-  if (parts[1] === 'deals' && parts.length >= 3) return false
-
-  if (parts[1] === 'references' && parts.length >= 3) return false
+  if (parts[0] === 'references' && parts.length >= 2) return false
 
   if (pathname === ROUTES.accounts) return true
   if (pathname === ROUTES.references.root) return true

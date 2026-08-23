@@ -1,5 +1,5 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import type { DealWithReferences } from '@/app/dashboard/deals/types'
+import type { DealWithReferences } from '@/app/(app)/deals/types'
 
 /** Kontextzeilen für KI-Entwurf (Epic 5 / KAN-128). */
 export function buildDealContextForAiDraft(deal: DealWithReferences): string {

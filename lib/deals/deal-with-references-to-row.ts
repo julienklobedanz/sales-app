@@ -1,4 +1,4 @@
-import type { DealRow, DealWithReferences } from '@/app/dashboard/deals/types'
+import type { DealRow, DealWithReferences } from '@/app/(app)/deals/types'
 
 export function dealWithReferencesToRow(deal: DealWithReferences): DealRow {
   const bestScores = deal.references

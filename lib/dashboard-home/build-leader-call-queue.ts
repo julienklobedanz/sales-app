@@ -1,4 +1,4 @@
-import type { DealRow } from '@/app/dashboard/deals/types'
+import type { DealRow } from '@/app/(app)/deals/types'
 import { COPY } from '@/lib/copy'
 import { dealMatchHref } from '@/lib/deals/deal-match-href'
 import { ROUTES } from '@/lib/routes'
