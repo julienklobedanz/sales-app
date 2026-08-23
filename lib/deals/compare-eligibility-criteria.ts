@@ -1,4 +1,5 @@
 import type { OrgComplianceDoc } from '@/lib/deal-desk/compute-delivery-win-probability'
+import { normalizeToken } from '@/lib/deals/normalize-token'
 import type { CapabilityProfile } from '@/lib/organizations/capability-profile-types'
 
 import type {
@@ -24,15 +25,6 @@ export function isCapabilityProfileEmpty(profile: CapabilityProfile): boolean {
   const hasRegions = Boolean(profile.regions?.length)
   const hasRoles = Boolean(profile.certifiedRoles?.length)
   return !hasEmployees && !hasRevenue && !hasRegions && !hasRoles
-}
-
-function normalizeToken(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
 }
 
 function fuzzyContains(haystack: string, needle: string): boolean {
