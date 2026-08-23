@@ -2,74 +2,131 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import {
-  reconcileDealRfpRequirements,
-  type ExistingDealRfpRequirement,
-} from '@/lib/deals/reconcile-deal-rfp-requirements'
+import { normalizeToken } from '@/lib/deals/normalize-token'
+import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 
 type RequirementInput = {
   text: string
   category?: string | null
 }
 
-export async function persistDealRfpRequirements(
+type DealRfpRequirementRecord = {
+  id: string
+  text: string
+  category: string | null
+}
+
+function toExtractedRfpRequirements(
+  rows: DealRfpRequirementRecord[],
+): ExtractedRfpRequirement[] {
+  return rows.map((row) => ({
+    id: row.id,
+    text: row.text,
+    ...(row.category ? { category: row.category } : {}),
+  }))
+}
+
+function rowsForRequirementInsert(extracted: RequirementInput[]): Array<{
+  text: string
+  normalized_text: string
+  category: string | null
+}> {
+  const seen = new Set<string>()
+  const rows: Array<{
+    text: string
+    normalized_text: string
+    category: string | null
+  }> = []
+  for (const item of extracted) {
+    const normalized_text = normalizeToken(item.text)
+    if (!normalized_text || seen.has(normalized_text)) continue
+    seen.add(normalized_text)
+    rows.push({
+      text: item.text.trim(),
+      normalized_text,
+      category: item.category?.trim() ? item.category.trim() : null,
+    })
+  }
+  return rows
+}
+
+async function loadDealRfpRequirementsForDocument(
+  supabase: SupabaseClient,
+  args: { sourceDocumentId: string; organizationId: string },
+): Promise<{ requirements: ExtractedRfpRequirement[]; error?: string }> {
+  const { data, error } = await supabase
+    .from('deal_rfp_requirements')
+    .select('id, text, category')
+    .eq('source_document_id', args.sourceDocumentId)
+    .eq('organization_id', args.organizationId)
+
+  if (error) return { requirements: [], error: error.message }
+  return { requirements: toExtractedRfpRequirements(data ?? []) }
+}
+
+async function insertDealRfpRequirementsForDocument(
   supabase: SupabaseClient,
   args: {
     dealId: string
     organizationId: string
-    requirements: RequirementInput[]
+    sourceDocumentId: string
+    extracted: RequirementInput[]
   },
-): Promise<{ error?: string }> {
-  const { data: rows, error: loadError } = await supabase
-    .from('deal_rfp_requirements')
-    .select('id, normalized_text, status')
-    .eq('deal_id', args.dealId)
-    .eq('organization_id', args.organizationId)
-
-  if (loadError) return { error: loadError.message }
-
-  const existing: ExistingDealRfpRequirement[] = (rows ?? []).map((row) => ({
-    id: row.id,
-    normalizedText: row.normalized_text,
-    status: row.status === 'entfallen' ? 'entfallen' : 'aktiv',
+): Promise<{ requirements: ExtractedRfpRequirement[]; error?: string }> {
+  const payload = rowsForRequirementInsert(args.extracted).map((row) => ({
+    deal_id: args.dealId,
+    organization_id: args.organizationId,
+    source_document_id: args.sourceDocumentId,
+    text: row.text,
+    normalized_text: row.normalized_text,
+    category: row.category,
   }))
 
-  const plan = reconcileDealRfpRequirements(existing, args.requirements)
-  const now = new Date().toISOString()
+  if (payload.length === 0) return { requirements: [] }
 
-  if (plan.keepIds.length > 0) {
-    const { error } = await supabase
-      .from('deal_rfp_requirements')
-      .update({ status: 'aktiv', last_seen_at: now })
-      .in('id', plan.keepIds)
-      .eq('organization_id', args.organizationId)
-    if (error) return { error: error.message }
+  const { data, error } = await supabase
+    .from('deal_rfp_requirements')
+    .insert(payload)
+    .select('id, text, category')
+
+  if (error) return { requirements: [], error: error.message }
+  return { requirements: toExtractedRfpRequirements(data ?? []) }
+}
+
+/** Lädt vorhandene Zeilen; extract/insert nur wenn das Dokument noch keine hat. */
+export async function loadOrCreateDealRfpRequirementsForDocument(
+  supabase: SupabaseClient,
+  args: {
+    dealId: string
+    organizationId: string
+    sourceDocumentId: string
+    extract: () => Promise<{ requirements: RequirementInput[] } | { error: string }>
+  },
+): Promise<{
+  requirements: ExtractedRfpRequirement[]
+  created: boolean
+  error?: string
+}> {
+  const loaded = await loadDealRfpRequirementsForDocument(supabase, {
+    sourceDocumentId: args.sourceDocumentId,
+    organizationId: args.organizationId,
+  })
+  if (loaded.error) return { requirements: [], created: false, error: loaded.error }
+  if (loaded.requirements.length > 0) {
+    return { requirements: loaded.requirements, created: false }
   }
 
-  if (plan.dropIds.length > 0) {
-    const { error } = await supabase
-      .from('deal_rfp_requirements')
-      .update({ status: 'entfallen' })
-      .in('id', plan.dropIds)
-      .eq('organization_id', args.organizationId)
-    if (error) return { error: error.message }
+  const extracted = await args.extract()
+  if ('error' in extracted) {
+    return { requirements: [], created: false, error: extracted.error }
   }
 
-  if (plan.insert.length > 0) {
-    const { error } = await supabase.from('deal_rfp_requirements').insert(
-      plan.insert.map((row) => ({
-        deal_id: args.dealId,
-        organization_id: args.organizationId,
-        text: row.text,
-        normalized_text: row.normalizedText,
-        category: row.category,
-        status: 'aktiv' as const,
-        first_seen_at: now,
-        last_seen_at: now,
-      })),
-    )
-    if (error) return { error: error.message }
-  }
-
-  return {}
+  const inserted = await insertDealRfpRequirementsForDocument(supabase, {
+    dealId: args.dealId,
+    organizationId: args.organizationId,
+    sourceDocumentId: args.sourceDocumentId,
+    extracted: extracted.requirements,
+  })
+  if (inserted.error) return { requirements: [], created: false, error: inserted.error }
+  return { requirements: inserted.requirements, created: true }
 }
