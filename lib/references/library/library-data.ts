@@ -68,7 +68,7 @@ async function fetchDealReferenceRowsForRefs(
   return { data: rows }
 }
 
-export async function getDashboardDataImpl(
+export async function getLibraryDataImpl(
   onlyFavorites = false,
   auth?: { orgId: string; userId: string },
 ) {

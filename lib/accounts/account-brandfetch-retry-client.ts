@@ -1,6 +1,6 @@
 'use client'
 
-import type { ResolvedAccountForImport } from '@/lib/accounts/resolve-account-for-import'
+import type { ResolvedAccountForImport } from '@/lib/accounts/resolve-or-create-account'
 
 type RetryState = 'idle' | 'loading' | 'done'
 

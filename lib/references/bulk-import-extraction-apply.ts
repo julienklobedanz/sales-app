@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { resolveOrCreateAccountForImport } from '@/lib/accounts/resolve-account-for-import'
+import { resolveOrCreateAccountForImport } from '@/lib/accounts/resolve-or-create-account'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { extractDataFromBuffer } from '@/lib/document-text'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'

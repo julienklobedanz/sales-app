@@ -1,11 +1,8 @@
 'use server'
 
 import type { DealRow, DealStatus, DealWithReferences } from './types'
-import {
-  getDealsImpl,
-  getDealWithReferencesImpl,
-  getReferencesForOrgImpl,
-} from './deal-query-impl'
+import { getDealsImpl, getDealWithReferencesImpl } from './deal-query-impl'
+import { getReferencesForOrgImpl } from './org-reference-catalog-impl'
 import {
   createDealImpl,
   updateDealImpl,

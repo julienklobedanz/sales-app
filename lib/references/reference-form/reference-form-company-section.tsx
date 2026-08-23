@@ -18,7 +18,7 @@ import {
   RequiredLabel,
   OptionalLabel,
 } from '@/lib/references/reference-form/reference-form-labels'
-import { formatThousandsDots } from '@/lib/references/reference-form/reference-form-pure'
+import { formatThousandsDots } from '@/lib/format'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
 import {
   CompanyCombobox,

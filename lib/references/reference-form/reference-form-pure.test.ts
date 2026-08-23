@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   dedupeContacts,
   dedupeCustomerContacts,
-  formatThousandsDots,
   formatZodError,
   looksLikeProxyOrNetworkFailure,
   normalizeContactIdentity,
@@ -16,12 +15,6 @@ import { z } from 'zod'
 describe('normalizeWrappedParagraphs', () => {
   it('joins single line breaks within paragraphs', () => {
     expect(normalizeWrappedParagraphs('a\nb\n\nc')).toBe('a b\n\nc')
-  })
-})
-
-describe('formatThousandsDots', () => {
-  it('formats digit groups', () => {
-    expect(formatThousandsDots('5000000')).toBe('5.000.000')
   })
 })
 

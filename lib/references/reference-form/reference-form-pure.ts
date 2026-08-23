@@ -19,12 +19,6 @@ export function normalizeWrappedParagraphs(input: string): string {
   return paragraphs.join('\n\n')
 }
 
-export function formatThousandsDots(raw: string | null | undefined): string {
-  const digits = String(raw ?? '').replace(/\D/g, '')
-  if (!digits) return ''
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-}
-
 /** Client-seitige Server-Action / Fetch-Fehler, die oft auf Proxy, Timeout oder Größenlimits hindeuten. */
 export function looksLikeProxyOrNetworkFailure(message: string): boolean {
   const m = message.toLowerCase()
