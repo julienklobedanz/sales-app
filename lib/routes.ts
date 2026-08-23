@@ -1,5 +1,5 @@
 /**
- * Zentrale App-Routen – Navigation, Redirects, revalidatePath, Middleware-Vergleiche.
+ * Zentrale App-Routen – Navigation, revalidatePath, Middleware-Vergleiche.
  * Pfade nur hier ändern, dann Client, Server Actions und Config konsistent halten.
  */
 export const ROUTES = {
@@ -47,10 +47,10 @@ export const ROUTES = {
     edit: (id: string) => `/references/${id}/edit`,
   },
   marketSignals: '/market-signals',
-  /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
+  /** Watchlist & Stakeholder-Überwachung. */
   marketSignalsManage: '/settings/market-signals',
   settings: '/settings',
-  /** Referenzanfrage (Deal-Kontext); Legacy `/dashboard/request` leitet hierher. */
+  /** Referenzanfrage (Deal-Kontext). */
   request: '/deals/request/new',
 } as const
 
@@ -62,50 +62,3 @@ export const REVALIDATE = {
   /** Auth-Hülle `app/(app)/layout.tsx`. Nicht ROUTES.home — `/` + layout träfe die ganze App. */
   appShellLayout: '/(app)',
 } as const
-
-/** Permanente Weiterleitungen (alte URLs → aktuelle Struktur), siehe `next.config`. */
-export const LEGACY_REDIRECTS = [
-  {
-    source: '/dashboard/evidence',
-    destination: '/references',
-    permanent: false,
-  },
-  {
-    source: '/dashboard/evidence/:path*',
-    destination: '/references/:path*',
-    permanent: false,
-  },
-  { source: '/dashboard/companies', destination: ROUTES.accounts, permanent: true },
-  {
-    source: '/dashboard/companies/:path*',
-    destination: '/accounts/:path*',
-    permanent: true,
-  },
-  { source: '/dashboard/new', destination: ROUTES.references.new, permanent: true },
-  {
-    source: '/dashboard/edit/:id',
-    destination: '/references/:id/edit',
-    permanent: true,
-  },
-  // Alte Concept-URL (W3); Lesezeichen weiter auf Referenzen leiten
-  {
-    source: '/dashboard/concepts/inbox-references',
-    destination: ROUTES.references.root,
-    permanent: true,
-  },
-  { source: '/dashboard/request', destination: ROUTES.request, permanent: true },
-  // Ehemalige Marktsignale-manage-URL (W4c) → Settings
-  {
-    source: '/dashboard/market-signals/manage',
-    destination: ROUTES.marketSignalsManage,
-    permanent: true,
-  },
-  // P3-3: alte KI-Entwurf-API → ai-draft
-  {
-    source: '/api/ki-entwurf/stream',
-    destination: '/api/ai-draft/stream',
-    permanent: false,
-  },
-  { source: '/dashboard', destination: ROUTES.home, permanent: true },
-  { source: '/dashboard/:path*', destination: '/:path*', permanent: true },
-] as const

@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next'
 import bundleAnalyzer from '@next/bundle-analyzer'
-import { LEGACY_REDIRECTS } from './lib/routes'
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -14,9 +13,6 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '5mb',
     },
-  },
-  async redirects() {
-    return [...LEGACY_REDIRECTS]
   },
   images: {
     remotePatterns: [
