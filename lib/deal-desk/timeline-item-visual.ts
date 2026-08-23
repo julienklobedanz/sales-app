@@ -17,11 +17,3 @@ export function getTimelineItemKind(title: string): TimelineItemKind {
   }
   return 'default'
 }
-
-/**
- * Geplanter Service-/Projektstart: in Deal Deadlines anzeigen (Win-Voraussetzung),
- * aber nicht in den Kalender-Export — sonst blockiert Sales den Termin ohne gewonnenen Deal.
- */
-export function isTimelineItemExcludedFromIcsExport(title: string): boolean {
-  return getTimelineItemKind(title) === 'start'
-}
