@@ -5,6 +5,7 @@ import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
+import { persistDealRfpRequirements } from '@/lib/deals/persist-deal-rfp-requirements'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
 import { extractRfpPlainTextFromFile } from '@/lib/document-text'
@@ -280,6 +281,18 @@ export async function POST(req: NextRequest) {
 
   if (doneError) {
     return fail(doneError.message)
+  }
+
+  const persistedRequirements = await persistDealRfpRequirements(supabase, {
+    dealId,
+    organizationId: orgId,
+    requirements: analyzed.requirements,
+  })
+  if (persistedRequirements.error) {
+    return NextResponse.json(
+      { success: false, error: persistedRequirements.error },
+      { status: 500 },
+    )
   }
 
   await syncRfpDeadlinesFromTimeline(supabase, {

@@ -1,21 +1,13 @@
 import type { OrgComplianceDoc } from '@/lib/deal-desk/compute-delivery-win-probability'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { EligibilityAssessment } from '@/lib/deals/eligibility-criteria-schema'
+import { normalizeToken } from '@/lib/deals/normalize-token'
 
 export type RequestedEvidenceGapItem = {
   id: string
   label: string
   detail: string
   severity: 'missing' | 'partial' | 'info'
-}
-
-function normalizeToken(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
 }
 
 function docMatchesNeed(docs: OrgComplianceDoc[], need: string): boolean {

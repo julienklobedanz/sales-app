@@ -971,6 +971,116 @@ export type Database = {
           },
         ]
       }
+      deal_rfp_requirement_documents: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          linked_by: string | null
+          organization_id: string
+          requirement_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          linked_by?: string | null
+          organization_id: string
+          requirement_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          linked_by?: string | null
+          organization_id?: string
+          requirement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_rfp_requirement_documents_document_id_fkey'
+            columns: ['document_id']
+            isOneToOne: false
+            referencedRelation: 'organization_compliance_documents'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_requirement_documents_linked_by_fkey'
+            columns: ['linked_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_requirement_documents_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_requirement_documents_requirement_id_fkey'
+            columns: ['requirement_id']
+            isOneToOne: false
+            referencedRelation: 'deal_rfp_requirements'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deal_rfp_requirements: {
+        Row: {
+          category: string | null
+          created_at: string
+          deal_id: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          normalized_text: string
+          organization_id: string
+          status: string
+          text: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          deal_id: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          normalized_text: string
+          organization_id: string
+          status?: string
+          text: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          deal_id?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          normalized_text?: string
+          organization_id?: string
+          status?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_rfp_requirements_deal_id_fkey'
+            columns: ['deal_id']
+            isOneToOne: false
+            referencedRelation: 'deals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_requirements_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       deals: {
         Row: {
           account_manager_id: string | null
