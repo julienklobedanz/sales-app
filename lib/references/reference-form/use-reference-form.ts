@@ -15,7 +15,11 @@ import { syncCompanyBrandfetchForEdit } from '@/lib/references/library/sync-comp
 import { log } from '@/lib/observability/logger'
 import { ROUTES } from '@/lib/routes'
 import { createClient } from '@/lib/supabase/client'
-import { formatEmployeeCountDeDisplay, parseReferenceVolume } from '@/lib/format'
+import {
+  formatEmployeeCountDeDisplay,
+  formatThousandsDots,
+  parseReferenceVolume,
+} from '@/lib/format'
 import {
   buildFormDataCreate,
   buildFormDataEdit,
@@ -24,7 +28,6 @@ import {
 import {
   dedupeContacts,
   dedupeCustomerContacts,
-  formatThousandsDots,
   looksLikeProxyOrNetworkFailure,
   normalizeWrappedParagraphs,
   parseInitialTags,

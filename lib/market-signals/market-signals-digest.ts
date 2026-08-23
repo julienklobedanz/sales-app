@@ -4,7 +4,7 @@ import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { buildRefstackEmailHtml } from '@/lib/email/refstack-email-layout'
-import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
+import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 

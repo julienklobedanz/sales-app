@@ -4,7 +4,7 @@ import type {
   AccountDealRow,
   CompanyRefRow,
 } from './account-action-types'
-import { getReferencesByCompanyIdImpl } from './account-match-impl'
+import { getReferencesByCompanyIdImpl } from './account-references-impl'
 import { getActiveDealsByCompanyIdImpl } from './account-deals-impl'
 import { createCompanyImpl } from './account-crud-impl'
 

@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDashboardDataImpl } from '@/lib/references/library/dashboard'
+import { getLibraryDataImpl } from '@/lib/references/library/library-data'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
 import { ReferencePageSkeleton } from '@/components/dashboard/reference-page-skeleton'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
@@ -53,7 +53,7 @@ export default async function ReferencesHubPage() {
       .select('api_settings, date_display_format')
       .eq('id', orgId)
       .maybeSingle(),
-    getDashboardDataImpl(false, auth),
+    getLibraryDataImpl(false, auth),
     getCachedOrgCompanies(orgId),
     supabase
       .from('contact_persons')

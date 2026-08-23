@@ -7,6 +7,7 @@ import {
   formatNumberDe,
   formatReferenceDate,
   formatReferenceVolumeCompact,
+  formatThousandsDots,
   parseGermanEmployeeCountInput,
 } from './format'
 
@@ -23,6 +24,12 @@ describe('formatReferenceDate', () => {
     expect(formatReferenceDate('2026-04-02', 'iso')).toBe('2026-04-02')
     expect(formatReferenceDate('2026-04-02', 'en-US')).toBe('04/02/2026')
     expect(formatReferenceDate('2026-04-02', 'en-GB')).toBe('02/04/2026')
+  })
+})
+
+describe('formatThousandsDots', () => {
+  it('formats digit groups', () => {
+    expect(formatThousandsDots('5000000')).toBe('5.000.000')
   })
 })
 

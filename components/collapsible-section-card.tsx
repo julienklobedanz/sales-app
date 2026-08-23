@@ -29,7 +29,7 @@ type Props = {
   contentClassName?: string
 }
 
-export function BidOverviewCollapsibleCard({
+export function CollapsibleSectionCard({
   defaultOpen = true,
   title,
   description,

@@ -1,6 +1,6 @@
 'use client'
 
-import { BidOverviewCollapsibleCard } from '@/components/deal-desk/bid-overview-collapsible-card'
+import { CollapsibleSectionCard } from '@/components/collapsible-section-card'
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
 
 export function ApprovalReferenceSections({
@@ -19,7 +19,7 @@ export function ApprovalReferenceSections({
       challenge={challenge}
       solution={solution}
       renderSection={({ title, children, fieldId }) => (
-        <BidOverviewCollapsibleCard
+        <CollapsibleSectionCard
           defaultOpen={fieldId !== 'solution'}
           contentClassName="px-6 pb-4"
           title={
@@ -27,7 +27,7 @@ export function ApprovalReferenceSections({
           }
         >
           {children}
-        </BidOverviewCollapsibleCard>
+        </CollapsibleSectionCard>
       )}
     />
   )

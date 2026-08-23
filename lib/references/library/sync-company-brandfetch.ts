@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   syncExistingAccountBrandfetch,
   type ResolveAccountForImportResult,
-} from '@/lib/accounts/resolve-account-for-import'
+} from '@/lib/accounts/resolve-or-create-account'
 import {
   brandfetchLogoUrlLooksLightTheme,
   rewriteBrandfetchLogoUrlForLightBackground,

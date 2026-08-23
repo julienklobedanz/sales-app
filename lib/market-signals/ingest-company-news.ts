@@ -34,8 +34,6 @@ import {
 } from '@/lib/market-signals/discover-company-newsroom'
 import { isActiveDealStatus } from '@/lib/deals/normalize-deal-status'
 
-export { isActiveDealStatus }
-
 type CompanyNewsIngestCompanyRow = {
   id: string
   organization_id: string
