@@ -19,6 +19,7 @@ export const CAPABILITIES = [
   'manage_team',
   'manage_settings',
   'manage_integrations',
+  'manage_compliance_documents',
 ] as const
 
 export type Capability = (typeof CAPABILITIES)[number]
@@ -49,4 +50,5 @@ export const ADMIN_CAPS: Capability[] = [
   'manage_team',
   'manage_settings',
   'manage_integrations',
+  'manage_compliance_documents',
 ]

@@ -1,23 +1,23 @@
 'use client'
 
 import type * as React from 'react'
-import { Download, Loader2 } from 'lucide-react'
 
 import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
-import { ComplianceDocumentTypeIcon } from '@/app/(app)/overview/compliance-document-type-icon'
+import { ComplianceDocumentTypeIcon } from '@/app/(app)/compliance/compliance-document-type-icon'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { TableCell } from '@/components/ui/table'
-import { TableDataCell, TableRowAlign } from '@/components/table/table-row-align'
+import { TableDataCell } from '@/components/table/table-row-align'
 import { DraggableColumnHead } from '@/components/table/draggable-column-head'
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
-import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
+import { COPY } from '@/lib/copy'
+import {
+  complianceValidityStatus,
+} from '@/lib/compliance/expiry'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
 import { formatReferenceDate } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
 import { ArrowDown, ArrowUp, ArrowUpDown } from '@hugeicons/core-free-icons'
 
-export const COMPLIANCE_COLUMN_KEYS = [
+const COMPLIANCE_COLUMN_KEYS = [
   'title',
   'document_type',
   'valid_until',
@@ -45,9 +45,7 @@ export type ComplianceTableHeaderRenderContext = {
 }
 
 export type ComplianceTableCellRenderContext = {
-  resolvingId: string | null
   onOpenPdf: (doc: ComplianceDocumentRow) => void
-  onDownload: (doc: ComplianceDocumentRow) => void
 }
 
 function SortableHeaderButton({
@@ -176,8 +174,6 @@ export function renderComplianceColumnCell(
   doc: ComplianceDocumentRow,
   ctx: ComplianceTableCellRenderContext,
 ): React.ReactNode {
-  const expired = isComplianceDocumentExpired(doc.valid_until)
-
   switch (column) {
     case 'title':
       return (
@@ -219,27 +215,28 @@ export function renderComplianceColumnCell(
           </span>
         </TableDataCell>
       )
-    case 'status':
+    case 'status': {
+      const validity = complianceValidityStatus(doc.valid_until)
+      const label =
+        validity === 'expired'
+          ? COPY.compliance.statusExpired
+          : validity === 'expiring'
+            ? COPY.compliance.statusExpiring
+            : COPY.compliance.statusValid
+      const className =
+        validity === 'expired'
+          ? 'text-[10px] font-medium text-amber-800'
+          : validity === 'expiring'
+            ? 'text-[10px] font-medium text-amber-800'
+            : 'text-[10px] font-medium'
       return (
         <TableDataCell>
-          {expired ? (
-            <Badge variant="outline" className="text-[10px] font-medium text-amber-800">
-              Abgelaufen
-            </Badge>
-          ) : doc.is_current ? (
-            <Badge variant="secondary" className="text-[10px] font-medium">
-              Aktuelle Version
-            </Badge>
-          ) : (
-            <Badge
-              variant="outline"
-              className="text-[10px] font-medium text-muted-foreground"
-            >
-              Archiv
-            </Badge>
-          )}
+          <Badge variant={validity === 'valid' ? 'secondary' : 'outline'} className={className}>
+            {label}
+          </Badge>
         </TableDataCell>
       )
+    }
     case 'updated_at':
       return (
         <TableDataCell
@@ -256,34 +253,6 @@ export function renderComplianceColumnCell(
   }
 }
 
-export function renderComplianceActionsCell(
-  doc: ComplianceDocumentRow,
-  ctx: ComplianceTableCellRenderContext,
-): React.ReactNode {
-  return (
-    <TableCell className="w-[88px] min-w-[88px] align-middle p-2 text-right">
-      <TableRowAlign className="justify-end">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-lg hover:bg-muted/70"
-          disabled={!doc.file_storage_path || ctx.resolvingId === doc.id}
-          data-compliance-skip-row-click
-          onClick={() => ctx.onDownload(doc)}
-          aria-label={`${doc.title} herunterladen`}
-        >
-          {ctx.resolvingId === doc.id ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <Download className="size-4 text-muted-foreground" aria-hidden />
-          )}
-        </Button>
-      </TableRowAlign>
-    </TableCell>
-  )
-}
-
 export function getComplianceSortValue(
   doc: ComplianceDocumentRow,
   key: ComplianceColumnKey,
@@ -295,10 +264,12 @@ export function getComplianceSortValue(
       return doc.title.toLowerCase()
     case 'valid_until':
       return doc.valid_until ? new Date(doc.valid_until).getTime() : 0
-    case 'status':
-      if (isComplianceDocumentExpired(doc.valid_until)) return 2
-      if (doc.is_current) return 0
-      return 1
+    case 'status': {
+      const validity = complianceValidityStatus(doc.valid_until)
+      if (validity === 'expired') return 2
+      if (validity === 'expiring') return 1
+      return 0
+    }
     case 'updated_at':
       return new Date(doc.updated_at).getTime()
     default:

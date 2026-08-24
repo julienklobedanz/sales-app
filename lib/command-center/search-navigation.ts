@@ -1,5 +1,6 @@
 import { ROUTES } from '@/lib/routes'
 import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
+import { complianceReadHref } from '@/lib/compliance/compliance-list-view'
 import type { CommandSearchResult } from '@/lib/command-center/global-search'
 
 export function hrefForCommandSearchResult(result: CommandSearchResult): string {
@@ -19,7 +20,7 @@ export function hrefForCommandSearchResult(result: CommandSearchResult): string 
     case 'contact_internal':
       return ROUTES.home
     case 'certificate':
-      return ROUTES.settings
+      return complianceReadHref(result.id)
     case 'reference_document':
       return ROUTES.references.detail(result.referenceId)
     default:

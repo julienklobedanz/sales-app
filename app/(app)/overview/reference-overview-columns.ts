@@ -93,21 +93,6 @@ export const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 export const COLUMN_ORDER_STORAGE_KEY = 'refstack:references:column-order-v3'
 export const COLUMN_VISIBLE_STORAGE_KEY = 'refstack:references:column-visible-v3'
 export const COLUMN_SIZING_STORAGE_KEY = 'refstack:references:column-sizing-v3'
-export const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'reference-compliance-show-expired-v1'
-/** Prefixed legacy key from pre-rename localStorage (Queue #8). */
-const LEGACY_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
-
-export function loadShowExpiredCertificatesFromStorage(): boolean {
-  if (typeof window === 'undefined') return false
-  try {
-    const raw =
-      localStorage.getItem(REFERENCE_SHOW_EXPIRED_CERTS_KEY) ??
-      localStorage.getItem(LEGACY_SHOW_EXPIRED_CERTS_KEY)
-    return raw === '1'
-  } catch {
-    return false
-  }
-}
 
 export function loadVisibleColumnsFromStorage(): Record<
   (typeof COLUMN_KEYS)[number],

@@ -46,6 +46,9 @@ export const ROUTES = {
     detail: (id: string) => `/references/${id}`,
     edit: (id: string) => `/references/${id}/edit`,
   },
+  compliance: {
+    root: '/compliance',
+  },
   marketSignals: '/market-signals',
   /** Watchlist & Stakeholder-Überwachung. */
   marketSignalsManage: '/settings/market-signals',

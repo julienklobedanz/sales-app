@@ -32,4 +32,19 @@ describe('effectiveCapabilities', () => {
   it('hasCapability delegates to effective set', () => {
     expect(hasCapability('sales_rep', 'admin', {}, 'manage_settings')).toBe(true)
   })
+
+  it('gives manage_compliance_documents only via admin caps', () => {
+    expect(hasCapability('sales_rep', 'member', {}, 'manage_compliance_documents')).toBe(
+      false,
+    )
+    expect(
+      hasCapability('account_manager', 'member', {}, 'manage_compliance_documents'),
+    ).toBe(false)
+    expect(hasCapability('sales_rep', 'admin', {}, 'manage_compliance_documents')).toBe(
+      true,
+    )
+    expect(hasCapability('sales_leader', 'owner', {}, 'manage_compliance_documents')).toBe(
+      true,
+    )
+  })
 })

@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react'
 import { Cancel01Icon, FileText } from '@hugeicons/core-free-icons'
 import type { DragEvent } from 'react'
 
-import { ComplianceDocumentTypeCombobox } from '@/app/(app)/overview/compliance-document-type-combobox'
+import { ComplianceDocumentTypeCombobox } from '@/app/(app)/compliance/compliance-document-type-combobox'
 import { AppIcon } from '@/lib/icons'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'

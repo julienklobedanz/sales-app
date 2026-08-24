@@ -12,7 +12,7 @@ import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { isSystemAdmin } from '@/lib/roles/capability-access'
+import { hasCapability } from '@/lib/roles/capability-access'
 
 export type ComplianceDocumentRow = {
   id: string
@@ -43,7 +43,7 @@ type ComplianceAuth =
       orgId: string
       orgName: string
       userId: string
-      isAdmin: boolean
+      canManage: boolean
     }
 
 async function getComplianceAuth(): Promise<ComplianceAuth> {
@@ -54,7 +54,7 @@ async function getComplianceAuth(): Promise<ComplianceAuth> {
   if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
 
   const supabase = await createServerSupabaseClient()
-  const { systemRole } = parseProfileRoles(profile)
+  const { systemRole, functionRole, capabilities } = parseProfileRoles(profile)
 
   const { data: org } = await supabase
     .from('organizations')
@@ -67,7 +67,12 @@ async function getComplianceAuth(): Promise<ComplianceAuth> {
     orgId: profile.organization_id,
     orgName: String(org?.name ?? '').trim() || 'Organisation',
     userId: user.id,
-    isAdmin: isSystemAdmin(systemRole),
+    canManage: hasCapability(
+      functionRole,
+      systemRole,
+      capabilities,
+      'manage_compliance_documents',
+    ),
   }
 }
 
@@ -89,7 +94,7 @@ async function createComplianceDocument(payload: {
 }): Promise<{ success: true; id: string } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin)
+  if (!auth.canManage)
     return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const title = payload.title.trim()
@@ -150,7 +155,7 @@ async function createComplianceDocument(payload: {
   }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.compliance.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, id: docId }
 }
@@ -218,7 +223,7 @@ export async function uploadComplianceDocumentsBatch(
 ): Promise<UploadComplianceDocumentsBatchResult> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin) {
+  if (!auth.canManage) {
     return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
   }
 
@@ -273,7 +278,7 @@ export async function uploadComplianceDocumentsBatch(
   }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.compliance.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, uploaded, errors }
 }
@@ -396,7 +401,7 @@ export async function updateComplianceDocument(payload: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin)
+  if (!auth.canManage)
     return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const id = payload.documentId.trim()
@@ -430,7 +435,7 @@ export async function updateComplianceDocument(payload: {
   if (error) return { success: false, error: error.message }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.compliance.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true }
 }
@@ -440,7 +445,7 @@ export async function deleteComplianceDocuments(
 ): Promise<{ success: true; deleted: number } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin)
+  if (!auth.canManage)
     return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const ids = [...new Set(documentIds.map((id) => id.trim()).filter(Boolean))]
@@ -478,7 +483,7 @@ export async function deleteComplianceDocuments(
   if (deleteError) return { success: false, error: deleteError.message }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.compliance.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, deleted: rows.length }
 }

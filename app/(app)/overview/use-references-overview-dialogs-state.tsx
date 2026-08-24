@@ -22,8 +22,6 @@ type ContactOption = ReferencesOverviewDialogsProps['contacts'][number]
 type ExternalContactOption = ReferencesOverviewDialogsProps['externalContacts'][number]
 
 export function useReferencesOverviewDialogsState() {
-  const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
-  const [complianceBulkUploadOpen, setComplianceBulkUploadOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
@@ -94,10 +92,6 @@ export function useReferencesOverviewDialogsState() {
         setShareLinkPopoverRef={setShareLinkPopoverRef}
         newRefModalOpen={newRefModalOpen}
         setNewRefModalOpen={setNewRefModalOpen}
-        complianceUploadOpen={complianceUploadOpen}
-        setComplianceUploadOpen={setComplianceUploadOpen}
-        complianceBulkUploadOpen={complianceBulkUploadOpen}
-        setComplianceBulkUploadOpen={setComplianceBulkUploadOpen}
         bulkImportOpen={bulkImportOpen}
         setBulkImportOpen={setBulkImportOpen}
         setBulkImportLoading={setBulkImportLoading}
@@ -124,10 +118,6 @@ export function useReferencesOverviewDialogsState() {
   }
 
   return {
-    complianceUploadOpen,
-    setComplianceUploadOpen,
-    complianceBulkUploadOpen,
-    setComplianceBulkUploadOpen,
     bulkImportOpen,
     setBulkImportOpen,
     bulkImportGroups,

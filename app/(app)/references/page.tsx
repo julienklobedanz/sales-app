@@ -7,13 +7,10 @@ import { DashboardOverview } from '@/app/(app)/dashboard-overview'
 import { ReferencePageSkeleton } from '@/components/dashboard/reference-page-skeleton'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
-import { listComplianceDocuments } from '@/app/(app)/settings/compliance-actions'
-import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
 import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-scope'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { filterReferencesForSales } from '@/lib/references/sales-reference-visibility'
 import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
-import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,11 +30,6 @@ export default async function ReferencesHubPage() {
 
   const orgId = profile.organization_id as string
   const auth = { orgId, userId: user.id }
-  const canViewCompliance = canViewComplianceReferenceSegment(
-    effectiveSystemRole,
-    effectiveFunctionRole,
-  )
-
   const supabase = await createServerSupabaseClient()
 
   const [
@@ -46,7 +38,6 @@ export default async function ReferencesHubPage() {
     companies,
     contactsResult,
     externalContactsResult,
-    complianceListed,
   ] = await Promise.all([
     supabase
       .from('organizations')
@@ -64,9 +55,6 @@ export default async function ReferencesHubPage() {
       .select('id, company_id, first_name, last_name, email, role')
       .eq('organization_id', orgId)
       .order('last_name'),
-    canViewCompliance
-      ? listComplianceDocuments()
-      : Promise.resolve({ success: true as const, rows: [] as ComplianceDocumentRow[] }),
   ])
 
   const orgRolesPermissions =
@@ -89,8 +77,6 @@ export default async function ReferencesHubPage() {
 
   const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(orgRow?.date_display_format)
 
-  const complianceDocuments = complianceListed.success ? complianceListed.rows : []
-
   return (
     <Suspense fallback={<ReferencePageSkeleton />}>
       <DashboardOverview
@@ -107,7 +93,6 @@ export default async function ReferencesHubPage() {
         contacts={contactsResult.data ?? []}
         externalContacts={externalContactsResult.data ?? []}
         orgDateDisplayFormat={orgDateDisplayFormat}
-        complianceDocuments={complianceDocuments}
       />
     </Suspense>
   )

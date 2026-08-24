@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -14,8 +14,8 @@ import {
   NdaPdfDropzone,
   titleFromPdfFilename,
 } from '@/app/(app)/accounts/components/nda-pdf-dropzone'
-import { ComplianceDocumentTypeCombobox } from '@/app/(app)/overview/compliance-document-type-combobox'
-import { ComplianceDocumentTypesDialog } from '@/app/(app)/overview/compliance-document-types-dialog'
+import { ComplianceDocumentTypeCombobox } from '@/app/(app)/compliance/compliance-document-type-combobox'
+import { ComplianceDocumentTypesDialog } from '@/app/(app)/compliance/compliance-document-types-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,9 +37,14 @@ import { cn } from '@/lib/utils'
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  defaultDocumentType?: string
 }
 
-export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
+export function ComplianceUploadDialog({
+  open,
+  onOpenChange,
+  defaultDocumentType,
+}: Props) {
   const router = useRouter()
   const [documentType, setDocumentType] = useState('iso_27001')
   const [typeOptions, setTypeOptions] = useState<ComplianceDocumentTypeOption[]>(() =>
@@ -57,6 +62,11 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
   const [expiryAutoFilled, setExpiryAutoFilled] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!open || !defaultDocumentType) return
+    setDocumentType(defaultDocumentType)
+  }, [open, defaultDocumentType])
 
   const applyDefaultTitle = useCallback(
     (slug: string, options: ComplianceDocumentTypeOption[]) => {

@@ -43,4 +43,17 @@ describe('hrefForCommandSearchResult', () => {
 
     expect(href).toBe(ROUTES.deals.root)
   })
+
+  it('verlinkt Zertifikat-Treffer auf die Nachweise-Sammlung', () => {
+    const href = hrefForCommandSearchResult({
+      kind: 'certificate',
+      id: 'doc-1',
+      title: 'ISO 27001',
+      documentType: 'iso_27001',
+      validUntilLine: 'Gültig bis 2027',
+      hasFile: true,
+    })
+
+    expect(href).toBe('/compliance?view=lesen&id=doc-1')
+  })
 })

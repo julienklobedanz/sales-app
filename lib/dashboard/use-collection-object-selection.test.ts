@@ -14,6 +14,12 @@ describe('collection object selection', () => {
     expect(
       buildCollectionObjectUrl('/accounts', params, { id: null }),
     ).toBe('/accounts?view=lesen')
+    expect(
+      buildCollectionObjectUrl('/compliance', new URLSearchParams(), {
+        view: 'lesen',
+        id: 'doc-1',
+      }),
+    ).toBe('/compliance?view=lesen&id=doc-1')
   })
 
   it('erkennt ungültige Auswahl und löst das Objekt auf', () => {
