@@ -107,4 +107,32 @@ describe('collectionToolbarSlotFillForRole', () => {
       })['collection-view'],
     ).toBe('filled')
   })
+
+  it('füllt Compliance × sales_rep: Suche gefüllt, Primary leer, übrige leer', () => {
+    const fill = collectionToolbarSlotFillForRole({
+      collection: 'compliance',
+      functionRole: 'sales_rep',
+      systemRole: MEMBER,
+    })
+    expect(fill['collection-search']).toBe('filled')
+    expect(fill['collection-filter-primary']).toBe('empty')
+    expect(fill['collection-filter-more']).toBe('empty')
+    expect(fill['collection-view']).toBe('empty')
+    expect(fill['collection-primary']).toBe('empty')
+    expect(fill['collection-columns']).toBe('empty')
+    expect(Object.keys(fill)).toEqual([...COLLECTION_TOOLBAR_SLOT_IDS])
+  })
+
+  it('füllt Compliance × Admin: Primary gefüllt, Filter/View/Columns leer', () => {
+    const fill = collectionToolbarSlotFillForRole({
+      collection: 'compliance',
+      functionRole: 'sales_rep',
+      systemRole: 'admin',
+    })
+    expect(fill['collection-primary']).toBe('filled')
+    expect(fill['collection-filter-primary']).toBe('empty')
+    expect(fill['collection-view']).toBe('empty')
+    expect(fill['collection-columns']).toBe('empty')
+    expect(Object.keys(fill)).toEqual([...COLLECTION_TOOLBAR_SLOT_IDS])
+  })
 })

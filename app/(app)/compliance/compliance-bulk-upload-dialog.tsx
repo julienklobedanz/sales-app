@@ -1,7 +1,7 @@
 'use client'
 
-import { ComplianceDocumentTypesDialog } from '@/app/(app)/overview/compliance-document-types-dialog'
-import { ComplianceMultiPdfDropzone } from '@/app/(app)/overview/compliance-multi-pdf-dropzone'
+import { ComplianceDocumentTypesDialog } from '@/app/(app)/compliance/compliance-document-types-dialog'
+import { ComplianceMultiPdfDropzone } from '@/app/(app)/compliance/compliance-multi-pdf-dropzone'
 import {
   Dialog,
   DialogContent,

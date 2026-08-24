@@ -2,7 +2,7 @@
 
 import React from 'react'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ReferenceRow } from './actions'
 import {
@@ -16,24 +16,11 @@ import { deleteReference, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-types'
 import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import type { ReferenceLayoutMode } from './overview/reference-layout-switch'
-import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
-import {
-  REFERENCE_LIBRARY_MODE_STORAGE_KEY,
-  type ReferenceLibraryMode,
-} from '@/lib/references/library/reference-library-mode'
-import {
-  setReferenceLibraryModeOptimistic,
-  syncReferenceLibraryModeFromStorage,
-  useReferenceLibraryMode,
-} from '@/lib/references/library/reference-library-mode-store'
-import type { ComplianceDocumentRow } from '@/app/(app)/settings/compliance-actions'
 import {
   COLUMN_KEYS,
   COLUMN_LABELS,
   PROJECT_STATUS_LABELS,
-  REFERENCE_SHOW_EXPIRED_CERTS_KEY,
   STATUS_LABELS,
-  loadShowExpiredCertificatesFromStorage,
 } from './overview/reference-overview-columns'
 import {
   buildReferenceFilterOptions,
@@ -60,7 +47,6 @@ import { toast } from 'sonner'
 import type { OrgDateDisplayFormat } from '@/lib/format'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { referencesReadHref } from '@/lib/references/references-list-view'
-import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
 const InboxReferencesConceptClient = dynamic(
@@ -105,7 +91,6 @@ export function DashboardOverview({
   contacts = [],
   externalContacts = [],
   orgDateDisplayFormat = 'de-DE',
-  complianceDocuments = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -125,12 +110,10 @@ export function DashboardOverview({
     phone?: string | null
   }[]
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
-  complianceDocuments?: ComplianceDocumentRow[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
-  const [certificateSearch, setCertificateSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
   const [companyFilter, setCompanyFilter] = useState<string>('all')
   const [tagsFilter, setTagsFilter] = useState<string>('all')
@@ -150,20 +133,8 @@ export function DashboardOverview({
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const viewParam = searchParams.get('view')
   const referenceLayout: ReferenceLayoutMode = viewParam === 'lesen' ? 'inbox' : 'table'
-  const libraryMode = useReferenceLibraryMode()
-  const [showExpiredCertificates, setShowExpiredCertificates] = useState(() =>
-    loadShowExpiredCertificatesFromStorage(),
-  )
-  const isReferencesLibrary = libraryMode === 'references'
-  const isCertificatesLibrary = libraryMode === 'certificates'
-  const canViewComplianceSegment = canViewComplianceReferenceSegment(
-    profile.systemRole,
-    profile.functionRole,
-  )
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const {
-    setComplianceUploadOpen,
-    setComplianceBulkUploadOpen,
     setBulkImportOpen,
     setBulkImportGroups,
     addBulkImportFiles,
@@ -188,14 +159,6 @@ export function DashboardOverview({
     moveColumnOrder,
   } = useReferenceOverviewColumns()
 
-  useLayoutEffect(() => {
-    syncReferenceLibraryModeFromStorage()
-  }, [])
-
-  const handleLibraryModeChange = useCallback((mode: ReferenceLibraryMode) => {
-    setReferenceLibraryModeOptimistic(mode)
-  }, [])
-
   const handleReferenceLayoutChange = useCallback(
     (mode: ReferenceLayoutMode) => {
       const next = new URLSearchParams(searchParams.toString())
@@ -206,33 +169,6 @@ export function DashboardOverview({
     },
     [router, searchParams],
   )
-
-  useEffect(() => {
-    if (!canViewComplianceSegment && libraryMode === 'certificates') {
-      setReferenceLibraryModeOptimistic('references')
-    }
-  }, [canViewComplianceSegment, libraryMode])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      localStorage.setItem(REFERENCE_LIBRARY_MODE_STORAGE_KEY, libraryMode)
-    } catch {
-      /* ignore */
-    }
-  }, [libraryMode])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      localStorage.setItem(
-        REFERENCE_SHOW_EXPIRED_CERTS_KEY,
-        showExpiredCertificates ? '1' : '0',
-      )
-    } catch {
-      /* ignore */
-    }
-  }, [showExpiredCertificates])
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id)),
@@ -411,7 +347,6 @@ export function DashboardOverview({
     projectStatusFilter !== 'all' ||
     volumeFilter !== 'all'
   const showReferencesOnboarding =
-    isReferencesLibrary &&
     ((process.env.NODE_ENV === 'development' &&
       searchParams.get('previewOnboarding') === '1') ||
       (initialReferences.length === 0 && !filtersActive))
@@ -455,13 +390,10 @@ export function DashboardOverview({
       {/* Toolbar & Tabelle — einheitlicher Abstand zwischen Toolbar und Listeninhalt */}
       <div className="flex min-w-0 flex-col gap-4">
         <ReferenceLibraryToolbar
-          libraryMode={libraryMode}
-          onLibraryModeChange={handleLibraryModeChange}
-          showProofSegmentSwitch={canViewComplianceSegment}
           referenceLayout={referenceLayout}
           onReferenceLayoutChange={handleReferenceLayoutChange}
-          searchValue={isReferencesLibrary ? search : certificateSearch}
-          onSearchChange={isReferencesLibrary ? setSearch : setCertificateSearch}
+          searchValue={search}
+          onSearchChange={setSearch}
           canCreateReference={canCreateReference}
           canImportReference={isSystemAdmin(profile.systemRole)}
           favoritesOnly={favoritesOnly}
@@ -498,18 +430,9 @@ export function DashboardOverview({
             setBulkImportOpen(true)
           }}
           onCreateReferenceClick={() => setNewRefModalOpen(true)}
-          onUploadCertificateClick={() => setComplianceUploadOpen(true)}
-          onBulkUploadCertificatesClick={
-            isSystemAdmin(profile.systemRole)
-              ? () => setComplianceBulkUploadOpen(true)
-              : undefined
-          }
-          showExpiredCertificates={showExpiredCertificates}
-          onShowExpiredCertificatesChange={setShowExpiredCertificates}
         />
 
-        {isReferencesLibrary ? (
-          <ReferencesBulkActionsBar
+        <ReferencesBulkActionsBar
             selectedCount={selectedRefIds.size}
             showSalesActions={salesAppView}
             showAdminDelete={isSystemAdmin(profile.systemRole)}
@@ -536,17 +459,8 @@ export function DashboardOverview({
               )
             }}
           />
-        ) : null}
 
-        {isCertificatesLibrary ? (
-          <ComplianceDocumentsTable
-            documents={complianceDocuments}
-            search={certificateSearch}
-            showExpired={showExpiredCertificates}
-            isAdmin={isSystemAdmin(profile.systemRole)}
-            onUploadClick={() => setComplianceUploadOpen(true)}
-          />
-        ) : referenceLayout === 'table' ? (
+        {referenceLayout === 'table' ? (
           <ReferencesDataTable
             filteredReferences={filteredReferences}
             paginatedReferences={paginatedReferences}

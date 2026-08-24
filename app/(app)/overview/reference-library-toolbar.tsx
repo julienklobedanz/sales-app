@@ -7,32 +7,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
-import { AccountsToolbarTooltip } from '@/app/(app)/accounts/components/accounts-toolbar-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { CollectionColumnsMenu } from '@/components/dashboard/collection-columns-menu'
 import { CollectionPrimaryAction } from '@/components/dashboard/collection-primary-action'
 import { CollectionToolbar } from '@/components/dashboard/collection-toolbar'
 import { collectionToolbarSlotFill } from '@/lib/dashboard/collection-toolbar-slots'
 import { COPY } from '@/lib/copy'
-import { Eye, EyeOff } from 'lucide-react'
 import {
   ReferenceLayoutSwitch,
   type ReferenceLayoutMode,
 } from './reference-layout-switch'
 import { ReferenceMoreFiltersMenu } from './reference-more-filters-menu'
-import { ReferenceProofSegmentSwitch } from '@/components/references/reference-proof-segment-switch'
-import type { ReferenceLibraryMode } from './reference-library-switch'
-import { REFERENCE_PROOF_SEGMENT_LABELS } from '@/lib/references/library/reference-library-mode'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
 type ColumnKey = string
 
 type Props = {
-  libraryMode: ReferenceLibraryMode
-  onLibraryModeChange?: (mode: ReferenceLibraryMode) => void
-  showProofSegmentSwitch?: boolean
   referenceLayout: ReferenceLayoutMode
   onReferenceLayoutChange: (mode: ReferenceLayoutMode) => void
   searchValue: string
@@ -72,16 +63,9 @@ type Props = {
   columnLabels: Record<string, string>
   onImportClick: () => void
   onCreateReferenceClick: () => void
-  onUploadCertificateClick: () => void
-  onBulkUploadCertificatesClick?: () => void
-  showExpiredCertificates?: boolean
-  onShowExpiredCertificatesChange?: (value: boolean) => void
 }
 
 export function ReferenceLibraryToolbar({
-  libraryMode,
-  onLibraryModeChange,
-  showProofSegmentSwitch = false,
   referenceLayout,
   onReferenceLayoutChange,
   searchValue,
@@ -119,12 +103,7 @@ export function ReferenceLibraryToolbar({
   columnLabels,
   onImportClick,
   onCreateReferenceClick,
-  onUploadCertificateClick,
-  onBulkUploadCertificatesClick,
-  showExpiredCertificates = false,
-  onShowExpiredCertificatesChange,
 }: Props) {
-  const isReferencesLibrary = libraryMode === 'references'
   const slotFill = collectionToolbarSlotFill({
     collection: 'references',
     canCreateReference,
@@ -155,17 +134,13 @@ export function ReferenceLibraryToolbar({
               variant="dashboard"
               wrapperClassName="min-w-0 w-full"
               className="bg-card"
-              placeholder={
-                isReferencesLibrary
-                  ? COPY.dashboard.searchReferencesPlaceholder
-                  : 'Zertifikate durchsuchen…'
-              }
+              placeholder={COPY.dashboard.searchReferencesPlaceholder}
               value={searchValue}
               onChange={onSearchChange}
             />
           ),
-          'collection-filter-primary': isReferencesLibrary ? statusSelect : null,
-          'collection-filter-more': isReferencesLibrary ? (
+          'collection-filter-primary': statusSelect,
+          'collection-filter-more': (
             <ReferenceMoreFiltersMenu
               favoritesOnly={favoritesOnly}
               onFavoritesOnlyChange={onFavoritesOnlyChange}
@@ -188,60 +163,23 @@ export function ReferenceLibraryToolbar({
               projectStatusOptions={projectStatusOptions}
               projectStatusLabels={projectStatusLabels}
             />
-          ) : onShowExpiredCertificatesChange ? (
-            <AccountsToolbarTooltip
-              label={
-                showExpiredCertificates
-                  ? 'Abgelaufene Zertifikate ausblenden'
-                  : 'Abgelaufene Zertifikate anzeigen'
-              }
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="toolbar"
-                className="w-full"
-                aria-pressed={showExpiredCertificates}
-                onClick={() =>
-                  onShowExpiredCertificatesChange(!showExpiredCertificates)
-                }
-              >
-                {showExpiredCertificates ? (
-                  <Eye className="size-4 text-muted-foreground" aria-hidden />
-                ) : (
-                  <EyeOff className="size-4 text-muted-foreground" aria-hidden />
-                )}
-              </Button>
-            </AccountsToolbarTooltip>
-          ) : null,
-          'collection-view': isReferencesLibrary ? (
+          ),
+          'collection-view': (
             <ReferenceLayoutSwitch
               value={referenceLayout}
               onChange={onReferenceLayoutChange}
             />
-          ) : null,
-          'collection-primary': isReferencesLibrary
-            ? slotFill['collection-primary'] === 'empty'
-              ? null
-              : (
-                  <CollectionPrimaryAction
-                    label={COPY.dashboard.tooltipCreateReference}
-                    onCreate={onCreateReferenceClick}
-                    onImport={onImportClick}
-                    canImport={canImportReference}
-                  />
-                )
-            : canImportReference
-              ? (
-                  <CollectionPrimaryAction
-                    label={`${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
-                    onCreate={onUploadCertificateClick}
-                    onImport={onBulkUploadCertificatesClick}
-                    canImport={Boolean(onBulkUploadCertificatesClick)}
-                  />
-                )
-              : null,
-          'collection-columns': isReferencesLibrary ? (
+          ),
+          'collection-primary':
+            slotFill['collection-primary'] === 'empty' ? null : (
+              <CollectionPrimaryAction
+                label={COPY.dashboard.tooltipCreateReference}
+                onCreate={onCreateReferenceClick}
+                onImport={onImportClick}
+                canImport={canImportReference}
+              />
+            ),
+          'collection-columns': (
             <CollectionColumnsMenu
               columns={columnOrder.map((column) => ({
                 id: column,
@@ -253,16 +191,8 @@ export function ReferenceLibraryToolbar({
               }
               onReset={onResetColumns}
             />
-          ) : null,
+          ),
         }}
-        trailing={
-          showProofSegmentSwitch && onLibraryModeChange ? (
-            <ReferenceProofSegmentSwitch
-              value={libraryMode}
-              onChange={onLibraryModeChange}
-            />
-          ) : null
-        }
       />
     </TooltipProvider>
   )

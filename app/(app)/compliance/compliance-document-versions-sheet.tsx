@@ -12,7 +12,7 @@ import {
   updateComplianceDocument,
   type ComplianceDocumentAccessUrls,
 } from '@/app/(app)/settings/compliance-actions'
-import { ComplianceDocumentTypeIcon } from '@/app/(app)/overview/compliance-document-type-icon'
+import { ComplianceDocumentTypeIcon } from '@/app/(app)/compliance/compliance-document-type-icon'
 import {
   AlertDialog,
   AlertDialogAction,

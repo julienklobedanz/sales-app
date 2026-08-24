@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 import {
@@ -11,28 +10,13 @@ import {
   getDashboardListPageMeta,
   shouldShowDashboardListPageHeader,
 } from '@/lib/dashboard-list-page-meta'
-import { loadReferenceLibraryModeFromStorage } from '@/lib/references/library/reference-library-mode'
-import {
-  syncReferenceLibraryModeFromStorage,
-  useReferenceLibraryMode,
-} from '@/lib/references/library/reference-library-mode-store'
-import { ROUTES } from '@/lib/routes'
 
 export function DashboardListPageHeader() {
   const pathname = usePathname()
-  const referenceLibraryMode = useReferenceLibraryMode()
-
-  useEffect(() => {
-    if (pathname === ROUTES.references.root) {
-      syncReferenceLibraryModeFromStorage(loadReferenceLibraryModeFromStorage())
-    }
-  }, [pathname])
 
   if (!shouldShowDashboardListPageHeader(pathname)) return null
 
-  const meta = getDashboardListPageMeta(pathname, {
-    referenceLibraryMode,
-  })
+  const meta = getDashboardListPageMeta(pathname)
   if (!meta) return null
 
   return (

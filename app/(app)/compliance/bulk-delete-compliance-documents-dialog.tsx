@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 
 export function BulkDeleteComplianceDocumentsDialog({
@@ -35,7 +36,6 @@ export function BulkDeleteComplianceDocumentsDialog({
   onSuccess: () => void
 }) {
   const router = useRouter()
-  const count = ids.length
 
   return (
     <AlertDialog
@@ -46,15 +46,13 @@ export function BulkDeleteComplianceDocumentsDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Zertifikate löschen</AlertDialogTitle>
+          <AlertDialogTitle>{COPY.compliance.deleteConfirmTitle}</AlertDialogTitle>
           <AlertDialogDescription>
-            Möchtest du die {count} ausgewählten Zertifikat{count !== 1 ? 'e' : ''}{' '}
-            wirklich dauerhaft löschen? Die zugehörigen PDF-Dateien werden ebenfalls
-            entfernt.
+            {COPY.compliance.deleteConfirmDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{COPY.compliance.deleteConfirmCancel}</AlertDialogCancel>
           <AlertDialogAction
             className={cn(buttonVariants({ variant: 'destructive' }))}
             disabled={loading}
@@ -69,7 +67,10 @@ export function BulkDeleteComplianceDocumentsDialog({
                 }
                 onSuccess()
                 toast.success(
-                  `${result.deleted} Zertifikat${result.deleted !== 1 ? 'e' : ''} gelöscht.`,
+                  COPY.compliance.deleteSuccess.replace(
+                    '{count}',
+                    String(result.deleted),
+                  ),
                 )
                 router.refresh()
               } finally {
@@ -80,10 +81,10 @@ export function BulkDeleteComplianceDocumentsDialog({
             {loading ? (
               <>
                 <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
-                Wird gelöscht…
+                {COPY.compliance.deletePending}
               </>
             ) : (
-              'Dauerhaft löschen'
+              COPY.compliance.deleteConfirmAction
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

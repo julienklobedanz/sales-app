@@ -1,5 +1,6 @@
 import { userCanCreateReference } from '@/lib/roles/reference-access'
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { hasCapability } from '@/lib/roles/capability-access'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 
 /** Feste DOM-Reihenfolge der Sammel-Toolbar (§10.8). Positionen rücken nicht nach. */
@@ -16,13 +17,25 @@ export type CollectionToolbarSlotId = (typeof COLLECTION_TOOLBAR_SLOT_IDS)[numbe
 
 export type CollectionToolbarSlotFill = 'filled' | 'empty'
 
-export type CollectionKind = 'references' | 'deals' | 'accounts'
+export type CollectionKind = 'references' | 'deals' | 'accounts' | 'compliance'
 
 export function collectionToolbarSlotFill(args: {
   collection: CollectionKind
   canCreateReference: boolean
   canCreateAccount?: boolean
+  canManageCompliance?: boolean
 }): Record<CollectionToolbarSlotId, CollectionToolbarSlotFill> {
+  if (args.collection === 'compliance') {
+    return {
+      'collection-search': 'filled',
+      'collection-filter-primary': 'empty',
+      'collection-filter-more': 'empty',
+      'collection-view': 'empty',
+      'collection-primary': args.canManageCompliance ? 'filled' : 'empty',
+      'collection-columns': 'empty',
+    }
+  }
+
   if (args.collection === 'deals') {
     return {
       'collection-search': 'filled',
@@ -69,5 +82,11 @@ export function collectionToolbarSlotFillForRole(args: {
       args.capabilityOverrides,
     ),
     canCreateAccount: profileCanManageOrgData(args.systemRole, args.functionRole),
+    canManageCompliance: hasCapability(
+      args.functionRole,
+      args.systemRole,
+      args.capabilityOverrides ?? {},
+      'manage_compliance_documents',
+    ),
   })
 }

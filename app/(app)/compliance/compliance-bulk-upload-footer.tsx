@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react'
 import { Loader } from '@hugeicons/core-free-icons'
 
-import { ComplianceMultiPdfDropzone } from '@/app/(app)/overview/compliance-multi-pdf-dropzone'
+import { ComplianceMultiPdfDropzone } from '@/app/(app)/compliance/compliance-multi-pdf-dropzone'
 import { AppIcon } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
 

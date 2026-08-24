@@ -8,8 +8,6 @@ import {
   type BulkImportGroupItem,
 } from '@/app/(app)/overview/bulk-import-dialog'
 import { BulkDeleteReferencesDialog } from '@/app/(app)/overview/bulk-delete-references-dialog'
-import { ComplianceBulkUploadDialog } from '@/app/(app)/overview/compliance-bulk-upload-dialog'
-import { ComplianceUploadDialog } from '@/app/(app)/overview/compliance-upload-dialog'
 import { NewReferenceDialog } from '@/app/(app)/overview/new-reference-dialog'
 import { ShareLinkDialog } from '@/app/(app)/overview/share-link-dialog'
 import { TrashDialog } from '@/app/(app)/overview/trash-dialog'
@@ -56,10 +54,6 @@ export type ReferencesOverviewDialogsProps = {
   setShareLinkPopoverRef: (ref: ReferenceRow | null) => void
   newRefModalOpen: boolean
   setNewRefModalOpen: (open: boolean) => void
-  complianceUploadOpen: boolean
-  setComplianceUploadOpen: (open: boolean) => void
-  complianceBulkUploadOpen: boolean
-  setComplianceBulkUploadOpen: (open: boolean) => void
   bulkImportOpen: boolean
   setBulkImportOpen: (open: boolean) => void
   setBulkImportLoading: (loading: boolean) => void
@@ -103,10 +97,6 @@ export function ReferencesOverviewDialogs(props: ReferencesOverviewDialogsProps)
     setShareLinkPopoverRef,
     newRefModalOpen,
     setNewRefModalOpen,
-    complianceUploadOpen,
-    setComplianceUploadOpen,
-    complianceBulkUploadOpen,
-    setComplianceBulkUploadOpen,
     bulkImportOpen,
     setBulkImportOpen,
     setBulkImportLoading,
@@ -179,14 +169,6 @@ export function ReferencesOverviewDialogs(props: ReferencesOverviewDialogsProps)
             companies={companies}
             contacts={contacts}
             externalContacts={externalContacts}
-          />
-          <ComplianceUploadDialog
-            open={complianceUploadOpen}
-            onOpenChange={setComplianceUploadOpen}
-          />
-          <ComplianceBulkUploadDialog
-            open={complianceBulkUploadOpen}
-            onOpenChange={setComplianceBulkUploadOpen}
           />
           <BulkImportDialog
             open={bulkImportOpen}

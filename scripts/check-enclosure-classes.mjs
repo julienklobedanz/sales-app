@@ -39,10 +39,9 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   'components/dashboard/dashboard-user-menu.tsx',
   'components/table/table-bulk-actions-bar.tsx',
   'app/(app)/overview/references-data-table.tsx',
-  'app/(app)/overview/compliance-documents-table.tsx',
   'app/(app)/overview/reference-library-toolbar.tsx',
   'app/(app)/overview/bulk-import-groups-panel.tsx',
-  'app/(app)/overview/compliance-bulk-groups-panel.tsx',
+  'app/(app)/compliance/compliance-bulk-groups-panel.tsx',
   'app/(app)/overview/trash-dialog.tsx',
   'app/(app)/dashboard-overview.tsx',
   'app/(app)/deals/deals-client.tsx',
@@ -50,7 +49,7 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   // field
   'app/(app)/accounts/components/company-name-suggest-field.tsx',
   'app/(app)/references/[id]/approval-contact-suggest-field.tsx',
-  'app/(app)/overview/compliance-document-type-combobox.tsx',
+  'app/(app)/compliance/compliance-document-type-combobox.tsx',
   'app/(app)/overview/share-link-dialog.tsx',
   'app/(app)/references/[id]/pdf-export-dialog.tsx',
   'app/(app)/settings/market-signals/newsrooms-card.tsx',
@@ -61,7 +60,7 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   'app/p/[slug]/showcase-multi-portfolio.tsx',
   'app/(app)/deals/cockpit/deal-proof-section.tsx',
   'app/(app)/overview/inbox-references/client.tsx',
-  'app/(app)/overview/compliance-document-type-icon.tsx',
+  'app/(app)/compliance/compliance-document-type-icon.tsx',
 ])
 
 const SCAN_ROOTS = ['app', 'components', 'lib']

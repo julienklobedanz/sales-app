@@ -8,6 +8,7 @@ import { ChevronDown, Handshake } from 'lucide-react'
 import {
   Building2,
   FileText,
+  FileValidationIcon,
   GalleryHorizontalEndIcon,
   HeadsetIcon,
   Search01Icon,
@@ -271,6 +272,19 @@ export function AppSidebar({
     ),
   }
 
+  const complianceItem: NavItem = {
+    href: ROUTES.compliance.root,
+    label: COPY.nav.compliance,
+    isActive: (p) => Boolean(p?.startsWith(ROUTES.compliance.root)),
+    icon: (
+      <AppIcon
+        icon={FileValidationIcon}
+        size={16}
+        strokeWidth={pathname?.startsWith(ROUTES.compliance.root) ? 2.5 : 2}
+      />
+    ),
+  }
+
   const accountsItem: NavItem = {
     href: ROUTES.accounts,
     label: COPY.nav.accounts,
@@ -375,7 +389,7 @@ export function AppSidebar({
             mySidebarDeals={mySidebarDeals}
           />
 
-          {[referencesItem, accountsItem].map((item) => {
+          {[referencesItem, complianceItem, accountsItem].map((item) => {
             const active = item.isActive(pathname)
             return (
               <Link

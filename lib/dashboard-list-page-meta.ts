@@ -1,8 +1,4 @@
 import { COPY } from '@/lib/copy'
-import {
-  referenceLibraryTitle,
-  type ReferenceLibraryMode,
-} from '@/lib/references/library/reference-library-mode'
 import { ROUTES } from '@/lib/routes'
 
 export type DashboardListPageMeta = {
@@ -34,6 +30,7 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
 
   if (pathname === ROUTES.accounts) return true
   if (pathname === ROUTES.references.root) return true
+  if (pathname === ROUTES.compliance.root) return true
   if (pathname === ROUTES.deals.root) return true
   if (pathname.startsWith(ROUTES.settings)) return true
 
@@ -42,22 +39,23 @@ export function shouldShowDashboardListPageHeader(pathname: string | null): bool
 
 export function getDashboardListPageMeta(
   pathname: string | null,
-  context: {
-    referenceLibraryMode: ReferenceLibraryMode
-  },
 ): DashboardListPageMeta | null {
   if (!pathname || !shouldShowDashboardListPageHeader(pathname)) return null
 
   if (pathname === ROUTES.accounts) {
-    return { title: 'Accounts' }
+    return { title: COPY.nav.accounts }
   }
 
   if (pathname === ROUTES.references.root) {
-    return { title: referenceLibraryTitle(context.referenceLibraryMode) }
+    return { title: COPY.nav.references }
+  }
+
+  if (pathname === ROUTES.compliance.root) {
+    return { title: COPY.nav.compliance }
   }
 
   if (pathname === ROUTES.deals.root) {
-    return { title: 'Deals' }
+    return { title: COPY.nav.deals }
   }
 
   if (pathname === `${ROUTES.settings}/workflow`) {
