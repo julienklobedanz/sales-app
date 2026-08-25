@@ -320,7 +320,6 @@ export type Database = {
           next_steps: string | null
           red_flags: string | null
           updated_at: string | null
-          value_proposition: string | null
         }
         Insert: {
           company_id?: string | null
@@ -332,7 +331,6 @@ export type Database = {
           next_steps?: string | null
           red_flags?: string | null
           updated_at?: string | null
-          value_proposition?: string | null
         }
         Update: {
           company_id?: string | null
@@ -344,7 +342,6 @@ export type Database = {
           next_steps?: string | null
           red_flags?: string | null
           updated_at?: string | null
-          value_proposition?: string | null
         }
         Relationships: [
           {
@@ -415,6 +412,75 @@ export type Database = {
           },
           {
             foreignKeyName: 'contact_persons_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deal_deadlines: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          due_at: string | null
+          due_text: string | null
+          id: string
+          is_approximate: boolean
+          kind: Database['public']['Enums']['deal_deadline_kind']
+          label: string
+          organization_id: string
+          pinned: boolean
+          source: Database['public']['Enums']['deal_deadline_source']
+          source_key: string
+          suppressed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          due_at?: string | null
+          due_text?: string | null
+          id?: string
+          is_approximate?: boolean
+          kind?: Database['public']['Enums']['deal_deadline_kind']
+          label: string
+          organization_id: string
+          pinned?: boolean
+          source: Database['public']['Enums']['deal_deadline_source']
+          source_key: string
+          suppressed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          due_at?: string | null
+          due_text?: string | null
+          id?: string
+          is_approximate?: boolean
+          kind?: Database['public']['Enums']['deal_deadline_kind']
+          label?: string
+          organization_id?: string
+          pinned?: boolean
+          source?: Database['public']['Enums']['deal_deadline_source']
+          source_key?: string
+          suppressed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_deadlines_deal_id_fkey'
+            columns: ['deal_id']
+            isOneToOne: false
+            referencedRelation: 'deals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_deadlines_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
@@ -703,6 +769,70 @@ export type Database = {
           },
         ]
       }
+      deal_documents: {
+        Row: {
+          created_at: string
+          deal_id: string
+          file_name: string
+          id: string
+          kind: Database['public']['Enums']['deal_document_kind']
+          mime_type: string | null
+          organization_id: string
+          size_bytes: number | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          file_name: string
+          id?: string
+          kind?: Database['public']['Enums']['deal_document_kind']
+          mime_type?: string | null
+          organization_id: string
+          size_bytes?: number | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          file_name?: string
+          id?: string
+          kind?: Database['public']['Enums']['deal_document_kind']
+          mime_type?: string | null
+          organization_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_documents_deal_id_fkey'
+            columns: ['deal_id']
+            isOneToOne: false
+            referencedRelation: 'deals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_documents_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_documents_uploaded_by_fkey'
+            columns: ['uploaded_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       deal_reference_requests: {
         Row: {
           created_at: string
@@ -777,139 +907,6 @@ export type Database = {
             columns: ['reference_id']
             isOneToOne: false
             referencedRelation: 'references'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      deal_deadlines: {
-        Row: {
-          id: string
-          deal_id: string
-          organization_id: string
-          kind: Database['public']['Enums']['deal_deadline_kind']
-          label: string
-          due_at: string | null
-          due_text: string | null
-          is_approximate: boolean
-          source: Database['public']['Enums']['deal_deadline_source']
-          source_key: string
-          suppressed_at: string | null
-          pinned: boolean
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          deal_id: string
-          organization_id: string
-          kind?: Database['public']['Enums']['deal_deadline_kind']
-          label: string
-          due_at?: string | null
-          due_text?: string | null
-          is_approximate?: boolean
-          source: Database['public']['Enums']['deal_deadline_source']
-          source_key: string
-          suppressed_at?: string | null
-          pinned?: boolean
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          deal_id?: string
-          organization_id?: string
-          kind?: Database['public']['Enums']['deal_deadline_kind']
-          label?: string
-          due_at?: string | null
-          due_text?: string | null
-          is_approximate?: boolean
-          source?: Database['public']['Enums']['deal_deadline_source']
-          source_key?: string
-          suppressed_at?: string | null
-          pinned?: boolean
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'deal_deadlines_deal_id_fkey'
-            columns: ['deal_id']
-            isOneToOne: false
-            referencedRelation: 'deals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'deal_deadlines_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      deal_documents: {
-        Row: {
-          id: string
-          deal_id: string
-          organization_id: string
-          file_name: string
-          kind: Database['public']['Enums']['deal_document_kind']
-          storage_path: string
-          mime_type: string | null
-          size_bytes: number | null
-          uploaded_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          deal_id: string
-          organization_id: string
-          file_name: string
-          kind?: Database['public']['Enums']['deal_document_kind']
-          storage_path: string
-          mime_type?: string | null
-          size_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          deal_id?: string
-          organization_id?: string
-          file_name?: string
-          kind?: Database['public']['Enums']['deal_document_kind']
-          storage_path?: string
-          mime_type?: string | null
-          size_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'deal_documents_deal_id_fkey'
-            columns: ['deal_id']
-            isOneToOne: false
-            referencedRelation: 'deals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'deal_documents_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'deal_documents_uploaded_by_fkey'
-            columns: ['uploaded_by']
-            isOneToOne: false
-            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -1086,12 +1083,12 @@ export type Database = {
         Row: {
           account_manager_id: string | null
           company_id: string | null
+          contract_end_date: string | null
           created_at: string | null
           crm_opportunity_id: string | null
           crm_source: string | null
           crm_stage: string | null
           crm_synced_at: string | null
-          contract_end_date: string | null
           expiry_date: string | null
           id: string
           incumbent_provider: string | null
@@ -1110,12 +1107,12 @@ export type Database = {
         Insert: {
           account_manager_id?: string | null
           company_id?: string | null
+          contract_end_date?: string | null
           created_at?: string | null
           crm_opportunity_id?: string | null
           crm_source?: string | null
           crm_stage?: string | null
           crm_synced_at?: string | null
-          contract_end_date?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
@@ -1134,12 +1131,12 @@ export type Database = {
         Update: {
           account_manager_id?: string | null
           company_id?: string | null
+          contract_end_date?: string | null
           created_at?: string | null
           crm_opportunity_id?: string | null
           crm_source?: string | null
           crm_stage?: string | null
           crm_synced_at?: string | null
-          contract_end_date?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
@@ -2014,6 +2011,95 @@ export type Database = {
           },
         ]
       }
+      portfolio_view_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_view_events_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'portfolio_view_sessions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      portfolio_view_sessions: {
+        Row: {
+          active_seconds: number
+          country_code: string | null
+          ended_at: string | null
+          id: string
+          last_heartbeat_at: string
+          recipient_id: string | null
+          shared_portfolio_id: string
+          slug: string
+          started_at: string
+          visitor_email: string | null
+          visitor_name: string | null
+        }
+        Insert: {
+          active_seconds?: number
+          country_code?: string | null
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          recipient_id?: string | null
+          shared_portfolio_id: string
+          slug: string
+          started_at?: string
+          visitor_email?: string | null
+          visitor_name?: string | null
+        }
+        Update: {
+          active_seconds?: number
+          country_code?: string | null
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          recipient_id?: string | null
+          shared_portfolio_id?: string
+          slug?: string
+          started_at?: string
+          visitor_email?: string | null
+          visitor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_view_sessions_recipient_id_fkey'
+            columns: ['recipient_id']
+            isOneToOne: false
+            referencedRelation: 'shared_portfolio_recipients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portfolio_view_sessions_shared_portfolio_id_fkey'
+            columns: ['shared_portfolio_id']
+            isOneToOne: false
+            referencedRelation: 'shared_portfolios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2437,6 +2523,57 @@ export type Database = {
           },
         ]
       }
+      sales_meeting_prep_sessions: {
+        Row: {
+          company_id: string | null
+          company_name_query: string
+          created_at: string
+          created_by: string
+          id: string
+          organization_id: string
+          snapshot: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          company_name_query: string
+          created_at?: string
+          created_by: string
+          id?: string
+          organization_id: string
+          snapshot?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          company_name_query?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          organization_id?: string
+          snapshot?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sales_meeting_prep_sessions_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'sales_meeting_prep_sessions_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       security_alert_dispatches: {
         Row: {
           alert_key: string
@@ -2468,96 +2605,6 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
-      }
-      sales_meeting_prep_sessions: {
-        Row: {
-          id: string
-          organization_id: string
-          created_by: string
-          company_id: string | null
-          company_name_query: string
-          title: string
-          snapshot: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          created_by: string
-          company_id?: string | null
-          company_name_query: string
-          title: string
-          snapshot?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          created_by?: string
-          company_id?: string | null
-          company_name_query?: string
-          title?: string
-          snapshot?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'sales_meeting_prep_sessions_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'sales_meeting_prep_sessions_company_id_fkey'
-            columns: ['company_id']
-            isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      shared_portfolios: {
-        Row: {
-          created_at: string
-          customer_manage_token_hash: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          password_hash: string | null
-          gate_mode: string
-          reference_ids: string[]
-          slug: string
-          view_count: number
-        }
-        Insert: {
-          created_at?: string
-          customer_manage_token_hash?: string | null
-          expires_at?: string | null
-          gate_mode?: string
-          id?: string
-          is_active?: boolean
-          password_hash?: string | null
-          reference_ids?: string[]
-          slug: string
-          view_count?: number
-        }
-        Update: {
-          created_at?: string
-          customer_manage_token_hash?: string | null
-          expires_at?: string | null
-          gate_mode?: string
-          id?: string
-          is_active?: boolean
-          password_hash?: string | null
-          reference_ids?: string[]
-          slug?: string
-          view_count?: number
-        }
-        Relationships: []
       }
       shared_portfolio_recipients: {
         Row: {
@@ -2593,71 +2640,66 @@ export type Database = {
           token?: string
           visitor_email?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'shared_portfolio_recipients_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'shared_portfolio_recipients_external_contact_id_fkey'
+            columns: ['external_contact_id']
+            isOneToOne: false
+            referencedRelation: 'external_contacts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'shared_portfolio_recipients_shared_portfolio_id_fkey'
+            columns: ['shared_portfolio_id']
+            isOneToOne: false
+            referencedRelation: 'shared_portfolios'
+            referencedColumns: ['id']
+          },
+        ]
       }
-      portfolio_view_sessions: {
-        Row: {
-          active_seconds: number
-          country_code: string | null
-          ended_at: string | null
-          id: string
-          last_heartbeat_at: string
-          recipient_id: string | null
-          shared_portfolio_id: string
-          slug: string
-          started_at: string
-          visitor_email: string | null
-          visitor_name: string | null
-        }
-        Insert: {
-          active_seconds?: number
-          country_code?: string | null
-          ended_at?: string | null
-          id?: string
-          last_heartbeat_at?: string
-          recipient_id?: string | null
-          shared_portfolio_id: string
-          slug: string
-          started_at?: string
-          visitor_email?: string | null
-          visitor_name?: string | null
-        }
-        Update: {
-          active_seconds?: number
-          country_code?: string | null
-          ended_at?: string | null
-          id?: string
-          last_heartbeat_at?: string
-          recipient_id?: string | null
-          shared_portfolio_id?: string
-          slug?: string
-          started_at?: string
-          visitor_email?: string | null
-          visitor_name?: string | null
-        }
-        Relationships: []
-      }
-      portfolio_view_events: {
+      shared_portfolios: {
         Row: {
           created_at: string
-          event_type: string
+          customer_manage_token_hash: string | null
+          expires_at: string | null
+          gate_mode: string
           id: string
-          payload: Json
-          session_id: string
+          is_active: boolean
+          password_hash: string | null
+          reference_ids: string[]
+          slug: string
+          view_count: number
         }
         Insert: {
           created_at?: string
-          event_type: string
+          customer_manage_token_hash?: string | null
+          expires_at?: string | null
+          gate_mode?: string
           id?: string
-          payload?: Json
-          session_id: string
+          is_active?: boolean
+          password_hash?: string | null
+          reference_ids?: string[]
+          slug: string
+          view_count?: number
         }
         Update: {
           created_at?: string
-          event_type?: string
+          customer_manage_token_hash?: string | null
+          expires_at?: string | null
+          gate_mode?: string
           id?: string
-          payload?: Json
-          session_id?: string
+          is_active?: boolean
+          password_hash?: string | null
+          reference_ids?: string[]
+          slug?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -2798,19 +2840,6 @@ export type Database = {
         Returns: Json
       }
       create_organization: { Args: { org_name: string }; Returns: string }
-      upsert_deal_rfp_deadline: {
-        Args: {
-          p_deal_id: string
-          p_organization_id: string
-          p_kind: Database['public']['Enums']['deal_deadline_kind']
-          p_label: string
-          p_due_at: string | null
-          p_due_text: string | null
-          p_is_approximate: boolean
-          p_source_key: string
-        }
-        Returns: undefined
-      }
       create_organization_invite: {
         Args: {
           p_email: string
@@ -2909,15 +2938,22 @@ export type Database = {
         Args: {
           match_count: number
           match_threshold: number
+          p_created_after?: string
+          p_industries?: string[]
+          p_max_volume?: number
+          p_min_volume?: number
           p_organization_id: string
           p_sales_visible_only?: boolean
+          p_statuses?: string[]
           query_embedding: string
         }
         Returns: {
           company_name: string
+          created_at: string
           id: string
           industry: string
           similarity: number
+          status: string
           summary: string
           title: string
           volume_eur: string
@@ -2940,6 +2976,14 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      resolve_manage_approval_edit: {
+        Args: { p_manage_token: string; p_reference_id: string; p_slug: string }
+        Returns: Json
+      }
+      resolve_shared_portfolio_recipient: {
+        Args: { p_slug: string; p_token: string }
+        Returns: Json
+      }
       set_shared_portfolio_security: {
         Args: {
           p_clear_expires?: boolean
@@ -2951,20 +2995,12 @@ export type Database = {
         }
         Returns: Json
       }
-      resolve_manage_approval_edit: {
-        Args: { p_manage_token: string; p_reference_id: string; p_slug: string }
-        Returns: Json
-      }
-      resolve_shared_portfolio_recipient: {
-        Args: { p_slug: string; p_token: string }
+      try_unlock_shared_portfolio: {
+        Args: { p_password: string; p_slug: string }
         Returns: Json
       }
       try_unlock_shared_portfolio_email: {
         Args: { p_email: string; p_name: string; p_slug: string }
-        Returns: Json
-      }
-      try_unlock_shared_portfolio: {
-        Args: { p_password: string; p_slug: string }
         Returns: Json
       }
       try_uuid_from_text: { Args: { raw: string }; Returns: string }
@@ -2973,6 +3009,19 @@ export type Database = {
           p_function_role: Database['public']['Enums']['function_role']
           p_invite_id: string
           p_system_role: Database['public']['Enums']['system_role']
+        }
+        Returns: undefined
+      }
+      upsert_deal_rfp_deadline: {
+        Args: {
+          p_deal_id: string
+          p_due_at: string
+          p_due_text: string
+          p_is_approximate: boolean
+          p_kind: Database['public']['Enums']['deal_deadline_kind']
+          p_label: string
+          p_organization_id: string
+          p_source_key: string
         }
         Returns: undefined
       }
@@ -3141,6 +3190,25 @@ export const Constants = {
   public: {
     Enums: {
       approval_status: ['pending', 'approved', 'rejected'],
+      deal_deadline_kind: [
+        'submission',
+        'questions',
+        'presentation',
+        'award_expected',
+        'custom',
+        'internal_review',
+      ],
+      deal_deadline_source: ['rfp', 'manual'],
+      deal_document_kind: [
+        'ausschreibung',
+        'nda',
+        'vertrag',
+        'angebot',
+        'praesentation',
+        'spezifikation',
+        'notiz',
+        'sonstiges',
+      ],
       function_role: ['sales_rep', 'account_manager', 'sales_leader'],
       reference_status: [
         'draft',

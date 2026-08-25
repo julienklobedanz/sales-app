@@ -16,7 +16,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.115.0
 
       # Full local stack (auth/storage) — bare Postgres service lacks matching storage.buckets.
       - name: Apply all migrations via supabase start
@@ -36,7 +36,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.115.0
 
       - name: Start local Supabase stack
         run: supabase start -x imgproxy,studio,edge-runtime,logflare,vector,mailpit
