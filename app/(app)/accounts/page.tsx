@@ -288,30 +288,12 @@ export default async function AccountsPage({
     status: string
     title?: string
     expiry_date: string | null
-    contract_end_date?: string | null
+    contract_end_date: string | null
     updated_at: string | null
     created_at: string | null
   }
 
-  let dealsData = (dealsRows.data ?? []) as DealEnrichRow[]
-  if (
-    dealsRows &&
-    'error' in dealsRows &&
-    dealsRows.error &&
-    String(dealsRows.error.message ?? '').includes('contract_end_date')
-  ) {
-    const fallback = companyIds.length
-      ? await supabase
-          .from('deals')
-          .select('id, company_id, status, title, expiry_date, updated_at, created_at')
-          .in('company_id', companyIds)
-          .eq('organization_id', orgId)
-      : { data: [] as DealEnrichRow[] }
-    dealsData = ((fallback.data ?? []) as DealEnrichRow[]).map((d) => ({
-      ...d,
-      contract_end_date: null,
-    }))
-  }
+  const dealsData = (dealsRows.data ?? []) as DealEnrichRow[]
 
   type RefEnrichRow = {
     id: string
