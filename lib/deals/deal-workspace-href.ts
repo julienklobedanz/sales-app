@@ -1,5 +1,6 @@
 import {
   DEAL_WORKSPACE_DEFAULT_AREA,
+  DEAL_WORKSPACE_ENTRY_PARAM,
   isDealWorkspaceArea,
   type DealWorkspaceArea,
 } from '@/lib/deals/deal-workspace-areas'
@@ -11,6 +12,15 @@ export function dealWorkspaceHref(dealId: string): string {
 
 export function dealWorkspaceAreaHref(dealId: string, area: DealWorkspaceArea): string {
   return `${dealWorkspaceHref(dealId)}/${area}`
+}
+
+export function dealWorkspaceRequirementHref(
+  dealId: string,
+  requirementId: string,
+): string {
+  const params = new URLSearchParams()
+  params.set(DEAL_WORKSPACE_ENTRY_PARAM, requirementId)
+  return `${dealWorkspaceAreaHref(dealId, 'anforderungen')}?${params.toString()}`
 }
 
 /** Landepunkt nach Promote — Inhalt wechselt unter dem Nutzer den Ort. */

@@ -7,11 +7,10 @@ import { ComplianceDocumentTypeIcon } from '@/app/(app)/compliance/compliance-do
 import { Badge } from '@/components/ui/badge'
 import { TableDataCell } from '@/components/table/table-row-align'
 import { DraggableColumnHead } from '@/components/table/draggable-column-head'
+import type { ComplianceDocumentUsageById } from '@/lib/compliance/build-compliance-document-deal-usage'
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
 import { COPY } from '@/lib/copy'
-import {
-  complianceValidityStatus,
-} from '@/lib/compliance/expiry'
+import { complianceValidityStatus } from '@/lib/compliance/expiry'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
 import { formatReferenceDate } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
@@ -22,6 +21,7 @@ const COMPLIANCE_COLUMN_KEYS = [
   'document_type',
   'valid_until',
   'status',
+  'used_in',
   'updated_at',
 ] as const
 
@@ -32,6 +32,7 @@ const COMPLIANCE_COLUMN_LABELS: Record<ComplianceColumnKey, string> = {
   title: 'Titel',
   valid_until: 'Gültig bis',
   status: 'Status',
+  used_in: COPY.compliance.usedInLabel,
   updated_at: 'Aktualisiert',
 }
 
@@ -46,6 +47,7 @@ export type ComplianceTableHeaderRenderContext = {
 
 export type ComplianceTableCellRenderContext = {
   onOpenPdf: (doc: ComplianceDocumentRow) => void
+  usageByDocumentId: ComplianceDocumentUsageById
 }
 
 function SortableHeaderButton({
@@ -152,6 +154,18 @@ export function renderComplianceColumnHeader(
           />
         </DraggableColumnHead>
       )
+    case 'used_in':
+      return (
+        <DraggableColumnHead {...dragProps} contentAlign="end">
+          <SortableHeaderButton
+            column="used_in"
+            label={COMPLIANCE_COLUMN_LABELS.used_in}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            handleSort={handleSort}
+          />
+        </DraggableColumnHead>
+      )
     case 'updated_at':
       return (
         <DraggableColumnHead {...dragProps} contentAlign="end">
@@ -231,12 +245,26 @@ export function renderComplianceColumnCell(
             : 'text-[10px] font-medium'
       return (
         <TableDataCell>
-          <Badge variant={validity === 'valid' ? 'secondary' : 'outline'} className={className}>
+          <Badge
+            variant={validity === 'valid' ? 'secondary' : 'outline'}
+            className={className}
+          >
             {label}
           </Badge>
         </TableDataCell>
       )
     }
+    case 'used_in':
+      return (
+        <TableDataCell
+          className="text-right text-sm tabular-nums text-muted-foreground"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {ctx.usageByDocumentId[doc.id]?.dealCount ?? 0}
+          </span>
+        </TableDataCell>
+      )
     case 'updated_at':
       return (
         <TableDataCell
@@ -256,6 +284,7 @@ export function renderComplianceColumnCell(
 export function getComplianceSortValue(
   doc: ComplianceDocumentRow,
   key: ComplianceColumnKey,
+  usageByDocumentId: ComplianceDocumentUsageById = {},
 ): string | number {
   switch (key) {
     case 'document_type':
@@ -270,6 +299,8 @@ export function getComplianceSortValue(
       if (validity === 'expiring') return 1
       return 0
     }
+    case 'used_in':
+      return usageByDocumentId[doc.id]?.dealCount ?? 0
     case 'updated_at':
       return new Date(doc.updated_at).getTime()
     default:

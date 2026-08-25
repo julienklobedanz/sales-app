@@ -10,6 +10,8 @@ import {
 } from '@/lib/deals/deal-workspace-areas'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { loadDealRfpRequirements } from '@/lib/deals/load-deal-rfp-requirements'
+import { loadDealRfpRequirementDocumentLinks } from '@/lib/deals/load-deal-rfp-requirement-document-links'
+import { loadOrgComplianceDocsForRequirementLink } from '@/lib/deals/load-org-compliance-docs-for-requirement-link'
 import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
 import { buildDealWorkspaceRiskEntries } from '@/lib/deals/deal-workspace-risk-entry'
 import { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
@@ -75,7 +77,7 @@ async function DealWorkspaceAreaLoaded({
   area: DealWorkspaceArea
 }) {
   const supabase = await createServerSupabaseClient()
-  const [data, requirements] = await Promise.all([
+  const [data, requirements, pickDocs] = await Promise.all([
     loadDealRfpCockpitData(supabase, orgId, dealId, {
       title: deal.title,
       industry: deal.industry,
@@ -86,7 +88,17 @@ async function DealWorkspaceAreaLoaded({
       organizationId: orgId,
       documents: documents.map((doc) => ({ id: doc.id, file_name: doc.file_name })),
     }),
+    area === 'anforderungen'
+      ? loadOrgComplianceDocsForRequirementLink(supabase, orgId)
+      : Promise.resolve([]),
   ])
+  const linkedDocuments =
+    area === 'anforderungen'
+      ? await loadDealRfpRequirementDocumentLinks(supabase, {
+          organizationId: orgId,
+          requirementIds: requirements.map((row) => row.id),
+        })
+      : []
 
   // Leiste zählt bereit/gesamt — sonst bleibt die Zahl beim Speichern stehen.
   const draftsCovered = data
@@ -116,7 +128,13 @@ async function DealWorkspaceAreaLoaded({
     ) : area === 'entwuerfe' ? (
       <DealDraftsEntryPanel rows={draftRows} deal={deal} />
     ) : area === 'anforderungen' ? (
-      <DealRequirementsEntryPanel requirements={requirements} />
+      <DealRequirementsEntryPanel
+        dealId={dealId}
+        canManageDocuments={canManageDocuments}
+        requirements={requirements}
+        linkedDocuments={linkedDocuments}
+        pickDocs={pickDocs}
+      />
     ) : undefined
 
   return (

@@ -6,6 +6,7 @@ import {
   dealWorkspaceAreaHref,
   dealWorkspaceHref,
   dealWorkspaceLandingHref,
+  dealWorkspaceRequirementHref,
   parseDealWorkspaceAreaFromPathname,
   resolveDealRfpHash,
   resolveDealWorkspaceAccess,
@@ -15,6 +16,12 @@ describe('deal workspace href', () => {
   it('legt die Unterroute ohne Hash an', () => {
     expect(dealWorkspaceHref('deal-1')).toBe('/deals/deal-1/ausschreibung')
     expect(dealWorkspaceHref('deal-1')).not.toContain('#')
+  })
+
+  it('zeigt von einem Nachweis zur Anforderung im Workspace', () => {
+    expect(dealWorkspaceRequirementHref('deal-1', 'abc-uuid')).toBe(
+      '/deals/deal-1/ausschreibung/anforderungen?eintrag=abc-uuid',
+    )
   })
 
   it('landet nach Promote auf /dokumente, nicht auf der Deal-Seite', () => {

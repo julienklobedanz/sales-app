@@ -1,6 +1,7 @@
 import type { OrgComplianceDoc } from '@/lib/deal-desk/compute-delivery-win-probability'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { EligibilityAssessment } from '@/lib/deals/eligibility-criteria-schema'
+import { complianceDocMatchesNeed } from '@/lib/deals/compliance-need-match'
 import { normalizeToken } from '@/lib/deals/normalize-token'
 
 export type RequestedEvidenceGapItem = {
@@ -11,15 +12,7 @@ export type RequestedEvidenceGapItem = {
 }
 
 function docMatchesNeed(docs: OrgComplianceDoc[], need: string): boolean {
-  const n = normalizeToken(need)
-  if (!n) return false
-  return docs.some((d) => {
-    const blob = `${d.document_type} ${d.title}`
-    const h = normalizeToken(blob)
-    return (
-      h.includes(n) || n.split(' ').some((part) => part.length >= 3 && h.includes(part))
-    )
-  })
+  return docs.some((d) => complianceDocMatchesNeed(d, need))
 }
 
 /** Vom Kunden angefragte Nachweise / fehlende Compliance-Lücken für Risiko-Card. */
