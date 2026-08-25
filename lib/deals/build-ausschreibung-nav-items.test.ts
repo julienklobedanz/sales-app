@@ -12,7 +12,7 @@ const counts = {
   risksCount: 4,
   draftsCovered: 1,
   draftsTotal: 26,
-  lotsCount: 2,
+  requirementsCount: 25,
 }
 
 describe('buildAusschreibungNavItems', () => {
@@ -35,12 +35,12 @@ describe('buildAusschreibungNavItems', () => {
       risksCount: 0,
       draftsCovered: 0,
       draftsTotal: 0,
-      lotsCount: 0,
+      requirementsCount: 0,
       showAnalysisLinks: true,
     })
     expect(items.find((item) => item.id === 'dokumente')?.count).toBe('0')
     expect(items.find((item) => item.id === 'stammdaten')?.count).toBeNull()
-    expect(items.find((item) => item.id === 'lose')?.count).toBeNull()
+    expect(items.find((item) => item.id === 'anforderungen')?.count).toBeNull()
     expect(items.find((item) => item.id === 'eignung')?.count).toBeNull()
     expect(items.find((item) => item.id === 'risiken')?.count).toBeNull()
     expect(items.find((item) => item.id === 'entwuerfe')?.count).toBeNull()

@@ -25,13 +25,11 @@ describe('workspaceFromRfpSnapshot', () => {
           id: 'sme-req-a',
           question: 'Klärung A',
           category: 'Security',
-          dueInDays: 3,
         },
         {
           id: 'sme-req-b',
           question: 'Klärung B',
           category: 'Legal',
-          dueInDays: 4,
         },
       ],
     })
@@ -45,9 +43,9 @@ describe('workspaceFromRfpSnapshot', () => {
 describe('groupSmeTasksByTopic', () => {
   it('groups SME tasks by category/topic', () => {
     const groups = groupSmeTasksByTopic([
-      { id: '1', question: 'Q1', category: 'Security', dueInDays: 1 },
-      { id: '2', question: 'Q2', category: 'Legal', dueInDays: 2 },
-      { id: '3', question: 'Q3', category: 'Security', dueInDays: 3 },
+      { id: '1', question: 'Q1', category: 'Security' },
+      { id: '2', question: 'Q2', category: 'Legal' },
+      { id: '3', question: 'Q3', category: 'Security' },
     ])
     expect(groups).toHaveLength(2)
     const security = groups.find((g) => g.topic === 'Security')

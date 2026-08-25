@@ -26,7 +26,7 @@ describe('deal workspace areas (§10.7)', () => {
       'steckbrief',
       'dokumente',
       'stammdaten',
-      'lose',
+      'anforderungen',
       'eignung',
       'risiken',
       'entwuerfe',
@@ -43,31 +43,29 @@ describe('deal workspace areas (§10.7)', () => {
   })
 
   it('lässt das Count-Feld beim Collapse gefüllt', () => {
-    expect(
-      dealWorkspaceRailSlotFill({ narrow: true, hasCount: true }),
-    ).toEqual({
+    expect(dealWorkspaceRailSlotFill({ narrow: true, hasCount: true })).toEqual({
       icon: 'filled',
       label: 'collapsed',
       count: 'filled',
     })
-    expect(
-      dealWorkspaceRailSlotFill({ narrow: false, hasCount: true }),
-    ).toEqual({
+    expect(dealWorkspaceRailSlotFill({ narrow: false, hasCount: true })).toEqual({
       icon: 'filled',
       label: 'filled',
       count: 'filled',
     })
-    expect(
-      dealWorkspaceRailSlotFill({ narrow: true, hasCount: false }),
-    ).toEqual({
+    expect(dealWorkspaceRailSlotFill({ narrow: true, hasCount: false })).toEqual({
       icon: 'filled',
       label: 'collapsed',
       count: 'empty',
     })
   })
 
-  it('begrenzt Eintrag-Panel auf Risiken und Entwürfe', () => {
-    expect([...DEAL_WORKSPACE_ENTRY_AREAS]).toEqual(['risiken', 'entwuerfe'])
+  it('begrenzt Eintrag-Panel auf Anforderungen, Risiken und Entwürfe', () => {
+    expect([...DEAL_WORKSPACE_ENTRY_AREAS]).toEqual([
+      'anforderungen',
+      'risiken',
+      'entwuerfe',
+    ])
     expect(isDealWorkspaceEntryArea('stammdaten')).toBe(false)
     expect(DEAL_WORKSPACE_ENTRY_PARAM).toBe('eintrag')
   })
@@ -139,9 +137,10 @@ describe('deal workspace areas (§10.7)', () => {
     expect(
       dealWorkspaceSplitVisibility({ isMobile: true, layer: 'entry-panel' }),
     ).toEqual({ showList: false, showPanel: true })
-    expect(
-      dealWorkspaceSplitVisibility({ isMobile: true, layer: 'content' }),
-    ).toEqual({ showList: true, showPanel: false })
+    expect(dealWorkspaceSplitVisibility({ isMobile: true, layer: 'content' })).toEqual({
+      showList: true,
+      showPanel: false,
+    })
   })
 
   it('strippt eintrag auf Non-Entry-Areas und leerer Liste', () => {

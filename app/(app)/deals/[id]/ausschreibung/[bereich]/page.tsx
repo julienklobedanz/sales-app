@@ -9,6 +9,7 @@ import {
   type DealWorkspaceArea,
 } from '@/lib/deals/deal-workspace-areas'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
+import { loadDealRfpRequirements } from '@/lib/deals/load-deal-rfp-requirements'
 import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
 import { buildDealWorkspaceRiskEntries } from '@/lib/deals/deal-workspace-risk-entry'
 import { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
@@ -18,6 +19,7 @@ import { DealWorkspaceLayout } from '../../../cockpit/deal-workspace-layout'
 import { DealWorkspaceAreaContent } from '../../../cockpit/deal-workspace-area-content'
 import { DealRisksEntryPanel } from '../../../cockpit/deal-risks-entry-panel'
 import { DealDraftsEntryPanel } from '../../../cockpit/deal-drafts-entry-panel'
+import { DealRequirementsEntryPanel } from '../../../cockpit/deal-requirements-entry-panel'
 import { loadDealWorkspaceContext } from '../load-deal-workspace-context'
 
 export default function DealWorkspaceAreaPage({
@@ -73,37 +75,48 @@ async function DealWorkspaceAreaLoaded({
   area: DealWorkspaceArea
 }) {
   const supabase = await createServerSupabaseClient()
-  const data = await loadDealRfpCockpitData(supabase, orgId, dealId, {
-    title: deal.title,
-    industry: deal.industry,
-    volume: deal.volume,
-  })
+  const [data, requirements] = await Promise.all([
+    loadDealRfpCockpitData(supabase, orgId, dealId, {
+      title: deal.title,
+      industry: deal.industry,
+      volume: deal.volume,
+    }),
+    loadDealRfpRequirements(supabase, {
+      dealId,
+      organizationId: orgId,
+      documents: documents.map((doc) => ({ id: doc.id, file_name: doc.file_name })),
+    }),
+  ])
 
   // Leiste zählt bereit/gesamt — sonst bleibt die Zahl beim Speichern stehen.
   const draftsCovered = data
     ? data.draftRows.filter((row) => draftRowStatus(row) === 'ready').length
     : 0
-  const risksCount = data?.risks
-    ? data.risks.redFlags.length + data.risks.smeOpenCount
-    : 0
+  const risksCount = data?.risks ? data.risks.redFlags.length : 0
 
   const analysisLive = Boolean(data?.hasAnalysis && !data?.isStale)
   const riskEntries =
     data && analysisLive
       ? buildDealWorkspaceRiskEntries({
           redFlags: data.risks?.redFlags ?? [],
-          requestedEvidenceGaps: data.requestedEvidenceGaps,
-          smeGroups: data.risks?.smeGroups ?? [],
         })
       : []
   const draftRows = data && analysisLive ? data.draftRows : []
   const entries =
-    area === 'risiken' ? riskEntries : area === 'entwuerfe' ? draftRows : []
+    area === 'risiken'
+      ? riskEntries
+      : area === 'entwuerfe'
+        ? draftRows
+        : area === 'anforderungen'
+          ? requirements
+          : []
   const panel =
     area === 'risiken' ? (
       <DealRisksEntryPanel entries={riskEntries} />
     ) : area === 'entwuerfe' ? (
       <DealDraftsEntryPanel rows={draftRows} deal={deal} />
+    ) : area === 'anforderungen' ? (
+      <DealRequirementsEntryPanel requirements={requirements} />
     ) : undefined
 
   return (
@@ -111,7 +124,9 @@ async function DealWorkspaceAreaLoaded({
       dealId={dealId}
       dealTitle={deal.title}
       currentArea={area}
-      entries={isDealWorkspaceEntryArea(area) ? entries.map((entry) => ({ id: entry.id })) : []}
+      entries={
+        isDealWorkspaceEntryArea(area) ? entries.map((entry) => ({ id: entry.id })) : []
+      }
       panel={panel}
       items={buildAusschreibungNavItems({
         dealId,
@@ -121,7 +136,7 @@ async function DealWorkspaceAreaLoaded({
         risksCount,
         draftsCovered,
         draftsTotal: data?.draftRows.length ?? 0,
-        lotsCount: data?.tenderLots.length ?? 0,
+        requirementsCount: requirements.length,
         showAnalysisLinks: Boolean(data),
       })}
     >
@@ -133,6 +148,9 @@ async function DealWorkspaceAreaLoaded({
         canManageDocuments={canManageDocuments}
         data={data}
         riskEntries={riskEntries}
+        requirements={requirements}
+        requestedEvidenceGaps={analysisLive ? (data?.requestedEvidenceGaps ?? []) : []}
+        smeGroups={analysisLive ? (data?.risks?.smeGroups ?? []) : []}
       />
     </DealWorkspaceLayout>
   )

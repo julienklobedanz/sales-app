@@ -9,10 +9,7 @@ export function dealWorkspaceHref(dealId: string): string {
   return ROUTES.deals.workspace(dealId)
 }
 
-export function dealWorkspaceAreaHref(
-  dealId: string,
-  area: DealWorkspaceArea,
-): string {
+export function dealWorkspaceAreaHref(dealId: string, area: DealWorkspaceArea): string {
   return `${dealWorkspaceHref(dealId)}/${area}`
 }
 
@@ -24,7 +21,6 @@ export function dealWorkspaceLandingHref(dealId: string): string {
 export const DEAL_RFP_HASH_IDS = [
   'urteil',
   'stammdaten',
-  'lose',
   'eligCard',
   'risks',
   'drafts',
@@ -45,7 +41,6 @@ export type DealWorkspaceAccess =
 const DEAL_RFP_HASH_TO_AREA: Record<DealRfpHashId, DealWorkspaceArea | null> = {
   urteil: null,
   stammdaten: 'stammdaten',
-  lose: 'lose',
   eligCard: 'eignung',
   risks: 'risiken',
   drafts: 'entwuerfe',
@@ -54,10 +49,12 @@ const DEAL_RFP_HASH_TO_AREA: Record<DealRfpHashId, DealWorkspaceArea | null> = {
   'notice-hero': 'steckbrief',
 }
 
-export function resolveDealWorkspaceAccess(deal: {
-  id: string
-  is_rfp_mode: boolean
-} | null): DealWorkspaceAccess {
+export function resolveDealWorkspaceAccess(
+  deal: {
+    id: string
+    is_rfp_mode: boolean
+  } | null,
+): DealWorkspaceAccess {
   if (!deal) return { kind: 'not-found' }
   if (!deal.is_rfp_mode) {
     return { kind: 'redirect-deal', href: ROUTES.deals.detail(deal.id) }

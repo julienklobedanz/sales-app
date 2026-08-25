@@ -46,7 +46,6 @@ export type DealDeskSmeTask = {
   id: string
   question: string
   category: string
-  dueInDays: number
   routedTo?: string
   /** Auszug aus dem RFP für die Kontext-Vorschau */
   contextExcerpt?: string

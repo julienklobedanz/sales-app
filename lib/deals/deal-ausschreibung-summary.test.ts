@@ -4,9 +4,7 @@ import { buildDealAusschreibungSummary } from './deal-ausschreibung-summary'
 
 describe('buildDealAusschreibungSummary', () => {
   it('zeigt Dokumentzahl ohne Analyse und lässt die übrigen Werte leer', () => {
-    expect(
-      buildDealAusschreibungSummary({ documentCount: 2, data: null }),
-    ).toEqual({
+    expect(buildDealAusschreibungSummary({ documentCount: 2, data: null })).toEqual({
       eligibility: '—',
       drafts: '—',
       risks: '—',
@@ -22,11 +20,11 @@ describe('buildDealAusschreibungSummary', () => {
         data: {
           hasAnalysis: true,
           isStale: false,
-            eligibilityAssessment: {
-              verdict: 'ko',
-              summary: '',
-              criteria: [],
-            },
+          eligibilityAssessment: {
+            verdict: 'ko',
+            summary: '',
+            criteria: [],
+          },
           draftRows: [
             { reference: { id: 'r1' }, answer: 'Antwort' },
             { reference: { id: 'r2' } },
@@ -39,7 +37,7 @@ describe('buildDealAusschreibungSummary', () => {
     ).toEqual({
       eligibility: 'K.O.',
       drafts: '1/4',
-      risks: '3',
+      risks: '1',
       documents: '3',
       hasAnalysis: true,
     })

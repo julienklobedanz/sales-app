@@ -29,9 +29,7 @@ export function buildDealAusschreibungSummary(input: {
     ? data.draftRows.filter((row) => draftRowStatus(row) === 'ready').length
     : 0
   const draftsTotal = data?.draftRows.length ?? 0
-  const risksCount = data?.risks
-    ? data.risks.redFlags.length + data.risks.smeOpenCount
-    : 0
+  const risksCount = data?.risks ? data.risks.redFlags.length : 0
   const eligibility =
     hasAnalysis && data?.eligibilityAssessment
       ? eligibilityVerdictLabel(data.eligibilityAssessment.verdict)

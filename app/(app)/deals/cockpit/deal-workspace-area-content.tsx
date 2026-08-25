@@ -18,6 +18,10 @@ import { DealRfpStammdatenSection } from './deal-rfp-stammdaten-section'
 import { DealDocumentsSection } from './deal-documents-section'
 import { DealRfpNoticeHero } from './deal-rfp-notice-hero'
 import { DealRfpLotsSection } from './deal-rfp-lots-section'
+import { DealRfpRequirementsSection } from './deal-rfp-requirements-section'
+import type { DealRfpRequirementRow } from '@/lib/deals/load-deal-rfp-requirements'
+import type { RequestedEvidenceGapItem } from '@/lib/deals/build-requested-evidence-gaps'
+import type { SmeTopicGroup } from '@/lib/deals/group-sme-by-topic'
 
 function DealWorkspaceAnalyzeEmpty({
   dealId,
@@ -65,6 +69,9 @@ export function DealWorkspaceAreaContent({
   canManageDocuments,
   data,
   riskEntries = [],
+  requirements = [],
+  requestedEvidenceGaps = [],
+  smeGroups = [],
 }: {
   area: DealWorkspaceArea
   dealId: string
@@ -73,6 +80,9 @@ export function DealWorkspaceAreaContent({
   canManageDocuments: boolean
   data: DealRfpCockpitData | null
   riskEntries?: DealWorkspaceRiskEntry[]
+  requirements?: DealRfpRequirementRow[]
+  requestedEvidenceGaps?: RequestedEvidenceGapItem[]
+  smeGroups?: SmeTopicGroup[]
 }) {
   if (area === 'dokumente') {
     return (
@@ -98,6 +108,17 @@ export function DealWorkspaceAreaContent({
     )
   }
 
+  if (area === 'anforderungen') {
+    return (
+      <DealRfpRequirementsSection
+        requirements={requirements}
+        requestedEvidenceGaps={requestedEvidenceGaps}
+        smeGroups={smeGroups}
+        showDerivedViews={Boolean(data?.hasAnalysis && !data.isStale)}
+      />
+    )
+  }
+
   if (!data) {
     return (
       <DealWorkspaceAnalyzeEmpty
@@ -113,9 +134,12 @@ export function DealWorkspaceAreaContent({
     case 'steckbrief':
       return <DealRfpNoticeHero deal={deal} data={data} />
     case 'stammdaten':
-      return <DealRfpStammdatenSection data={data} />
-    case 'lose':
-      return <DealRfpLotsSection lots={data.tenderLots} />
+      return (
+        <div className="space-y-4">
+          <DealRfpStammdatenSection data={data} />
+          <DealRfpLotsSection lots={data.tenderLots} />
+        </div>
+      )
     case 'eignung':
       return <DealRfpEligibilitySection data={data} />
     case 'risiken':
