@@ -23,16 +23,11 @@ import {
   type ComplianceColumnKey,
 } from '@/app/(app)/compliance/compliance-table-column-renders'
 import { CollectionReadLayout } from '@/components/dashboard/collection-read-layout'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useRole } from '@/hooks/useRole'
 import { filterComplianceDocumentsForTable } from '@/lib/compliance/compliance-table-rows'
+import type { ComplianceDocumentUsageById } from '@/lib/compliance/build-compliance-document-deal-usage'
 import { COPY } from '@/lib/copy'
 import {
   buildCollectionObjectUrl,
@@ -42,8 +37,10 @@ import { cn } from '@/lib/utils'
 
 export function ComplianceCollection({
   documents,
+  usageByDocumentId,
 }: {
   documents: ComplianceDocumentRow[]
+  usageByDocumentId: ComplianceDocumentUsageById
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -84,8 +81,8 @@ export function ComplianceCollection({
     })
     if (sortKey) {
       rows = [...rows].sort((a, b) => {
-        const va = getComplianceSortValue(a, sortKey)
-        const vb = getComplianceSortValue(b, sortKey)
+        const va = getComplianceSortValue(a, sortKey, usageByDocumentId)
+        const vb = getComplianceSortValue(b, sortKey, usageByDocumentId)
         if (typeof va === 'number' && typeof vb === 'number') {
           return sortDir === 'asc' ? va - vb : vb - va
         }
@@ -94,7 +91,7 @@ export function ComplianceCollection({
       })
     }
     return rows
-  }, [documents, search, sortKey, sortDir])
+  }, [documents, search, sortKey, sortDir, usageByDocumentId])
 
   const { selectedId, selected, clearSelection } = useCollectionObjectSelection({
     items: filtered,
@@ -153,15 +150,18 @@ export function ComplianceCollection({
 
   const cellCtx = {
     onOpenPdf: (doc: ComplianceDocumentRow) => void handleOpenPdf(doc),
+    usageByDocumentId,
   }
 
   const table = (
     <div className="min-h-0 flex-1 overflow-auto p-2">
-      <Table className="min-w-[720px] w-full">
+      <Table className="min-w-[800px] w-full">
         <TableHeader>
           <TableRow>
             {columnOrder.map((column) => (
-              <Fragment key={column}>{renderComplianceColumnHeader(column, headerCtx)}</Fragment>
+              <Fragment key={column}>
+                {renderComplianceColumnHeader(column, headerCtx)}
+              </Fragment>
             ))}
           </TableRow>
         </TableHeader>
@@ -190,7 +190,9 @@ export function ComplianceCollection({
                 }}
               >
                 {columnOrder.map((column) => (
-                  <Fragment key={column}>{renderComplianceColumnCell(column, doc, cellCtx)}</Fragment>
+                  <Fragment key={column}>
+                    {renderComplianceColumnCell(column, doc, cellCtx)}
+                  </Fragment>
                 ))}
               </TableRow>
             ))
@@ -229,6 +231,7 @@ export function ComplianceCollection({
             <ComplianceReadPane
               document={selected}
               canManage={canManage}
+              usage={selected ? usageByDocumentId[selected.id] : undefined}
               onOpenNewVersion={() => {
                 if (!selected) return
                 setUploadDocumentType(selected.document_type)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -14,16 +15,20 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { COPY } from '@/lib/copy'
+import type { ComplianceDocumentDealUsage } from '@/lib/compliance/build-compliance-document-deal-usage'
 import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
 import { formatComplianceValidUntilDate } from '@/lib/compliance/format'
+import { dealWorkspaceRequirementHref } from '@/lib/deals/deal-workspace-href'
 
 export function ComplianceReadPane({
   document,
   canManage,
+  usage,
   onOpenNewVersion,
 }: {
   document: ComplianceDocumentRow | null
   canManage: boolean
+  usage?: ComplianceDocumentDealUsage
   onOpenNewVersion: () => void
 }) {
   const router = useRouter()
@@ -116,6 +121,34 @@ export function ComplianceReadPane({
           </dd>
         </div>
       </dl>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{COPY.compliance.usedInLabel}</p>
+        {!usage || usage.deals.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{COPY.compliance.usedInEmpty}</p>
+        ) : (
+          <ul className="space-y-3">
+            {usage.deals.map((deal) => (
+              <li key={deal.dealId} className="space-y-1">
+                <p className="text-sm font-medium">{deal.dealTitle}</p>
+                <ul className="space-y-1">
+                  {deal.requirements.map((requirement) => (
+                    <li key={requirement.id}>
+                      <Link
+                        href={dealWorkspaceRequirementHref(deal.dealId, requirement.id)}
+                        aria-label={COPY.compliance.usedInOpenRequirement}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {requirement.text}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {canManage ? (
