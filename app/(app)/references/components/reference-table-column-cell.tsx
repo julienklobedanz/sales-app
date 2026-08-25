@@ -15,7 +15,7 @@ import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { projectYearFromDates } from '@/lib/references/project-year'
 import { referencesReadHref } from '@/lib/references/references-list-view'
 
-import type { ReferenceRow } from '../actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import {
   type ReferenceColumnKey,
   type ReferenceTableCellRenderContext,

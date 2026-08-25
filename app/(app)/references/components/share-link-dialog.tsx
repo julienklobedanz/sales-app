@@ -9,9 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { AppIcon } from '@/lib/icons'
 
-import type { ReferenceRow } from '../actions'
-import { createSharedPortfolio, getExistingShareForReference } from '../actions'
-import { ReferenceReader } from '../reference-reader'
+import type { ReferenceRow } from '@/app/(app)/actions'
+import { createSharedPortfolio, getExistingShareForReference } from '@/app/(app)/actions'
+import { ReferenceReader } from '@/app/(app)/reference-reader'
 
 function sanitizeSharedUrl(url: string) {
   return url.replace(/\[([^\]]+)\]/g, '$1').replace(/\[|\]/g, '')

@@ -3,7 +3,7 @@ import {
   type ReferenceColumnKey,
 } from './reference-table-column-types'
 import { loadColumnWidthsFromStorage } from '@/lib/table-column-sizing'
-import type { ReferenceRow } from '../actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 
 export type { ReferenceColumnKey }
 

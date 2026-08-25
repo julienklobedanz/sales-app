@@ -13,7 +13,7 @@ import {
   compareReferencesByProjectYearDesc,
   projectYearFromDates,
 } from '@/lib/references/project-year'
-import type { ReferenceRow } from '../actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import {
   COLUMN_KEYS,
   REFERENCE_TABLE_STATUS_FILTERS,

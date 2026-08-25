@@ -20,9 +20,9 @@ import {
   type AccountColumnKey,
 } from '@/lib/accounts/account-collection-columns'
 import {
-  ReferenceLayoutSwitch,
-  type ReferenceLayoutMode,
-} from '@/app/(app)/overview/reference-layout-switch'
+  CollectionLayoutSwitch,
+  type CollectionLayoutMode,
+} from '@/components/dashboard/collection-layout-switch'
 import { AccountsMoreFiltersMenu } from './accounts-more-filters-menu'
 import type { ReferencesFilter } from './accounts-collection-types'
 
@@ -53,8 +53,8 @@ export function AccountsCollectionToolbar({
   onNdaFilterChange: (value: AccountsNdaFilter) => void
   canCreateAccount: boolean
   onCreate: () => void
-  layout: ReferenceLayoutMode
-  onLayoutChange: (mode: ReferenceLayoutMode) => void
+  layout: CollectionLayoutMode
+  onLayoutChange: (mode: CollectionLayoutMode) => void
   industryFilter: string
   onIndustryFilterChange: (value: string) => void
   industryOptions: string[]
@@ -115,7 +115,7 @@ export function AccountsCollectionToolbar({
           />
         ),
         'collection-view': (
-          <ReferenceLayoutSwitch value={layout} onChange={onLayoutChange} />
+          <CollectionLayoutSwitch value={layout} onChange={onLayoutChange} />
         ),
         'collection-primary':
           slotFill['collection-primary'] === 'empty' ? null : (

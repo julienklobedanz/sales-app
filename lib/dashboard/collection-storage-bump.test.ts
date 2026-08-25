@@ -6,7 +6,7 @@ import {
   COLUMN_SIZING_STORAGE_KEY,
   COLUMN_VISIBLE_STORAGE_KEY,
   DEFAULT_VISIBLE,
-} from '@/app/(app)/overview/reference-overview-columns'
+} from '@/app/(app)/references/components/reference-overview-columns'
 import {
   DEAL_COLUMN_SIZING_STORAGE_KEY,
   DEAL_COLUMNS_STORAGE_KEY,
@@ -30,12 +30,8 @@ describe('S3 column storage bump', () => {
     expect(DEAL_COLUMNS_STORAGE_KEY).toBe('refstack:deals:column-order-v3')
     expect(DEAL_COLUMN_SIZING_STORAGE_KEY).toBe('refstack:deals:column-sizing-v2')
     expect(ACCOUNT_COLUMNS_STORAGE_KEY).toBe('refstack:accounts:column-order-v1')
-    expect(ACCOUNT_COLUMN_VISIBLE_STORAGE_KEY).toBe(
-      'refstack:accounts:column-visible-v1',
-    )
-    expect(ACCOUNT_COLUMN_SIZING_STORAGE_KEY).toBe(
-      'refstack:accounts:column-sizing-v1',
-    )
+    expect(ACCOUNT_COLUMN_VISIBLE_STORAGE_KEY).toBe('refstack:accounts:column-visible-v1')
+    expect(ACCOUNT_COLUMN_SIZING_STORAGE_KEY).toBe('refstack:accounts:column-sizing-v1')
   })
 
   it('defaults follow the documented visible columns', () => {

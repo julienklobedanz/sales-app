@@ -12,7 +12,7 @@ import { accountsReadHref } from '@/lib/accounts/accounts-list-view'
 import type { AccountsNdaFilter } from '@/lib/accounts/account-collection-columns'
 import { ACCOUNT_DEFAULT_VISIBLE } from '@/lib/accounts/account-collection-columns'
 import { useCollectionObjectSelection } from '@/lib/dashboard/use-collection-object-selection'
-import type { ReferenceLayoutMode } from '@/app/(app)/overview/reference-layout-switch'
+import type { CollectionLayoutMode } from '@/components/dashboard/collection-layout-switch'
 import { AccountsCollectionToolbar } from './accounts-collection-toolbar'
 import { filterAccountCollectionRows } from './accounts-collection-filter'
 import { buildAccountsTableColumns } from './accounts-table-columns'
@@ -29,7 +29,7 @@ export function AccountsCollection({
 }: {
   companies: CompanyCard[]
   lensPayload: AccountLensPayload | null
-  layout: ReferenceLayoutMode
+  layout: CollectionLayoutMode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -81,14 +81,7 @@ export function AccountsCollection({
         locationFilter,
         referencesFilter,
       }),
-    [
-      companies,
-      search,
-      ndaFilter,
-      industryFilter,
-      locationFilter,
-      referencesFilter,
-    ],
+    [companies, search, ndaFilter, industryFilter, locationFilter, referencesFilter],
   )
 
   const { selectedId, selected, hrefFor, clearSelection } = useCollectionObjectSelection({
@@ -102,10 +95,9 @@ export function AccountsCollection({
     process.env.NODE_ENV === 'development' &&
     searchParams.get('previewOnboarding') === '1'
   const showOnboarding =
-    previewOnboarding ||
-    (companies.length === 0 && !search.trim() && ndaFilter === 'all')
+    previewOnboarding || (companies.length === 0 && !search.trim() && ndaFilter === 'all')
 
-  function setLayout(mode: ReferenceLayoutMode) {
+  function setLayout(mode: CollectionLayoutMode) {
     const next = new URLSearchParams(searchParams.toString())
     if (mode === 'inbox') next.set('view', 'lesen')
     else next.delete('view')

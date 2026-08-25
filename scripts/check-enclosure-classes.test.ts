@@ -57,12 +57,16 @@ describe('isAllowlisted', () => {
   it('allows QR well, collection chrome, skeletons, loading — not dropzones', () => {
     expect(isAllowlisted('components/dashboard/settings-totp-mfa-card.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/collection-read-layout.tsx')).toBe(true)
-    expect(isAllowlisted('app/(app)/overview/references-data-table.tsx')).toBe(true)
+    expect(
+      isAllowlisted('app/(app)/references/components/references-data-table.tsx'),
+    ).toBe(true)
     expect(isAllowlisted('app/(app)/deals/cockpit/deal-document-dropzone.tsx')).toBe(
       false,
     )
     expect(
-      isAllowlisted('app/(app)/references/components/reference-onboarding-empty-state.tsx'),
+      isAllowlisted(
+        'app/(app)/references/components/reference-onboarding-empty-state.tsx',
+      ),
     ).toBe(false)
     expect(isAllowlisted('components/dashboard/shell/app-sidebar.tsx')).toBe(true)
     expect(isAllowlisted('components/dashboard/match-result-skeleton.tsx')).toBe(true)
