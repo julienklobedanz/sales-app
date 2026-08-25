@@ -40,31 +40,25 @@ describe('resolveDealWorkspaceAccess', () => {
   })
 
   it('ohne RFP-Modus → Redirect auf die Deal-Seite', () => {
-    expect(
-      resolveDealWorkspaceAccess({ id: 'deal-1', is_rfp_mode: false }),
-    ).toEqual({
+    expect(resolveDealWorkspaceAccess({ id: 'deal-1', is_rfp_mode: false })).toEqual({
       kind: 'redirect-deal',
       href: ROUTES.deals.detail('deal-1'),
     })
   })
 
   it('RFP-Modus → ok', () => {
-    expect(
-      resolveDealWorkspaceAccess({ id: 'deal-1', is_rfp_mode: true }),
-    ).toEqual({ kind: 'ok' })
+    expect(resolveDealWorkspaceAccess({ id: 'deal-1', is_rfp_mode: true })).toEqual({
+      kind: 'ok',
+    })
   })
 })
 
 describe('parseDealWorkspaceAreaFromPathname', () => {
   it('liest den Bereich aus der Unterroute', () => {
     expect(
-      parseDealWorkspaceAreaFromPathname(
-        '/deals/deal-1/ausschreibung/entwuerfe',
-      ),
+      parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung/entwuerfe'),
     ).toBe('entwuerfe')
-    expect(
-      parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung'),
-    ).toBeNull()
+    expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung')).toBeNull()
     expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1')).toBeNull()
   })
 })
@@ -74,7 +68,6 @@ describe('resolveDealRfpHash', () => {
     expect([...DEAL_RFP_HASH_IDS]).toEqual([
       'urteil',
       'stammdaten',
-      'lose',
       'eligCard',
       'risks',
       'drafts',
@@ -98,7 +91,6 @@ describe('resolveDealRfpHash', () => {
 
   it.each([
     ['stammdaten', 'stammdaten'],
-    ['lose', 'lose'],
     ['eligCard', 'eignung'],
     ['risks', 'risiken'],
     ['drafts', 'entwuerfe'],

@@ -7,7 +7,7 @@ import {
   Database01Icon,
   File02Icon,
   FileText,
-  LayoutGrid,
+  CheckListIcon,
   NoteEditIcon,
 } from '@hugeicons/core-free-icons'
 
@@ -21,7 +21,7 @@ const NAV_ICONS: Record<DealWorkspaceArea, typeof File02Icon> = {
   steckbrief: FileText,
   dokumente: File02Icon,
   stammdaten: Database01Icon,
-  lose: LayoutGrid,
+  anforderungen: CheckListIcon,
   eignung: Certificate01Icon,
   risiken: Alert01Icon,
   entwuerfe: NoteEditIcon,

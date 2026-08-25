@@ -4,10 +4,7 @@ import {
   DEAL_WORKSPACE_AREA_IDS,
   type DealWorkspaceArea,
 } from '@/lib/deals/deal-workspace-areas'
-import {
-  dealWorkspaceAreaHref,
-  dealWorkspaceHref,
-} from '@/lib/deals/deal-workspace-href'
+import { dealWorkspaceAreaHref, dealWorkspaceHref } from '@/lib/deals/deal-workspace-href'
 import { ROUTES } from '@/lib/routes'
 
 /**

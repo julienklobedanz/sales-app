@@ -4,7 +4,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from '@/lib/database.types'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
-import type { DealDeskRedFlag, DealDeskSmeTask } from '@/lib/deal-desk/deal-analysis-types'
+import type {
+  DealDeskRedFlag,
+  DealDeskSmeTask,
+} from '@/lib/deal-desk/deal-analysis-types'
 import { groupSmeTasksByTopic, type SmeTopicGroup } from '@/lib/deals/group-sme-by-topic'
 
 export type DealRfpRisksData = {
@@ -72,7 +75,6 @@ export async function loadDealRfpRisksData(
         id: key,
         question: key.replace(/^sme-/, 'Offener Klärungspunkt: '),
         category: 'Allgemein',
-        dueInDays: 0,
       }))
     }
   }

@@ -29,11 +29,10 @@ export function buildAusschreibungNavItems(input: {
   risksCount: number
   draftsCovered: number
   draftsTotal: number
-  lotsCount?: number
+  requirementsCount?: number
   showAnalysisLinks: boolean
 }): AusschreibungNavItem[] {
-  const href = (area: DealWorkspaceArea) =>
-    dealWorkspaceAreaHref(input.dealId, area)
+  const href = (area: DealWorkspaceArea) => dealWorkspaceAreaHref(input.dealId, area)
 
   const dokumente: AusschreibungNavItem = {
     id: 'dokumente',
@@ -58,10 +57,10 @@ export function buildAusschreibungNavItems(input: {
       count: countOrNull(input.stammdatenCount),
     },
     {
-      id: 'lose',
-      href: href('lose'),
-      label: COPY.deals.cockpit.ausschreibungNavLose,
-      count: countOrNull(input.lotsCount ?? 0),
+      id: 'anforderungen',
+      href: href('anforderungen'),
+      label: COPY.deals.cockpit.ausschreibungNavAnforderungen,
+      count: countOrNull(input.requirementsCount ?? 0),
     },
     {
       id: 'eignung',
@@ -79,10 +78,7 @@ export function buildAusschreibungNavItems(input: {
       id: 'entwuerfe',
       href: href('entwuerfe'),
       label: COPY.deals.cockpit.ausschreibungNavDrafts,
-      count:
-        input.draftsTotal > 0
-          ? `${input.draftsCovered}/${input.draftsTotal}`
-          : null,
+      count: input.draftsTotal > 0 ? `${input.draftsCovered}/${input.draftsTotal}` : null,
     },
   ]
 }

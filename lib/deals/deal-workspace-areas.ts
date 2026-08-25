@@ -3,7 +3,7 @@ export const DEAL_WORKSPACE_AREA_IDS = [
   'steckbrief',
   'dokumente',
   'stammdaten',
-  'lose',
+  'anforderungen',
   'eignung',
   'risiken',
   'entwuerfe',
@@ -14,7 +14,11 @@ export type DealWorkspaceArea = (typeof DEAL_WORKSPACE_AREA_IDS)[number]
 export const DEAL_WORKSPACE_DEFAULT_AREA: DealWorkspaceArea = 'dokumente'
 
 /** Panel-Bereiche — S6.3 verdrahtet `?eintrag=`. */
-export const DEAL_WORKSPACE_ENTRY_AREAS = ['risiken', 'entwuerfe'] as const
+export const DEAL_WORKSPACE_ENTRY_AREAS = [
+  'anforderungen',
+  'risiken',
+  'entwuerfe',
+] as const
 
 export type DealWorkspaceEntryArea = (typeof DEAL_WORKSPACE_ENTRY_AREAS)[number]
 
@@ -40,9 +44,7 @@ export function isDealWorkspaceArea(value: string): value is DealWorkspaceArea {
   return (DEAL_WORKSPACE_AREA_IDS as readonly string[]).includes(value)
 }
 
-export function isDealWorkspaceEntryArea(
-  value: string,
-): value is DealWorkspaceEntryArea {
+export function isDealWorkspaceEntryArea(value: string): value is DealWorkspaceEntryArea {
   return (DEAL_WORKSPACE_ENTRY_AREAS as readonly string[]).includes(value)
 }
 
@@ -51,7 +53,7 @@ export function isDealEntryPanelHost(host: string): host is DealEntryPanelHost {
 }
 
 /**
- * Panel nur bei gültiger Auswahl auf Risiken/Entwürfe.
+ * Panel nur bei gültiger Auswahl auf Anforderungen/Risiken/Entwürfe.
  * Ungültige Query wird gestrippt, nicht in die View übernommen.
  */
 export function resolveDealWorkspaceView(
@@ -100,10 +102,7 @@ export function shouldStripDealWorkspaceEntryQuery(args: {
 /**
  * Schmal: Label darf weg, Count nicht — die Zahlen sind der Grund für die Leiste.
  */
-export function dealWorkspaceRailSlotFill(args: {
-  narrow: boolean
-  hasCount: boolean
-}): {
+export function dealWorkspaceRailSlotFill(args: { narrow: boolean; hasCount: boolean }): {
   icon: 'filled'
   label: DealWorkspaceRailSlotFill
   count: DealWorkspaceRailSlotFill

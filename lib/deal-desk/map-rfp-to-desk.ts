@@ -33,7 +33,6 @@ function buildSmeTasks(
   verdicts?: Record<string, RfpVerdict>,
 ): DealDeskSmeTask[] {
   const tasks: DealDeskSmeTask[] = []
-  let n = 0
   for (const row of coverage) {
     const hasMatch = isRequirementCovered(row, verdicts)
     const cat = (row.category ?? '').toLowerCase()
@@ -44,13 +43,11 @@ function buildSmeTasks(
           ? `${row.requirementText.slice(0, 200)} — fachliche Klärung (${row.category ?? 'Allgemein'})`
           : row.requirementText.slice(0, 180),
         category: row.category ?? 'Allgemein',
-        dueInDays: 3 + (n % 5),
         contextExcerpt: row.requirementText.slice(0, 320),
         contextPageHint: row.category
           ? `Anforderung · ${row.category}`
           : 'RFP-Anforderung',
       })
-      n++
     }
   }
   for (const req of requirements) {
@@ -60,7 +57,6 @@ function buildSmeTasks(
         id: `sme-${req.id}`,
         question: req.text.slice(0, 220),
         category: req.category ?? 'Allgemein',
-        dueInDays: 5,
         contextExcerpt: req.text.slice(0, 320),
         contextPageHint: req.category
           ? `Anforderung · ${req.category}`
