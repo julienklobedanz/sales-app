@@ -15,17 +15,17 @@ import { CollectionToolbar } from '@/components/dashboard/collection-toolbar'
 import { collectionToolbarSlotFill } from '@/lib/dashboard/collection-toolbar-slots'
 import { COPY } from '@/lib/copy'
 import {
-  ReferenceLayoutSwitch,
-  type ReferenceLayoutMode,
-} from './reference-layout-switch'
+  CollectionLayoutSwitch,
+  type CollectionLayoutMode,
+} from '@/components/dashboard/collection-layout-switch'
 import { ReferenceMoreFiltersMenu } from './reference-more-filters-menu'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 
 type ColumnKey = string
 
 type Props = {
-  referenceLayout: ReferenceLayoutMode
-  onReferenceLayoutChange: (mode: ReferenceLayoutMode) => void
+  referenceLayout: CollectionLayoutMode
+  onReferenceLayoutChange: (mode: CollectionLayoutMode) => void
   searchValue: string
   onSearchChange: (value: string) => void
   canCreateReference: boolean
@@ -165,7 +165,7 @@ export function ReferenceLibraryToolbar({
             />
           ),
           'collection-view': (
-            <ReferenceLayoutSwitch
+            <CollectionLayoutSwitch
               value={referenceLayout}
               onChange={onReferenceLayoutChange}
             />

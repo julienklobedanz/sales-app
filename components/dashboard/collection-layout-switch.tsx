@@ -8,14 +8,14 @@ import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
-export type ReferenceLayoutMode = 'table' | 'inbox'
+export type CollectionLayoutMode = 'table' | 'inbox'
 
 type Props = {
-  value: ReferenceLayoutMode
-  onChange: (value: ReferenceLayoutMode) => void
+  value: CollectionLayoutMode
+  onChange: (value: CollectionLayoutMode) => void
 }
 
-export function ReferenceLayoutSwitch({ value, onChange }: Props) {
+export function CollectionLayoutSwitch({ value, onChange }: Props) {
   const isInbox = value === 'inbox'
   const label = isInbox ? COPY.dashboard.layoutRead : COPY.dashboard.layoutList
 
@@ -25,9 +25,7 @@ export function ReferenceLayoutSwitch({ value, onChange }: Props) {
         type="button"
         role="switch"
         aria-checked={isInbox}
-        aria-label={
-          isInbox ? 'Zur Listenansicht wechseln' : 'Zur Leseansicht wechseln'
-        }
+        aria-label={isInbox ? 'Zur Listenansicht wechseln' : 'Zur Leseansicht wechseln'}
         onClick={() => onChange(isInbox ? 'table' : 'inbox')}
         className="relative inline-flex h-10 w-16 shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"
       >

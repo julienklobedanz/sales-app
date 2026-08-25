@@ -38,19 +38,19 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   'components/dashboard/command-center.tsx',
   'components/dashboard/dashboard-user-menu.tsx',
   'components/table/table-bulk-actions-bar.tsx',
-  'app/(app)/overview/references-data-table.tsx',
-  'app/(app)/overview/reference-library-toolbar.tsx',
-  'app/(app)/overview/bulk-import-groups-panel.tsx',
+  'app/(app)/references/components/references-data-table.tsx',
+  'app/(app)/references/components/reference-library-toolbar.tsx',
+  'app/(app)/references/components/bulk-import-groups-panel.tsx',
   'app/(app)/compliance/compliance-bulk-groups-panel.tsx',
-  'app/(app)/overview/trash-dialog.tsx',
-  'app/(app)/dashboard-overview.tsx',
+  'app/(app)/references/components/trash-dialog.tsx',
+  'app/(app)/references/references-collection.tsx',
   'app/(app)/deals/deals-client.tsx',
   'app/(app)/settings/sticky-save-bar.tsx',
   // field
   'app/(app)/accounts/components/company-name-suggest-field.tsx',
   'app/(app)/references/[id]/approval-contact-suggest-field.tsx',
   'app/(app)/compliance/compliance-document-type-combobox.tsx',
-  'app/(app)/overview/share-link-dialog.tsx',
+  'app/(app)/references/components/share-link-dialog.tsx',
   'app/(app)/references/[id]/pdf-export-dialog.tsx',
   'app/(app)/settings/market-signals/newsrooms-card.tsx',
   'app/(app)/settings/settings-export-templates-card.tsx',
@@ -59,7 +59,7 @@ export const ENCLOSURE_ALLOWLIST = new Set([
   'components/dashboard/settings-totp-mfa-card.tsx',
   'app/p/[slug]/showcase-multi-portfolio.tsx',
   'app/(app)/deals/cockpit/deal-proof-section.tsx',
-  'app/(app)/overview/inbox-references/client.tsx',
+  'app/(app)/references/components/inbox-references/client.tsx',
   'app/(app)/compliance/compliance-document-type-icon.tsx',
 ])
 
@@ -88,7 +88,11 @@ export function isFilteredClassString(s) {
   if (/\brounded-full\b/.test(s)) return true
   if (/\bborder-input\b/.test(s)) return true
   if (/\bborder-transparent\b/.test(s)) return true
-  if (/\bborder-0\b/.test(s) && !/\bborder-(?!0\b)\S+/.test(s) && !/(?:^|\s)border(?:\s|$)/.test(s)) {
+  if (
+    /\bborder-0\b/.test(s) &&
+    !/\bborder-(?!0\b)\S+/.test(s) &&
+    !/(?:^|\s)border(?:\s|$)/.test(s)
+  ) {
     return true
   }
   return false

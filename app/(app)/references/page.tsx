@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getLibraryDataImpl } from '@/lib/references/library/library-data'
-import { DashboardOverview } from '@/app/(app)/dashboard-overview'
+import { ReferencesCollection } from './references-collection'
 import { ReferencePageSkeleton } from '@/components/dashboard/reference-page-skeleton'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
@@ -32,30 +32,25 @@ export default async function ReferencesHubPage() {
   const auth = { orgId, userId: user.id }
   const supabase = await createServerSupabaseClient()
 
-  const [
-    { data: orgRow },
-    dashboard,
-    companies,
-    contactsResult,
-    externalContactsResult,
-  ] = await Promise.all([
-    supabase
-      .from('organizations')
-      .select('api_settings, date_display_format')
-      .eq('id', orgId)
-      .maybeSingle(),
-    getLibraryDataImpl(false, auth),
-    getCachedOrgCompanies(orgId),
-    supabase
-      .from('contact_persons')
-      .select('id, first_name, last_name, email')
-      .order('last_name'),
-    supabase
-      .from('external_contacts')
-      .select('id, company_id, first_name, last_name, email, role')
-      .eq('organization_id', orgId)
-      .order('last_name'),
-  ])
+  const [{ data: orgRow }, dashboard, companies, contactsResult, externalContactsResult] =
+    await Promise.all([
+      supabase
+        .from('organizations')
+        .select('api_settings, date_display_format')
+        .eq('id', orgId)
+        .maybeSingle(),
+      getLibraryDataImpl(false, auth),
+      getCachedOrgCompanies(orgId),
+      supabase
+        .from('contact_persons')
+        .select('id, first_name, last_name, email')
+        .order('last_name'),
+      supabase
+        .from('external_contacts')
+        .select('id, company_id, first_name, last_name, email, role')
+        .eq('organization_id', orgId)
+        .order('last_name'),
+    ])
 
   const orgRolesPermissions =
     orgRow?.api_settings && typeof orgRow.api_settings === 'object'
@@ -79,7 +74,7 @@ export default async function ReferencesHubPage() {
 
   return (
     <Suspense fallback={<ReferencePageSkeleton />}>
-      <DashboardOverview
+      <ReferencesCollection
         references={references}
         totalCount={dashboard.totalCount}
         deletedCount={dashboard.deletedCount}

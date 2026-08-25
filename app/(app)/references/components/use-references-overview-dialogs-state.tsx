@@ -10,12 +10,12 @@ import {
   removeBulkImportFile as removeBulkImportFileHelper,
   setBulkImportCompanyName as setBulkImportCompanyNameHelper,
   setBulkImportGroupName as setBulkImportGroupNameHelper,
-} from '@/app/(app)/overview/bulk-import-file-helpers'
-import type { BulkImportGroupItem } from '@/app/(app)/overview/bulk-import-types'
+} from '@/app/(app)/references/components/bulk-import-file-helpers'
+import type { BulkImportGroupItem } from '@/app/(app)/references/components/bulk-import-types'
 import {
   ReferencesOverviewDialogs,
   type ReferencesOverviewDialogsProps,
-} from '@/app/(app)/overview/references-overview-dialogs'
+} from '@/app/(app)/references/components/references-overview-dialogs'
 
 type CompanyOption = ReferencesOverviewDialogsProps['companies'][number]
 type ContactOption = ReferencesOverviewDialogsProps['contacts'][number]

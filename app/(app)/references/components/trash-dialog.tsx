@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
 
-import type { DeletedReferenceRow } from '../actions'
-import { emptyTrash, hardDeleteReference, restoreReference } from '../actions'
+import type { DeletedReferenceRow } from '@/app/(app)/actions'
+import { emptyTrash, hardDeleteReference, restoreReference } from '@/app/(app)/actions'
 
 export function TrashDialog({
   open,

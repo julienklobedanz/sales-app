@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { DataTablePaginationBar } from '@/components/ui/data-table-pagination'
 import { ROUTES } from '@/lib/routes'
-import type { ReferenceRow } from '../actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import {
   CopyIcon,
   FileText,

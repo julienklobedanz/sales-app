@@ -6,11 +6,11 @@ import type { Profile } from '@/app/(app)/dashboard-types'
 import {
   BulkImportDialog,
   type BulkImportGroupItem,
-} from '@/app/(app)/overview/bulk-import-dialog'
-import { BulkDeleteReferencesDialog } from '@/app/(app)/overview/bulk-delete-references-dialog'
-import { NewReferenceDialog } from '@/app/(app)/overview/new-reference-dialog'
-import { ShareLinkDialog } from '@/app/(app)/overview/share-link-dialog'
-import { TrashDialog } from '@/app/(app)/overview/trash-dialog'
+} from '@/app/(app)/references/components/bulk-import-dialog'
+import { BulkDeleteReferencesDialog } from '@/app/(app)/references/components/bulk-delete-references-dialog'
+import { NewReferenceDialog } from '@/app/(app)/references/components/new-reference-dialog'
+import { ShareLinkDialog } from '@/app/(app)/references/components/share-link-dialog'
+import { TrashDialog } from '@/app/(app)/references/components/trash-dialog'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
 
 type CompanyOption = {

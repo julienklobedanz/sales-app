@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReferenceRow } from '../actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import { filterAndSortReferences, normalizeTagLabel } from './filter-sort-references'
 
 function makeRef(

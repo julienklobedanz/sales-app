@@ -4,7 +4,7 @@ import React from 'react'
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { ReferenceRow } from './actions'
+import type { ReferenceRow } from '@/app/(app)/actions'
 import {
   isSalesAppView,
   userCanCreateReference,
@@ -12,36 +12,36 @@ import {
   canManageReferencesAsAdmin,
 } from '@/lib/roles/reference-access'
 import { isSystemAdmin } from '@/lib/roles/capability-access'
-import { deleteReference, toggleFavorite } from './actions'
-import type { Profile } from './dashboard-types'
-import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
-import type { ReferenceLayoutMode } from './overview/reference-layout-switch'
+import { deleteReference, toggleFavorite } from '@/app/(app)/actions'
+import type { Profile } from '@/app/(app)/dashboard-types'
+import { ReferenceLibraryToolbar } from './components/reference-library-toolbar'
+import type { CollectionLayoutMode } from '@/components/dashboard/collection-layout-switch'
 import {
   COLUMN_KEYS,
   COLUMN_LABELS,
   PROJECT_STATUS_LABELS,
   STATUS_LABELS,
-} from './overview/reference-overview-columns'
+} from './components/reference-overview-columns'
 import {
   buildReferenceFilterOptions,
   filterAndSortReferences,
   normalizeTagLabel,
-} from './overview/filter-sort-references'
-import { ReferencesDataTable } from './overview/references-data-table'
+} from './components/filter-sort-references'
+import { ReferencesDataTable } from './components/references-data-table'
 import {
   buildCompanyIdsNeedingBrandfetch,
   buildCompanyIndustryById,
   buildCompanyLogoById,
-} from './overview/reference-company-maps'
+} from './components/reference-company-maps'
 import {
   copyReferenceShareLink,
   createAndCopyCollectionShareLink,
-} from './overview/reference-overview-share-link'
-import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
-import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
-import type { ReferenceColumnKey } from './overview/reference-table-column-types'
-import { useReferenceOverviewColumns } from './overview/use-reference-overview-columns'
-import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
+} from './components/reference-overview-share-link'
+import { ReferencesOverviewBrandfetchSync } from './components/references-overview-brandfetch-sync'
+import { ReferencesBulkActionsBar } from './components/references-bulk-actions-bar'
+import type { ReferenceColumnKey } from './components/reference-table-column-types'
+import { useReferenceOverviewColumns } from './components/use-reference-overview-columns'
+import { useReferencesOverviewDialogsState } from './components/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/(app)/references/components/reference-onboarding-empty-state'
 import { toast } from 'sonner'
 import type { OrgDateDisplayFormat } from '@/lib/format'
@@ -51,7 +51,7 @@ import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-fi
 
 const InboxReferencesConceptClient = dynamic(
   () =>
-    import('@/app/(app)/overview/inbox-references/client').then((m) => ({
+    import('@/app/(app)/references/components/inbox-references/client').then((m) => ({
       default: m.InboxReferencesConceptClient,
     })),
   {
@@ -81,7 +81,7 @@ type ContactOption = {
   email: string | null
 }
 
-export function DashboardOverview({
+export function ReferencesCollection({
   references: initialReferences,
   deletedCount,
   profile,
@@ -132,7 +132,7 @@ export function DashboardOverview({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const viewParam = searchParams.get('view')
-  const referenceLayout: ReferenceLayoutMode = viewParam === 'lesen' ? 'inbox' : 'table'
+  const referenceLayout: CollectionLayoutMode = viewParam === 'lesen' ? 'inbox' : 'table'
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const {
     setBulkImportOpen,
@@ -160,7 +160,7 @@ export function DashboardOverview({
   } = useReferenceOverviewColumns()
 
   const handleReferenceLayoutChange = useCallback(
-    (mode: ReferenceLayoutMode) => {
+    (mode: CollectionLayoutMode) => {
       const next = new URLSearchParams(searchParams.toString())
       if (mode === 'inbox') next.set('view', 'lesen')
       else next.delete('view')
@@ -347,9 +347,9 @@ export function DashboardOverview({
     projectStatusFilter !== 'all' ||
     volumeFilter !== 'all'
   const showReferencesOnboarding =
-    ((process.env.NODE_ENV === 'development' &&
+    (process.env.NODE_ENV === 'development' &&
       searchParams.get('previewOnboarding') === '1') ||
-      (initialReferences.length === 0 && !filtersActive))
+    (initialReferences.length === 0 && !filtersActive)
 
   if (showReferencesOnboarding) {
     const isAdmin = isSystemAdmin(profile.systemRole)
@@ -433,32 +433,32 @@ export function DashboardOverview({
         />
 
         <ReferencesBulkActionsBar
-            selectedCount={selectedRefIds.size}
-            showSalesActions={salesAppView}
-            showAdminDelete={isSystemAdmin(profile.systemRole)}
-            onClearSelection={() => setSelectedRefIds(new Set())}
-            onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
-            onCreateSharedPortfolio={async () => {
-              await createAndCopyCollectionShareLink(Array.from(selectedRefIds))
-            }}
-            onDownloadPdfs={() => {
-              const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-              const withFile = selectedRefs.filter((r) => r.file_path)
-              if (withFile.length === 0) {
-                toast.error(
-                  'Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.',
-                )
-                return
-              }
-              withFile.forEach((r) => {
-                const url = `${base}/storage/v1/object/public/references/${r.file_path}`
-                window.open(url, '_blank', 'noopener,noreferrer')
-              })
-              toast.success(
-                `${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`,
+          selectedCount={selectedRefIds.size}
+          showSalesActions={salesAppView}
+          showAdminDelete={isSystemAdmin(profile.systemRole)}
+          onClearSelection={() => setSelectedRefIds(new Set())}
+          onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
+          onCreateSharedPortfolio={async () => {
+            await createAndCopyCollectionShareLink(Array.from(selectedRefIds))
+          }}
+          onDownloadPdfs={() => {
+            const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const withFile = selectedRefs.filter((r) => r.file_path)
+            if (withFile.length === 0) {
+              toast.error(
+                'Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.',
               )
-            }}
-          />
+              return
+            }
+            withFile.forEach((r) => {
+              const url = `${base}/storage/v1/object/public/references/${r.file_path}`
+              window.open(url, '_blank', 'noopener,noreferrer')
+            })
+            toast.success(
+              `${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`,
+            )
+          }}
+        />
 
         {referenceLayout === 'table' ? (
           <ReferencesDataTable

@@ -18,7 +18,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AppIcon } from '@/lib/icons'
 
-import { deleteReference } from '../actions'
+import { deleteReference } from '@/app/(app)/actions'
 
 export function BulkDeleteReferencesDialog({
   open,
