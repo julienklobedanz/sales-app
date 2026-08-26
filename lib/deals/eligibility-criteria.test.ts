@@ -119,6 +119,7 @@ describe('compareEligibilityCriteria', () => {
       referenceCount: 10,
     })
     expect(assessment.criteria[0]?.status).toBe('not_met')
+    expect(assessment.criteria[0]?.basis).toBe('numeric')
     expect(assessment.verdict).toBe('ko')
   })
 
@@ -157,6 +158,7 @@ describe('compareEligibilityCriteria', () => {
       referenceCount: 1,
     })
     expect(notMet.criteria[0]?.status).toBe('not_met')
+    expect(notMet.criteria[0]?.basis).toBe('numeric')
   })
 
   it('certification can match compliance documents', () => {
@@ -183,9 +185,54 @@ describe('compareEligibilityCriteria', () => {
       referenceCount: 0,
     })
     expect(assessment.criteria[0]?.status).toBe('met')
+    expect(assessment.criteria[0]?.basis).toBe('text')
   })
 
-  it('region mismatch → not_met on mandatory region criterion', () => {
+  it('certification miss against other docs is unknown, not not_met and not K.O.', () => {
+    const criteria = [
+      criterion({
+        id: 'stqc',
+        dimension: 'certification',
+        label: 'STQC',
+        operator: 'contains',
+        value: 'STQC',
+        confidence: 'high',
+      }),
+    ]
+    const assessment = compareEligibilityCriteria(criteria, {
+      profile: { certifiedRoles: [{ role: 'ISO 27001', count: 3 }] },
+      complianceDocs: [
+        {
+          document_type: 'certification',
+          title: 'ISO 27001:2022',
+          valid_until: null,
+          file_storage_path: '/x',
+        },
+        {
+          document_type: 'certification',
+          title: 'ISO 9001',
+          valid_until: null,
+          file_storage_path: '/y',
+        },
+        {
+          document_type: 'policy',
+          title: 'Informationssicherheit',
+          valid_until: null,
+          file_storage_path: '/z',
+        },
+      ],
+      referenceCount: 0,
+    })
+    expect(assessment.criteria[0]?.status).toBe('unknown')
+    expect(assessment.criteria[0]?.basis).toBe('text')
+    expect(assessment.criteria[0]?.detail).toBe(
+      'Verlangt: STQC · im Bestand kein Nachweis mit diesem Namen erkannt (4 geprüft)',
+    )
+    expect(assessment.verdict).toBe('unknown')
+    expect(assessment.summary).toContain('im Bestand nicht erkannt')
+  })
+
+  it('region mismatch → unknown on mandatory region criterion', () => {
     const criteria = [
       criterion({
         id: 'region-dach',
@@ -200,7 +247,12 @@ describe('compareEligibilityCriteria', () => {
       complianceDocs: [],
       referenceCount: 0,
     })
-    expect(assessment.criteria[0]?.status).toBe('not_met')
+    expect(assessment.criteria[0]?.status).toBe('unknown')
+    expect(assessment.criteria[0]?.basis).toBe('text')
+    expect(assessment.criteria[0]?.detail).toBe(
+      'Verlangt: DACH · Profil-Regionen: Benelux',
+    )
+    expect(assessment.verdict).toBe('unknown')
   })
 
   it('non-mandatory not_met does not alone cause K.O.', () => {
@@ -241,6 +293,7 @@ describe('compareEligibilityCriteria', () => {
       referenceCount: 0,
     })
     expect(assessment.criteria[0]?.status).toBe('partial')
+    expect(assessment.criteria[0]?.basis).toBe('text')
     expect(assessment.verdict).toBe('partner_required')
   })
 
