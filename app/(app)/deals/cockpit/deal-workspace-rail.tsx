@@ -1,31 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  Alert01Icon,
-  Certificate01Icon,
-  Database01Icon,
-  File02Icon,
-  FileText,
-  CheckListIcon,
-  NoteEditIcon,
-} from '@hugeicons/core-free-icons'
-
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealWorkspaceArea } from '@/lib/deals/deal-workspace-areas'
+import { DEAL_WORKSPACE_AREA_ICONS } from '@/lib/deals/deal-workspace-area-icons'
 import type { AusschreibungNavItem } from '@/lib/deals/build-ausschreibung-nav-items'
 import { cn } from '@/lib/utils'
-
-const NAV_ICONS: Record<DealWorkspaceArea, typeof File02Icon> = {
-  steckbrief: FileText,
-  dokumente: File02Icon,
-  stammdaten: Database01Icon,
-  anforderungen: CheckListIcon,
-  eignung: Certificate01Icon,
-  risiken: Alert01Icon,
-  entwuerfe: NoteEditIcon,
-}
 
 export function DealWorkspaceRail({
   items,
@@ -57,7 +38,7 @@ export function DealWorkspaceRail({
                 )}
               >
                 <AppIcon
-                  icon={NAV_ICONS[item.id]}
+                  icon={DEAL_WORKSPACE_AREA_ICONS[item.id]}
                   size={16}
                   className="shrink-0 text-muted-foreground"
                 />

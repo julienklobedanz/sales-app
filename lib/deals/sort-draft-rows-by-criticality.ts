@@ -12,6 +12,22 @@ export function draftRowStatus(row: {
   return 'draft'
 }
 
+export function countDraftQueue(
+  rows: Array<{ reference?: unknown; answer?: string | null }>,
+): {
+  gap: number
+  draft: number
+} {
+  let gap = 0
+  let draft = 0
+  for (const row of rows) {
+    const status = draftRowStatus(row)
+    if (status === 'gap') gap += 1
+    else if (status === 'draft') draft += 1
+  }
+  return { gap, draft }
+}
+
 const STATUS_ORDER: Record<DraftRowStatus, number> = {
   gap: 0,
   draft: 1,

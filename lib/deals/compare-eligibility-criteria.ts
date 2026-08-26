@@ -259,23 +259,40 @@ function resolveVerdict(
   return 'unknown'
 }
 
+export type EligibilityQueue =
+  | { kind: 'ko'; count: number }
+  | { kind: 'unknown'; count: number }
+
+/**
+ * Dieselbe Rangfolge wie der Summary-Satz: bei K.O. die K.O.-Zahl,
+ * sonst Unbekannt — nie `unknownCount` über einem gescheiterten Deal.
+ */
+export function eligibilityQueue(
+  verdict: EligibilityVerdict,
+  results: EligibilityCriterionResult[],
+): EligibilityQueue {
+  const koCount = results.filter((r) => isKoSignal(r, r.confidence)).length
+  const unknownCount = results.filter((r) => r.status === 'unknown').length
+  if (verdict === 'ko') return { kind: 'ko', count: koCount }
+  return { kind: 'unknown', count: unknownCount }
+}
+
 function buildSummary(
   verdict: EligibilityVerdict,
   results: EligibilityCriterionResult[],
 ): string {
-  const koCount = results.filter((r) => isKoSignal(r, r.confidence)).length
-  const unknownCount = results.filter((r) => r.status === 'unknown').length
+  const queue = eligibilityQueue(verdict, results)
 
   switch (verdict) {
     case 'eligible':
       return 'Alle geprüften Pflichtkriterien erfüllt oder keine harten K.O.-Signale.'
     case 'ko':
-      return `${koCount} Pflichtkriterium${koCount === 1 ? '' : 'ien'} nicht erfüllt — Ausschlussrisiko.`
+      return `${queue.count} Pflichtkriterium${queue.count === 1 ? '' : 'ien'} nicht erfüllt — Ausschlussrisiko.`
     case 'partner_required':
       return 'Teilweise Lücken — Partner oder Nachweise prüfen, bevor geboten wird.'
     default:
-      return unknownCount > 0
-        ? `${unknownCount} ${unknownCount === 1 ? 'Kriterium' : 'Kriterien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`
+      return queue.count > 0
+        ? `${queue.count} ${queue.count === 1 ? 'Kriterium' : 'Kriterien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`
         : 'Eignung noch nicht belastbar bewertbar.'
   }
 }

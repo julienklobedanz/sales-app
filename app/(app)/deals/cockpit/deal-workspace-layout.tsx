@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 
@@ -26,6 +25,7 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { DealRfpHashBridge } from './deal-rfp-hash-bridge'
+import { DealBreadcrumbs } from './deal-breadcrumbs'
 import { DealWorkspaceRail } from './deal-workspace-rail'
 
 export function DealWorkspaceLayout({
@@ -92,20 +92,16 @@ export function DealWorkspaceLayout({
       />
       <DealWorkspaceRail items={items} currentArea={currentArea} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <nav className="shrink-0 px-5 pt-5 text-sm text-muted-foreground md:px-8 md:pt-7">
-          <Link href={ROUTES.deals.root} className="hover:underline">
-            Deals
-          </Link>
-          <span className="px-2">/</span>
-          <Link href={ROUTES.deals.detail(dealId)} className="hover:underline">
-            {dealTitle}
-          </Link>
-          <span className="px-2">/</span>
-          <span className="text-foreground">{COPY.deals.cockpit.rfpBlockTitle}</span>
+        <nav className="shrink-0 px-5 pt-5 md:px-8 md:pt-7">
+          <DealBreadcrumbs
+            items={[
+              { label: COPY.nav.deals, href: ROUTES.deals.root },
+              { label: dealTitle, href: ROUTES.deals.detail(dealId) },
+              { label: COPY.deals.cockpit.rfpBlockTitle },
+            ]}
+          />
         </nav>
-        <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} px-5 pt-2 md:px-8`}>
-          {dealTitle}
-        </h1>
+        <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} px-5 pt-2 md:px-8`}>{dealTitle}</h1>
         {showPanel ? (
           <div className="flex min-h-0 flex-1">
             {showList ? (

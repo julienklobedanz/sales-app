@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import { ROUTES } from '@/lib/routes'
-import { buildDealAusschreibungSummary } from '@/lib/deals/deal-ausschreibung-summary'
+import { buildDealWorkspaceTiles } from '@/lib/deals/build-deal-workspace-tiles'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
@@ -13,7 +13,8 @@ import { getDealWithReferences } from '../actions'
 import { listDealDocuments } from '../document-actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
-import { DealAusschreibungSummaryCard } from '../cockpit/deal-ausschreibung-summary-card'
+import { DealWorkspaceTiles } from '../cockpit/deal-workspace-tiles'
+import { DealRfpFactsSurface } from '../cockpit/deal-rfp-facts-surface'
 import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
@@ -104,9 +105,21 @@ async function DealDetailPageContent({
         volume: deal.volume,
       })
     : null
-  const showVerdict = Boolean(rfpData?.hasAnalysis)
-  const summary = isRfpDeal(deal)
-    ? buildDealAusschreibungSummary({ documentCount: documents.length, data: rfpData })
+  const analysisLive = Boolean(rfpData?.hasAnalysis && !rfpData.isStale)
+  const workspaceTiles = isRfpDeal(deal)
+    ? buildDealWorkspaceTiles({
+        dealId: id,
+        documentCount: documents.length,
+        data: rfpData
+          ? {
+              hasAnalysis: rfpData.hasAnalysis,
+              isStale: rfpData.isStale,
+              eligibilityAssessment: rfpData.eligibilityAssessment,
+              draftRows: rfpData.draftRows,
+              requirementsCount: rfpData.requirementsCount,
+            }
+          : null,
+      })
     : null
 
   return (
@@ -123,7 +136,7 @@ async function DealDetailPageContent({
         ) : undefined
       }
       verdict={
-        showVerdict && rfpData ? (
+        analysisLive && rfpData ? (
           <div className="mb-6">
             <DealRfpRecommendationBanner
               data={rfpData}
@@ -135,8 +148,13 @@ async function DealDetailPageContent({
           </div>
         ) : null
       }
-      ausschreibungSummary={
-        summary ? <DealAusschreibungSummaryCard dealId={id} summary={summary} /> : null
+      workspaceTiles={
+        workspaceTiles ? <DealWorkspaceTiles tiles={workspaceTiles} /> : null
+      }
+      rfpFacts={
+        analysisLive && rfpData ? (
+          <DealRfpFactsSurface rows={rfpData.stammdatenRows} lots={rfpData.tenderLots} />
+        ) : null
       }
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}

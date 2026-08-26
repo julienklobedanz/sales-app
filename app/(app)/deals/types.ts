@@ -20,8 +20,10 @@ export type DealRow = {
   is_public: boolean
   account_manager_id: string | null
   account_manager_name: string | null
+  account_manager_avatar_url?: string | null
   sales_manager_id: string | null
   sales_manager_name: string | null
+  sales_manager_avatar_url?: string | null
   status: DealStatus
   /** Cockpit-Gate: konditionaler RFP-Block (unabhängig vom Pipeline-Status). */
   is_rfp_mode: boolean
@@ -79,7 +81,9 @@ export const DEAL_ROW_DERIVED_FIELDS = [
   'company_name',
   'company_logo_url',
   'account_manager_name',
+  'account_manager_avatar_url',
   'sales_manager_name',
+  'sales_manager_avatar_url',
   'linked_refs',
   'best_match_score',
 ] as const
