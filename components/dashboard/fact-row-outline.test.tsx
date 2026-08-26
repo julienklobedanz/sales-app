@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { DealFactsCard } from '@/app/(app)/deals/cockpit/deal-facts-card'
+import { DealRfpFactsSurface } from '@/app/(app)/deals/cockpit/deal-rfp-facts-surface'
 import { DealRfpStammdatenSection } from '@/app/(app)/deals/cockpit/deal-rfp-stammdaten-section'
 import { ApprovalCaseDataBar } from '@/app/approval/[token]/approval-case-data-bar'
 import { ReferenceContentCore } from '@/components/references/reference-content-core'
-import type { DealWithReferences } from '@/app/(app)/deals/types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { COPY } from '@/lib/copy'
 
@@ -16,10 +15,6 @@ vi.mock('next/navigation', () => ({
     refresh: vi.fn(),
     prefetch: vi.fn(),
   }),
-}))
-
-vi.mock('@/app/(app)/deals/components/edit-deal-dialog', () => ({
-  EditDealDialog: () => null,
 }))
 
 vi.mock('@/app/(app)/actions', () => ({
@@ -40,38 +35,35 @@ if (typeof globalThis.IntersectionObserver === 'undefined') {
   } as typeof IntersectionObserver
 }
 
-const deal: DealWithReferences = {
-  id: 'd1',
-  title: 'Ausschreibung Stadtwerke',
-  company_id: null,
-  company_name: 'Stadtwerke',
-  industry: 'tech',
-  volume: null,
-  incumbent_provider: null,
-  is_public: false,
-  account_manager_id: null,
-  account_manager_name: 'Marc AM',
-  sales_manager_id: null,
-  sales_manager_name: 'Sam Sales',
-  status: 'open',
-  is_rfp_mode: false,
-  expiry_date: '2026-04-18',
-  created_at: '2026-01-01T00:00:00.000Z',
-  updated_at: null,
-  best_match_score: null,
-  references: [],
-}
-
 function termNames() {
   return screen.getAllByRole('term').map((el) => el.textContent)
 }
 
 describe('§11.4 fact-row outline', () => {
-  it('Deal-Fakten: Labels sind terms', () => {
-    render(<DealFactsCard deal={deal} companies={[]} orgProfiles={[]} />)
+  it('Deal-Faktenfläche: Identitäts-Labels sind terms', () => {
+    render(
+      <DealRfpFactsSurface
+        rows={[
+          {
+            key: 'customer',
+            label: COPY.deals.cockpit.stammdatenFields.customer,
+            value: 'Stadtwerke',
+          },
+          {
+            key: 'procedure',
+            label: COPY.deals.cockpit.stammdatenFields.procedure,
+            value: 'Offenes Verfahren',
+          },
+        ]}
+        lots={[]}
+      />,
+    )
 
     expect(termNames()).toEqual(
-      expect.arrayContaining(['Branche', 'Close', COPY.roles.accountManager]),
+      expect.arrayContaining([
+        COPY.deals.cockpit.stammdatenFields.customer,
+        COPY.deals.cockpit.stammdatenFields.procedure,
+      ]),
     )
   })
 

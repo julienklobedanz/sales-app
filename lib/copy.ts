@@ -188,8 +188,6 @@ export const COPY = {
       sales_manager_name: 'Sales Manager',
     },
     cockpit: {
-      factsTitle: 'Deal-Fakten',
-      factsEditAria: 'Deal-Fakten bearbeiten',
       deleteDeadlineAria: 'Termin entfernen',
       stammdatenTitle: 'Stammdaten',
       stammdatenEmpty:
@@ -240,9 +238,29 @@ export const COPY = {
       downloadDeadlinesIcsAria: 'Alle Termine als Kalenderdatei (.ics) herunterladen',
       downloadDeadlinesIcsEmpty: 'Keine Termine mit festem Datum zum Kalender-Export.',
       openWorkspace: 'Arbeitsbereich öffnen',
-      metricDrafts: 'Entwürfe',
-      metricRisks: 'Risiken',
-      metricDocuments: 'Dokumente',
+      workspaceTilePurposeDokumente: 'Unterlagen ablegen und die Analyse starten.',
+      workspaceTilePurposeAnforderungen:
+        'Was der Auftraggeber fordert — einzeln, mit Quelle.',
+      workspaceTilePurposeEignung:
+        'Ob ihr formal bieten dürft, gegen das Fähigkeitsprofil.',
+      workspaceTilePurposeRisiken: 'Vertragliche und fachliche Punkte vor der Abgabe.',
+      workspaceTilePurposeEntwuerfe:
+        'Antworttexte je Anforderung, belegt oder noch offen.',
+      workspaceTileNotAnalyzed: 'noch nicht analysiert',
+      workspaceTileDocumentsSingular: '{count} Dokument',
+      workspaceTileDocumentsPlural: '{count} Dokumente',
+      workspaceTileRequirementsSingular: '{count} Anforderung',
+      workspaceTileRequirementsPlural: '{count} Anforderungen',
+      workspaceTileDraftsOpenSingular: '{count} Entwurf offen',
+      workspaceTileDraftsOpenPlural: '{count} Entwürfe offen',
+      workspaceTileDraftsGap: '{count} ohne Beleg',
+      workspaceTileDraftsText: '{count} ohne Text',
+      workspaceTileEligibilityUnknownSingular: '{count} Kriterium ohne Profildaten',
+      workspaceTileEligibilityUnknownPlural: '{count} Kriterien ohne Profildaten',
+      workspaceTileEligibilityKoSingular: '{count} Pflichtkriterium nicht erfüllt',
+      workspaceTileEligibilityKoPlural: '{count} Pflichtkriterien nicht erfüllt',
+      rfpFactsTitle: 'Eckdaten der Ausschreibung',
+      rfpFactsExpand: 'Weitere Eckdaten',
       rfpBlockTitle: 'Ausschreibung',
       rfpBlockEmpty:
         'Lade eine Ausschreibung unter Dokumente hoch und starte die Analyse von dort.',

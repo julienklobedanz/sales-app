@@ -9,7 +9,6 @@ import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
 import { DealDocumentsSection } from './deal-documents-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealDeadlinesCard } from './deal-deadlines-card'
-import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
 import { DealRfpHashBridge } from './deal-rfp-hash-bridge'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
@@ -37,7 +36,8 @@ export function DealCockpitClient({
   documents,
   canManageDocuments,
   verdict,
-  ausschreibungSummary,
+  workspaceTiles,
+  rfpFacts,
   briefingButton,
   orgDateDisplayFormat = 'de-DE',
   initialReferenceSuggestions = [],
@@ -49,7 +49,8 @@ export function DealCockpitClient({
   documents: DealDocumentRow[]
   canManageDocuments: boolean
   verdict?: ReactNode
-  ausschreibungSummary?: ReactNode
+  workspaceTiles?: ReactNode
+  rfpFacts?: ReactNode
   briefingButton?: ReactNode
   orgDateDisplayFormat?: OrgDateDisplayFormat
   initialReferenceSuggestions?: DealReferenceSuggestion[]
@@ -115,8 +116,8 @@ export function DealCockpitClient({
         />
 
         {showRfp ? (
-          documents.length > 0 && ausschreibungSummary ? (
-            ausschreibungSummary
+          documents.length > 0 && workspaceTiles ? (
+            workspaceTiles
           ) : (
             <DealDocumentsSection
               dealId={deal.id}
@@ -139,13 +140,7 @@ export function DealCockpitClient({
           </>
         )}
 
-        <DealFactsCard
-          deal={deal}
-          companies={companies}
-          orgProfiles={orgProfiles}
-          canManage={canManageDocuments}
-          orgDateDisplayFormat={orgDateDisplayFormat}
-        />
+        {rfpFacts}
 
         <DealSmartMatchDrawer
           deal={deal}

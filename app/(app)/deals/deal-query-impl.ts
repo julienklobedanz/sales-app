@@ -104,13 +104,15 @@ export async function getDealsImpl(): Promise<DealRow[]> {
   const allUserIds = [...new Set([...accountManagerIds, ...salesManagerIds])]
 
   const names: Record<string, string> = {}
+  const avatars: Record<string, string | null> = {}
   if (allUserIds.length > 0) {
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, avatar_url')
       .in('id', allUserIds)
     for (const p of profiles ?? []) {
       names[p.id] = p.full_name ?? p.id.slice(0, 8)
+      avatars[p.id] = p.avatar_url ?? null
     }
   }
 
@@ -131,8 +133,14 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       account_manager_name: r.account_manager_id
         ? (names[r.account_manager_id] ?? null)
         : null,
+      account_manager_avatar_url: r.account_manager_id
+        ? (avatars[r.account_manager_id] ?? null)
+        : null,
       sales_manager_id: r.sales_manager_id ?? null,
       sales_manager_name: r.sales_manager_id ? (names[r.sales_manager_id] ?? null) : null,
+      sales_manager_avatar_url: r.sales_manager_id
+        ? (avatars[r.sales_manager_id] ?? null)
+        : null,
       status: normalizeDealStatus(r.status),
       is_rfp_mode: Boolean(r.is_rfp_mode),
       expiry_date: r.expiry_date ?? null,
@@ -212,23 +220,36 @@ export async function getDealWithReferencesImpl(
     }
   }
 
+  const managerIds = [deal.account_manager_id, deal.sales_manager_id].filter(
+    (id): id is string => Boolean(id),
+  )
+  const managerProfiles: Record<
+    string,
+    { full_name: string | null; avatar_url: string | null }
+  > = {}
+  if (managerIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', managerIds)
+    for (const p of profiles ?? []) {
+      managerProfiles[p.id] = {
+        full_name: p.full_name ?? null,
+        avatar_url: p.avatar_url ?? null,
+      }
+    }
+  }
   const accountManagerName = deal.account_manager_id
-    ? ((
-        await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', deal.account_manager_id)
-          .single()
-      ).data?.full_name ?? null)
+    ? (managerProfiles[deal.account_manager_id]?.full_name ?? null)
     : null
   const salesManagerName = deal.sales_manager_id
-    ? ((
-        await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', deal.sales_manager_id)
-          .single()
-      ).data?.full_name ?? null)
+    ? (managerProfiles[deal.sales_manager_id]?.full_name ?? null)
+    : null
+  const accountManagerAvatarUrl = deal.account_manager_id
+    ? (managerProfiles[deal.account_manager_id]?.avatar_url ?? null)
+    : null
+  const salesManagerAvatarUrl = deal.sales_manager_id
+    ? (managerProfiles[deal.sales_manager_id]?.avatar_url ?? null)
     : null
 
   const company = accountFromJoin(deal.companies)
@@ -259,8 +280,10 @@ export async function getDealWithReferencesImpl(
     is_public: deal.is_public ?? true,
     account_manager_id: deal.account_manager_id ?? null,
     account_manager_name: accountManagerName,
+    account_manager_avatar_url: accountManagerAvatarUrl,
     sales_manager_id: deal.sales_manager_id ?? null,
     sales_manager_name: salesManagerName,
+    sales_manager_avatar_url: salesManagerAvatarUrl,
     status: normalizeDealStatus(deal.status),
     is_rfp_mode: Boolean(deal.is_rfp_mode),
     expiry_date: deal.expiry_date ?? null,
