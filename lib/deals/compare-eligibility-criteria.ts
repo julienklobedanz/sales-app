@@ -4,6 +4,7 @@ import type { CapabilityProfile } from '@/lib/organizations/capability-profile-t
 
 import type {
   EligibilityAssessment,
+  EligibilityCompareBasis,
   EligibilityCompareStatus,
   EligibilityConfidence,
   EligibilityCriterion,
@@ -70,6 +71,17 @@ function countMatchingComplianceDocs(docs: OrgComplianceDoc[], token: string): n
   return n
 }
 
+function result(
+  criterion: EligibilityCriterion,
+  fields: {
+    status: EligibilityCompareStatus
+    detail: string
+    basis: EligibilityCompareBasis
+  },
+): EligibilityCriterionResult {
+  return { ...criterion, ...fields }
+}
+
 function compareCriterion(
   criterion: EligibilityCriterion,
   ctx: EligibilityCompareContext,
@@ -79,45 +91,45 @@ function compareCriterion(
   switch (criterion.dimension) {
     case 'employee_count': {
       if (profile.employeeCount === undefined) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'numeric',
           detail: 'Mitarbeiterzahl im Profil fehlt — kein automatisches K.O.',
-        }
+        })
       }
       const expected =
         typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'numeric',
           detail: 'Schwellenwert nicht interpretierbar.',
-        }
+        })
       }
       const status = compareNumeric(profile.employeeCount, criterion.operator, expected)
       const actual = profile.employeeCount
-      return {
-        ...criterion,
+      return result(criterion, {
         status,
+        basis: 'numeric',
         detail: `${actual} MA vs. gefordert ${criterion.operator === 'gte' ? '≥' : criterion.operator === 'lte' ? '≤' : ''} ${expected}`,
-      }
+      })
     }
     case 'annual_revenue': {
       if (profile.annualRevenueEur === undefined) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'numeric',
           detail: 'Umsatz im Profil fehlt — kein automatisches K.O.',
-        }
+        })
       }
       const expected =
         typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'numeric',
           detail: 'Schwellenwert nicht interpretierbar.',
-        }
+        })
       }
       const status = compareNumeric(
         profile.annualRevenueEur,
@@ -129,37 +141,38 @@ function compareCriterion(
           ? `${Math.round(profile.annualRevenueEur / 1_000_000)} Mio €`
           : '—'
       const expectedMio = `${Math.round(expected / 1_000_000)} Mio €`
-      return {
-        ...criterion,
+      return result(criterion, {
         status,
+        basis: 'numeric',
         detail: `${actualMio} vs. gefordert ≥ ${expectedMio}`,
-      }
+      })
     }
     case 'reference_count': {
       const expected =
         typeof criterion.value === 'number' ? criterion.value : Number(criterion.value)
       if (!Number.isFinite(expected)) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'numeric',
           detail: 'Schwellenwert nicht interpretierbar.',
-        }
+        })
       }
       const status = compareNumeric(referenceCount, criterion.operator, expected)
-      return {
-        ...criterion,
+      return result(criterion, {
         status,
+        basis: 'numeric',
         detail:
           status === 'unknown'
             ? 'Referenzbestand nicht verfügbar.'
             : `${referenceCount} Referenzen vs. gefordert ≥ ${expected}`,
-      }
+      })
     }
     case 'certification': {
       const token = String(criterion.value)
       const fromProfile = countCertifiedRole(profile, token)
       const fromDocs = countMatchingComplianceDocs(complianceDocs, token)
       const total = fromProfile + fromDocs
+      const checked = (profile.certifiedRoles?.length ?? 0) + complianceDocs.length
       const minRequired =
         typeof criterion.value === 'number'
           ? criterion.value
@@ -167,59 +180,53 @@ function compareCriterion(
             ? Math.max(1, Number(criterion.unit))
             : 1
 
-      if (total === 0 && fromProfile === 0 && fromDocs === 0) {
-        const hasAnyCertData =
-          Boolean(profile.certifiedRoles?.length) || complianceDocs.length > 0
-        return {
-          ...criterion,
-          status: hasAnyCertData ? 'not_met' : 'unknown',
-          detail: hasAnyCertData
-            ? `Kein Nachweis für „${token}"`
-            : 'Keine Zertifizierungsdaten im Profil oder in Compliance-Dokumenten.',
-        }
+      if (total === 0) {
+        return result(criterion, {
+          status: 'unknown',
+          basis: 'text',
+          detail: `Verlangt: ${token} · im Bestand kein Nachweis mit diesem Namen erkannt (${checked} geprüft)`,
+        })
       }
 
       const status: EligibilityCompareStatus =
-        total >= minRequired ? 'met' : total > 0 ? 'partial' : 'not_met'
+        total >= minRequired ? 'met' : 'partial'
 
-      return {
-        ...criterion,
+      return result(criterion, {
         status,
+        basis: 'text',
         detail:
           status === 'partial'
             ? `${total} von ${minRequired} Nachweisen für „${token}"`
-            : status === 'met'
-              ? `Nachweis für „${token}" vorhanden (${total})`
-              : `Kein Nachweis für „${token}"`,
-      }
+            : `Nachweis für „${token}" vorhanden (${total})`,
+      })
     }
     case 'region': {
       const token = String(criterion.value)
       const regions = profile.regions ?? []
       if (!regions.length) {
-        return {
-          ...criterion,
+        return result(criterion, {
           status: 'unknown',
+          basis: 'text',
           detail: 'Regionen im Profil nicht hinterlegt.',
-        }
+        })
       }
       const match = regions.some(
         (r) => fuzzyContains(r, token) || fuzzyContains(token, r),
       )
-      return {
-        ...criterion,
-        status: match ? 'met' : 'not_met',
+      return result(criterion, {
+        status: match ? 'met' : 'unknown',
+        basis: 'text',
         detail: match
           ? `Region „${token}" im Profil abgedeckt`
-          : `Profil-Regionen: ${regions.join(', ')}`,
-      }
+          : `Verlangt: ${token} · Profil-Regionen: ${regions.join(', ')}`,
+      })
     }
     default:
-      return {
-        ...criterion,
+      return result(criterion, {
         status: 'unknown',
+        basis: 'none',
         detail: 'Kriterium nicht automatisch prüfbar — manuell bewerten.',
-      }
+      })
   }
 }
 
@@ -229,6 +236,7 @@ function isKoSignal(
 ): boolean {
   if (!result.mandatory) return false
   if (result.status !== 'not_met') return false
+  if (result.basis !== 'numeric') return false
   return confidence === 'high' || confidence === 'medium'
 }
 
@@ -261,7 +269,7 @@ function resolveVerdict(
 
 export type EligibilityQueue =
   | { kind: 'ko'; count: number }
-  | { kind: 'unknown'; count: number }
+  | { kind: 'unknown'; withoutProfile: number; unrecognized: number }
 
 /**
  * Dieselbe Rangfolge wie der Summary-Satz: bei K.O. die K.O.-Zahl,
@@ -272,9 +280,14 @@ export function eligibilityQueue(
   results: EligibilityCriterionResult[],
 ): EligibilityQueue {
   const koCount = results.filter((r) => isKoSignal(r, r.confidence)).length
-  const unknownCount = results.filter((r) => r.status === 'unknown').length
   if (verdict === 'ko') return { kind: 'ko', count: koCount }
-  return { kind: 'unknown', count: unknownCount }
+
+  const unknown = results.filter((r) => r.status === 'unknown')
+  return {
+    kind: 'unknown',
+    withoutProfile: unknown.filter((r) => r.basis !== 'text').length,
+    unrecognized: unknown.filter((r) => r.basis === 'text').length,
+  }
 }
 
 function buildSummary(
@@ -286,14 +299,33 @@ function buildSummary(
   switch (verdict) {
     case 'eligible':
       return 'Alle geprüften Pflichtkriterien erfüllt oder keine harten K.O.-Signale.'
-    case 'ko':
-      return `${queue.count} Pflichtkriterium${queue.count === 1 ? '' : 'ien'} nicht erfüllt — Ausschlussrisiko.`
+    case 'ko': {
+      const count = queue.kind === 'ko' ? queue.count : 0
+      return `${count} Pflichtkriterium${count === 1 ? '' : 'ien'} nicht erfüllt — Ausschlussrisiko.`
+    }
     case 'partner_required':
       return 'Teilweise Lücken — Partner oder Nachweise prüfen, bevor geboten wird.'
-    default:
-      return queue.count > 0
-        ? `${queue.count} ${queue.count === 1 ? 'Kriterium' : 'Kriterien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`
-        : 'Eignung noch nicht belastbar bewertbar.'
+    default: {
+      if (queue.kind !== 'unknown') {
+        return 'Eignung noch nicht belastbar bewertbar.'
+      }
+      const { withoutProfile, unrecognized } = queue
+      if (withoutProfile === 0 && unrecognized === 0) {
+        return 'Eignung noch nicht belastbar bewertbar.'
+      }
+      const parts: string[] = []
+      if (withoutProfile > 0) {
+        parts.push(
+          `${withoutProfile} ${withoutProfile === 1 ? 'Kriterium' : 'Kriterien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`,
+        )
+      }
+      if (unrecognized > 0) {
+        parts.push(
+          `${unrecognized} ${unrecognized === 1 ? 'Kriterium' : 'Kriterien'} im Bestand nicht erkannt — kein K.O., manuell prüfen.`,
+        )
+      }
+      return parts.join(' · ')
+    }
   }
 }
 

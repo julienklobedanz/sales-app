@@ -22,6 +22,7 @@ const criterion = {
   confidence: 'high' as const,
   status: 'unknown' as const,
   detail: '',
+  basis: 'numeric' as const,
 }
 
 describe('buildDealWorkspaceTiles', () => {
@@ -114,5 +115,66 @@ describe('buildDealWorkspaceTiles', () => {
     expect(eignung?.state).not.toContain('ohne Profildaten')
     expect(tiles.find((t) => t.area === 'entwuerfe')?.state).toBe('0 Entwürfe offen')
     expect(tiles.find((t) => t.area === 'anforderungen')?.state).toBe('0 Anforderungen')
+  })
+
+  it('trennt Unbekannt in ohne Profildaten und nicht erkannt', () => {
+    const tiles = buildDealWorkspaceTiles({
+      dealId: 'd1',
+      documentCount: 1,
+      data: {
+        hasAnalysis: true,
+        isStale: false,
+        eligibilityAssessment: assessment({
+          verdict: 'unknown',
+          criteria: [
+            { ...criterion, status: 'unknown', basis: 'numeric' },
+            {
+              ...criterion,
+              id: 'c2',
+              dimension: 'certification',
+              status: 'unknown',
+              basis: 'text',
+            },
+            {
+              ...criterion,
+              id: 'c3',
+              dimension: 'region',
+              status: 'unknown',
+              basis: 'text',
+            },
+          ],
+        }),
+        draftRows: [],
+        requirementsCount: 0,
+      },
+    })
+    expect(tiles.find((t) => t.area === 'eignung')?.state).toBe(
+      '1 Kriterium ohne Profildaten · 2 Kriterien nicht erkannt',
+    )
+  })
+
+  it('zeigt bei nur Text-Unbekannt „nicht erkannt“, ohne Profildaten weglassen', () => {
+    const tiles = buildDealWorkspaceTiles({
+      dealId: 'd1',
+      documentCount: 1,
+      data: {
+        hasAnalysis: true,
+        isStale: false,
+        eligibilityAssessment: assessment({
+          verdict: 'unknown',
+          criteria: [
+            {
+              ...criterion,
+              dimension: 'certification',
+              status: 'unknown',
+              basis: 'text',
+            },
+          ],
+        }),
+        draftRows: [],
+        requirementsCount: 0,
+      },
+    })
+    expect(tiles.find((t) => t.area === 'eignung')?.state).toBe('1 Kriterium nicht erkannt')
   })
 })

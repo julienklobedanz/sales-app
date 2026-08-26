@@ -142,7 +142,8 @@ export function DealRfpRecommendationBanner({
       : null
 
   const knockouts = (eligibilityAssessment?.criteria ?? []).filter(
-    (row) => row.mandatory && row.status === 'not_met',
+    (row) =>
+      row.mandatory && row.status === 'not_met' && row.basis === 'numeric',
   )
 
   return (

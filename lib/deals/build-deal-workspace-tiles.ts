@@ -58,11 +58,34 @@ function formatEligibilityState(assessment: EligibilityAssessment): string {
       queue.count,
     )
   }
-  return countPhrase(
-    COPY.deals.cockpit.workspaceTileEligibilityUnknownSingular,
-    COPY.deals.cockpit.workspaceTileEligibilityUnknownPlural,
-    queue.count,
-  )
+  const { withoutProfile, unrecognized } = queue
+  if (withoutProfile === 0 && unrecognized === 0) {
+    return countPhrase(
+      COPY.deals.cockpit.workspaceTileEligibilityUnclearSingular,
+      COPY.deals.cockpit.workspaceTileEligibilityUnclearPlural,
+      0,
+    )
+  }
+  const parts: string[] = []
+  if (withoutProfile > 0) {
+    parts.push(
+      countPhrase(
+        COPY.deals.cockpit.workspaceTileEligibilityUnknownSingular,
+        COPY.deals.cockpit.workspaceTileEligibilityUnknownPlural,
+        withoutProfile,
+      ),
+    )
+  }
+  if (unrecognized > 0) {
+    parts.push(
+      countPhrase(
+        COPY.deals.cockpit.workspaceTileEligibilityUnrecognizedSingular,
+        COPY.deals.cockpit.workspaceTileEligibilityUnrecognizedPlural,
+        unrecognized,
+      ),
+    )
+  }
+  return parts.join(' · ')
 }
 
 const PURPOSE: Record<(typeof TILE_AREAS)[number], string> = {
