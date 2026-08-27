@@ -175,6 +175,33 @@ describe('buildDealWorkspaceTiles', () => {
         requirementsCount: 0,
       },
     })
-    expect(tiles.find((t) => t.area === 'eignung')?.state).toBe('1 Kriterium nicht erkannt')
+    expect(tiles.find((t) => t.area === 'eignung')?.state).toBe(
+      '1 Kriterium nicht erkannt',
+    )
+  })
+
+  it('verknüpfter Nachweis senkt „nicht erkannt“ auf 0', () => {
+    const tiles = buildDealWorkspaceTiles({
+      dealId: 'd1',
+      documentCount: 1,
+      data: {
+        hasAnalysis: true,
+        isStale: false,
+        eligibilityAssessment: assessment({
+          verdict: 'eligible',
+          criteria: [
+            {
+              ...criterion,
+              dimension: 'certification',
+              status: 'met',
+              basis: 'linked',
+            },
+          ],
+        }),
+        draftRows: [],
+        requirementsCount: 0,
+      },
+    })
+    expect(tiles.find((t) => t.area === 'eignung')?.state).toBe('0 Kriterien ungeklärt')
   })
 })

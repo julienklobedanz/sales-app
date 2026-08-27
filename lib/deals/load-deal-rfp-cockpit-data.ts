@@ -14,6 +14,8 @@ import type {
   EligibilityCriterion,
 } from '@/lib/deals/eligibility-criteria-schema'
 import { compareEligibilityCriteria } from '@/lib/deals/compare-eligibility-criteria'
+import { loadDealRfpEligibilityForDeal } from '@/lib/deals/load-deal-rfp-eligibility-criteria'
+import type { EligibilityAbsenceConfirmation } from '@/lib/deals/load-deal-rfp-eligibility-criteria'
 import {
   isIcpDefinitionEmpty,
   scoreIcpRubrik,
@@ -61,6 +63,9 @@ export type DealRfpCockpitData = {
   requirementsCount: number
   eligibilityCriteria: EligibilityCriterion[]
   eligibilityAssessment: EligibilityAssessment | null
+  eligibilityLinkedDocumentIdsByCriterionId: Record<string, string[]>
+  eligibilityAbsenceByCriterionId: Record<string, EligibilityAbsenceConfirmation>
+  eligibilityRowsPersisted: boolean
   capabilityProfileEmpty: boolean
   risks: DealRfpRisksData | null
   draftRows: DealDeskDraftRow[]
@@ -105,7 +110,7 @@ export async function loadDealRfpCockpitData(
     ? snap.requirements
     : []
   const coverage: RfpCoverageRow[] = Array.isArray(snap.coverage) ? snap.coverage : []
-  const eligibilityCriteria: EligibilityCriterion[] = Array.isArray(
+  const snapshotEligibility: EligibilityCriterion[] = Array.isArray(
     snap.eligibilityCriteria,
   )
     ? snap.eligibilityCriteria
@@ -113,12 +118,19 @@ export async function loadDealRfpCockpitData(
   const rfpVerdicts: Record<string, RfpVerdict> | null =
     snap.rfpVerdicts && typeof snap.rfpVerdicts === 'object' ? snap.rfpVerdicts : null
 
-  const [orgSettings, complianceDocs, referenceCount, risks] = await Promise.all([
-    loadOrgCapabilitySettings(supabase, organizationId),
-    loadOrgComplianceDocsForDelivery(supabase, organizationId),
-    loadOrgReferenceCount(supabase, organizationId),
-    loadDealRfpRisksData(supabase, organizationId, String(project.id), snap),
-  ])
+  const [orgSettings, complianceDocs, referenceCount, risks, tableEligibility] =
+    await Promise.all([
+      loadOrgCapabilitySettings(supabase, organizationId),
+      loadOrgComplianceDocsForDelivery(supabase, organizationId),
+      loadOrgReferenceCount(supabase, organizationId),
+      loadDealRfpRisksData(supabase, organizationId, String(project.id), snap),
+      loadDealRfpEligibilityForDeal(supabase, { dealId, organizationId }),
+    ])
+
+  const eligibilityCriteria =
+    tableEligibility.criteria.length > 0 ? tableEligibility.criteria : snapshotEligibility
+  const linkedCriterionIds = new Set(tableEligibility.linkedCriterionIds)
+  const absenceConfirmedIds = new Set(Object.keys(tableEligibility.absenceByCriterionId))
 
   const eligibilityAssessment =
     eligibilityCriteria.length > 0
@@ -126,6 +138,8 @@ export async function loadDealRfpCockpitData(
           profile: orgSettings.capabilityProfile,
           complianceDocs,
           referenceCount,
+          linkedCriterionIds,
+          absenceConfirmedIds,
         })
       : null
 
@@ -177,6 +191,10 @@ export async function loadDealRfpCockpitData(
     requirementsCount: requirements.length,
     eligibilityCriteria,
     eligibilityAssessment,
+    eligibilityLinkedDocumentIdsByCriterionId:
+      tableEligibility.linkedDocumentIdsByCriterionId,
+    eligibilityAbsenceByCriterionId: tableEligibility.absenceByCriterionId,
+    eligibilityRowsPersisted: tableEligibility.criteria.length > 0,
     capabilityProfileEmpty,
     risks,
     draftRows: Array.isArray(snap.draftRows) ? snap.draftRows : [],

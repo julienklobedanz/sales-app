@@ -26,7 +26,12 @@ export type EligibilityCriterion = {
 export type EligibilityCompareStatus = 'met' | 'not_met' | 'unknown' | 'partial'
 
 /** Wie der Abgleich zustande kam — nicht die Extraktions-confidence. */
-export type EligibilityCompareBasis = 'numeric' | 'text' | 'none'
+export type EligibilityCompareBasis =
+  | 'numeric'
+  | 'text'
+  | 'none'
+  | 'linked'
+  | 'confirmed'
 
 export type EligibilityCriterionResult = EligibilityCriterion & {
   status: EligibilityCompareStatus

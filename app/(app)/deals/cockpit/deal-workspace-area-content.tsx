@@ -20,6 +20,7 @@ import { DealRfpNoticeHero } from './deal-rfp-notice-hero'
 import { DealRfpLotsSection } from './deal-rfp-lots-section'
 import { DealRfpRequirementsSection } from './deal-rfp-requirements-section'
 import type { DealRfpRequirementRow } from '@/lib/deals/load-deal-rfp-requirements'
+import type { RequirementLinkPickDoc } from '@/lib/deals/requirement-link-types'
 import type { RequestedEvidenceGapItem } from '@/lib/deals/build-requested-evidence-gaps'
 import type { SmeTopicGroup } from '@/lib/deals/group-sme-by-topic'
 
@@ -72,6 +73,7 @@ export function DealWorkspaceAreaContent({
   requirements = [],
   requestedEvidenceGaps = [],
   smeGroups = [],
+  pickDocs = [],
 }: {
   area: DealWorkspaceArea
   dealId: string
@@ -83,6 +85,7 @@ export function DealWorkspaceAreaContent({
   requirements?: DealRfpRequirementRow[]
   requestedEvidenceGaps?: RequestedEvidenceGapItem[]
   smeGroups?: SmeTopicGroup[]
+  pickDocs?: RequirementLinkPickDoc[]
 }) {
   if (area === 'dokumente') {
     return (
@@ -141,7 +144,20 @@ export function DealWorkspaceAreaContent({
         </div>
       )
     case 'eignung':
-      return <DealRfpEligibilitySection data={data} />
+      return (
+        <DealRfpEligibilitySection
+          dealId={dealId}
+          canManage={canManageDocuments}
+          pickDocs={pickDocs}
+          rowsPersisted={data.eligibilityRowsPersisted}
+          hasAnalysis={data.hasAnalysis}
+          isStale={data.isStale}
+          capabilityProfileEmpty={data.capabilityProfileEmpty}
+          assessment={data.eligibilityAssessment}
+          absenceByCriterionId={data.eligibilityAbsenceByCriterionId}
+          linkedDocumentIdsByCriterionId={data.eligibilityLinkedDocumentIdsByCriterionId}
+        />
+      )
     case 'risiken':
       return (
         <DealRfpRisksSection
