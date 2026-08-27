@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.1'
+    PostgrestVersion: '14.17'
   }
   public: {
     Tables: {
@@ -961,6 +961,145 @@ export type Database = {
           },
           {
             foreignKeyName: 'deal_rfp_analyses_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deal_rfp_eligibility_criteria: {
+        Row: {
+          confidence: string
+          created_at: string
+          deal_id: string
+          dimension: string
+          evidence: string | null
+          id: string
+          label: string
+          mandatory: boolean
+          no_matching_evidence_at: string | null
+          no_matching_evidence_by: string | null
+          operator: string
+          organization_id: string
+          source_document_id: string
+          unit: string | null
+          value: Json
+        }
+        Insert: {
+          confidence?: string
+          created_at?: string
+          deal_id: string
+          dimension: string
+          evidence?: string | null
+          id?: string
+          label: string
+          mandatory?: boolean
+          no_matching_evidence_at?: string | null
+          no_matching_evidence_by?: string | null
+          operator: string
+          organization_id: string
+          source_document_id: string
+          unit?: string | null
+          value: Json
+        }
+        Update: {
+          confidence?: string
+          created_at?: string
+          deal_id?: string
+          dimension?: string
+          evidence?: string | null
+          id?: string
+          label?: string
+          mandatory?: boolean
+          no_matching_evidence_at?: string | null
+          no_matching_evidence_by?: string | null
+          operator?: string
+          organization_id?: string
+          source_document_id?: string
+          unit?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criteria_deal_id_fkey'
+            columns: ['deal_id']
+            isOneToOne: false
+            referencedRelation: 'deals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criteria_no_matching_evidence_by_fkey'
+            columns: ['no_matching_evidence_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criteria_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criteria_source_document_id_fkey'
+            columns: ['source_document_id']
+            isOneToOne: false
+            referencedRelation: 'deal_documents'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deal_rfp_eligibility_criterion_documents: {
+        Row: {
+          created_at: string
+          criterion_id: string
+          document_id: string
+          id: string
+          linked_by: string | null
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          criterion_id: string
+          document_id: string
+          id?: string
+          linked_by?: string | null
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          criterion_id?: string
+          document_id?: string
+          id?: string
+          linked_by?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criterion_documents_criterion_id_fkey'
+            columns: ['criterion_id']
+            isOneToOne: false
+            referencedRelation: 'deal_rfp_eligibility_criteria'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criterion_documents_document_id_fkey'
+            columns: ['document_id']
+            isOneToOne: false
+            referencedRelation: 'organization_compliance_documents'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criterion_documents_linked_by_fkey'
+            columns: ['linked_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_rfp_eligibility_criterion_documents_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'

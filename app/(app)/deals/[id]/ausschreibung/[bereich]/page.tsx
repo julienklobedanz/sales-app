@@ -88,7 +88,7 @@ async function DealWorkspaceAreaLoaded({
       organizationId: orgId,
       documents: documents.map((doc) => ({ id: doc.id, file_name: doc.file_name })),
     }),
-    area === 'anforderungen'
+    area === 'anforderungen' || area === 'eignung'
       ? loadOrgComplianceDocsForRequirementLink(supabase, orgId)
       : Promise.resolve([]),
   ])
@@ -169,6 +169,7 @@ async function DealWorkspaceAreaLoaded({
         requirements={requirements}
         requestedEvidenceGaps={analysisLive ? (data?.requestedEvidenceGaps ?? []) : []}
         smeGroups={analysisLive ? (data?.risks?.smeGroups ?? []) : []}
+        pickDocs={pickDocs}
       />
     </DealWorkspaceLayout>
   )

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   compareEligibilityCriteria,
+  eligibilityQueue,
   isCapabilityProfileEmpty,
 } from '@/lib/deals/compare-eligibility-criteria'
 import { parseEligibilityCriteriaResponse } from '@/lib/deals/eligibility-criteria-schema'
@@ -230,6 +231,82 @@ describe('compareEligibilityCriteria', () => {
     )
     expect(assessment.verdict).toBe('unknown')
     expect(assessment.summary).toContain('im Bestand nicht erkannt')
+    expect(eligibilityQueue(assessment.verdict, assessment.criteria)).toEqual({
+      kind: 'unknown',
+      withoutProfile: 0,
+      unrecognized: 1,
+    })
+  })
+
+  it('linked certification is met with basis linked and skips text search', () => {
+    const criteria = [
+      criterion({
+        id: 'stqc',
+        dimension: 'certification',
+        label: 'STQC',
+        operator: 'contains',
+        value: 'STQC',
+        confidence: 'high',
+      }),
+    ]
+    const assessment = compareEligibilityCriteria(criteria, {
+      profile: { employeeCount: 10 },
+      complianceDocs: [],
+      referenceCount: 0,
+      linkedCriterionIds: new Set(['stqc']),
+    })
+    expect(assessment.criteria[0]?.status).toBe('met')
+    expect(assessment.criteria[0]?.basis).toBe('linked')
+    expect(assessment.verdict).toBe('eligible')
+    const queue = eligibilityQueue(assessment.verdict, assessment.criteria)
+    expect(queue).toEqual({ kind: 'unknown', withoutProfile: 0, unrecognized: 0 })
+  })
+
+  it('confirmed absence is not_met with basis confirmed and is K.O.', () => {
+    const criteria = [
+      criterion({
+        id: 'stqc',
+        dimension: 'certification',
+        label: 'STQC',
+        operator: 'contains',
+        value: 'STQC',
+        confidence: 'high',
+      }),
+    ]
+    const assessment = compareEligibilityCriteria(criteria, {
+      profile: { employeeCount: 10 },
+      complianceDocs: [],
+      referenceCount: 0,
+      absenceConfirmedIds: new Set(['stqc']),
+    })
+    expect(assessment.criteria[0]?.status).toBe('not_met')
+    expect(assessment.criteria[0]?.basis).toBe('confirmed')
+    expect(assessment.verdict).toBe('ko')
+    expect(eligibilityQueue(assessment.verdict, assessment.criteria)).toEqual({
+      kind: 'ko',
+      count: 1,
+    })
+  })
+
+  it('link wins over confirmed absence', () => {
+    const criteria = [
+      criterion({
+        id: 'stqc',
+        dimension: 'certification',
+        label: 'STQC',
+        operator: 'contains',
+        value: 'STQC',
+      }),
+    ]
+    const assessment = compareEligibilityCriteria(criteria, {
+      profile: { employeeCount: 10 },
+      complianceDocs: [],
+      referenceCount: 0,
+      linkedCriterionIds: new Set(['stqc']),
+      absenceConfirmedIds: new Set(['stqc']),
+    })
+    expect(assessment.criteria[0]?.basis).toBe('linked')
+    expect(assessment.criteria[0]?.status).toBe('met')
   })
 
   it('region mismatch → unknown on mandatory region criterion', () => {

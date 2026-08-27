@@ -316,6 +316,11 @@ export const COPY = {
       eligibilityMandatory: 'Pflicht',
       eligibilityVerdict: 'Gesamteinschätzung',
       eligibilityProfileCta: 'Fähigkeitsprofil ergänzen',
+      eligibilityNoMatchingEvidence: 'Kein passender Nachweis',
+      eligibilityAbsenceConfirmed:
+        'Kein passender Nachweis · bestätigt {date} von {name}',
+      eligibilityAbsenceConfirmedNoName: 'Kein passender Nachweis · bestätigt {date}',
+      eligibilityAbsenceSuccess: 'Abwesenheit bestätigt.',
       risksTitle: 'Risiken',
       risksGeneralTitle: 'Allgemeine Risiken',
       risksGeneralEmpty: 'Keine kritischen Vertragsrisiken erkannt.',

@@ -16,6 +16,8 @@ export type EligibilityCompareContext = {
   profile: CapabilityProfile
   complianceDocs: OrgComplianceDoc[]
   referenceCount: number
+  linkedCriterionIds?: ReadonlySet<string>
+  absenceConfirmedIds?: ReadonlySet<string>
 }
 
 export function isCapabilityProfileEmpty(profile: CapabilityProfile): boolean {
@@ -168,6 +170,21 @@ function compareCriterion(
       })
     }
     case 'certification': {
+      if (ctx.linkedCriterionIds?.has(criterion.id)) {
+        return result(criterion, {
+          status: 'met',
+          basis: 'linked',
+          detail: 'Verknüpfter Nachweis vorhanden',
+        })
+      }
+      if (ctx.absenceConfirmedIds?.has(criterion.id)) {
+        return result(criterion, {
+          status: 'not_met',
+          basis: 'confirmed',
+          detail: 'Kein passender Nachweis — menschlich bestätigt',
+        })
+      }
+
       const token = String(criterion.value)
       const fromProfile = countCertifiedRole(profile, token)
       const fromDocs = countMatchingComplianceDocs(complianceDocs, token)
@@ -188,8 +205,7 @@ function compareCriterion(
         })
       }
 
-      const status: EligibilityCompareStatus =
-        total >= minRequired ? 'met' : 'partial'
+      const status: EligibilityCompareStatus = total >= minRequired ? 'met' : 'partial'
 
       return result(criterion, {
         status,
@@ -236,6 +252,7 @@ function isKoSignal(
 ): boolean {
   if (!result.mandatory) return false
   if (result.status !== 'not_met') return false
+  if (result.basis === 'confirmed') return true
   if (result.basis !== 'numeric') return false
   return confidence === 'high' || confidence === 'medium'
 }

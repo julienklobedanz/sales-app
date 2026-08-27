@@ -6,6 +6,8 @@ import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-p
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { loadOrCreateDealRfpRequirementsForDocument } from '@/lib/deals/persist-deal-rfp-requirements'
+import { loadOrCreateDealRfpEligibilityCriteriaForDocument } from '@/lib/deals/persist-deal-rfp-eligibility-criteria'
+import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
 import {
   extractRequirementsFromRfpText,
   type ExtractedRfpRequirement,
@@ -237,6 +239,19 @@ export async function POST(req: NextRequest) {
   const fileNames = [dealDoc.file_name || 'document']
   const stage = body.stage === 'quick' ? 'quick' : 'full'
 
+  const persistedEligibility = await loadOrCreateDealRfpEligibilityCriteriaForDocument(
+    supabase,
+    {
+      dealId,
+      organizationId: orgId,
+      sourceDocumentId: dealDoc.id,
+      extract: () => extractEligibilityCriteriaFromRfpText(apiKey, mergedText),
+    },
+  )
+  if (persistedEligibility.error) {
+    return fail(persistedEligibility.error, 422)
+  }
+
   let requirements: ExtractedRfpRequirement[] | undefined
   if (stage !== 'quick') {
     const persisted = await loadOrCreateDealRfpRequirementsForDocument(supabase, {
@@ -274,6 +289,7 @@ export async function POST(req: NextRequest) {
     ],
     stage,
     requirements,
+    eligibilityCriteria: persistedEligibility.criteria,
   })
 
   if ('error' in analyzed) {

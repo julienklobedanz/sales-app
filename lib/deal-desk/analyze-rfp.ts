@@ -51,6 +51,8 @@ export type AnalyzeRfpInput = {
   stage?: 'quick' | 'full'
   /** Wenn gesetzt: keine Extraktion; Coverage/Verdikte nutzen diese ids (Zeilen-UUIDs). */
   requirements?: ExtractedRfpRequirement[]
+  /** Wenn gesetzt: keine Extraktion; Zeilen-UUIDs aus deal_rfp_eligibility_criteria. */
+  eligibilityCriteria?: EligibilityCriterion[]
 }
 
 export type AnalyzeRfpResult = {
@@ -87,6 +89,7 @@ export async function analyzeRfp(
     projectDocuments = [],
     stage = 'full',
     requirements: givenRequirements,
+    eligibilityCriteria: givenEligibility,
   } = input
 
   const timelineRes = await extractTimelineFromRfpText(apiKey, mergedText)
@@ -99,14 +102,18 @@ export async function analyzeRfp(
     timelineItems = timelineRes.timelineItems
   }
 
-  const eligibilityRes = await extractEligibilityCriteriaFromRfpText(apiKey, mergedText)
   let eligibilityCriteria: EligibilityCriterion[] = []
-  if ('error' in eligibilityRes) {
-    if (quotaFromError(eligibilityRes.error)) {
-      return { error: eligibilityRes.error, isQuotaError: true }
-    }
+  if (givenEligibility !== undefined) {
+    eligibilityCriteria = givenEligibility
   } else {
-    eligibilityCriteria = eligibilityRes.criteria
+    const eligibilityRes = await extractEligibilityCriteriaFromRfpText(apiKey, mergedText)
+    if ('error' in eligibilityRes) {
+      if (quotaFromError(eligibilityRes.error)) {
+        return { error: eligibilityRes.error, isQuotaError: true }
+      }
+    } else {
+      eligibilityCriteria = eligibilityRes.criteria
+    }
   }
 
   if (stage === 'quick') {
