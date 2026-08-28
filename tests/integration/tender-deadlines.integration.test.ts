@@ -12,6 +12,7 @@ import {
 import {
   createIntegrationServiceClient,
   isIntegrationSupabaseAvailable,
+  signInIntegrationUser,
 } from '@/lib/test/integration-supabase'
 import {
   assignDealToExistingTender,
@@ -24,12 +25,14 @@ const describeIntegration = isIntegrationSupabaseAvailable() ? describe : descri
 describeIntegration('tender deadline ownership', () => {
   let fixtures: IntegrationOrgFixtures
   let admin: ReturnType<typeof createIntegrationServiceClient>
+  let asOrg: Awaited<ReturnType<typeof signInIntegrationUser>>
   const dealIds: string[] = []
   let tenderId: string | null = null
 
   beforeAll(async () => {
     admin = createIntegrationServiceClient()
     fixtures = await seedIntegrationOrgFixtures(admin)
+    asOrg = await signInIntegrationUser(fixtures.admin.email, fixtures.admin.password)
   }, 120_000)
 
   afterAll(async () => {
@@ -43,6 +46,7 @@ describeIntegration('tender deadline ownership', () => {
       .from('deals')
       .insert({
         organization_id: fixtures.orgAId,
+        company_id: fixtures.companyAId,
         title,
         status: 'open',
       })
@@ -100,27 +104,27 @@ describeIntegration('tender deadline ownership', () => {
     })
     if (suppressedError) throw new Error(suppressedError.message)
 
-    const created = await createTenderAndAssignDeal(admin, {
+    const created = await createTenderAndAssignDeal(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal1,
       title: `BMI ${fixtures.runId}`,
     })
-    expect(created.success).toBe(true)
+    expect(created.success, created.error).toBe(true)
     tenderId = created.tenderId ?? null
     expect(tenderId).toBeTruthy()
 
-    const assigned5 = await assignDealToExistingTender(admin, {
+    const assigned5 = await assignDealToExistingTender(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal5,
       tenderId: tenderId!,
     })
-    const assigned7 = await assignDealToExistingTender(admin, {
+    const assigned7 = await assignDealToExistingTender(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal7,
       tenderId: tenderId!,
     })
-    expect(assigned5.success).toBe(true)
-    expect(assigned7.success).toBe(true)
+    expect(assigned5.success, assigned5.error).toBe(true)
+    expect(assigned7.success, assigned7.error).toBe(true)
 
     const { count: afterAssign } = await admin
       .from('deal_deadlines')
@@ -156,11 +160,11 @@ describeIntegration('tender deadline ownership', () => {
 
     expect(afterAssign).toBe(beforeDetach)
 
-    const detachNonLast = await detachDealFromTender(admin, {
+    const detachNonLast = await detachDealFromTender(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal5,
     })
-    expect(detachNonLast.success).toBe(true)
+    expect(detachNonLast.success, detachNonLast.error).toBe(true)
     const { data: tenderStill } = await admin
       .from('tenders')
       .select('id')
@@ -173,16 +177,16 @@ describeIntegration('tender deadline ownership', () => {
       .eq('tender_id', tenderId!)
     expect(tenderRowsAfter).toHaveLength(1)
 
-    const detachSecond = await detachDealFromTender(admin, {
+    const detachSecond = await detachDealFromTender(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal7,
     })
-    expect(detachSecond.success).toBe(true)
-    const detachLast = await detachDealFromTender(admin, {
+    expect(detachSecond.success, detachSecond.error).toBe(true)
+    const detachLast = await detachDealFromTender(asOrg, {
       organizationId: fixtures.orgAId,
       dealId: deal1,
     })
-    expect(detachLast.success).toBe(true)
+    expect(detachLast.success, detachLast.error).toBe(true)
 
     const { data: gone } = await admin
       .from('tenders')
