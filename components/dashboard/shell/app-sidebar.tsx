@@ -120,7 +120,10 @@ function DealsNavSection({
   pathname: string | null
   mySidebarDeals: SidebarDealNavItem[]
 }) {
-  const dealsActive = Boolean(pathname?.startsWith(ROUTES.deals.root))
+  const dealsActive = Boolean(
+    pathname?.startsWith(ROUTES.deals.root) ||
+      pathname?.startsWith(ROUTES.tenders.root),
+  )
   const [open, setOpen] = useState(dealsActive)
   const [wasDealsActive, setWasDealsActive] = useState(dealsActive)
   if (dealsActive !== wasDealsActive) {

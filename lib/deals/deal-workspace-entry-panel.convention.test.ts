@@ -69,7 +69,7 @@ describe('deal workspace entry panel conventions (§10.6)', () => {
 
   it('encodiert eintrag in der URL, ohne # als Fragment', () => {
     const href = buildCollectionObjectUrl(
-      '/deals/d1/ausschreibung/risiken',
+      '/deals/d1/arbeitsbereich/risiken',
       new URLSearchParams(),
       { [DEAL_WORKSPACE_ENTRY_PARAM]: 'ev:ISO 27001 Nachweise~2' },
     )

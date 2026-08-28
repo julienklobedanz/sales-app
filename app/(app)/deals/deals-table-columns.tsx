@@ -8,82 +8,100 @@ import { TableAccountLinkContent } from '@/components/table/table-account-link-c
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { TableSortableHeader } from '@/components/table/table-sortable-header'
 import { TableTitleHoverContent } from '@/components/table/table-title-hover-content'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { dealProofDisplay } from '@/lib/deals/deal-proof-display'
 import { formatDealVolume } from '@/lib/format'
-import { ROUTES } from '@/lib/routes'
+import {
+  isDealCollectionLotRow,
+  type DealCollectionRow,
+} from '@/lib/tenders/group-deals-for-collection'
 
 import { DEAL_COL_LABELS } from './deals-table-constants'
 import {
   formatDealCollectionDeadline,
   isDealExpiringIn30Days,
 } from './deals-table-format'
-import type { DealRow } from './types'
 
-export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
+export function buildDealsTableColumns(): ColumnDef<DealCollectionRow>[] {
   return [
     {
-      accessorKey: 'status',
+      accessorKey: 'collectionOrder',
+      enableHiding: false,
+      header: () => null,
+      cell: () => null,
+      size: 0,
+      minSize: 0,
+    },
+    {
+      id: 'status',
+      accessorFn: (row) => (isDealCollectionLotRow(row) ? row.status : undefined),
       meta: { viewLabel: DEAL_COL_LABELS.status },
       size: 120,
       minSize: 88,
       header: ({ column }) => <TableSortableHeader label="Status" column={column} />,
-      cell: ({ row }) => <DealStatusBadge status={row.original.status} />,
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <DealStatusBadge status={row.original.status} />
+        ) : null,
     },
     {
-      accessorKey: 'title',
+      id: 'title',
+      accessorFn: (row) => row.title,
       meta: { viewLabel: DEAL_COL_LABELS.title },
       size: 280,
       minSize: 140,
       header: ({ column }) => <TableSortableHeader label="Titel" column={column} />,
-      cell: ({ row }) => (
-        <TableRowAlign className="min-w-0">
-          <TableTitleHoverContent
-            title={row.original.title}
-            href={ROUTES.deals.detail(row.original.id)}
-            previewLabel="Anforderungen"
-            previewText={row.original.requirements_text}
-            emptyPreviewText="Keine Anforderungen hinterlegt."
-          />
-        </TableRowAlign>
-      ),
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <TableRowAlign className="min-w-0">
+            <TableTitleHoverContent
+              title={row.original.title}
+              href={row.original.href}
+              previewLabel="Anforderungen"
+              previewText={row.original.requirements_text}
+              emptyPreviewText="Keine Anforderungen hinterlegt."
+            />
+          </TableRowAlign>
+        ) : null,
     },
     {
-      accessorKey: 'company_name',
+      id: 'company_name',
+      accessorFn: (row) =>
+        isDealCollectionLotRow(row) ? row.company_name : row.companyName,
       meta: { viewLabel: DEAL_COL_LABELS.company_name },
       size: 220,
       minSize: 140,
       header: ({ column }) => <TableSortableHeader label="Account" column={column} />,
-      cell: ({ row }) => (
-        <TableRowAlign>
-          <TableAccountLinkContent
-            companyId={row.original.company_id}
-            companyName={row.original.company_name}
-            companyLogoUrl={row.original.company_logo_url}
-          />
-        </TableRowAlign>
-      ),
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <TableRowAlign>
+            <TableAccountLinkContent
+              companyId={row.original.company_id}
+              companyName={row.original.company_name}
+              companyLogoUrl={row.original.company_logo_url}
+            />
+          </TableRowAlign>
+        ) : null,
     },
     {
-      accessorKey: 'volume',
+      id: 'volume',
+      accessorFn: (row) => (isDealCollectionLotRow(row) ? row.volume : undefined),
       meta: { viewLabel: DEAL_COL_LABELS.volume },
       size: 120,
       minSize: 88,
       header: ({ column }) => <TableSortableHeader label="Volumen" column={column} />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground tabular-nums">
-          {formatDealVolume(row.original.volume)}
-        </span>
-      ),
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <span className="text-muted-foreground tabular-nums">
+            {formatDealVolume(row.original.volume)}
+          </span>
+        ) : null,
     },
     {
       id: 'proof',
-      accessorFn: (row) => row.linked_refs?.length ?? 0,
+      accessorFn: (row) =>
+        isDealCollectionLotRow(row) ? (row.linked_refs?.length ?? 0) : 0,
       meta: {
         viewLabel: DEAL_COL_LABELS.proof,
         headerAlign: 'center' as const,
@@ -94,6 +112,7 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
         <TableSortableHeader label={COPY.deals.proofColumn} column={column} />
       ),
       cell: ({ row }) => {
+        if (!isDealCollectionLotRow(row.original)) return null
         const display = dealProofDisplay(row.original)
         if (display.kind === 'empty') {
           return (
@@ -150,27 +169,36 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
       },
     },
     {
-      accessorKey: 'account_manager_name',
+      id: 'account_manager_name',
+      accessorFn: (row) =>
+        isDealCollectionLotRow(row) ? row.account_manager_name : undefined,
       meta: { viewLabel: DEAL_COL_LABELS.account_manager_name },
       size: 160,
       minSize: 100,
       header: ({ column }) => (
         <TableSortableHeader label={COPY.roles.accountManager} column={column} />
       ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.account_manager_name ?? '—'}
-        </span>
-      ),
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <span className="text-muted-foreground">
+            {row.original.account_manager_name ?? '—'}
+          </span>
+        ) : null,
     },
     {
-      accessorKey: 'expiry_date',
+      id: 'expiry_date',
+      accessorFn: (row) =>
+        isDealCollectionLotRow(row) ? row.expiry_date : row.nextDeadline,
       meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
       size: 120,
       minSize: 88,
       sortingFn: (rowA, rowB) => {
-        const a = rowA.original.expiry_date
-        const b = rowB.original.expiry_date
+        const a = isDealCollectionLotRow(rowA.original)
+          ? rowA.original.expiry_date
+          : null
+        const b = isDealCollectionLotRow(rowB.original)
+          ? rowB.original.expiry_date
+          : null
         if (!a && !b) return 0
         if (!a) return 1
         if (!b) return -1
@@ -180,6 +208,7 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
         <TableSortableHeader label={COPY.deals.deadlineColumn} column={column} />
       ),
       cell: ({ row }) => {
+        if (!isDealCollectionLotRow(row.original)) return null
         const isHot = isDealExpiringIn30Days(
           row.original.expiry_date,
           row.original.status,
@@ -196,18 +225,21 @@ export function buildDealsTableColumns(): ColumnDef<DealRow>[] {
       },
     },
     {
-      accessorKey: 'sales_manager_name',
+      id: 'sales_manager_name',
+      accessorFn: (row) =>
+        isDealCollectionLotRow(row) ? row.sales_manager_name : undefined,
       meta: { viewLabel: DEAL_COL_LABELS.sales_manager_name },
       size: 160,
       minSize: 100,
       header: ({ column }) => (
         <TableSortableHeader label={COPY.roles.salesManager} column={column} />
       ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.sales_manager_name ?? '—'}
-        </span>
-      ),
+      cell: ({ row }) =>
+        isDealCollectionLotRow(row.original) ? (
+          <span className="text-muted-foreground">
+            {row.original.sales_manager_name ?? '—'}
+          </span>
+        ) : null,
     },
   ]
 }

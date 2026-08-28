@@ -14,19 +14,19 @@ import {
 
 describe('deal workspace href', () => {
   it('legt die Unterroute ohne Hash an', () => {
-    expect(dealWorkspaceHref('deal-1')).toBe('/deals/deal-1/ausschreibung')
+    expect(dealWorkspaceHref('deal-1')).toBe('/deals/deal-1/arbeitsbereich')
     expect(dealWorkspaceHref('deal-1')).not.toContain('#')
   })
 
   it('zeigt von einem Nachweis zur Anforderung im Workspace', () => {
     expect(dealWorkspaceRequirementHref('deal-1', 'abc-uuid')).toBe(
-      '/deals/deal-1/ausschreibung/anforderungen?eintrag=abc-uuid',
+      '/deals/deal-1/arbeitsbereich/anforderungen?eintrag=abc-uuid',
     )
   })
 
   it('landet nach Promote auf /dokumente, nicht auf der Deal-Seite', () => {
     expect(dealWorkspaceLandingHref('deal-1')).toBe(
-      '/deals/deal-1/ausschreibung/dokumente',
+      '/deals/deal-1/arbeitsbereich/dokumente',
     )
     expect(dealWorkspaceLandingHref('deal-1')).not.toBe(dealWorkspaceHref('deal-1'))
     expect(dealWorkspaceLandingHref('deal-1')).not.toBe(ROUTES.deals.detail('deal-1'))
@@ -63,9 +63,9 @@ describe('resolveDealWorkspaceAccess', () => {
 describe('parseDealWorkspaceAreaFromPathname', () => {
   it('liest den Bereich aus der Unterroute', () => {
     expect(
-      parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung/entwuerfe'),
+      parseDealWorkspaceAreaFromPathname('/deals/deal-1/arbeitsbereich/entwuerfe'),
     ).toBe('entwuerfe')
-    expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1/ausschreibung')).toBeNull()
+    expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1/arbeitsbereich')).toBeNull()
     expect(parseDealWorkspaceAreaFromPathname('/deals/deal-1')).toBeNull()
   })
 })

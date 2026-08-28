@@ -17,7 +17,7 @@ export function routeExcludesDashboardContentPadding(pathname: string | null): b
   if (parts[0] === 'accounts' && parts.length >= 2) {
     return true
   }
-  if (parts[0] === 'deals' && parts[2] === 'ausschreibung') {
+  if (parts[0] === 'deals' && parts[2] === 'arbeitsbereich') {
     return true
   }
   return false
@@ -32,8 +32,11 @@ export function detailRouteNeedsBottomPadding(pathname: string | null): boolean 
   if (parts[0] === 'references' && parts[2] === 'edit') {
     return true
   }
-  if (parts[0] === 'deals' && parts[2] === 'ausschreibung') {
+  if (parts[0] === 'deals' && parts[2] === 'arbeitsbereich') {
     return false
+  }
+  if (parts[0] === 'ausschreibungen' && parts.length >= 2) {
+    return true
   }
   if (
     parts[0] === 'deals' &&

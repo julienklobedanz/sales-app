@@ -30,9 +30,11 @@ import { ROUTES } from '@/lib/routes'
 
 import type { DealWithReferences } from '../types'
 import { deleteDeal, setDealRfpMode } from '../actions'
+import { detachDealFromTenderAction } from '../tender-actions'
 import { EditDealDialog } from '../components/edit-deal-dialog'
 import { LinkReferenceDialog } from '../components/link-reference-dialog'
 import { OutcomeDialog } from '../components/outcome-dialog'
+import { AssignDealToTenderDialog } from './assign-deal-to-tender-dialog'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -52,7 +54,10 @@ export function DealCockpitActions({
   const [editOpen, setEditOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
   const [outcomeOpen, setOutcomeOpen] = useState(false)
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [detachOpen, setDetachOpen] = useState(false)
   const [demotePending, setDemotePending] = useState(false)
+  const [detachPending, setDetachPending] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deletePending, setDeletePending] = useState(false)
 
@@ -70,6 +75,22 @@ export function DealCockpitActions({
       router.refresh()
     } finally {
       setDemotePending(false)
+    }
+  }
+
+  async function detachFromTender() {
+    setDetachPending(true)
+    try {
+      const res = await detachDealFromTenderAction({ dealId: deal.id })
+      if (!res.success) {
+        toast.error(res.error ?? COPY.deals.cockpit.detachFailed)
+        return
+      }
+      toast.success(COPY.deals.cockpit.detachSuccess)
+      setDetachOpen(false)
+      router.refresh()
+    } finally {
+      setDetachPending(false)
     }
   }
 
@@ -116,6 +137,19 @@ export function DealCockpitActions({
               Referenzbedarf melden
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {deal.tender_id ? (
+            <DropdownMenuItem
+              disabled={detachPending}
+              onSelect={() => setDetachOpen(true)}
+            >
+              {COPY.deals.cockpit.detachFromTender}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onSelect={() => setAssignOpen(true)}>
+              {COPY.deals.cockpit.assignToTender}
+            </DropdownMenuItem>
+          )}
           {deal.is_rfp_mode ? (
             <>
               <DropdownMenuSeparator />
@@ -167,6 +201,37 @@ export function DealCockpitActions({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={detachOpen} onOpenChange={setDetachOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{COPY.deals.cockpit.detachConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {COPY.deals.cockpit.detachConfirmDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={detachPending}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={detachPending}
+              onClick={(e) => {
+                e.preventDefault()
+                void detachFromTender()
+              }}
+            >
+              {detachPending
+                ? COPY.deals.cockpit.detachPending
+                : COPY.deals.cockpit.detachSubmit}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AssignDealToTenderDialog
+        dealId={deal.id}
+        dealTitle={deal.title}
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+      />
       <EditDealDialog
         deal={deal}
         companies={companies}

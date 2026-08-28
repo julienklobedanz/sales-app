@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile } from '@/lib/auth/request-user'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
+import { tenderSummaryFromJoin } from '@/lib/tenders/tender-summary-from-join'
 import type { DealRow, DealWithReferences } from './types'
 
 async function getSessionOrgId(): Promise<string | null> {
@@ -30,10 +31,20 @@ export async function getDealsImpl(): Promise<DealRow[]> {
       sales_manager_id,
       status,
       is_rfp_mode,
+      tender_id,
       expiry_date,
       created_at,
       updated_at,
-      companies ( name, logo_url )
+      companies ( name, logo_url ),
+      tenders (
+        id,
+        title,
+        company_id,
+        procedure_type,
+        reference_number,
+        total_volume,
+        companies ( name, logo_url )
+      )
     `,
     )
     .eq('organization_id', orgId)
@@ -143,6 +154,8 @@ export async function getDealsImpl(): Promise<DealRow[]> {
         : null,
       status: normalizeDealStatus(r.status),
       is_rfp_mode: Boolean(r.is_rfp_mode),
+      tender_id: r.tender_id ?? null,
+      tender: tenderSummaryFromJoin(r.tenders),
       expiry_date: r.expiry_date ?? null,
       created_at: r.created_at ?? '',
       updated_at: r.updated_at ?? null,
@@ -172,10 +185,12 @@ export async function getDealWithReferencesImpl(
       sales_manager_id,
       status,
       is_rfp_mode,
+      tender_id,
       expiry_date,
       created_at,
       updated_at,
-      companies ( name )
+      companies ( name ),
+      tenders ( id, title )
     `
 
   const { data: deal, error } = await supabase
@@ -286,6 +301,8 @@ export async function getDealWithReferencesImpl(
     sales_manager_avatar_url: salesManagerAvatarUrl,
     status: normalizeDealStatus(deal.status),
     is_rfp_mode: Boolean(deal.is_rfp_mode),
+    tender_id: deal.tender_id ?? null,
+    tender: tenderSummaryFromJoin(deal.tenders),
     expiry_date: deal.expiry_date ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,

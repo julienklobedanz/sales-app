@@ -68,10 +68,21 @@ export function DealCockpitHeader({
   return (
     <div className="mb-6 space-y-3">
       <DealBreadcrumbs
-        items={[
-          { label: COPY.nav.deals, href: ROUTES.deals.root },
-          { label: deal.title },
-        ]}
+        items={
+          deal.tender_id && deal.tender
+            ? [
+                { label: COPY.tenders.breadcrumbRoot, href: ROUTES.deals.root },
+                {
+                  label: deal.tender.title,
+                  href: ROUTES.tenders.detail(deal.tender.id),
+                },
+                { label: deal.title },
+              ]
+            : [
+                { label: COPY.nav.deals, href: ROUTES.deals.root },
+                { label: deal.title },
+              ]
+        }
       />
 
       <div className="flex flex-wrap items-start justify-between gap-3">

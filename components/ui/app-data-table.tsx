@@ -102,6 +102,14 @@ export type AppDataTableProps<TData, TValue> = {
   getRowHref?: (row: TData) => string | null
   /** Hebt die aktive Zeile in der Leseansicht hervor. */
   rowIsActive?: (row: TData) => boolean
+  /**
+   * Volle Breite statt Spaltenzellen (z. B. Gruppenband).
+   * `null`/undefined → normale Zellenzeile.
+   */
+  renderFullWidthRow?: (row: TData) => React.ReactNode
+  /** Kontrollierte Sortierung (sonst intern aus `initialSorting`). */
+  sorting?: SortingState
+  onSortingChange?: (sorting: SortingState) => void
 }
 
 export function AppDataTable<TData, TValue>({
@@ -131,11 +139,15 @@ export function AppDataTable<TData, TValue>({
   onColumnVisibilityChange,
   getRowHref,
   rowIsActive,
+  renderFullWidthRow,
+  sorting: controlledSorting,
+  onSortingChange,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
-  const [sorting, setSorting] = React.useState<SortingState>(
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>(
     () => initialSorting ?? [],
   )
+  const sorting = controlledSorting ?? internalSorting
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [internalColumnVisibility, setInternalColumnVisibility] =
     React.useState<VisibilityState>(() => initialColumnVisibility ?? {})
@@ -163,7 +175,14 @@ export function AppDataTable<TData, TValue>({
       maxSize: TABLE_COLUMN_MAX_WIDTH,
       size: 160,
     },
-    onSortingChange: setSorting,
+    enableSortingRemoval: true,
+    onSortingChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater
+      if (controlledSorting === undefined) {
+        setInternalSorting(next)
+      }
+      onSortingChange?.(next)
+    },
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: (updater) => {
       const next =
@@ -234,30 +253,45 @@ export function AppDataTable<TData, TValue>({
   }, [onSelectedRowIdsChange, table, rowSelection])
 
   function renderBodyRow(row: Row<TData>) {
-    const cells = row.getVisibleCells().map((cell) => (
+    const fullWidthContent = renderFullWidthRow?.(row.original) ?? null
+    const cells = fullWidthContent ? (
       <TableCell
-        key={cell.id}
-        className={
-          cell.column.id === 'select' ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined
-        }
-        style={
-          enableColumnResize
-            ? { width: cell.column.getSize(), minWidth: cell.column.getSize() }
-            : undefined
-        }
+        colSpan={row.getVisibleCells().length}
+        className="whitespace-normal bg-transparent py-1.5"
       >
-        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        {fullWidthContent}
       </TableCell>
-    ))
+    ) : (
+      row.getVisibleCells().map((cell) => (
+        <TableCell
+          key={cell.id}
+          className={
+            cell.column.id === 'select' ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined
+          }
+          style={
+            enableColumnResize
+              ? { width: cell.column.getSize(), minWidth: cell.column.getSize() }
+              : undefined
+          }
+        >
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))
+    )
 
     const href = getRowHref?.(row.original) ?? null
     const isNavVariant = tableVariant === 'references' || tableVariant === 'deals' || Boolean(href)
-    const rowNavClass = isNavVariant
+    const rowNavClass = fullWidthContent
       ? cn(
-          'cursor-pointer hover:bg-accent/35',
+          'cursor-pointer bg-muted/40 hover:bg-muted/55',
           rowIsActive?.(row.original) && 'bg-muted',
         )
-      : undefined
+      : isNavVariant
+        ? cn(
+            'cursor-pointer hover:bg-accent/35',
+            rowIsActive?.(row.original) && 'bg-muted',
+          )
+        : undefined
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       if (!isNavVariant) return
@@ -339,9 +373,14 @@ export function AppDataTable<TData, TValue>({
             <ContextMenuContent>
             <ContextMenuItem
               onSelect={() => {
-                const anyRow = row.original as unknown as { id?: string }
-                if (anyRow?.id) {
-                  window.location.href = ROUTES.deals.detail(anyRow.id)
+                const targetHref =
+                  href ??
+                  (() => {
+                    const rawId = (row.original as { id?: string }).id
+                    return rawId ? ROUTES.deals.detail(rawId) : null
+                  })()
+                if (targetHref) {
+                  window.location.href = targetHref
                 }
               }}
             >
@@ -349,13 +388,14 @@ export function AppDataTable<TData, TValue>({
             </ContextMenuItem>
             <ContextMenuItem
               onSelect={() => {
-                const anyRow = row.original as unknown as { id?: string }
-                if (anyRow?.id) {
-                  window.open(
-                    ROUTES.deals.detail(anyRow.id),
-                    '_blank',
-                    'noopener,noreferrer',
-                  )
+                const targetHref =
+                  href ??
+                  (() => {
+                    const rawId = (row.original as { id?: string }).id
+                    return rawId ? ROUTES.deals.detail(rawId) : null
+                  })()
+                if (targetHref) {
+                  window.open(targetHref, '_blank', 'noopener,noreferrer')
                 }
               }}
             >

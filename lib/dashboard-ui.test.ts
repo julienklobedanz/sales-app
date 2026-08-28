@@ -20,11 +20,11 @@ describe('routeExcludesDashboardContentPadding', () => {
 
   it('bleed layout for deal workspace so the rail can fill the height', () => {
     expect(
-      routeExcludesDashboardContentPadding('/deals/abc/ausschreibung'),
+      routeExcludesDashboardContentPadding('/deals/abc/arbeitsbereich'),
     ).toBe(true)
     expect(
       routeExcludesDashboardContentPadding(
-        '/deals/abc/ausschreibung/dokumente',
+        '/deals/abc/arbeitsbereich/dokumente',
       ),
     ).toBe(true)
     expect(routeExcludesDashboardContentPadding('/deals/abc')).toBe(false)
@@ -47,9 +47,10 @@ describe('detailRouteNeedsBottomPadding', () => {
 
   it('true for deal detail, false for workspace/request/new', () => {
     expect(detailRouteNeedsBottomPadding('/deals/abc')).toBe(true)
-    expect(detailRouteNeedsBottomPadding('/deals/abc/ausschreibung')).toBe(
+    expect(detailRouteNeedsBottomPadding('/deals/abc/arbeitsbereich')).toBe(
       false,
     )
+    expect(detailRouteNeedsBottomPadding('/ausschreibungen/abc')).toBe(true)
     expect(detailRouteNeedsBottomPadding('/deals/new')).toBe(false)
     expect(detailRouteNeedsBottomPadding('/deals/request/new')).toBe(false)
   })

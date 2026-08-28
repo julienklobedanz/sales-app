@@ -27,6 +27,17 @@ export type DealRow = {
   status: DealStatus
   /** Cockpit-Gate: konditionaler RFP-Block (unabhängig vom Pipeline-Status). */
   is_rfp_mode: boolean
+  tender_id: string | null
+  tender: {
+    id: string
+    title: string
+    company_id: string | null
+    company_name: string | null
+    company_logo_url: string | null
+    procedure_type: string | null
+    reference_number: string | null
+    total_volume: string | null
+  } | null
   expiry_date: string | null
   salesforce_opportunity_id?: string | null
   crm_opportunity_id?: string | null
@@ -60,6 +71,7 @@ export const DEAL_TABLE_ALLOWED_COLUMNS = [
   'volume',
   'status',
   'is_rfp_mode',
+  'tender_id',
   'expiry_date',
   'requirements_text',
   'account_manager_id',
@@ -86,6 +98,7 @@ export const DEAL_ROW_DERIVED_FIELDS = [
   'sales_manager_avatar_url',
   'linked_refs',
   'best_match_score',
+  'tender',
 ] as const
 
 export type DealWithReferences = DealRow & {
