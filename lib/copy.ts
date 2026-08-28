@@ -429,6 +429,8 @@ export const COPY = {
     referenceNumber: 'Geschäftszeichen',
     customer: 'Kunde',
     nextDeadlineEmpty: 'Keine Termine',
+    bidGo: 'BID',
+    bidNoBid: 'NO-BID',
   },
   accounts: {
     searchCompaniesPlaceholder: 'Firma suchen …',
