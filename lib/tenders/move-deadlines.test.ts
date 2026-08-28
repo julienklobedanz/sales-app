@@ -27,6 +27,7 @@ function baseRow(overrides: Partial<Row>): Row {
     source_key: buildRfpDeadlineSourceKey('deal-1', 'submission'),
     pinned: false,
     suppressed_at: null,
+    is_submission_target: false,
     created_by: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
@@ -50,6 +51,15 @@ function rfpUniqueKey(row: Pick<Row, 'source' | 'deal_id' | 'tender_id' | 'sourc
   if (row.source !== 'rfp') return null
   if (row.tender_id) return `t:${row.tender_id}:${row.source_key}`
   if (row.deal_id) return `d:${row.deal_id}:${row.source_key}`
+  return null
+}
+
+function submissionTargetKey(
+  row: Pick<Row, 'is_submission_target' | 'deal_id' | 'tender_id'>,
+) {
+  if (!row.is_submission_target) return null
+  if (row.tender_id) return `t:${row.tender_id}`
+  if (row.deal_id) return `d:${row.deal_id}`
   return null
 }
 
@@ -95,10 +105,26 @@ function createMemoryClient(rows: Row[]) {
             for (const row of matched) {
               const next = { ...row, ...patch } as Row
               const key = rfpUniqueKey(next)
+              const targetKey = submissionTargetKey(next)
               if (
                 key &&
                 rows.some(
                   (other) => !matchedIds.has(other.id) && rfpUniqueKey(other) === key,
+                )
+              ) {
+                return Promise.resolve({
+                  data: [],
+                  error: {
+                    code: '23505',
+                    message: 'duplicate key value violates unique constraint',
+                  },
+                }).then(onFulfilled, onRejected)
+              }
+              if (
+                targetKey &&
+                rows.some(
+                  (other) =>
+                    !matchedIds.has(other.id) && submissionTargetKey(other) === targetKey,
                 )
               ) {
                 return Promise.resolve({
@@ -197,6 +223,39 @@ describe('promoteActiveRfpDeadlinesToTender', () => {
     expect(tenderRows).toHaveLength(1)
     expect(tenderRows[0]?.id).toBe(firstIds[0])
     expect(rows.filter((row) => row.deal_id != null)).toHaveLength(0)
+  })
+
+  it('clears is_submission_target on promote so a marked target does not collide', async () => {
+    const lotMarked = baseRow({
+      id: 'lot-marked',
+      is_submission_target: true,
+    })
+    const tenderMarked = baseRow({
+      id: 'tender-marked',
+      deal_id: null,
+      tender_id: 'tender-1',
+      kind: 'questions',
+      label: 'Bewerberfragen',
+      source_key: buildRfpDeadlineSourceKey('tender-1', 'questions'),
+      is_submission_target: true,
+    })
+    const { client, rows } = createMemoryClient([lotMarked, tenderMarked])
+    const result = await promoteActiveRfpDeadlinesToTender(client as never, {
+      organizationId: 'org-1',
+      dealId: 'deal-1',
+      tenderId: 'tender-1',
+    })
+    expect(result).toEqual({ success: true })
+    expect(rows).toHaveLength(2)
+    const moved = rows.find((row) => row.id === 'lot-marked')
+    expect(moved).toMatchObject({
+      deal_id: null,
+      tender_id: 'tender-1',
+      is_submission_target: false,
+    })
+    expect(rows.find((row) => row.id === 'tender-marked')?.is_submission_target).toBe(
+      true,
+    )
   })
 })
 

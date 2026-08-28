@@ -8,6 +8,8 @@ import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { loadOrCreateDealRfpRequirementsForDocument } from '@/lib/deals/persist-deal-rfp-requirements'
 import { loadOrCreateDealRfpEligibilityCriteriaForDocument } from '@/lib/deals/persist-deal-rfp-eligibility-criteria'
 import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
+import { extractSubmissionItemsFromRfpText } from '@/lib/deals/extract-submission-items'
+import { persistExtractedSubmissionItems } from '@/lib/deals/persist-submission-items'
 import {
   extractRequirementsFromRfpText,
   type ExtractedRfpRequirement,
@@ -250,6 +252,14 @@ export async function POST(req: NextRequest) {
   const fileNames = [dealDoc.file_name || 'document']
   const stage = body.stage === 'quick' ? 'quick' : 'full'
 
+  const extractedSubmissionItems = await extractSubmissionItemsFromRfpText(
+    apiKey,
+    mergedText,
+  )
+  if ('error' in extractedSubmissionItems) {
+    return fail(extractedSubmissionItems.error, 422)
+  }
+
   const persistedEligibility = await loadOrCreateDealRfpEligibilityCriteriaForDocument(
     supabase,
     {
@@ -343,6 +353,12 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  const submissionItems = await persistExtractedSubmissionItems(supabase, {
+    organizationId: orgId,
+    sourceDocumentId: dealDoc.id,
+    items: extractedSubmissionItems.items,
+  })
+
   revalidateDealWorkspacePaths(dealId)
 
   return NextResponse.json({
@@ -351,5 +367,6 @@ export async function POST(req: NextRequest) {
     dealDocumentId: dealDoc.id,
     requirements: analyzed.requirements,
     coverage: analyzed.coverage,
+    submissionItems,
   })
 }
