@@ -471,6 +471,13 @@ export const COPY = {
     maxLotsBid: 'Angebote möglich auf',
     maxLotsAward: 'Zuschlag höchstens für',
     lotPriorityRequired: 'Los-Priorisierung verlangt',
+    rankLabel: 'Rang {n}',
+    priorityGapHint:
+      'Auf {bid} Lose wird geboten, bezuschlagt werden höchstens {award} — es ist keine Rangfolge gesetzt.',
+    priorityOrderToggle: 'Rangfolge',
+    moveLotUp: 'Nach oben',
+    moveLotDown: 'Nach unten',
+    priorityOrderFailed: 'Rangfolge konnte nicht gespeichert werden.',
     unknown: 'unbekannt',
     yes: 'ja',
     no: 'nein',

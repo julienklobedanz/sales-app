@@ -20,6 +20,7 @@ type TenderPageLot = {
   title: string
   volume: string | null
   status: DealStatus
+  lot_priority: number | null
   account_manager_id: string | null
   sales_manager_id: string | null
   account_manager_name: string | null
@@ -72,7 +73,9 @@ export async function loadTenderPageData(
 
   const { data: lotRows } = await supabase
     .from('deals')
-    .select('id, title, volume, status, account_manager_id, sales_manager_id')
+    .select(
+      'id, title, volume, status, lot_priority, account_manager_id, sales_manager_id',
+    )
     .eq('tender_id', tender.id)
     .eq('organization_id', args.organizationId)
     .order('title', { ascending: true })
@@ -137,6 +140,7 @@ export async function loadTenderPageData(
       title: row.title ?? '',
       volume: row.volume ?? null,
       status: normalizeDealStatus(row.status),
+      lot_priority: row.lot_priority ?? null,
       account_manager_id: row.account_manager_id ?? null,
       sales_manager_id: row.sales_manager_id ?? null,
       account_manager_name: row.account_manager_id

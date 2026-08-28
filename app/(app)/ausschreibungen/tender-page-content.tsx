@@ -9,12 +9,18 @@ import { DealStatusBadge } from '@/components/deal-status-badge'
 import { TenderStatusBadge } from '@/components/tender-status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Hinweis } from '@/components/ui/hinweis'
 import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
 import { COPY } from '@/lib/copy'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { proofDisplayFromCounts } from '@/lib/deals/deal-proof-display'
 import { formatDealVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
+import { countBidLots } from '@/lib/tenders/derive-tender-status'
+import {
+  formatLotPriorityGapHint,
+  shouldShowLotPriorityGap,
+} from '@/lib/tenders/lot-priority-gap'
 import { tenderProcedureTypeLabel } from '@/lib/tenders/procedure-types'
 import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
 import { statusTone } from '@/lib/ui/status-tone'
@@ -34,6 +40,11 @@ export function TenderPageContent({
   submissionState?: string | null
 }) {
   const procedureLabel = tenderProcedureTypeLabel(tender.procedure_type)
+  const showPriorityGap = shouldShowLotPriorityGap({
+    maxLotsAward: tender.max_lots_award,
+    lotPriorityRequired: tender.lot_priority_required,
+    lots: tender.lots,
+  })
 
   return (
     <div className="space-y-8">
@@ -124,6 +135,14 @@ export function TenderPageContent({
 
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{COPY.tenders.lotsHeading}</h2>
+        {showPriorityGap && tender.max_lots_award != null ? (
+          <Hinweis tone="muted">
+            {formatLotPriorityGapHint(
+              countBidLots(tender.lots.map((lot) => lot.status)),
+              tender.max_lots_award,
+            )}
+          </Hinweis>
+        ) : null}
         {tender.lots.length === 0 ? (
           <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.lotsEmpty}</p>
         ) : (
@@ -135,7 +154,17 @@ export function TenderPageContent({
                   className="block h-full rounded-lg focus-visible:outline-none"
                 >
                   <CardContent className="flex h-full flex-col gap-2 p-4">
-                    <p className="text-sm font-semibold">{lot.title}</p>
+                    <p className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                      <span className="text-sm font-semibold">{lot.title}</span>
+                      {lot.lot_priority != null ? (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          {COPY.tenders.rankLabel.replace(
+                            '{n}',
+                            String(lot.lot_priority),
+                          )}
+                        </Badge>
+                      ) : null}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {formatDealVolume(lot.volume)}
                     </p>
@@ -200,6 +229,12 @@ export function TenderPageContent({
           max_lots_award: tender.max_lots_award,
           lot_priority_required: tender.lot_priority_required,
         }}
+        lots={tender.lots.map((lot) => ({
+          id: lot.id,
+          title: lot.title,
+          volume: lot.volume,
+          lot_priority: lot.lot_priority,
+        }))}
         canManage={canManageDocuments}
       />
     </div>

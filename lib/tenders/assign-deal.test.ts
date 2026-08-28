@@ -37,11 +37,14 @@ const deal = {
   organization_id: 'org-1',
 }
 
-function chain(result: unknown) {
+function chain(result: unknown, record?: { updates: unknown[] }) {
   const self = {
     select: () => self,
     insert: () => self,
-    update: () => self,
+    update: (payload: unknown) => {
+      record?.updates.push(payload)
+      return self
+    },
     delete: () => self,
     eq: () => self,
     is: () => self,
@@ -83,6 +86,25 @@ describe('assignDealToExistingTender', () => {
       tenderId: 'tender-1',
     })
   })
+
+  it('setzt lot_priority auf null beim Zuordnen', async () => {
+    const updates: unknown[] = []
+    const from = vi.fn((table: string) => {
+      if (table === 'deals') {
+        return chain({ data: deal, error: null }, { updates })
+      }
+      if (table === 'tenders') {
+        return chain({ data: { id: 'tender-1' }, error: null })
+      }
+      throw new Error(table)
+    })
+    await assignDealToExistingTender({ from } as never, {
+      organizationId: 'org-1',
+      dealId: 'deal-1',
+      tenderId: 'tender-1',
+    })
+    expect(updates).toContainEqual({ tender_id: 'tender-1', lot_priority: null })
+  })
 })
 
 describe('detachDealFromTender', () => {
@@ -95,6 +117,7 @@ describe('detachDealFromTender', () => {
 
   it('demotes documents then deadlines before deleting the last-lot tender', async () => {
     const order: string[] = []
+    const updates: unknown[] = []
     demoteTenderDocumentsToDeal.mockImplementation(async () => {
       order.push('demoteDocs')
       return { success: true }
@@ -105,11 +128,22 @@ describe('detachDealFromTender', () => {
     })
     const from = vi.fn((table: string) => {
       if (table === 'deals') {
-        return chain({
-          data: { ...deal, tender_id: 'tender-1' },
-          error: null,
-          count: 1,
-        })
+        const dealsChain = chain(
+          {
+            data: { ...deal, tender_id: 'tender-1' },
+            error: null,
+            count: 1,
+          },
+          { updates },
+        )
+        return {
+          ...dealsChain,
+          update: (payload: unknown) => {
+            order.push('clearPriority')
+            updates.push(payload)
+            return dealsChain
+          },
+        }
       }
       if (table === 'tenders') {
         return {
@@ -127,7 +161,8 @@ describe('detachDealFromTender', () => {
       dealId: 'deal-1',
     })
     expect(result).toEqual({ success: true })
-    expect(order).toEqual(['demoteDocs', 'demoteDeadlines', 'delete'])
+    expect(order).toEqual(['demoteDocs', 'demoteDeadlines', 'clearPriority', 'delete'])
+    expect(updates).toContainEqual({ lot_priority: null })
     expect(demoteTenderDocumentsToDeal).toHaveBeenCalledWith(expect.anything(), {
       organizationId: 'org-1',
       dealId: 'deal-1',
@@ -141,13 +176,17 @@ describe('detachDealFromTender', () => {
   })
 
   it('does not demote when another lot remains', async () => {
+    const updates: unknown[] = []
     const from = vi.fn((table: string) => {
       if (table === 'deals') {
-        return chain({
-          data: { ...deal, tender_id: 'tender-1' },
-          error: null,
-          count: 2,
-        })
+        return chain(
+          {
+            data: { ...deal, tender_id: 'tender-1' },
+            error: null,
+            count: 2,
+          },
+          { updates },
+        )
       }
       throw new Error(table)
     })
@@ -158,5 +197,6 @@ describe('detachDealFromTender', () => {
     expect(result.success).toBe(true)
     expect(demoteTenderDocumentsToDeal).not.toHaveBeenCalled()
     expect(demoteTenderDeadlinesToDeal).not.toHaveBeenCalled()
+    expect(updates).toContainEqual({ tender_id: null, lot_priority: null })
   })
 })
