@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import type { SortingState } from '@tanstack/react-table'
 
 import { CollectionPrimaryAction } from '@/components/dashboard/collection-primary-action'
 import { CollectionToolbar } from '@/components/dashboard/collection-toolbar'
@@ -21,10 +22,20 @@ import { useRole } from '@/hooks/useRole'
 import { collectionToolbarSlotFill } from '@/lib/dashboard/collection-toolbar-slots'
 import { COPY } from '@/lib/copy'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
+import {
+  groupDealsForCollection,
+  isDealCollectionLotRow,
+} from '@/lib/tenders/group-deals-for-collection'
 
 import { importDealsFromXlsx } from './actions'
+import { DealCollectionBand } from './deal-collection-band'
 import { DealsCreateDialog } from './deals-create-dialog'
 import { DealsOnboardingEmptyState } from './deals-onboarding-empty-state'
+import {
+  DEALS_COLLECTION_DEFAULT_SORTING,
+  isDealsCollectionGroupedSorting,
+  resolveDealsCollectionSorting,
+} from './deals-collection-sorting'
 import { buildDealsTableColumns } from './deals-table-columns'
 import {
   DEAL_DEFAULT_COLUMN_ORDER,
@@ -59,6 +70,8 @@ export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
     setColumnSizing,
     resetColumnsToDefault,
   } = useDealsTableColumnsState()
+  const [sorting, setSorting] = useState<SortingState>(DEALS_COLLECTION_DEFAULT_SORTING)
+  const groupedView = isDealsCollectionGroupedSorting(sorting)
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -83,9 +96,14 @@ export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
     }
   }
 
-  const filtered = useMemo(
-    () => filterDealsTableRows({ deals, query, statusFilter }),
-    [deals, query, statusFilter],
+  const grouped = useMemo(() => {
+    const dealsFiltered = filterDealsTableRows({ deals, query, statusFilter })
+    return groupDealsForCollection(dealsFiltered)
+  }, [deals, query, statusFilter])
+
+  const tableRows = useMemo(
+    () => (groupedView ? grouped : grouped.filter(isDealCollectionLotRow)),
+    [grouped, groupedView],
   )
 
   const filtersActive = statusFilter !== 'all'
@@ -136,13 +154,24 @@ export function DealsClientContent({ deals, companies, orgProfiles }: Props) {
           key={columnResetKey}
           tableVariant="deals"
           columns={columns}
-          data={filtered}
+          data={tableRows}
           initialPageSize={30}
           getRowId={(row) => row.id}
+          getRowHref={(row) => row.href}
+          renderFullWidthRow={(row) =>
+            groupedView && row.rowKind === 'band' ? (
+              <DealCollectionBand band={row} />
+            ) : null
+          }
           enableRowSelection={false}
           showViewOptions={false}
-          initialSorting={[{ id: 'expiry_date', desc: false }]}
-          initialColumnVisibility={{ ...DEAL_INITIAL_COLUMN_VISIBILITY }}
+          sorting={sorting}
+          onSortingChange={(next) => setSorting(resolveDealsCollectionSorting(next))}
+          initialSorting={DEALS_COLLECTION_DEFAULT_SORTING}
+          initialColumnVisibility={{
+            ...DEAL_INITIAL_COLUMN_VISIBILITY,
+            collectionOrder: false,
+          }}
           initialColumnOrder={[...DEAL_DEFAULT_COLUMN_ORDER]}
           columnOrder={columnOrder}
           onColumnOrderChange={setColumnOrder}

@@ -14,7 +14,7 @@ export const DEAL_DOCUMENT_KINDS = [
 ] as const satisfies readonly DealDocumentKind[]
 
 export const DEAL_DOCUMENT_KIND_LABELS: Record<DealDocumentKind, string> = {
-  ausschreibung: 'Ausschreibung',
+  ausschreibung: 'Vergabeunterlage',
   nda: 'NDA',
   vertrag: 'Vertrag',
   angebot: 'Angebot',

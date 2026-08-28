@@ -31,6 +31,7 @@ import { DealWorkspaceRail } from './deal-workspace-rail'
 export function DealWorkspaceLayout({
   dealId,
   dealTitle,
+  tender,
   items,
   currentArea,
   entries = [],
@@ -39,6 +40,7 @@ export function DealWorkspaceLayout({
 }: {
   dealId: string
   dealTitle: string
+  tender?: { id: string; title: string } | null
   items: AusschreibungNavItem[]
   currentArea: DealWorkspaceArea
   entries?: readonly { id: string }[]
@@ -94,11 +96,20 @@ export function DealWorkspaceLayout({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <nav className="shrink-0 px-5 pt-5 md:px-8 md:pt-7">
           <DealBreadcrumbs
-            items={[
-              { label: COPY.nav.deals, href: ROUTES.deals.root },
-              { label: dealTitle, href: ROUTES.deals.detail(dealId) },
-              { label: COPY.deals.cockpit.rfpBlockTitle },
-            ]}
+            items={
+              tender
+                ? [
+                    { label: COPY.tenders.breadcrumbRoot, href: ROUTES.deals.root },
+                    { label: tender.title, href: ROUTES.tenders.detail(tender.id) },
+                    { label: dealTitle, href: ROUTES.deals.detail(dealId) },
+                    { label: COPY.deals.cockpit.rfpBlockTitle },
+                  ]
+                : [
+                    { label: COPY.nav.deals, href: ROUTES.deals.root },
+                    { label: dealTitle, href: ROUTES.deals.detail(dealId) },
+                    { label: COPY.deals.cockpit.rfpBlockTitle },
+                  ]
+            }
           />
         </nav>
         <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} px-5 pt-2 md:px-8`}>{dealTitle}</h1>

@@ -56,7 +56,7 @@ export function filterDealsTableRows({
   if (!q) return list
   return list.filter((d) => {
     const hay =
-      `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
+      `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''} ${d.tender?.title ?? ''}`.toLowerCase()
     return hay.includes(q)
   })
 }

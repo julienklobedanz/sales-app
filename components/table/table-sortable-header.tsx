@@ -23,7 +23,7 @@ export function TableSortableHeader<TData>({ label, column, className }: Props<T
         'flex h-10 items-center gap-0.5 p-0 font-inherit leading-none hover:opacity-80',
         className,
       )}
-      onClick={() => column.toggleSorting(sorted === 'asc')}
+      onClick={() => column.toggleSorting()}
     >
       {label}
       {sorted === 'asc' ? (

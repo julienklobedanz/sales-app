@@ -25,6 +25,8 @@ export function dealWithReferencesToRow(deal: DealWithReferences): DealRow {
     sales_manager_avatar_url: deal.sales_manager_avatar_url ?? null,
     status: deal.status,
     is_rfp_mode: deal.is_rfp_mode,
+    tender_id: deal.tender_id,
+    tender: deal.tender,
     expiry_date: deal.expiry_date,
     created_at: deal.created_at,
     updated_at: deal.updated_at,

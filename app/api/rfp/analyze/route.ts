@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Nur Dokumente vom Typ Ausschreibung können analysiert werden.',
+        error: 'Nur Dokumente vom Typ Vergabeunterlage können analysiert werden.',
       },
       { status: 400 },
     )

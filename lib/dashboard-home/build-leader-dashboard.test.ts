@@ -20,6 +20,8 @@ function deal(overrides: Partial<DealRow>): DealRow {
     sales_manager_name: null,
     status: 'negotiation',
     is_rfp_mode: false,
+    tender_id: null,
+    tender: null,
     expiry_date: '2026-04-30',
     salesforce_opportunity_id: null,
     crm_opportunity_id: null,

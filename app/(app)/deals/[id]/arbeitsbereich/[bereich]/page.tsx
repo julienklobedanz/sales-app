@@ -141,6 +141,7 @@ async function DealWorkspaceAreaLoaded({
     <DealWorkspaceLayout
       dealId={dealId}
       dealTitle={deal.title}
+      tender={deal.tender ? { id: deal.tender.id, title: deal.tender.title } : null}
       currentArea={area}
       entries={
         isDealWorkspaceEntryArea(area) ? entries.map((entry) => ({ id: entry.id })) : []

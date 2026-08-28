@@ -84,7 +84,7 @@ export function parseDealWorkspaceAreaFromPathname(
   pathname: string,
 ): DealWorkspaceArea | null {
   const parts = pathname.split('/').filter(Boolean)
-  if (parts[0] !== 'deals' || parts[2] !== 'ausschreibung') {
+  if (parts[0] !== 'deals' || parts[2] !== 'arbeitsbereich') {
     return null
   }
   const slug = parts[3]

@@ -1239,6 +1239,7 @@ export type Database = {
           sales_manager_id: string | null
           salesforce_opportunity_id: string | null
           status: string
+          tender_id: string | null
           title: string
           updated_at: string | null
           volume: string | null
@@ -1263,6 +1264,7 @@ export type Database = {
           sales_manager_id?: string | null
           salesforce_opportunity_id?: string | null
           status?: string
+          tender_id?: string | null
           title: string
           updated_at?: string | null
           volume?: string | null
@@ -1287,6 +1289,7 @@ export type Database = {
           sales_manager_id?: string | null
           salesforce_opportunity_id?: string | null
           status?: string
+          tender_id?: string | null
           title?: string
           updated_at?: string | null
           volume?: string | null
@@ -1304,6 +1307,13 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deals_tender_id_fkey'
+            columns: ['tender_id']
+            isOneToOne: false
+            referencedRelation: 'tenders'
             referencedColumns: ['id']
           },
         ]
@@ -2900,6 +2910,57 @@ export type Database = {
             columns: ['company_id']
             isOneToOne: false
             referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tenders: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          procedure_type: string | null
+          reference_number: string | null
+          title: string
+          total_volume: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          procedure_type?: string | null
+          reference_number?: string | null
+          title: string
+          total_volume?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          procedure_type?: string | null
+          reference_number?: string | null
+          title?: string
+          total_volume?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tenders_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tenders_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
         ]
