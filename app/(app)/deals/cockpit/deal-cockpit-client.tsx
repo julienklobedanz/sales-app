@@ -101,8 +101,7 @@ export function DealCockpitClient({
 
         <div className="mb-6">
           <DealDeadlinesCard
-            dealId={deal.id}
-            dealTitle={deal.title}
+            owner={{ kind: 'deal', id: deal.id, title: deal.title }}
             deadlines={deadlines}
             orgDateDisplayFormat={orgDateDisplayFormat}
           />

@@ -1,22 +1,16 @@
 import 'server-only'
 
-import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { ROUTES } from '@/lib/routes'
-import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import type { Database } from '@/lib/database.types'
+import {
+  demoteTenderDeadlinesToDeal,
+  promoteActiveRfpDeadlinesToTender,
+} from './move-deadlines'
 import { isTenderProcedureType, type TenderProcedureType } from './procedure-types'
+import { revalidateTenderSurfaces } from './revalidate-tender-surfaces'
 
 type Client = SupabaseClient<Database>
-
-function revalidateTenderSurfaces(args: { dealId: string; tenderId: string | null }) {
-  revalidatePath(ROUTES.deals.root)
-  revalidateDealWorkspacePaths(args.dealId)
-  if (args.tenderId) {
-    revalidatePath(ROUTES.tenders.detail(args.tenderId), 'page')
-  }
-}
 
 async function loadDealForOrg(
   supabase: Client,
@@ -92,7 +86,18 @@ export async function createTenderAndAssignDeal(
     return { success: false, error: updateError.message }
   }
 
-  revalidateTenderSurfaces({ dealId: deal.id, tenderId: tender.id })
+  const moved = await promoteActiveRfpDeadlinesToTender(supabase, {
+    organizationId: args.organizationId,
+    dealId: deal.id,
+    tenderId: tender.id,
+  })
+  if (!moved.success) return moved
+
+  await revalidateTenderSurfaces(supabase, {
+    organizationId: args.organizationId,
+    tenderId: tender.id,
+    extraDealId: deal.id,
+  })
   return { success: true, tenderId: tender.id }
 }
 
@@ -128,7 +133,18 @@ export async function assignDealToExistingTender(
 
   if (updateError) return { success: false, error: updateError.message }
 
-  revalidateTenderSurfaces({ dealId: deal.id, tenderId: tender.id })
+  const moved = await promoteActiveRfpDeadlinesToTender(supabase, {
+    organizationId: args.organizationId,
+    dealId: deal.id,
+    tenderId: tender.id,
+  })
+  if (!moved.success) return moved
+
+  await revalidateTenderSurfaces(supabase, {
+    organizationId: args.organizationId,
+    tenderId: tender.id,
+    extraDealId: deal.id,
+  })
   return { success: true, tenderId: tender.id }
 }
 
@@ -155,13 +171,24 @@ export async function detachDealFromTender(
   if (countError) return { success: false, error: countError.message }
 
   if ((count ?? 0) <= 1) {
+    const moved = await demoteTenderDeadlinesToDeal(supabase, {
+      organizationId: args.organizationId,
+      dealId: deal.id,
+      tenderId,
+    })
+    if (!moved.success) return moved
+
     const { error: deleteError } = await supabase
       .from('tenders')
       .delete()
       .eq('id', tenderId)
       .eq('organization_id', args.organizationId)
     if (deleteError) return { success: false, error: deleteError.message }
-    revalidateTenderSurfaces({ dealId: deal.id, tenderId })
+    await revalidateTenderSurfaces(supabase, {
+      organizationId: args.organizationId,
+      tenderId,
+      extraDealId: deal.id,
+    })
     return { success: true }
   }
 
@@ -173,6 +200,10 @@ export async function detachDealFromTender(
 
   if (updateError) return { success: false, error: updateError.message }
 
-  revalidateTenderSurfaces({ dealId: deal.id, tenderId })
+  await revalidateTenderSurfaces(supabase, {
+    organizationId: args.organizationId,
+    tenderId,
+    extraDealId: deal.id,
+  })
   return { success: true }
 }

@@ -13,6 +13,7 @@ import {
   type ExtractedRfpRequirement,
 } from '@/lib/rfp-requirements'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
+import { revalidateTenderSurfaces } from '@/lib/tenders/revalidate-tender-surfaces'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
 import { extractRfpPlainTextFromFile } from '@/lib/document-text'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -319,11 +320,18 @@ export async function POST(req: NextRequest) {
     return fail(doneError.message)
   }
 
-  await syncRfpDeadlinesFromTimeline(supabase, {
+  const synced = await syncRfpDeadlinesFromTimeline(supabase, {
     dealId,
     organizationId: orgId,
     timelineItems: analyzed.snapshot.timelineItems ?? [],
   })
+  if (synced.tenderId) {
+    await revalidateTenderSurfaces(supabase, {
+      organizationId: orgId,
+      tenderId: synced.tenderId,
+      extraDealId: dealId,
+    })
+  }
 
   revalidateDealWorkspacePaths(dealId)
 

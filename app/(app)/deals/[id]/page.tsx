@@ -16,7 +16,8 @@ import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-tri
 import { DealWorkspaceTiles } from '../cockpit/deal-workspace-tiles'
 import { DealRfpFactsSurface } from '../cockpit/deal-rfp-facts-surface'
 import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
-import { listDealDeadlines } from '@/lib/deals/deadlines'
+import { listDealDeadlines, listTenderDeadlines } from '@/lib/deals/deadlines'
+import { mergeLotAndTenderDeadlines } from '@/lib/deals/deadline-display'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
@@ -61,7 +62,11 @@ async function DealDetailPageContent({
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
 
-  const deadlines = await listDealDeadlines(supabase, id)
+  const [lotDeadlines, tenderDeadlines] = await Promise.all([
+    listDealDeadlines(supabase, id),
+    deal.tender_id ? listTenderDeadlines(supabase, deal.tender_id) : Promise.resolve([]),
+  ])
+  const deadlines = mergeLotAndTenderDeadlines(lotDeadlines, tenderDeadlines)
 
   const { data: orgRow } = await supabase
     .from('organizations')

@@ -3,7 +3,8 @@ import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 
 export type DealDeadlineRow = {
   id: string
-  deal_id: string
+  deal_id: string | null
+  tender_id: string | null
   organization_id: string
   kind: string
   label: string
@@ -16,6 +17,28 @@ export type DealDeadlineRow = {
   pinned: boolean
   created_at: string
   updated_at: string
+}
+
+export function isTenderOwnedDeadline(
+  row: Pick<DealDeadlineRow, 'deal_id' | 'tender_id'>,
+): boolean {
+  return row.tender_id != null && row.deal_id == null
+}
+
+export function sortDeadlinesByDueAt(deadlines: DealDeadlineRow[]): DealDeadlineRow[] {
+  return [...deadlines].sort((a, b) => {
+    if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at)
+    if (a.due_at) return -1
+    if (b.due_at) return 1
+    return a.label.localeCompare(b.label)
+  })
+}
+
+export function mergeLotAndTenderDeadlines(
+  lotDeadlines: DealDeadlineRow[],
+  tenderDeadlines: DealDeadlineRow[],
+): DealDeadlineRow[] {
+  return sortDeadlinesByDueAt([...lotDeadlines, ...tenderDeadlines])
 }
 
 function dueAtToDateIso(dueAt: string): string {

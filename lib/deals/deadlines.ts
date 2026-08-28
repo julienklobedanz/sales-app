@@ -3,14 +3,20 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { DealDeskTimelineItem } from '@/lib/deal-desk/deal-analysis-types'
+import type { Database } from '@/lib/database.types'
 
 import type { DealDeadlineRow } from './deadline-display'
-import { mapTimelineToRfpDeadlineRows } from './deadline-rfp-mapper'
+import {
+  mapTimelineToRfpDeadlineRows,
+  rfpDeadlineRpcDueArgs,
+} from './deadline-rfp-mapper'
 import { buildManualDeadlineSourceKey } from './deadline-source-key'
 import type { DealDeadlineKind } from './deadline-types'
 
+type Client = SupabaseClient<Database>
+
 export async function listDealDeadlines(
-  supabase: SupabaseClient,
+  supabase: Client,
   dealId: string,
 ): Promise<DealDeadlineRow[]> {
   const { data, error } = await supabase
@@ -24,39 +30,76 @@ export async function listDealDeadlines(
   return (data ?? []) as DealDeadlineRow[]
 }
 
+export async function listTenderDeadlines(
+  supabase: Client,
+  tenderId: string,
+): Promise<DealDeadlineRow[]> {
+  const { data, error } = await supabase
+    .from('deal_deadlines')
+    .select('*')
+    .eq('tender_id', tenderId)
+    .is('suppressed_at', null)
+    .order('due_at', { ascending: true, nullsFirst: false })
+
+  if (error) return []
+  return (data ?? []) as DealDeadlineRow[]
+}
+
 export async function syncRfpDeadlinesFromTimeline(
-  supabase: SupabaseClient,
+  supabase: Client,
   args: {
     dealId: string
     organizationId: string
     timelineItems: DealDeskTimelineItem[]
   },
-): Promise<{ synced: number; error?: string }> {
-  const rows = mapTimelineToRfpDeadlineRows(args.dealId, args.timelineItems)
+): Promise<{ synced: number; tenderId?: string | null; error?: string }> {
+  const { data: deal, error: dealError } = await supabase
+    .from('deals')
+    .select('tender_id')
+    .eq('id', args.dealId)
+    .eq('organization_id', args.organizationId)
+    .maybeSingle()
+
+  if (dealError) return { synced: 0, error: dealError.message }
+
+  const tenderId = deal?.tender_id ?? null
+  const ownerId = tenderId ?? args.dealId
+  const rows = mapTimelineToRfpDeadlineRows(ownerId, args.timelineItems)
   let synced = 0
 
   for (const row of rows) {
-    const { error } = await supabase.rpc('upsert_deal_rfp_deadline', {
-      p_deal_id: args.dealId,
-      p_organization_id: args.organizationId,
-      p_kind: row.kind,
-      p_label: row.label,
-      p_due_at: row.due_at,
-      p_due_text: row.due_text,
-      p_is_approximate: row.is_approximate,
-      p_source_key: row.source_key,
-    })
-    if (error) return { synced, error: error.message }
+    const due = rfpDeadlineRpcDueArgs(row)
+    const { error } = tenderId
+      ? await supabase.rpc('upsert_tender_rfp_deadline', {
+          p_tender_id: tenderId,
+          p_organization_id: args.organizationId,
+          p_kind: row.kind,
+          p_label: row.label,
+          ...due,
+          p_is_approximate: row.is_approximate,
+          p_source_key: row.source_key,
+        })
+      : await supabase.rpc('upsert_deal_rfp_deadline', {
+          p_deal_id: args.dealId,
+          p_organization_id: args.organizationId,
+          p_kind: row.kind,
+          p_label: row.label,
+          ...due,
+          p_is_approximate: row.is_approximate,
+          p_source_key: row.source_key,
+        })
+    if (error) return { synced, tenderId, error: error.message }
     synced += 1
   }
 
-  return { synced }
+  return { synced, tenderId }
 }
 
 export async function createManualDealDeadline(
-  supabase: SupabaseClient,
+  supabase: Client,
   args: {
-    dealId: string
+    dealId?: string | null
+    tenderId?: string | null
     organizationId: string
     userId: string
     kind: DealDeadlineKind
@@ -66,8 +109,15 @@ export async function createManualDealDeadline(
     isApproximate: boolean
   },
 ): Promise<{ success: boolean; error?: string }> {
+  const dealId = args.dealId?.trim() || null
+  const tenderId = args.tenderId?.trim() || null
+  if ((dealId == null) === (tenderId == null)) {
+    return { success: false, error: 'Genau ein Eigentümer ist erforderlich.' }
+  }
+
   const { error } = await supabase.from('deal_deadlines').insert({
-    deal_id: args.dealId,
+    deal_id: dealId,
+    tender_id: tenderId,
     organization_id: args.organizationId,
     kind: args.kind,
     label: args.label.trim(),
@@ -84,7 +134,7 @@ export async function createManualDealDeadline(
 }
 
 export async function updateDealDeadline(
-  supabase: SupabaseClient,
+  supabase: Client,
   args: {
     deadlineId: string
     organizationId: string
@@ -96,7 +146,7 @@ export async function updateDealDeadline(
     source: 'rfp' | 'manual'
   },
 ): Promise<{ success: boolean; error?: string }> {
-  const patch: Record<string, unknown> = {
+  const patch: Database['public']['Tables']['deal_deadlines']['Update'] = {
     kind: args.kind,
     label: args.label.trim(),
     due_at: args.dueAt,
@@ -120,7 +170,7 @@ export async function updateDealDeadline(
 }
 
 export async function suppressDealDeadline(
-  supabase: SupabaseClient,
+  supabase: Client,
   args: { deadlineId: string; organizationId: string },
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase

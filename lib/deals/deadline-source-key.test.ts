@@ -73,6 +73,27 @@ describe('timeline → RFP deadline rows (re-analyse stability)', () => {
     expect(rows2[0]!.due_at).toContain('2026-06-25')
   })
 
+  it('ownerId === dealId keeps the historic hash', () => {
+    const items: DealDeskTimelineItem[] = [
+      { id: 'a', title: 'Angebotsabgabe', dueDate: '2026-06-20', evidence: null },
+    ]
+    const rows = mapTimelineToRfpDeadlineRows(dealId, items)
+    expect(rows[0]!.source_key).toBe(buildRfpDeadlineSourceKey(dealId, 'submission'))
+  })
+
+  it('three lots with ownerId === tenderId share one submission key', () => {
+    const tenderId = 'tender-bmi-2026'
+    const items: DealDeskTimelineItem[] = [
+      { id: 'a', title: 'Angebotsabgabe', dueDate: '2026-09-01', evidence: null },
+    ]
+    const keys = ['deal-1', 'deal-5', 'deal-7'].map(
+      () => mapTimelineToRfpDeadlineRows(tenderId, items)[0]!.source_key,
+    )
+    expect(new Set(keys).size).toBe(1)
+    expect(keys[0]).toBe(buildRfpDeadlineSourceKey(tenderId, 'submission'))
+    expect(keys[0]).not.toBe(buildRfpDeadlineSourceKey('deal-1', 'submission'))
+  })
+
   it('dedupes duplicate source_keys within one run', () => {
     const items: DealDeskTimelineItem[] = [
       { id: 'a', title: 'Angebotsabgabe', dueDate: '2026-06-20', evidence: null },
