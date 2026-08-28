@@ -15,6 +15,19 @@ vi.mock('next/link', () => ({
   ),
 }))
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}))
+
+vi.mock('@/app/(app)/deals/tender-actions', () => ({
+  updateTenderStammdatenAction: vi.fn(),
+}))
+
 vi.mock('@/app/(app)/deals/cockpit/deal-deadlines-card', () => ({
   DealDeadlinesCard: () => null,
 }))
@@ -50,6 +63,9 @@ const tender: TenderPageData = {
   procedure_type: null,
   reference_number: null,
   total_volume: null,
+  max_lots_bid: null,
+  max_lots_award: null,
+  lot_priority_required: null,
   derivedStatus: { kind: 'running', won: 1, bid: 2 },
   deadlines: [],
   documents: [],
@@ -105,7 +121,9 @@ describe('TenderPageContent lot tiles', () => {
     expect(within(lot1).queryAllByRole('link')).toHaveLength(0)
     expect(within(lot1).queryAllByRole('button')).toHaveLength(0)
 
-    const lot5 = screen.getByRole('link', { name: /Los 5 — Unmittelbare Bundesverwaltung/ })
+    const lot5 = screen.getByRole('link', {
+      name: /Los 5 — Unmittelbare Bundesverwaltung/,
+    })
     expect(lot5).toHaveAttribute('href', ROUTES.deals.detail('lot-5'))
     expect(
       within(lot5).getByTitle(`${COPY.roles.salesManager}: Sam Sales Rep`),
@@ -120,7 +138,9 @@ describe('TenderPageContent lot tiles', () => {
   it('zeigt den Beweis-Kreis bei Score und lässt leere Kacheln ohne Fokus-Kinder', () => {
     render(<TenderPageContent tender={tender} orgDateDisplayFormat="de-DE" />)
 
-    const lot5 = screen.getByRole('link', { name: /Los 5 — Unmittelbare Bundesverwaltung/ })
+    const lot5 = screen.getByRole('link', {
+      name: /Los 5 — Unmittelbare Bundesverwaltung/,
+    })
     expect(within(lot5).getByText('82%')).toBeTruthy()
     expect(within(lot5).getByLabelText('Sehr hohe Relevanz · 82%')).toBeTruthy()
 
@@ -136,5 +156,20 @@ describe('TenderPageContent lot tiles', () => {
     expect(within(lot7).getByText(COPY.tenders.bidNoBid)).toBeTruthy()
     expect(within(lot7).queryByLabelText('Keine Referenzen')).toBeNull()
     expect(focusableInside(lot7)).toHaveLength(0)
+  })
+
+  it('zeigt drei Zuschlagslimit-Zeilen als unbekannt', () => {
+    render(<TenderPageContent tender={tender} orgDateDisplayFormat="de-DE" />)
+
+    expect(screen.getAllByRole('term').map((el) => el.textContent)).toEqual([
+      COPY.tenders.maxLotsBid,
+      COPY.tenders.maxLotsAward,
+      COPY.tenders.lotPriorityRequired,
+    ])
+    expect(screen.getAllByRole('definition').map((el) => el.textContent)).toEqual([
+      COPY.tenders.unknown,
+      COPY.tenders.unknown,
+      COPY.tenders.unknown,
+    ])
   })
 })

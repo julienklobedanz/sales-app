@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+import { TenderFactsSurface } from '@/app/(app)/ausschreibungen/tender-facts-surface'
 import { DealRfpFactsSurface } from '@/app/(app)/deals/cockpit/deal-rfp-facts-surface'
 import { DealRfpStammdatenSection } from '@/app/(app)/deals/cockpit/deal-rfp-stammdaten-section'
 import { ApprovalCaseDataBar } from '@/app/approval/[token]/approval-case-data-bar'
@@ -19,6 +23,10 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/(app)/actions', () => ({
   updateReferenceAssetCategory: vi.fn(),
+}))
+
+vi.mock('@/app/(app)/deals/tender-actions', () => ({
+  updateTenderStammdatenAction: vi.fn(),
 }))
 
 if (typeof globalThis.IntersectionObserver === 'undefined') {
@@ -106,5 +114,36 @@ describe('§11.4 fact-row outline', () => {
 
     expect(termNames()).toContain('Branche')
     expect(screen.getByRole('definition')).toHaveTextContent('Energie')
+  })
+
+  it('Tender-Faktenfläche: Limit-Labels sind terms', () => {
+    render(
+      <TenderFactsSurface
+        tender={{
+          id: 't1',
+          title: 'BMI 2026',
+          procedure_type: null,
+          reference_number: null,
+          total_volume: null,
+          max_lots_bid: null,
+          max_lots_award: null,
+          lot_priority_required: null,
+        }}
+      />,
+    )
+
+    expect(termNames()).toEqual([
+      COPY.tenders.maxLotsBid,
+      COPY.tenders.maxLotsAward,
+      COPY.tenders.lotPriorityRequired,
+    ])
+  })
+
+  it('DealRfpFactsSurface importiert FactsDl', () => {
+    const src = readFileSync(
+      path.join(process.cwd(), 'app/(app)/deals/cockpit/deal-rfp-facts-surface.tsx'),
+      'utf8',
+    )
+    expect(src).toMatch(/from ['"]@\/components\/dashboard\/facts-dl['"]/)
   })
 })

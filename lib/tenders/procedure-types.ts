@@ -1,4 +1,4 @@
-const TENDER_PROCEDURE_TYPES = [
+export const TENDER_PROCEDURE_TYPES = [
   'open',
   'restricted',
   'negotiated_with_competition',
@@ -9,7 +9,7 @@ const TENDER_PROCEDURE_TYPES = [
 
 export type TenderProcedureType = (typeof TENDER_PROCEDURE_TYPES)[number]
 
-const TENDER_PROCEDURE_TYPE_LABELS: Record<TenderProcedureType, string> = {
+export const TENDER_PROCEDURE_TYPE_LABELS: Record<TenderProcedureType, string> = {
   open: 'Offenes Verfahren',
   restricted: 'Nicht offenes Verfahren',
   negotiated_with_competition: 'Verhandlungsverfahren mit Teilnahmewettbewerb',
