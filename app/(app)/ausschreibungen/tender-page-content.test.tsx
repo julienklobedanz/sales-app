@@ -26,6 +26,16 @@ const emptyPeople = {
   sales_manager_avatar_url: null,
 }
 
+const emptyProof: {
+  bidDecision: 'go' | 'no-bid' | null
+  proofCount: number
+  proofBestScore: number | null
+} = {
+  bidDecision: null,
+  proofCount: 0,
+  proofBestScore: null,
+}
+
 const tender: TenderPageData = {
   id: 't1',
   title: 'BMI 2026',
@@ -43,6 +53,7 @@ const tender: TenderPageData = {
       volume: '34000000',
       status: 'won',
       ...emptyPeople,
+      ...emptyProof,
       account_manager_name: 'Mara Account Manager',
       account_manager_avatar_url: null,
     },
@@ -52,8 +63,11 @@ const tender: TenderPageData = {
       volume: '25000000',
       status: 'negotiation',
       ...emptyPeople,
+      ...emptyProof,
       sales_manager_name: 'Sam Sales Rep',
       sales_manager_avatar_url: null,
+      proofCount: 1,
+      proofBestScore: 0.82,
     },
     {
       id: 'lot-7',
@@ -61,8 +75,14 @@ const tender: TenderPageData = {
       volume: '9000000',
       status: 'withdrawn',
       ...emptyPeople,
+      ...emptyProof,
+      bidDecision: 'no-bid',
     },
   ],
+}
+
+function focusableInside(link: HTMLElement) {
+  return link.querySelectorAll('a, button, [tabindex]')
 }
 
 describe('TenderPageContent lot tiles', () => {
@@ -88,5 +108,26 @@ describe('TenderPageContent lot tiles', () => {
     expect(lot7).toHaveAttribute('href', ROUTES.deals.detail('lot-7'))
     expect(within(lot7).queryByTitle(/Account Manager/)).toBeNull()
     expect(within(lot7).queryByTitle(/Sales Manager/)).toBeNull()
+  })
+
+  it('zeigt den Beweis-Kreis bei Score und lässt leere Kacheln ohne Fokus-Kinder', () => {
+    render(<TenderPageContent tender={tender} orgDateDisplayFormat="de-DE" />)
+
+    const lot5 = screen.getByRole('link', { name: /Los 5 — Unmittelbare Bundesverwaltung/ })
+    expect(within(lot5).getByText('82%')).toBeTruthy()
+    expect(within(lot5).getByLabelText('Sehr hohe Relevanz · 82%')).toBeTruthy()
+
+    const lot1 = screen.getByRole('link', { name: /Los 1 — ITZBund/ })
+    expect(within(lot1).getByLabelText('Keine Referenzen')).toBeTruthy()
+    expect(focusableInside(lot1)).toHaveLength(0)
+  })
+
+  it('zeigt NO-BID ohne Gedankenstrich', () => {
+    render(<TenderPageContent tender={tender} orgDateDisplayFormat="de-DE" />)
+
+    const lot7 = screen.getByRole('link', { name: /Los 7 — Mittelbare Bundesverwaltung/ })
+    expect(within(lot7).getByText(COPY.tenders.bidNoBid)).toBeTruthy()
+    expect(within(lot7).queryByLabelText('Keine Referenzen')).toBeNull()
+    expect(focusableInside(lot7)).toHaveLength(0)
   })
 })

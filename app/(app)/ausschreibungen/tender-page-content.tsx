@@ -1,18 +1,22 @@
 import Link from 'next/link'
 
-import { Card, CardContent } from '@/components/ui/card'
-import { DealStatusBadge } from '@/components/deal-status-badge'
-import { RoleAvatar } from '@/components/dashboard/role-avatar'
 import { DealBreadcrumbs } from '@/app/(app)/deals/cockpit/deal-breadcrumbs'
 import { DealDeadlinesCard } from '@/app/(app)/deals/cockpit/deal-deadlines-card'
+import { DealProofIndicator } from '@/components/dashboard/deal-proof-indicator'
+import { RoleAvatar } from '@/components/dashboard/role-avatar'
+import { DealStatusBadge } from '@/components/deal-status-badge'
+import { TenderStatusBadge } from '@/components/tender-status-badge'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
 import { COPY } from '@/lib/copy'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { proofDisplayFromCounts } from '@/lib/deals/deal-proof-display'
 import { formatDealVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
-import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
-import { tenderProcedureTypeLabel } from '@/lib/tenders/procedure-types'
 import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
-import { TenderStatusBadge } from '@/components/tender-status-badge'
+import { tenderProcedureTypeLabel } from '@/lib/tenders/procedure-types'
+import { statusTone } from '@/lib/ui/status-tone'
 
 export function TenderPageContent({
   tender,
@@ -109,22 +113,53 @@ export function TenderPageContent({
                     <p className="text-sm text-muted-foreground">
                       {formatDealVolume(lot.volume)}
                     </p>
-                    <div className="mt-auto flex items-center justify-between gap-2">
-                      <DealStatusBadge status={lot.status} />
-                      {lot.account_manager_name || lot.sales_manager_name ? (
-                        <div className="flex items-center gap-1.5">
-                          <RoleAvatar
-                            name={lot.account_manager_name}
-                            avatarUrl={lot.account_manager_avatar_url}
-                            role={COPY.roles.accountManager}
-                          />
-                          <RoleAvatar
-                            name={lot.sales_manager_name}
-                            avatarUrl={lot.sales_manager_avatar_url}
-                            role={COPY.roles.salesManager}
-                          />
+                    <div className="mt-auto flex flex-col gap-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <DealStatusBadge status={lot.status} />
+                          {lot.bidDecision === 'go' ? (
+                            <Badge
+                              variant="outline"
+                              className={statusTone.success}
+                            >
+                              {COPY.tenders.bidGo}
+                            </Badge>
+                          ) : null}
+                          {lot.bidDecision === 'no-bid' ? (
+                            <Badge
+                              variant="outline"
+                              className={statusTone.danger}
+                            >
+                              {COPY.tenders.bidNoBid}
+                            </Badge>
+                          ) : null}
                         </div>
-                      ) : null}
+                        {lot.account_manager_name || lot.sales_manager_name ? (
+                          <div className="flex items-center gap-1.5">
+                            <RoleAvatar
+                              name={lot.account_manager_name}
+                              avatarUrl={lot.account_manager_avatar_url}
+                              role={COPY.roles.accountManager}
+                            />
+                            <RoleAvatar
+                              name={lot.sales_manager_name}
+                              avatarUrl={lot.sales_manager_avatar_url}
+                              role={COPY.roles.salesManager}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="flex min-h-9 items-center">
+                        {lot.bidDecision === 'no-bid' && lot.proofCount === 0 ? null : (
+                          <DealProofIndicator
+                            display={proofDisplayFromCounts(
+                              lot.proofCount,
+                              lot.proofBestScore,
+                            )}
+                            interactive={false}
+                          />
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Link>

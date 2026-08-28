@@ -2,13 +2,12 @@
 
 import type { ColumnDef } from '@tanstack/react-table'
 
+import { DealProofIndicator } from '@/components/dashboard/deal-proof-indicator'
 import { DealStatusBadge } from '@/components/deal-status-badge'
-import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { TableSortableHeader } from '@/components/table/table-sortable-header'
 import { TableTitleHoverContent } from '@/components/table/table-title-hover-content'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { dealProofDisplay } from '@/lib/deals/deal-proof-display'
 import { compareResolvedDeadlines } from '@/lib/deals/resolve-deal-deadline'
@@ -114,58 +113,11 @@ export function buildDealsTableColumns(): ColumnDef<DealCollectionRow>[] {
       ),
       cell: ({ row }) => {
         if (!isDealCollectionLotRow(row.original)) return null
-        const display = dealProofDisplay(row.original)
-        if (display.kind === 'empty') {
-          return (
-            <div
-              className="flex justify-center text-muted-foreground"
-              aria-label="Keine Referenzen"
-            >
-              —
-            </div>
-          )
-        }
-        if (display.kind === 'count_only') {
-          return (
-            <div className="flex justify-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    tabIndex={0}
-                    className="cursor-default tabular-nums text-muted-foreground"
-                    aria-label={`${display.count} Referenzen, manuell verknüpft`}
-                  >
-                    {display.count}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs text-xs">
-                  Manuell verknüpft — kein Match-Score aus Smart Match
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )
-        }
         return (
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="tabular-nums text-muted-foreground">{display.count}</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  tabIndex={0}
-                  className="inline-flex cursor-default rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <MatchScoreCircle
-                    size="sm"
-                    strength={display.strength}
-                    percent={display.percent}
-                  />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                {display.strength.ariaLabel} · {display.percent}%
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <DealProofIndicator
+            display={dealProofDisplay(row.original)}
+            interactive
+          />
         )
       },
     },

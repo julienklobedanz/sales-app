@@ -4,8 +4,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { DealStatus } from '@/app/(app)/deals/types'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
+import { bidDecisionFromDb } from '@/lib/deal-desk/workspace-merge'
 import { listTenderDeadlines } from '@/lib/deals/deadlines'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
+import { loadDealProofSummary } from '@/lib/deals/load-deal-proof-summary'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import type { Database } from '@/lib/database.types'
 import { deriveTenderStatus, type DerivedTenderStatus } from './derive-tender-status'
@@ -19,6 +21,9 @@ type TenderPageLot = {
   account_manager_avatar_url: string | null
   sales_manager_name: string | null
   sales_manager_avatar_url: string | null
+  bidDecision: 'go' | 'no-bid' | null
+  proofCount: number
+  proofBestScore: number | null
 }
 
 export type TenderPageData = {
@@ -63,9 +68,11 @@ export async function loadTenderPageData(
     ...new Set((lotRows ?? []).map((r) => r.sales_manager_id).filter(Boolean)),
   ] as string[]
   const allUserIds = [...new Set([...accountManagerIds, ...salesManagerIds])]
+  const lotIds = (lotRows ?? []).map((row) => row.id)
 
   const names: Record<string, string> = {}
   const avatars: Record<string, string | null> = {}
+  const bidByDeal = new Map<string, 'go' | 'no-bid'>()
   if (allUserIds.length > 0) {
     const { data: profiles } = await supabase
       .from('profiles')
@@ -77,24 +84,62 @@ export async function loadTenderPageData(
     }
   }
 
-  const lots: TenderPageLot[] = (lotRows ?? []).map((row) => ({
-    id: row.id,
-    title: row.title ?? '',
-    volume: row.volume ?? null,
-    status: normalizeDealStatus(row.status),
-    account_manager_name: row.account_manager_id
-      ? (names[row.account_manager_id] ?? null)
-      : null,
-    account_manager_avatar_url: row.account_manager_id
-      ? (avatars[row.account_manager_id] ?? null)
-      : null,
-    sales_manager_name: row.sales_manager_id
-      ? (names[row.sales_manager_id] ?? null)
-      : null,
-    sales_manager_avatar_url: row.sales_manager_id
-      ? (avatars[row.sales_manager_id] ?? null)
-      : null,
-  }))
+  const bidPromise =
+    lotIds.length > 0
+      ? supabase
+          .from('deal_desk_projects')
+          .select('deal_id, bid_decision, updated_at')
+          .eq('organization_id', args.organizationId)
+          .in('deal_id', lotIds)
+          .is('archived_at', null)
+      : Promise.resolve({
+          data: [] as Array<{
+            deal_id: string | null
+            bid_decision: string | null
+            updated_at: string
+          }>,
+        })
+
+  const [proofByDeal, bidRes] = await Promise.all([
+    loadDealProofSummary(supabase, lotIds),
+    bidPromise,
+  ])
+
+  const latestBidUpdatedAt = new Map<string, string>()
+  for (const row of bidRes.data ?? []) {
+    if (!row.deal_id) continue
+    const prev = latestBidUpdatedAt.get(row.deal_id)
+    if (prev != null && prev >= row.updated_at) continue
+    latestBidUpdatedAt.set(row.deal_id, row.updated_at)
+    const decision = bidDecisionFromDb(row.bid_decision)
+    if (decision) bidByDeal.set(row.deal_id, decision)
+    else bidByDeal.delete(row.deal_id)
+  }
+
+  const lots: TenderPageLot[] = (lotRows ?? []).map((row) => {
+    const proof = proofByDeal[row.id] ?? { count: 0, bestScore: null }
+    return {
+      id: row.id,
+      title: row.title ?? '',
+      volume: row.volume ?? null,
+      status: normalizeDealStatus(row.status),
+      account_manager_name: row.account_manager_id
+        ? (names[row.account_manager_id] ?? null)
+        : null,
+      account_manager_avatar_url: row.account_manager_id
+        ? (avatars[row.account_manager_id] ?? null)
+        : null,
+      sales_manager_name: row.sales_manager_id
+        ? (names[row.sales_manager_id] ?? null)
+        : null,
+      sales_manager_avatar_url: row.sales_manager_id
+        ? (avatars[row.sales_manager_id] ?? null)
+        : null,
+      bidDecision: bidByDeal.get(row.id) ?? null,
+      proofCount: proof.count,
+      proofBestScore: proof.bestScore,
+    }
+  })
 
   const deadlines = await listTenderDeadlines(supabase, tender.id)
 

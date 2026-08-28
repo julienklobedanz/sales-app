@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
-import { dealProofDisplay } from './deal-proof-display'
+import { dealProofDisplay, proofDisplayFromCounts } from './deal-proof-display'
+
+describe('proofDisplayFromCounts', () => {
+  it('ist leer bei Zähler 0, auch mit Score', () => {
+    expect(proofDisplayFromCounts(0, 0.9)).toEqual({ kind: 'empty' })
+  })
+
+  it('zeigt nur den Zähler ohne Score', () => {
+    expect(proofDisplayFromCounts(2, null)).toEqual({ kind: 'count_only', count: 2 })
+  })
+
+  it('zeigt Zähler und Kreis bei Score', () => {
+    const result = proofDisplayFromCounts(1, 0.82)
+    expect(result.kind).toBe('count_and_score')
+    if (result.kind === 'count_and_score') {
+      expect(result.count).toBe(1)
+      expect(result.percent).toBe(82)
+    }
+  })
+})
 
 describe('dealProofDisplay', () => {
   it('zeigt Gedankenstrich ohne Referenzen', () => {
