@@ -77,7 +77,7 @@ export async function createTenderAndAssignDeal(
 
   const { error: updateError } = await supabase
     .from('deals')
-    .update({ tender_id: tender.id })
+    .update({ tender_id: tender.id, lot_priority: null })
     .eq('id', deal.id)
     .eq('organization_id', args.organizationId)
     .is('tender_id', null)
@@ -127,7 +127,7 @@ export async function assignDealToExistingTender(
 
   const { error: updateError } = await supabase
     .from('deals')
-    .update({ tender_id: tender.id })
+    .update({ tender_id: tender.id, lot_priority: null })
     .eq('id', deal.id)
     .eq('organization_id', args.organizationId)
     .is('tender_id', null)
@@ -186,6 +186,13 @@ export async function detachDealFromTender(
     })
     if (!moved.success) return moved
 
+    const { error: clearError } = await supabase
+      .from('deals')
+      .update({ lot_priority: null })
+      .eq('id', deal.id)
+      .eq('organization_id', args.organizationId)
+    if (clearError) return { success: false, error: clearError.message }
+
     const { error: deleteError } = await supabase
       .from('tenders')
       .delete()
@@ -202,7 +209,7 @@ export async function detachDealFromTender(
 
   const { error: updateError } = await supabase
     .from('deals')
-    .update({ tender_id: null })
+    .update({ tender_id: null, lot_priority: null })
     .eq('id', deal.id)
     .eq('organization_id', args.organizationId)
 

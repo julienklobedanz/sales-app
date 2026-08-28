@@ -10,6 +10,7 @@ import {
   detachDealFromTender,
 } from '@/lib/tenders/assign-deal'
 import { listOrgTenderOptions } from '@/lib/tenders/list-org-tender-options'
+import { setTenderLotPriorities } from '@/lib/tenders/set-tender-lot-priorities'
 import {
   updateTenderStammdaten,
   type UpdateTenderStammdatenInput,
@@ -106,5 +107,42 @@ export async function updateTenderStammdatenAction(
     organizationId: orgId,
     tenderId,
     fields,
+  })
+}
+
+export async function setTenderLotPrioritiesAction(args: {
+  tenderId: string
+  orderedDealIds: string[]
+}): Promise<{ success: boolean; error?: string }> {
+  const user = await getRequestUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  const profile = await getRequestProfile()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  const supabase = await createServerSupabaseClient()
+
+  const { data: tender } = await supabase
+    .from('tenders')
+    .select('id')
+    .eq('id', args.tenderId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+  if (!tender) return { success: false, error: 'Ausschreibung nicht gefunden.' }
+
+  const { data: lots } = await supabase
+    .from('deals')
+    .select('id, sales_manager_id, account_manager_id')
+    .eq('tender_id', args.tenderId)
+    .eq('organization_id', orgId)
+  if (!canManageTenderDocuments(lots ?? [], user.id, systemRole, functionRole)) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
+
+  return setTenderLotPriorities(supabase, {
+    organizationId: orgId,
+    tenderId: args.tenderId,
+    orderedDealIds: args.orderedDealIds,
   })
 }

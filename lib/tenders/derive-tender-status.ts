@@ -10,8 +10,16 @@ export type DerivedTenderStatus =
   | { kind: 'partially_won' }
   | { kind: 'empty' }
 
+function lotsInBid(statuses: readonly DealStatus[]): DealStatus[] {
+  return statuses.filter((status) => !EXCLUDED_STATUSES.has(status))
+}
+
+export function countBidLots(statuses: readonly DealStatus[]): number {
+  return lotsInBid(statuses).length
+}
+
 export function deriveTenderStatus(statuses: readonly DealStatus[]): DerivedTenderStatus {
-  const bid = statuses.filter((status) => !EXCLUDED_STATUSES.has(status))
+  const bid = lotsInBid(statuses)
   if (bid.length === 0) return { kind: 'empty' }
 
   const won = bid.filter((status) => status === 'won').length

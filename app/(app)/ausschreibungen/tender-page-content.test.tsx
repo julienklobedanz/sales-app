@@ -6,6 +6,7 @@ import { TenderPageContent } from '@/app/(app)/ausschreibungen/tender-page-conte
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
+import { formatLotPriorityGapHint } from '@/lib/tenders/lot-priority-gap'
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
@@ -26,6 +27,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/(app)/deals/tender-actions', () => ({
   updateTenderStammdatenAction: vi.fn(),
+  setTenderLotPrioritiesAction: vi.fn(),
 }))
 
 vi.mock('@/app/(app)/deals/cockpit/deal-deadlines-card', () => ({
@@ -75,6 +77,7 @@ const tender: TenderPageData = {
       title: 'Los 1 — ITZBund',
       volume: '34000000',
       status: 'won',
+      lot_priority: null,
       ...emptyPeople,
       ...emptyProof,
       account_manager_name: 'Mara Account Manager',
@@ -85,6 +88,7 @@ const tender: TenderPageData = {
       title: 'Los 5 — Unmittelbare Bundesverwaltung',
       volume: '25000000',
       status: 'negotiation',
+      lot_priority: null,
       ...emptyPeople,
       ...emptyProof,
       sales_manager_name: 'Sam Sales Rep',
@@ -97,6 +101,7 @@ const tender: TenderPageData = {
       title: 'Los 7 — Mittelbare Bundesverwaltung',
       volume: '9000000',
       status: 'withdrawn',
+      lot_priority: null,
       ...emptyPeople,
       ...emptyProof,
       bidDecision: 'no-bid',
@@ -171,5 +176,42 @@ describe('TenderPageContent lot tiles', () => {
       COPY.tenders.unknown,
       COPY.tenders.unknown,
     ])
+  })
+
+  it('zeigt keinen Hinweis bei award 3 und Los 7 withdrawn', () => {
+    render(
+      <TenderPageContent
+        tender={{ ...tender, max_lots_award: 3, lot_priority_required: true }}
+        orgDateDisplayFormat="de-DE"
+      />,
+    )
+    expect(screen.queryByText(/keine Rangfolge gesetzt/)).toBeNull()
+  })
+
+  it('zeigt den Hinweis bei award 1 ohne gesetzte Ränge', () => {
+    render(
+      <TenderPageContent
+        tender={{ ...tender, max_lots_award: 1, lot_priority_required: true }}
+        orgDateDisplayFormat="de-DE"
+      />,
+    )
+    expect(screen.getByText(formatLotPriorityGapHint(2, 1))).toBeTruthy()
+  })
+
+  it('zeigt Rang-Marke und keinen Hinweis wenn ein Rang gesetzt ist', () => {
+    const lots = tender.lots.map((lot, index) =>
+      index === 0 ? { ...lot, lot_priority: 1 } : lot,
+    )
+    render(
+      <TenderPageContent
+        tender={{ ...tender, max_lots_award: 1, lot_priority_required: true, lots }}
+        orgDateDisplayFormat="de-DE"
+      />,
+    )
+    expect(screen.queryByText(/keine Rangfolge gesetzt/)).toBeNull()
+    const lot1 = screen.getByRole('link', { name: /Los 1 — ITZBund/ })
+    expect(
+      within(lot1).getByText(COPY.tenders.rankLabel.replace('{n}', '1')),
+    ).toBeTruthy()
   })
 })

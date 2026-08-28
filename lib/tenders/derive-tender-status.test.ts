@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deriveTenderStatus } from './derive-tender-status'
+import { countBidLots, deriveTenderStatus } from './derive-tender-status'
 import { formatTenderStatusLabel } from './tender-status-label'
 import { STATUS_FILTER_OPTIONS } from '@/app/(app)/deals/deals-table-constants'
 
@@ -37,6 +37,11 @@ describe('deriveTenderStatus', () => {
   it('zieht withdrawn und archived aus dem Nenner', () => {
     expect(deriveTenderStatus(['won', 'won', 'withdrawn'])).toEqual({ kind: 'won' })
     expect(deriveTenderStatus(['won', 'archived'])).toEqual({ kind: 'won' })
+  })
+
+  it('countBidLots zählt withdrawn nicht', () => {
+    expect(countBidLots(['won', 'negotiation', 'withdrawn'])).toBe(2)
+    expect(countBidLots(['withdrawn', 'archived'])).toBe(0)
   })
 
   it('ohne gebotene Lose → empty', () => {

@@ -27,6 +27,7 @@ vi.mock('@/app/(app)/actions', () => ({
 
 vi.mock('@/app/(app)/deals/tender-actions', () => ({
   updateTenderStammdatenAction: vi.fn(),
+  setTenderLotPrioritiesAction: vi.fn(),
 }))
 
 if (typeof globalThis.IntersectionObserver === 'undefined') {
