@@ -46,101 +46,24 @@ function matches(
   })
 }
 
+function rfpUniqueKey(row: Pick<Row, 'source' | 'deal_id' | 'tender_id' | 'source_key'>) {
+  if (row.source !== 'rfp') return null
+  if (row.tender_id) return `t:${row.tender_id}:${row.source_key}`
+  if (row.deal_id) return `d:${row.deal_id}:${row.source_key}`
+  return null
+}
+
 function createMemoryClient(rows: Row[]) {
-  const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = []
-
-  function upsertRfp(args: {
-    dealId?: string | null
-    tenderId?: string | null
-    organizationId: string
-    kind: Row['kind']
-    label: string
-    dueAt: string | null
-    dueText: string | null
-    isApproximate: boolean
-    sourceKey: string
-  }) {
-    const existing = rows.find(
-      (row) =>
-        row.source === 'rfp' &&
-        row.source_key === args.sourceKey &&
-        (args.tenderId ? row.tender_id === args.tenderId : row.deal_id === args.dealId),
-    )
-    if (existing) {
-      if (!existing.pinned && !existing.suppressed_at) {
-        existing.kind = args.kind
-        existing.label = args.label
-        existing.due_at = args.dueAt
-        existing.due_text = args.dueText
-        existing.is_approximate = args.isApproximate
-      }
-      return
-    }
-    rows.push(
-      baseRow({
-        deal_id: args.dealId ?? null,
-        tender_id: args.tenderId ?? null,
-        organization_id: args.organizationId,
-        kind: args.kind,
-        label: args.label,
-        due_at: args.dueAt,
-        due_text: args.dueText,
-        is_approximate: args.isApproximate,
-        source_key: args.sourceKey,
-        pinned: false,
-        suppressed_at: null,
-      }),
-    )
-  }
-
   const client = {
-    rpc: async (name: string, args: Record<string, unknown>) => {
-      rpcCalls.push({ name, args })
-      if (name === 'upsert_tender_rfp_deadline') {
-        upsertRfp({
-          tenderId: args.p_tender_id as string,
-          organizationId: args.p_organization_id as string,
-          kind: args.p_kind as Row['kind'],
-          label: args.p_label as string,
-          dueAt: (args.p_due_at as string | null) ?? null,
-          dueText: (args.p_due_text as string | null) ?? null,
-          isApproximate: Boolean(args.p_is_approximate),
-          sourceKey: args.p_source_key as string,
-        })
-      }
-      if (name === 'upsert_deal_rfp_deadline') {
-        upsertRfp({
-          dealId: args.p_deal_id as string,
-          organizationId: args.p_organization_id as string,
-          kind: args.p_kind as Row['kind'],
-          label: args.p_label as string,
-          dueAt: (args.p_due_at as string | null) ?? null,
-          dueText: (args.p_due_text as string | null) ?? null,
-          isApproximate: Boolean(args.p_is_approximate),
-          sourceKey: args.p_source_key as string,
-        })
-      }
-      return { error: null }
-    },
     from: (table: string) => {
       if (table !== 'deal_deadlines') throw new Error(`unexpected table ${table}`)
       const filters: Array<{ col: string; op: 'eq' | 'is'; val: unknown }> = []
-      let mode: 'select' | 'update' | 'delete' | 'insert' = 'select'
+      let mode: 'select' | 'update' | 'delete' = 'select'
       let patch: Record<string, unknown> = {}
       const chain = {
         select() {
           mode = 'select'
           return chain
-        },
-        insert(row: Partial<Row>) {
-          mode = 'insert'
-          rows.push(
-            baseRow({
-              id: randomUUID(),
-              ...row,
-            }),
-          )
-          return Promise.resolve({ error: null })
         },
         update(next: Record<string, unknown>) {
           mode = 'update'
@@ -160,11 +83,33 @@ function createMemoryClient(rows: Row[]) {
           return chain
         },
         then(
-          onFulfilled: (v: { data: Row[]; error: null }) => unknown,
+          onFulfilled: (v: {
+            data: Row[]
+            error: { code?: string; message: string } | null
+          }) => unknown,
           onRejected?: (e: unknown) => unknown,
         ) {
           const matched = rows.filter((row) => matches(row, filters))
           if (mode === 'update') {
+            const matchedIds = new Set(matched.map((row) => row.id))
+            for (const row of matched) {
+              const next = { ...row, ...patch } as Row
+              const key = rfpUniqueKey(next)
+              if (
+                key &&
+                rows.some(
+                  (other) => !matchedIds.has(other.id) && rfpUniqueKey(other) === key,
+                )
+              ) {
+                return Promise.resolve({
+                  data: [],
+                  error: {
+                    code: '23505',
+                    message: 'duplicate key value violates unique constraint',
+                  },
+                }).then(onFulfilled, onRejected)
+              }
+            }
             for (const row of matched) Object.assign(row, patch)
           }
           if (mode === 'delete') {
@@ -183,21 +128,21 @@ function createMemoryClient(rows: Row[]) {
     },
   }
 
-  return { client, rows, rpcCalls }
+  return { client, rows }
 }
 
 describe('promoteActiveRfpDeadlinesToTender', () => {
-  it('moves active rfp rows to the tender and keeps pinned', async () => {
+  it('moves the same row to the tender and keeps pinned', async () => {
     const source = baseRow({ pinned: true })
-    const { client, rows, rpcCalls } = createMemoryClient([source])
+    const { client, rows } = createMemoryClient([source])
     const result = await promoteActiveRfpDeadlinesToTender(client as never, {
       organizationId: 'org-1',
       dealId: 'deal-1',
       tenderId: 'tender-1',
     })
     expect(result).toEqual({ success: true })
-    expect(rpcCalls.map((call) => call.name)).toEqual(['upsert_tender_rfp_deadline'])
     expect(rows).toHaveLength(1)
+    expect(rows[0]?.id).toBe(source.id)
     expect(rows[0]).toMatchObject({
       deal_id: null,
       tender_id: 'tender-1',
@@ -231,15 +176,16 @@ describe('promoteActiveRfpDeadlinesToTender', () => {
     expect(rows.every((row) => row.deal_id === 'deal-1')).toBe(true)
   })
 
-  it('collapses three lots with the same submission into one tender row', async () => {
+  it('collapses three lots with the same submission into the first row', async () => {
     const { client, rows } = createMemoryClient([])
+    const firstIds: string[] = []
     for (const dealId of ['deal-1', 'deal-5', 'deal-7']) {
-      rows.push(
-        baseRow({
-          deal_id: dealId,
-          source_key: buildRfpDeadlineSourceKey(dealId, 'submission'),
-        }),
-      )
+      const row = baseRow({
+        deal_id: dealId,
+        source_key: buildRfpDeadlineSourceKey(dealId, 'submission'),
+      })
+      if (dealId === 'deal-1') firstIds.push(row.id)
+      rows.push(row)
       const result = await promoteActiveRfpDeadlinesToTender(client as never, {
         organizationId: 'org-1',
         dealId,
@@ -249,12 +195,13 @@ describe('promoteActiveRfpDeadlinesToTender', () => {
     }
     const tenderRows = rows.filter((row) => row.tender_id === 'tender-1')
     expect(tenderRows).toHaveLength(1)
+    expect(tenderRows[0]?.id).toBe(firstIds[0])
     expect(rows.filter((row) => row.deal_id != null)).toHaveLength(0)
   })
 })
 
 describe('demoteTenderDeadlinesToDeal', () => {
-  it('moves rfp and manual rows onto the lot and keeps count', async () => {
+  it('moves rfp and manual rows onto the lot with the same ids', async () => {
     const rfp = baseRow({
       deal_id: null,
       tender_id: 'tender-1',
@@ -286,13 +233,46 @@ describe('demoteTenderDeadlinesToDeal', () => {
       true,
     )
     const movedRfp = rows.find((row) => row.source === 'rfp')
+    expect(movedRfp?.id).toBe(rfp.id)
     expect(movedRfp).toMatchObject({
       pinned: true,
       suppressed_at: '2026-08-02T00:00:00.000Z',
       source_key: buildRfpDeadlineSourceKey('deal-1', 'submission'),
     })
     const movedManual = rows.find((row) => row.source === 'manual')
-    expect(movedManual?.source_key).not.toBe('manual:abc')
+    expect(movedManual?.id).toBe(manual.id)
+    expect(movedManual?.source_key).toBe('manual:abc')
     expect(movedManual?.label).toBe('Interner Review')
+  })
+
+  it('deletes a suppressed lot ghost so the tender row lands visible (current behavior)', async () => {
+    const lotKey = buildRfpDeadlineSourceKey('deal-1', 'submission')
+    const suppressed = baseRow({
+      id: 'suppressed-lot',
+      source_key: lotKey,
+      suppressed_at: '2026-08-01T00:00:00.000Z',
+    })
+    const tender = baseRow({
+      id: 'tender-active',
+      deal_id: null,
+      tender_id: 'tender-1',
+      source_key: buildRfpDeadlineSourceKey('tender-1', 'submission'),
+      suppressed_at: null,
+    })
+    const { client, rows } = createMemoryClient([suppressed, tender])
+    const result = await demoteTenderDeadlinesToDeal(client as never, {
+      organizationId: 'org-1',
+      dealId: 'deal-1',
+      tenderId: 'tender-1',
+    })
+    expect(result.success).toBe(true)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.id).toBe('tender-active')
+    expect(rows[0]).toMatchObject({
+      deal_id: 'deal-1',
+      tender_id: null,
+      suppressed_at: null,
+      source_key: lotKey,
+    })
   })
 })
