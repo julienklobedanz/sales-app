@@ -26,13 +26,16 @@ export function sanitizeDealDocumentFileName(name: string): string {
   return base || 'upload.bin'
 }
 
+export type DealDocumentStorageOwner = { kind: 'deal' | 'tender'; id: string }
+
 export function buildDealDocumentStoragePath(
   orgId: string,
-  dealId: string,
+  owner: DealDocumentStorageOwner,
   docId: string,
   fileName: string,
 ): string {
-  return `${orgId}/deals/${dealId}/${docId}/${sanitizeDealDocumentFileName(fileName)}`
+  const folder = owner.kind === 'tender' ? 'tenders' : 'deals'
+  return `${orgId}/${folder}/${owner.id}/${docId}/${sanitizeDealDocumentFileName(fileName)}`
 }
 
 function fileMatchesAllowedMime(file: Pick<File, 'name' | 'type'>): boolean {

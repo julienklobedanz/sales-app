@@ -7,6 +7,7 @@ import {
   demoteTenderDeadlinesToDeal,
   promoteActiveRfpDeadlinesToTender,
 } from './move-deadlines'
+import { demoteTenderDocumentsToDeal } from './move-documents'
 import { isTenderProcedureType, type TenderProcedureType } from './procedure-types'
 import { revalidateTenderSurfaces } from './revalidate-tender-surfaces'
 
@@ -171,6 +172,13 @@ export async function detachDealFromTender(
   if (countError) return { success: false, error: countError.message }
 
   if ((count ?? 0) <= 1) {
+    const movedDocs = await demoteTenderDocumentsToDeal(supabase, {
+      organizationId: args.organizationId,
+      dealId: deal.id,
+      tenderId,
+    })
+    if (!movedDocs.success) return movedDocs
+
     const moved = await demoteTenderDeadlinesToDeal(supabase, {
       organizationId: args.organizationId,
       dealId: deal.id,

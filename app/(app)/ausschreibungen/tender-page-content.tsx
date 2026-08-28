@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { DealBreadcrumbs } from '@/app/(app)/deals/cockpit/deal-breadcrumbs'
 import { DealDeadlinesCard } from '@/app/(app)/deals/cockpit/deal-deadlines-card'
+import { DealDocumentsSection } from '@/app/(app)/deals/cockpit/deal-documents-section'
 import { DealProofIndicator } from '@/components/dashboard/deal-proof-indicator'
 import { RoleAvatar } from '@/components/dashboard/role-avatar'
 import { DealStatusBadge } from '@/components/deal-status-badge'
@@ -21,9 +22,11 @@ import { statusTone } from '@/lib/ui/status-tone'
 export function TenderPageContent({
   tender,
   orgDateDisplayFormat,
+  canManageDocuments = false,
 }: {
   tender: TenderPageData
   orgDateDisplayFormat: OrgDateDisplayFormat
+  canManageDocuments?: boolean
 }) {
   const procedureLabel = tenderProcedureTypeLabel(tender.procedure_type)
   const facts = [
@@ -96,6 +99,19 @@ export function TenderPageContent({
         orgDateDisplayFormat={orgDateDisplayFormat}
       />
 
+      <DealDocumentsSection
+        owner={{
+          kind: 'tender',
+          id: tender.id,
+          title: tender.title,
+          lots: tender.lots.map((lot) => ({ id: lot.id, title: lot.title })),
+        }}
+        documents={tender.documents}
+        canManage={canManageDocuments}
+        isRfpMode
+        forceExpanded
+      />
+
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{COPY.tenders.lotsHeading}</h2>
         {tender.lots.length === 0 ? (
@@ -118,18 +134,12 @@ export function TenderPageContent({
                         <div className="flex min-w-0 items-center gap-1.5">
                           <DealStatusBadge status={lot.status} />
                           {lot.bidDecision === 'go' ? (
-                            <Badge
-                              variant="outline"
-                              className={statusTone.success}
-                            >
+                            <Badge variant="outline" className={statusTone.success}>
                               {COPY.tenders.bidGo}
                             </Badge>
                           ) : null}
                           {lot.bidDecision === 'no-bid' ? (
-                            <Badge
-                              variant="outline"
-                              className={statusTone.danger}
-                            >
+                            <Badge variant="outline" className={statusTone.danger}>
                               {COPY.tenders.bidNoBid}
                             </Badge>
                           ) : null}

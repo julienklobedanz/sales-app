@@ -91,7 +91,12 @@ export function DealWorkspaceAreaContent({
     return (
       <div className="space-y-4">
         <DealDocumentsSection
-          dealId={dealId}
+          owner={{
+            kind: 'deal',
+            id: dealId,
+            title: deal.title,
+            tenderId: deal.tender_id,
+          }}
           documents={documents}
           canManage={canManageDocuments}
           isRfpMode

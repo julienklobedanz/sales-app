@@ -259,7 +259,7 @@ export function DealDeadlinesCard({
                             </Badge>
                             {inherited ? (
                               <Badge variant="outline" className="text-[10px]">
-                                {COPY.deals.cockpit.deadlineFromTender}
+                                {COPY.tenders.ownedByTender}
                               </Badge>
                             ) : null}
                             {d.pinned ? (

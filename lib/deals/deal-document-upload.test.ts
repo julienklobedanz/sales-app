@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import {
+  canManageDealDocuments,
+  canManageTenderDocuments,
+} from '@/lib/deals/can-manage-deal-documents'
 import {
   buildDealDocumentStoragePath,
   DEAL_DOCUMENT_ANALYZABLE_MAX_BYTES,
@@ -36,6 +39,21 @@ describe('canManageDealDocuments', () => {
   })
 })
 
+describe('canManageTenderDocuments', () => {
+  const lots = [
+    { sales_manager_id: 'sales-1', account_manager_id: null },
+    { sales_manager_id: null, account_manager_id: 'am-1' },
+  ]
+
+  it('allows assigned sales manager of any lot', () => {
+    expect(canManageTenderDocuments(lots, 'sales-1', 'member', 'sales_rep')).toBe(true)
+  })
+
+  it('denies unrelated sales rep', () => {
+    expect(canManageTenderDocuments(lots, 'other-rep', 'member', 'sales_rep')).toBe(false)
+  })
+})
+
 describe('deal-document-upload', () => {
   it('sanitizes file names', () => {
     expect(sanitizeDealDocumentFileName('RFP Phase 1 (final).pdf')).toBe(
@@ -44,9 +62,20 @@ describe('deal-document-upload', () => {
   })
 
   it('builds storage path', () => {
-    expect(buildDealDocumentStoragePath('org', 'deal', 'doc', 'file.pdf')).toBe(
-      'org/deals/deal/doc/file.pdf',
-    )
+    expect(
+      buildDealDocumentStoragePath('org', { kind: 'deal', id: 'deal' }, 'doc', 'file.pdf'),
+    ).toBe('org/deals/deal/doc/file.pdf')
+  })
+
+  it('builds tender storage path under tenders/', () => {
+    expect(
+      buildDealDocumentStoragePath(
+        'org',
+        { kind: 'tender', id: 'tender' },
+        'doc',
+        'file.pdf',
+      ),
+    ).toBe('org/tenders/tender/doc/file.pdf')
   })
 
   it('accepts storage-sized PDF for sonstiges', () => {

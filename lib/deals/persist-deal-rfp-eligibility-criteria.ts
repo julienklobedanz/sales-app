@@ -66,11 +66,12 @@ const SELECT_COLS =
 
 async function loadDealRfpEligibilityCriteriaForDocument(
   supabase: SupabaseClient<Database>,
-  args: { sourceDocumentId: string; organizationId: string },
+  args: { dealId: string; sourceDocumentId: string; organizationId: string },
 ): Promise<{ criteria: EligibilityCriterion[]; error?: string }> {
   const { data, error } = await supabase
     .from('deal_rfp_eligibility_criteria')
     .select(SELECT_COLS)
+    .eq('deal_id', args.dealId)
     .eq('source_document_id', args.sourceDocumentId)
     .eq('organization_id', args.organizationId)
 
@@ -127,6 +128,7 @@ export async function loadOrCreateDealRfpEligibilityCriteriaForDocument(
   error?: string
 }> {
   const loaded = await loadDealRfpEligibilityCriteriaForDocument(supabase, {
+    dealId: args.dealId,
     sourceDocumentId: args.sourceDocumentId,
     organizationId: args.organizationId,
   })

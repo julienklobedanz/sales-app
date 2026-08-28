@@ -119,7 +119,12 @@ export function DealCockpitClient({
             workspaceTiles
           ) : (
             <DealDocumentsSection
-              dealId={deal.id}
+              owner={{
+                kind: 'deal',
+                id: deal.id,
+                title: deal.title,
+                tenderId: deal.tender_id,
+              }}
               documents={documents}
               canManage={canManageDocuments}
               isRfpMode
@@ -128,7 +133,12 @@ export function DealCockpitClient({
         ) : (
           <>
             <DealDocumentsSection
-              dealId={deal.id}
+              owner={{
+                kind: 'deal',
+                id: deal.id,
+                title: deal.title,
+                tenderId: deal.tender_id,
+              }}
               documents={documents}
               canManage={canManageDocuments}
               isRfpMode={false}
