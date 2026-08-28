@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
+import { extractRequirementsFromRfpText, MAX_RFP_CHARS } from '@/lib/rfp-requirements'
 
 const DOCUMENT_TEXT = 'A'.repeat(80)
 
@@ -69,5 +69,39 @@ describe('extractRequirementsFromRfpText', () => {
     if ('error' in result) return
     expect(result.truncated).toBe(false)
     expect(result.requirements).toHaveLength(8)
+    expect(result.inputTruncated).toBe(false)
+    expect(result.inputChars).toBe(DOCUMENT_TEXT.length)
+  })
+
+  it('does not mark input truncated under the char cap', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(requirementItems(3)))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await extractRequirementsFromRfpText('sk-test', DOCUMENT_TEXT)
+
+    expect(result).not.toHaveProperty('error')
+    if ('error' in result) return
+    expect(result.inputTruncated).toBe(false)
+    expect(result.inputChars).toBe(DOCUMENT_TEXT.length)
+  })
+
+  it('marks input truncated and reports the original length, not the sliced one', async () => {
+    const original = 'A'.repeat(MAX_RFP_CHARS + 1)
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(requirementItems(3)))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await extractRequirementsFromRfpText('sk-test', original)
+
+    expect(result).not.toHaveProperty('error')
+    if ('error' in result) return
+    expect(result.inputTruncated).toBe(true)
+    expect(result.inputChars).toBe(original.length)
+    expect(result.inputChars).toBeGreaterThan(MAX_RFP_CHARS)
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+      messages: Array<{ role: string; content: string }>
+    }
+    const sent = body.messages.find((m) => m.role === 'user')?.content ?? ''
+    expect(sent).toHaveLength(MAX_RFP_CHARS)
   })
 })

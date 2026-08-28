@@ -12,6 +12,7 @@ import { extractSubmissionItemsFromRfpText } from '@/lib/deals/extract-submissio
 import { persistExtractedSubmissionItems } from '@/lib/deals/persist-submission-items'
 import {
   extractRequirementsFromRfpText,
+  rfpInputBounds,
   type ExtractedRfpRequirement,
 } from '@/lib/rfp-requirements'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
@@ -361,6 +362,8 @@ export async function POST(req: NextRequest) {
 
   revalidateDealWorkspacePaths(dealId)
 
+  const { inputTruncated, inputChars } = rfpInputBounds(mergedText)
+
   return NextResponse.json({
     success: true,
     projectId,
@@ -368,5 +371,7 @@ export async function POST(req: NextRequest) {
     requirements: analyzed.requirements,
     coverage: analyzed.coverage,
     submissionItems,
+    inputTruncated,
+    inputChars,
   })
 }

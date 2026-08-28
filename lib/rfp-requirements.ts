@@ -3,7 +3,7 @@ import 'server-only'
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 
 const MODEL = 'gpt-4o-mini'
-const MAX_RFP_CHARS = 100_000
+export const MAX_RFP_CHARS = 100_000
 const MAX_RFP_REQUIREMENTS = 30
 const RFP_REQUIREMENTS_SEED = 1
 
@@ -13,6 +13,20 @@ export type ExtractedRfpRequirement = {
   category?: string
 }
 
+export type RfpInputBounds = {
+  inputTruncated: boolean
+  inputChars: number
+}
+
+/** Länge vor dem Schnitt; `inputTruncated` wenn der Text die Grenze überschreitet. */
+export function rfpInputBounds(plainText: string): RfpInputBounds {
+  const inputChars = plainText.trim().length
+  return {
+    inputChars,
+    inputTruncated: inputChars > MAX_RFP_CHARS,
+  }
+}
+
 /**
  * Strukturierte Anforderungen aus RFP-Klartext (ohne Vektor-Suche).
  */
@@ -20,8 +34,13 @@ export async function extractRequirementsFromRfpText(
   apiKey: string,
   plainText: string,
 ): Promise<
-  { requirements: ExtractedRfpRequirement[]; truncated: boolean } | { error: string }
+  | ({
+      requirements: ExtractedRfpRequirement[]
+      truncated: boolean
+    } & RfpInputBounds)
+  | { error: string }
 > {
+  const bounds = rfpInputBounds(plainText)
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {
     return { error: 'Zu wenig Text für eine Anforderungsanalyse.' }
@@ -105,6 +124,7 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
     return {
       requirements: requirements.slice(0, MAX_RFP_REQUIREMENTS),
       truncated,
+      ...bounds,
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unbekannter Fehler'

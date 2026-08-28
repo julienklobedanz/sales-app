@@ -1,6 +1,11 @@
 import 'server-only'
 
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
+import {
+  MAX_RFP_CHARS,
+  rfpInputBounds,
+  type RfpInputBounds,
+} from '@/lib/rfp-requirements'
 
 import {
   parseEligibilityCriteriaResponse,
@@ -8,7 +13,6 @@ import {
 } from './eligibility-criteria-schema'
 
 const MODEL = 'gpt-4o-mini'
-const MAX_RFP_CHARS = 100_000
 
 const EXTRACT_PROMPT = `Du extrahierst aus einem Ausschreibungs-/RFP-Dokument **quantifizierte Eignungs- und K.O.-Kriterien** für Bieter.
 
@@ -32,10 +36,11 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
 export async function extractEligibilityCriteriaFromRfpText(
   apiKey: string,
   plainText: string,
-): Promise<{ criteria: EligibilityCriterion[] } | { error: string }> {
+): Promise<({ criteria: EligibilityCriterion[] } & RfpInputBounds) | { error: string }> {
+  const bounds = rfpInputBounds(plainText)
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {
-    return { criteria: [] }
+    return { criteria: [], ...bounds }
   }
 
   try {
@@ -74,7 +79,7 @@ export async function extractEligibilityCriteriaFromRfpText(
     }
 
     const criteria = parseEligibilityCriteriaResponse(parsed)
-    return { criteria }
+    return { criteria, ...bounds }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unbekannter Fehler'
     return { error: message }
