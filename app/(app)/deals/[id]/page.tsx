@@ -8,6 +8,9 @@ import { ROUTES } from '@/lib/routes'
 import { buildDealWorkspaceTiles } from '@/lib/deals/build-deal-workspace-tiles'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
+import { loadSubmissionWorkspace } from '@/lib/deals/load-submission-workspace'
+import { formatSubmissionWorkspaceTileState } from '@/lib/deals/submission-item-display'
+import { submissionWorkspaceHref } from '@/lib/deals/submission-workspace-href'
 
 import { listDealDeadlines, listTenderDeadlines } from '@/lib/deals/deadlines'
 import { mergeLotAndTenderDeadlines } from '@/lib/deals/deadline-display'
@@ -23,6 +26,8 @@ import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-tri
 import { DealWorkspaceTiles } from '../cockpit/deal-workspace-tiles'
 import { DealRfpFactsSurface } from '../cockpit/deal-rfp-facts-surface'
 import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
+import { SubmissionLotReadOnly } from '../cockpit/submission-lot-readonly'
+import { SubmissionWorkspaceTile } from '../cockpit/submission-workspace-tile'
 import { listDealDocuments, listTenderDocuments } from '../document-actions'
 
 export default function DealDetailPage({
@@ -137,6 +142,25 @@ async function DealDetailPageContent({
       })
     : null
 
+  const submissionData = deal.tender_id
+    ? await loadSubmissionWorkspace(supabase, {
+        organizationId: orgId,
+        owner: { kind: 'tender', id: deal.tender_id },
+        selectedDeadlineId: null,
+        canMutate: false,
+      })
+    : isRfpDeal(deal)
+      ? await loadSubmissionWorkspace(supabase, {
+          organizationId: orgId,
+          owner: { kind: 'deal', id },
+          selectedDeadlineId: null,
+          canMutate: false,
+        })
+      : null
+  const submissionState = submissionData
+    ? formatSubmissionWorkspaceTileState(submissionData.markedDeadlines)
+    : null
+
   return (
     <DealCockpitClient
       deal={deal}
@@ -164,7 +188,24 @@ async function DealDetailPageContent({
         ) : null
       }
       workspaceTiles={
-        workspaceTiles ? <DealWorkspaceTiles tiles={workspaceTiles} /> : null
+        workspaceTiles ? (
+          <DealWorkspaceTiles
+            tiles={workspaceTiles}
+            extra={
+              !deal.tender_id && isRfpDeal(deal) ? (
+                <SubmissionWorkspaceTile
+                  href={submissionWorkspaceHref({ kind: 'deal', id })}
+                  state={submissionState}
+                />
+              ) : undefined
+            }
+          />
+        ) : null
+      }
+      submissionReadOnly={
+        deal.tender_id && submissionData ? (
+          <SubmissionLotReadOnly tenderId={deal.tender_id} data={submissionData} />
+        ) : undefined
       }
       rfpFacts={
         analysisLive && rfpData ? (

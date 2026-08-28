@@ -15,18 +15,22 @@ import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { proofDisplayFromCounts } from '@/lib/deals/deal-proof-display'
 import { formatDealVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
-import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
 import { tenderProcedureTypeLabel } from '@/lib/tenders/procedure-types'
+import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
 import { statusTone } from '@/lib/ui/status-tone'
+import { SubmissionWorkspaceTile } from '@/app/(app)/deals/cockpit/submission-workspace-tile'
+import { submissionWorkspaceHref } from '@/lib/deals/submission-workspace-href'
 
 export function TenderPageContent({
   tender,
   orgDateDisplayFormat,
   canManageDocuments = false,
+  submissionState = null,
 }: {
   tender: TenderPageData
   orgDateDisplayFormat: OrgDateDisplayFormat
   canManageDocuments?: boolean
+  submissionState?: string | null
 }) {
   const procedureLabel = tenderProcedureTypeLabel(tender.procedure_type)
   const facts = [
@@ -111,6 +115,13 @@ export function TenderPageContent({
         isRfpMode
         forceExpanded
       />
+
+      <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <SubmissionWorkspaceTile
+          href={submissionWorkspaceHref({ kind: 'tender', id: tender.id })}
+          state={submissionState}
+        />
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{COPY.tenders.lotsHeading}</h2>

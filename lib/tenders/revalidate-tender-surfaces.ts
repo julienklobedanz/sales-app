@@ -21,6 +21,7 @@ export async function revalidateTenderSurfaces(
   if (!args.tenderId) return
 
   revalidatePath(ROUTES.tenders.detail(args.tenderId), 'page')
+  revalidatePath(ROUTES.tenders.submission(args.tenderId), 'page')
 
   const { data: lots } = await supabase
     .from('deals')

@@ -34,6 +34,7 @@ export const ROUTES = {
     detail: (id: string) => `/deals/${id}`,
     /** Arbeitsbereich (Unterroute, kein Hash). */
     workspace: (id: string) => `/deals/${id}/arbeitsbereich`,
+    submission: (id: string) => `/deals/${id}/einreichung`,
     /** Alias von `workspace` — ersetzt Legacy-Tab „KI-Analyse" / `?tab=desk` / `#ausschreibung`. */
     detailRfp: (id: string) => `/deals/${id}/arbeitsbereich`,
     detailTab: (id: string, tab: 'overview' | 'desk' = 'overview') =>
@@ -42,6 +43,7 @@ export const ROUTES = {
   tenders: {
     root: '/ausschreibungen',
     detail: (id: string) => `/ausschreibungen/${id}`,
+    submission: (id: string) => `/ausschreibungen/${id}/einreichung`,
   },
   references: {
     root: '/references',

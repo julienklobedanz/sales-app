@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
 
 import { buildExtractedSubmissionItemSourceKey } from '@/lib/deals/submission-item-source-key'
 import { buildRfpDeadlineSourceKey } from '@/lib/deals/deadline-source-key'
@@ -142,5 +143,189 @@ describeIntegration('upsert_extracted_submission_item', () => {
     expect(afterUpdate?.[0]?.deadline_id).toBe(deadlineId)
     expect(afterUpdate?.[0]?.sort_order).toBe(3)
     expect(afterUpdate?.[0]?.confidence).toBe('low')
+  })
+
+  it('keeps review dismissed across re-upsert and leaves provided state', async () => {
+    const sourceKey = buildExtractedSubmissionItemSourceKey(documentId, {
+      identifier: 'A7',
+      title: 'Eigenerklärung',
+    })
+    const first = await asOrg.rpc('upsert_extracted_submission_item', {
+      p_organization_id: fixtures.orgAId,
+      p_source_document_id: documentId,
+      p_identifier: 'A7',
+      p_title: 'Eigenerklärung',
+      p_source_key: sourceKey,
+      p_sort_order: 6,
+      p_confidence: 'low',
+      p_match_source: 'pattern',
+    })
+    expect(first.error, first.error?.message).toBeNull()
+
+    const { data: inserted } = await asOrg
+      .from('submission_items')
+      .select('id')
+      .eq('source_document_id', documentId)
+      .eq('source_key', sourceKey)
+      .single()
+    expect(inserted?.id).toBeTruthy()
+
+    const { error: reviewError } = await asOrg
+      .from('submission_items')
+      .update({
+        review: 'dismissed',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: fixtures.admin.id,
+        state: 'provided',
+      })
+      .eq('id', inserted!.id)
+    expect(reviewError, reviewError?.message).toBeNull()
+
+    const second = await asOrg.rpc('upsert_extracted_submission_item', {
+      p_organization_id: fixtures.orgAId,
+      p_source_document_id: documentId,
+      p_identifier: 'A7',
+      p_title: 'Eigenerklärung (nachgeschärft)',
+      p_source_key: sourceKey,
+      p_sort_order: 6,
+      p_confidence: 'low',
+      p_match_source: 'model',
+    })
+    expect(second.error, second.error?.message).toBeNull()
+
+    const { data: after } = await asOrg
+      .from('submission_items')
+      .select('review, state, title')
+      .eq('id', inserted!.id)
+      .single()
+    expect(after?.review).toBe('dismissed')
+    expect(after?.state).toBe('provided')
+    expect(after?.title).toBe('Eigenerklärung (nachgeschärft)')
+  })
+
+  it('allows two is_submission_target deadlines on the same owner', async () => {
+    const { error: firstMark } = await admin
+      .from('deal_deadlines')
+      .update({ is_submission_target: true })
+      .eq('id', deadlineId)
+    expect(firstMark, firstMark?.message).toBeNull()
+
+    const second = await admin
+      .from('deal_deadlines')
+      .insert({
+        deal_id: dealId,
+        organization_id: fixtures.orgAId,
+        kind: 'questions',
+        label: 'Teilnahmeantrag',
+        due_at: '2026-09-01T12:00:00.000Z',
+        source: 'manual',
+        source_key: `manual-${fixtures.runId}`,
+        is_submission_target: true,
+      })
+      .select('id')
+      .single()
+    expect(second.error, second.error?.message).toBeNull()
+
+    const { data: marked } = await admin
+      .from('deal_deadlines')
+      .select('id')
+      .eq('deal_id', dealId)
+      .eq('is_submission_target', true)
+    expect(marked).toHaveLength(2)
+  })
+
+  it('inserts a manual item without source_document_id', async () => {
+    const { data, error } = await asOrg
+      .from('submission_items')
+      .insert({
+        organization_id: fixtures.orgAId,
+        deadline_id: deadlineId,
+        title: 'Zusatzlage',
+        source: 'manual',
+        source_key: `manual:${randomUUID()}`,
+        confidence: 'high',
+        source_document_id: null,
+      })
+      .select('id, source, source_document_id, confidence')
+      .single()
+    expect(error, error?.message).toBeNull()
+    expect(data?.source).toBe('manual')
+    expect(data?.source_document_id).toBeNull()
+    expect(data?.confidence).toBe('high')
+  })
+
+  it('keeps the item when the source document is deleted', async () => {
+    const extraDoc = await admin
+      .from('deal_documents')
+      .insert({
+        deal_id: dealId,
+        organization_id: fixtures.orgAId,
+        file_name: 'rfp-extra.pdf',
+        kind: 'ausschreibung',
+        storage_path: `org/${fixtures.orgAId}/deals/${dealId}/rfp-extra.pdf`,
+        mime_type: 'application/pdf',
+      })
+      .select('id')
+      .single()
+    expect(extraDoc.error, extraDoc.error?.message).toBeNull()
+    const extraDocId = extraDoc.data!.id
+    const sourceKey = buildExtractedSubmissionItemSourceKey(extraDocId, {
+      identifier: 'A3',
+      title: 'Handelsregister',
+    })
+    const upsert = await asOrg.rpc('upsert_extracted_submission_item', {
+      p_organization_id: fixtures.orgAId,
+      p_source_document_id: extraDocId,
+      p_identifier: 'A3',
+      p_title: 'Handelsregister',
+      p_source_key: sourceKey,
+      p_sort_order: 2,
+      p_confidence: 'high',
+      p_match_source: 'pattern',
+    })
+    expect(upsert.error, upsert.error?.message).toBeNull()
+
+    const { data: inserted } = await asOrg
+      .from('submission_items')
+      .select('id')
+      .eq('source_document_id', extraDocId)
+      .single()
+    expect(inserted?.id).toBeTruthy()
+
+    const stampedAt = '2026-08-28T10:00:00.000Z'
+    const { error: stampError } = await asOrg
+      .from('submission_items')
+      .update({
+        review: 'confirmed',
+        reviewed_at: stampedAt,
+        reviewed_by: fixtures.admin.id,
+        not_applicable_at: stampedAt,
+        not_applicable_by: fixtures.admin.id,
+        state: 'not_applicable',
+      })
+      .eq('id', inserted!.id)
+    expect(stampError, stampError?.message).toBeNull()
+
+    const { error: deleteError } = await admin
+      .from('deal_documents')
+      .delete()
+      .eq('id', extraDocId)
+    expect(deleteError, deleteError?.message).toBeNull()
+
+    const { data: after } = await asOrg
+      .from('submission_items')
+      .select(
+        'id, source_document_id, review, not_applicable_at, not_applicable_by, state',
+      )
+      .eq('id', inserted!.id)
+      .maybeSingle()
+    expect(after).toBeTruthy()
+    expect(after?.source_document_id).toBeNull()
+    expect(after?.review).toBe('confirmed')
+    expect(new Date(after?.not_applicable_at ?? '').getTime()).toBe(
+      new Date(stampedAt).getTime(),
+    )
+    expect(after?.not_applicable_by).toBe(fixtures.admin.id)
+    expect(after?.state).toBe('not_applicable')
   })
 })

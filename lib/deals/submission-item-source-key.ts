@@ -1,4 +1,4 @@
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 
 import { normalizeDeadlineLabel } from '@/lib/deals/deadline-source-key'
 
@@ -30,4 +30,8 @@ export function buildExtractedSubmissionItemSourceKey(
     .update(`${sourceDocumentId}:${rest}`, 'utf8')
     .digest('hex')
     .slice(0, 32)
+}
+
+export function buildManualSubmissionItemSourceKey(): string {
+  return `manual:${randomUUID()}`
 }

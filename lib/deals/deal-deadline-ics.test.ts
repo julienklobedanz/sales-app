@@ -20,6 +20,7 @@ function row(overrides: Partial<DealDeadlineRow>): DealDeadlineRow {
     source_key: 'submission',
     suppressed_at: null,
     pinned: false,
+    is_submission_target: false,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     tender_id: null,

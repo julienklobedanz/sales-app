@@ -41,6 +41,7 @@ import { COPY } from '@/lib/copy'
 import {
   formatDeadlineRowParts,
   formatNextDeadlineHeadline,
+  canMarkDeadlineAsSubmissionTarget,
   deadlineDaysUntil,
   pickNextDeadline,
   isTenderOwnedDeadline,
@@ -64,6 +65,7 @@ import {
   suppressDealDeadlineAction,
   updateDealDeadlineAction,
 } from '../deadline-actions'
+import { setDeadlineSubmissionTargetAction } from '../submission-actions'
 
 const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [
   DealDeadlineKind,
@@ -266,6 +268,28 @@ export function DealDeadlinesCard({
                               <Badge variant="secondary" className="text-[10px]">
                                 Angepasst
                               </Badge>
+                            ) : null}
+                            {canMarkDeadlineAsSubmissionTarget(owner.kind, d) ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={d.is_submission_target ? 'secondary' : 'outline'}
+                                className="h-6 px-2 text-[10px]"
+                                aria-pressed={d.is_submission_target}
+                                onClick={async () => {
+                                  const res = await setDeadlineSubmissionTargetAction({
+                                    ownerKind: owner.kind,
+                                    ownerId: owner.id,
+                                    deadlineId: d.id,
+                                    isSubmissionTarget: !d.is_submission_target,
+                                  })
+                                  if (!res.success) {
+                                    toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                                  }
+                                }}
+                              >
+                                {COPY.deals.cockpit.submissionItemsMarkTarget}
+                              </Button>
                             ) : null}
                             {rowParts.countdown ? (
                               <span className="text-xs tabular-nums text-muted-foreground">

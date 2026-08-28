@@ -39,6 +39,7 @@ export function DealCockpitClient({
   workspaceTiles,
   rfpFacts,
   briefingButton,
+  submissionReadOnly,
   orgDateDisplayFormat = 'de-DE',
   initialReferenceSuggestions = [],
 }: {
@@ -52,6 +53,7 @@ export function DealCockpitClient({
   workspaceTiles?: ReactNode
   rfpFacts?: ReactNode
   briefingButton?: ReactNode
+  submissionReadOnly?: ReactNode
   orgDateDisplayFormat?: OrgDateDisplayFormat
   initialReferenceSuggestions?: DealReferenceSuggestion[]
 }) {
@@ -106,6 +108,8 @@ export function DealCockpitClient({
             orgDateDisplayFormat={orgDateDisplayFormat}
           />
         </div>
+
+        {submissionReadOnly}
 
         <DealProofSection
           deal={deal}

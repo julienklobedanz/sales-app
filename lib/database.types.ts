@@ -2949,9 +2949,12 @@ export type Database = {
           not_applicable_at: string | null
           not_applicable_by: string | null
           organization_id: string
+          review: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           sort_order: number
           source: string
-          source_document_id: string
+          source_document_id: string | null
           source_key: string
           state: string
           title: string
@@ -2968,9 +2971,12 @@ export type Database = {
           not_applicable_at?: string | null
           not_applicable_by?: string | null
           organization_id: string
+          review?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sort_order?: number
           source: string
-          source_document_id: string
+          source_document_id?: string | null
           source_key: string
           state?: string
           title: string
@@ -2987,9 +2993,12 @@ export type Database = {
           not_applicable_at?: string | null
           not_applicable_by?: string | null
           organization_id?: string
+          review?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sort_order?: number
           source?: string
-          source_document_id?: string
+          source_document_id?: string | null
           source_key?: string
           state?: string
           title?: string
