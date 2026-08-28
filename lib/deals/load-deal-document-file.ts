@@ -6,7 +6,7 @@ const DEAL_DOCUMENTS_BUCKET = 'deal-documents'
 
 export type DealDocumentStorageRow = {
   id: string
-  deal_id: string
+  deal_id: string | null
   organization_id: string
   file_name: string
   kind: string

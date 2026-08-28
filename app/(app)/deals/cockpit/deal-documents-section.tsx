@@ -16,14 +16,18 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import type { DealDocumentKind } from '@/lib/deals/deal-document-kinds'
+import type { DocumentCardOwner } from '@/lib/deals/document-display'
 
 import type { DealDocumentRow } from '../document-actions'
 import {
+  assignDealDocumentToTender,
+  assignTenderDocumentToDeal,
   deleteDealDocument,
   getDealDocumentSignedUrl,
   renameDealDocument,
   setDealDocumentKind,
   uploadDealDocument,
+  uploadTenderDocument,
 } from '../document-actions'
 import { DealDocumentDeleteDialog } from './deal-document-delete-dialog'
 import { DealDocumentRenameDialog } from './deal-document-rename-dialog'
@@ -33,7 +37,7 @@ import { runDealRfpAnalyze } from './deal-rfp-analyze-button'
 import { useDealReferenceSuggestionsRefresh } from './deal-reference-suggestions-refresh'
 
 export function DealDocumentsSection({
-  dealId,
+  owner,
   documents: initialDocuments,
   canManage,
   isRfpMode = false,
@@ -41,7 +45,7 @@ export function DealDocumentsSection({
   rfpAnalysisStale = false,
   forceExpanded = false,
 }: {
-  dealId: string
+  owner: DocumentCardOwner
   documents: DealDocumentRow[]
   canManage: boolean
   isRfpMode?: boolean
@@ -71,9 +75,7 @@ export function DealDocumentsSection({
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(
-    () =>
-      forceExpanded ||
-      (isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis),
+    () => forceExpanded || (isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis),
   )
 
   async function handleUpload() {
@@ -86,7 +88,10 @@ export function DealDocumentsSection({
       const formData = new FormData()
       formData.set('file', uploadFile)
       formData.set('kind', uploadKind)
-      const res = await uploadDealDocument(dealId, formData)
+      const res =
+        owner.kind === 'tender'
+          ? await uploadTenderDocument(owner.id, formData)
+          : await uploadDealDocument(owner.id, formData)
       if (!res.success) {
         toast.error(res.error)
         return
@@ -106,9 +111,10 @@ export function DealDocumentsSection({
   }
 
   async function handleAnalyze(doc: DealDocumentRow) {
+    if (owner.kind !== 'deal') return
     setAnalyzingId(doc.id)
     try {
-      const result = await runDealRfpAnalyze(dealId, doc)
+      const result = await runDealRfpAnalyze(owner.id, doc)
       if (!result.success) {
         toast.error(result.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
         return
@@ -186,23 +192,39 @@ export function DealDocumentsSection({
     }
   }
 
+  async function handleAssignToTender(doc: DealDocumentRow) {
+    const res = await assignDealDocumentToTender(doc.id)
+    if (!res.success) {
+      toast.error(res.error ?? 'Zuordnen fehlgeschlagen.')
+      return
+    }
+    toast.success(COPY.deals.cockpit.assignDocumentToTender)
+    router.refresh()
+  }
+
+  async function handleAssignToDeal(doc: DealDocumentRow, dealId: string) {
+    const res = await assignTenderDocumentToDeal(doc.id, dealId)
+    if (!res.success) {
+      toast.error(res.error ?? 'Zuordnen fehlgeschlagen.')
+      return
+    }
+    toast.success(COPY.deals.cockpit.assignDocumentToDeal)
+    router.refresh()
+  }
+
   const title = `${COPY.deals.cockpit.documentsTitle} · ${documents.length}`
   const list =
     documents.length === 0 ? (
       <CardContent className="pt-0">
-        <p
-          className={cn(
-            'text-sm text-muted-foreground',
-            !forceExpanded && 'pl-7',
-          )}
-        >
+        <p className={cn('text-sm text-muted-foreground', !forceExpanded && 'pl-7')}>
           {COPY.deals.cockpit.documentsEmpty}
         </p>
       </CardContent>
     ) : (
       <CardContent className="pt-0">
         <DealDocumentsList
-          dealId={dealId}
+          owner={owner}
+          dealId={owner.kind === 'deal' ? owner.id : null}
           documents={documents}
           canManage={canManage}
           isRfpMode={isRfpMode}
@@ -218,6 +240,8 @@ export function DealDocumentsSection({
           }}
           onKindChange={(doc, kind) => void handleKindChange(doc, kind)}
           onDeleteRequest={setDeleteTarget}
+          onAssignToTender={(doc) => void handleAssignToTender(doc)}
+          onAssignToDeal={(doc, dealId) => void handleAssignToDeal(doc, dealId)}
           onAnalyzed={() => void refreshReferenceSuggestions?.()}
         />
       </CardContent>
@@ -275,7 +299,11 @@ export function DealDocumentsSection({
                 </Button>
               ) : null}
             </CardHeader>
-            {documents.length === 0 ? list : <CollapsibleContent>{list}</CollapsibleContent>}
+            {documents.length === 0 ? (
+              list
+            ) : (
+              <CollapsibleContent>{list}</CollapsibleContent>
+            )}
           </Collapsible>
         )}
       </Card>

@@ -14,6 +14,7 @@ import {
 } from '@/lib/rfp-requirements'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { revalidateTenderSurfaces } from '@/lib/tenders/revalidate-tender-surfaces'
+import { documentBelongsToDealForAnalyze } from '@/lib/deals/document-belongs-to-deal-for-analyze'
 import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
 import { extractRfpPlainTextFromFile } from '@/lib/document-text'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -125,7 +126,9 @@ export async function POST(req: NextRequest) {
 
   const { data: deal, error: dealErr } = await supabase
     .from('deals')
-    .select('id, title, industry, volume, sales_manager_id, account_manager_id')
+    .select(
+      'id, title, industry, volume, sales_manager_id, account_manager_id, tender_id',
+    )
     .eq('id', dealId)
     .eq('organization_id', orgId)
     .maybeSingle()
@@ -164,14 +167,21 @@ export async function POST(req: NextRequest) {
   const { data: dealDoc, error: docErr } = await supabase
     .from('deal_documents')
     .select(
-      'id, deal_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes',
+      'id, deal_id, tender_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes',
     )
     .eq('id', dealDocumentId)
-    .eq('deal_id', dealId)
     .eq('organization_id', orgId)
     .maybeSingle()
 
-  if (docErr || !dealDoc) {
+  if (
+    docErr ||
+    !dealDoc ||
+    !documentBelongsToDealForAnalyze({
+      dealId,
+      dealTenderId: deal.tender_id,
+      document: dealDoc,
+    })
+  ) {
     return NextResponse.json(
       { success: false, error: 'Dokument nicht gefunden.' },
       { status: 404 },

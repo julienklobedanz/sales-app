@@ -1,6 +1,9 @@
 'use server'
 
-import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import {
+  canManageDealDocuments,
+  canManageTenderDocuments,
+} from '@/lib/deals/can-manage-deal-documents'
 import {
   buildDealDocumentStoragePath,
   validateDealDocumentUpload,
@@ -13,10 +16,12 @@ import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { revalidateTenderSurfaces } from '@/lib/tenders/revalidate-tender-surfaces'
 
 export type DealDocumentRow = {
   id: string
-  deal_id: string
+  deal_id: string | null
+  tender_id: string | null
   organization_id: string
   file_name: string
   kind: DealDocumentKind
@@ -33,7 +38,7 @@ const DEAL_DOCUMENTS_BUCKET = 'deal-documents'
 const SIGNED_URL_TTL_SEC = 3600
 
 const DEAL_DOCUMENT_SELECT =
-  'id, deal_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes, uploaded_by, created_at, updated_at'
+  'id, deal_id, tender_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes, uploaded_by, created_at, updated_at'
 
 type DocumentAuth =
   | { error: string }
@@ -67,6 +72,7 @@ async function getDocumentAuth(): Promise<DocumentAuth> {
 type DealAccessRow = {
   id: string
   organization_id: string
+  tender_id: string | null
   sales_manager_id: string | null
   account_manager_id: string | null
 }
@@ -77,7 +83,7 @@ async function loadDealForDocuments(
 ): Promise<{ deal: DealAccessRow } | { error: string }> {
   const { data: deal, error } = await auth.supabase
     .from('deals')
-    .select('id, organization_id, sales_manager_id, account_manager_id')
+    .select('id, organization_id, tender_id, sales_manager_id, account_manager_id')
     .eq('id', dealId)
     .eq('organization_id', auth.orgId)
     .maybeSingle()
@@ -87,6 +93,31 @@ async function loadDealForDocuments(
   }
 
   return { deal: deal as DealAccessRow }
+}
+
+async function loadTenderLotsForDocuments(
+  auth: Extract<DocumentAuth, { orgId: string }>,
+  tenderId: string,
+): Promise<{ lots: DealAccessRow[] } | { error: string }> {
+  const { data: tender, error: tenderError } = await auth.supabase
+    .from('tenders')
+    .select('id')
+    .eq('id', tenderId)
+    .eq('organization_id', auth.orgId)
+    .maybeSingle()
+
+  if (tenderError || !tender) {
+    return { error: 'Ausschreibung nicht gefunden.' }
+  }
+
+  const { data: lots, error } = await auth.supabase
+    .from('deals')
+    .select('id, organization_id, tender_id, sales_manager_id, account_manager_id')
+    .eq('tender_id', tenderId)
+    .eq('organization_id', auth.orgId)
+
+  if (error) return { error: error.message }
+  return { lots: (lots ?? []) as DealAccessRow[] }
 }
 
 async function loadDocumentRow(
@@ -143,8 +174,47 @@ function assertCanManageDeal(
   return { success: true }
 }
 
-function revalidateDealPage(dealId: string) {
-  revalidateDealWorkspacePaths(dealId, 'dokumente')
+function assertCanManageTender(
+  auth: Extract<DocumentAuth, { userId: string }>,
+  lots: DealAccessRow[],
+): { success: true } | { error: string } {
+  if (!canManageTenderDocuments(lots, auth.userId, auth.systemRole, auth.functionRole)) {
+    return {
+      error: 'Keine Berechtigung, Dokumente an dieser Ausschreibung zu verwalten.',
+    }
+  }
+  return { success: true }
+}
+
+async function assertCanMutateDocument(
+  auth: Extract<DocumentAuth, { orgId: string; userId: string }>,
+  row: Pick<DealDocumentRow, 'deal_id' | 'tender_id'>,
+): Promise<{ success: true } | { error: string }> {
+  if (row.deal_id) {
+    const dealRes = await loadDealForDocuments(auth, row.deal_id)
+    if ('error' in dealRes) return dealRes
+    return assertCanManageDeal(auth, dealRes.deal)
+  }
+  if (row.tender_id) {
+    const tenderRes = await loadTenderLotsForDocuments(auth, row.tender_id)
+    if ('error' in tenderRes) return tenderRes
+    return assertCanManageTender(auth, tenderRes.lots)
+  }
+  return { error: 'Dokument ohne Eigentümer.' }
+}
+
+async function revalidateDocumentOwners(
+  auth: Extract<DocumentAuth, { orgId: string }>,
+  args: { dealId?: string | null; tenderId?: string | null },
+) {
+  if (args.dealId) revalidateDealWorkspacePaths(args.dealId, 'dokumente')
+  if (args.tenderId) {
+    await revalidateTenderSurfaces(auth.supabase, {
+      organizationId: auth.orgId,
+      tenderId: args.tenderId,
+      extraDealId: args.dealId ?? undefined,
+    })
+  }
 }
 
 export async function listDealDocuments(
@@ -176,6 +246,35 @@ export async function listDealDocuments(
   return { success: true, rows }
 }
 
+export async function listTenderDocuments(
+  tenderId: string,
+): Promise<
+  { success: true; rows: DealDocumentRow[] } | { success: false; error: string }
+> {
+  const auth = await getDocumentAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const tenderRes = await loadTenderLotsForDocuments(auth, tenderId)
+  if ('error' in tenderRes) return { success: false, error: tenderRes.error }
+
+  const { data, error } = await auth.supabase
+    .from('deal_documents')
+    .select(DEAL_DOCUMENT_SELECT)
+    .eq('tender_id', tenderId)
+    .eq('organization_id', auth.orgId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const rows = await attachUploaderNames(
+    auth,
+    (data ?? []) as Omit<DealDocumentRow, 'uploaded_by_name'>[],
+  )
+  return { success: true, rows }
+}
+
 export async function uploadDealDocument(
   dealId: string,
   formData: FormData,
@@ -189,6 +288,38 @@ export async function uploadDealDocument(
   const manage = assertCanManageDeal(auth, dealRes.deal)
   if ('error' in manage) return { success: false, error: manage.error }
 
+  return insertAndUploadDocument(auth, formData, {
+    kind: 'deal',
+    id: dealId,
+    organizationId: dealRes.deal.organization_id,
+  })
+}
+
+export async function uploadTenderDocument(
+  tenderId: string,
+  formData: FormData,
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  const auth = await getDocumentAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const tenderRes = await loadTenderLotsForDocuments(auth, tenderId)
+  if ('error' in tenderRes) return { success: false, error: tenderRes.error }
+
+  const manage = assertCanManageTender(auth, tenderRes.lots)
+  if ('error' in manage) return { success: false, error: manage.error }
+
+  return insertAndUploadDocument(auth, formData, {
+    kind: 'tender',
+    id: tenderId,
+    organizationId: auth.orgId,
+  })
+}
+
+async function insertAndUploadDocument(
+  auth: Extract<DocumentAuth, { orgId: string; userId: string }>,
+  formData: FormData,
+  owner: { kind: 'deal' | 'tender'; id: string; organizationId: string },
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
   const file = formData.get('file')
   const kindRaw = formData.get('kind')
   const kindStr = typeof kindRaw === 'string' ? kindRaw.trim() : 'sonstiges'
@@ -205,16 +336,17 @@ export async function uploadDealDocument(
 
   const docId = crypto.randomUUID()
   const storagePath = buildDealDocumentStoragePath(
-    dealRes.deal.organization_id,
-    dealId,
+    owner.organizationId,
+    { kind: owner.kind, id: owner.id },
     docId,
     file.name,
   )
 
   const { error: insertError } = await auth.supabase.from('deal_documents').insert({
     id: docId,
-    deal_id: dealId,
-    organization_id: dealRes.deal.organization_id,
+    deal_id: owner.kind === 'deal' ? owner.id : null,
+    tender_id: owner.kind === 'tender' ? owner.id : null,
+    organization_id: owner.organizationId,
     file_name: file.name.trim() || 'Dokument',
     kind,
     storage_path: storagePath,
@@ -240,7 +372,10 @@ export async function uploadDealDocument(
     return { success: false, error: uploadError.message }
   }
 
-  revalidateDealPage(dealId)
+  await revalidateDocumentOwners(auth, {
+    dealId: owner.kind === 'deal' ? owner.id : null,
+    tenderId: owner.kind === 'tender' ? owner.id : null,
+  })
   return { success: true, id: docId }
 }
 
@@ -257,10 +392,7 @@ export async function renameDealDocument(
   const docRes = await loadDocumentRow(auth, documentId)
   if ('error' in docRes) return { success: false, error: docRes.error }
 
-  const dealRes = await loadDealForDocuments(auth, docRes.row.deal_id)
-  if ('error' in dealRes) return { success: false, error: dealRes.error }
-
-  const manage = assertCanManageDeal(auth, dealRes.deal)
+  const manage = await assertCanMutateDocument(auth, docRes.row)
   if ('error' in manage) return { success: false, error: manage.error }
 
   const { error } = await auth.supabase
@@ -271,7 +403,10 @@ export async function renameDealDocument(
 
   if (error) return { success: false, error: error.message }
 
-  revalidateDealPage(docRes.row.deal_id)
+  await revalidateDocumentOwners(auth, {
+    dealId: docRes.row.deal_id,
+    tenderId: docRes.row.tender_id,
+  })
   return { success: true }
 }
 
@@ -289,10 +424,7 @@ export async function setDealDocumentKind(
   const docRes = await loadDocumentRow(auth, documentId)
   if ('error' in docRes) return { success: false, error: docRes.error }
 
-  const dealRes = await loadDealForDocuments(auth, docRes.row.deal_id)
-  if ('error' in dealRes) return { success: false, error: dealRes.error }
-
-  const manage = assertCanManageDeal(auth, dealRes.deal)
+  const manage = await assertCanMutateDocument(auth, docRes.row)
   if ('error' in manage) return { success: false, error: manage.error }
 
   if (kind === 'ausschreibung' && docRes.row.size_bytes != null) {
@@ -315,7 +447,10 @@ export async function setDealDocumentKind(
 
   if (error) return { success: false, error: error.message }
 
-  revalidateDealPage(docRes.row.deal_id)
+  await revalidateDocumentOwners(auth, {
+    dealId: docRes.row.deal_id,
+    tenderId: docRes.row.tender_id,
+  })
   return { success: true }
 }
 
@@ -328,10 +463,7 @@ export async function deleteDealDocument(
   const docRes = await loadDocumentRow(auth, documentId)
   if ('error' in docRes) return { success: false, error: docRes.error }
 
-  const dealRes = await loadDealForDocuments(auth, docRes.row.deal_id)
-  if ('error' in dealRes) return { success: false, error: dealRes.error }
-
-  const manage = assertCanManageDeal(auth, dealRes.deal)
+  const manage = await assertCanMutateDocument(auth, docRes.row)
   if ('error' in manage) return { success: false, error: manage.error }
 
   const { error: storageError } = await auth.supabase.storage
@@ -350,7 +482,101 @@ export async function deleteDealDocument(
 
   if (error) return { success: false, error: error.message }
 
-  revalidateDealPage(docRes.row.deal_id)
+  await revalidateDocumentOwners(auth, {
+    dealId: docRes.row.deal_id,
+    tenderId: docRes.row.tender_id,
+  })
+  return { success: true }
+}
+
+/**
+ * storage_path is the bucket object key, not a folder.
+ * Owner change must not rewrite it — a file under deals/… stays there as a
+ * tender document.
+ */
+export async function assignDealDocumentToTender(
+  documentId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await getDocumentAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const docRes = await loadDocumentRow(auth, documentId)
+  if ('error' in docRes) return { success: false, error: docRes.error }
+  if (!docRes.row.deal_id) {
+    return { success: false, error: 'Dokument gehört keinem Los.' }
+  }
+
+  const dealRes = await loadDealForDocuments(auth, docRes.row.deal_id)
+  if ('error' in dealRes) return { success: false, error: dealRes.error }
+
+  const manage = assertCanManageDeal(auth, dealRes.deal)
+  if ('error' in manage) return { success: false, error: manage.error }
+
+  const tenderId = dealRes.deal.tender_id
+  if (!tenderId) {
+    return { success: false, error: 'Los hängt an keiner Ausschreibung.' }
+  }
+
+  const { error } = await auth.supabase
+    .from('deal_documents')
+    .update({
+      deal_id: null,
+      tender_id: tenderId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', documentId)
+    .eq('organization_id', auth.orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  await revalidateDocumentOwners(auth, { dealId: dealRes.deal.id, tenderId })
+  return { success: true }
+}
+
+/**
+ * storage_path is the bucket object key, not a folder.
+ * Owner change must not rewrite it — a file under tenders/… stays there as a
+ * lot document.
+ */
+export async function assignTenderDocumentToDeal(
+  documentId: string,
+  dealId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await getDocumentAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const docRes = await loadDocumentRow(auth, documentId)
+  if ('error' in docRes) return { success: false, error: docRes.error }
+  if (!docRes.row.tender_id) {
+    return { success: false, error: 'Dokument gehört keiner Ausschreibung.' }
+  }
+
+  const tenderId = docRes.row.tender_id
+  const tenderRes = await loadTenderLotsForDocuments(auth, tenderId)
+  if ('error' in tenderRes) return { success: false, error: tenderRes.error }
+
+  const manage = assertCanManageTender(auth, tenderRes.lots)
+  if ('error' in manage) return { success: false, error: manage.error }
+
+  const dealRes = await loadDealForDocuments(auth, dealId)
+  if ('error' in dealRes) return { success: false, error: dealRes.error }
+  if (dealRes.deal.tender_id !== tenderId) {
+    return { success: false, error: 'Los gehört nicht zu dieser Ausschreibung.' }
+  }
+
+  const { error } = await auth.supabase
+    .from('deal_documents')
+    .update({
+      deal_id: dealId,
+      tender_id: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', documentId)
+    .eq('organization_id', auth.orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  await revalidateDocumentOwners(auth, { dealId, tenderId })
   return { success: true }
 }
 

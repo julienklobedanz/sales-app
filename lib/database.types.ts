@@ -782,7 +782,7 @@ export type Database = {
       deal_documents: {
         Row: {
           created_at: string
-          deal_id: string
+          deal_id: string | null
           file_name: string
           id: string
           kind: Database['public']['Enums']['deal_document_kind']
@@ -790,12 +790,13 @@ export type Database = {
           organization_id: string
           size_bytes: number | null
           storage_path: string
+          tender_id: string | null
           updated_at: string
           uploaded_by: string | null
         }
         Insert: {
           created_at?: string
-          deal_id: string
+          deal_id?: string | null
           file_name: string
           id?: string
           kind?: Database['public']['Enums']['deal_document_kind']
@@ -803,12 +804,13 @@ export type Database = {
           organization_id: string
           size_bytes?: number | null
           storage_path: string
+          tender_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
         }
         Update: {
           created_at?: string
-          deal_id?: string
+          deal_id?: string | null
           file_name?: string
           id?: string
           kind?: Database['public']['Enums']['deal_document_kind']
@@ -816,6 +818,7 @@ export type Database = {
           organization_id?: string
           size_bytes?: number | null
           storage_path?: string
+          tender_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
         }
@@ -832,6 +835,13 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_documents_tender_id_fkey'
+            columns: ['tender_id']
+            isOneToOne: false
+            referencedRelation: 'tenders'
             referencedColumns: ['id']
           },
           {

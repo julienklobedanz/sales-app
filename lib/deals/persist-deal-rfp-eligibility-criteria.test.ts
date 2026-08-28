@@ -47,6 +47,7 @@ function createMemoryClient() {
           ) {
             const data = rows.filter(
               (row) =>
+                row.deal_id === filters.deal_id &&
                 row.source_document_id === filters.source_document_id &&
                 row.organization_id === filters.organization_id,
             )
@@ -181,5 +182,36 @@ describe('loadOrCreateDealRfpEligibilityCriteriaForDocument', () => {
     expect(memory.rows.filter((row) => row.source_document_id === 'doc-2')).toHaveLength(
       1,
     )
+  })
+
+  it('creates a separate set when two lots analyze the same document', async () => {
+    const memory = createMemoryClient()
+    const extract = vi.fn().mockResolvedValue({ criteria: [NUMERIC] })
+
+    const first = await loadOrCreateDealRfpEligibilityCriteriaForDocument(
+      memory.supabase as never,
+      {
+        dealId: 'deal-1',
+        organizationId: 'org-1',
+        sourceDocumentId: 'doc-1',
+        extract,
+      },
+    )
+    const second = await loadOrCreateDealRfpEligibilityCriteriaForDocument(
+      memory.supabase as never,
+      {
+        dealId: 'deal-2',
+        organizationId: 'org-1',
+        sourceDocumentId: 'doc-1',
+        extract,
+      },
+    )
+
+    expect(first.created).toBe(true)
+    expect(second.created).toBe(true)
+    expect(extract).toHaveBeenCalledTimes(2)
+    expect(memory.rows).toHaveLength(2)
+    expect(memory.rows.every((row) => row.source_document_id === 'doc-1')).toBe(true)
+    expect(memory.rows.map((row) => row.deal_id).sort()).toEqual(['deal-1', 'deal-2'])
   })
 })

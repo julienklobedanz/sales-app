@@ -19,7 +19,13 @@ vi.mock('@/app/(app)/deals/cockpit/deal-deadlines-card', () => ({
   DealDeadlinesCard: () => null,
 }))
 
+vi.mock('@/app/(app)/deals/cockpit/deal-documents-section', () => ({
+  DealDocumentsSection: () => null,
+}))
+
 const emptyPeople = {
+  account_manager_id: null,
+  sales_manager_id: null,
   account_manager_name: null,
   account_manager_avatar_url: null,
   sales_manager_name: null,
@@ -46,6 +52,7 @@ const tender: TenderPageData = {
   total_volume: null,
   derivedStatus: { kind: 'running', won: 1, bid: 2 },
   deadlines: [],
+  documents: [],
   lots: [
     {
       id: 'lot-1',

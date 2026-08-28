@@ -9,19 +9,21 @@ import { buildDealWorkspaceTiles } from '@/lib/deals/build-deal-workspace-tiles'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
+import { listDealDeadlines, listTenderDeadlines } from '@/lib/deals/deadlines'
+import { mergeLotAndTenderDeadlines } from '@/lib/deals/deadline-display'
+import { mergeLotAndTenderDocuments } from '@/lib/deals/document-display'
+import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
+
 import { getDealWithReferences } from '../actions'
-import { listDealDocuments } from '../document-actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
 import { DealWorkspaceTiles } from '../cockpit/deal-workspace-tiles'
 import { DealRfpFactsSurface } from '../cockpit/deal-rfp-facts-surface'
 import { DealRfpRecommendationBanner } from '../cockpit/deal-rfp-recommendation-banner'
-import { listDealDeadlines, listTenderDeadlines } from '@/lib/deals/deadlines'
-import { mergeLotAndTenderDeadlines } from '@/lib/deals/deadline-display'
-import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { normalizeOrgDateDisplayFormat } from '@/lib/format'
-import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
+import { listDealDocuments, listTenderDocuments } from '../document-actions'
 
 export default function DealDetailPage({
   params,
@@ -85,8 +87,16 @@ async function DealDetailPageContent({
     systemRole,
     functionRole,
   )
-  const documentsResult = await listDealDocuments(id)
-  const documents = documentsResult.success ? documentsResult.rows : []
+  const [documentsResult, tenderDocumentsResult] = await Promise.all([
+    listDealDocuments(id),
+    deal.tender_id
+      ? listTenderDocuments(deal.tender_id)
+      : Promise.resolve({ success: true as const, rows: [] }),
+  ])
+  const documents = mergeLotAndTenderDocuments(
+    documentsResult.success ? documentsResult.rows : [],
+    tenderDocumentsResult.success ? tenderDocumentsResult.rows : [],
+  )
 
   const { suggestions: initialReferenceSuggestions } =
     documents.length > 0 ? await suggestDealReferenceMatches(id) : { suggestions: [] }

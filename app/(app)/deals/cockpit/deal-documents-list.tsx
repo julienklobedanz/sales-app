@@ -2,12 +2,14 @@
 
 import { COPY } from '@/lib/copy'
 import type { DealDocumentKind } from '@/lib/deals/deal-document-kinds'
+import type { DocumentCardOwner } from '@/lib/deals/document-display'
 
 import type { DealDocumentRow as DealDocumentRowType } from '../document-actions'
 import { DealDocumentRow } from './deal-document-row'
 import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
 
 export function DealDocumentsList({
+  owner,
   dealId,
   documents,
   canManage,
@@ -21,9 +23,12 @@ export function DealDocumentsList({
   onRenameRequest,
   onKindChange,
   onDeleteRequest,
+  onAssignToTender,
+  onAssignToDeal,
   onAnalyzed,
 }: {
-  dealId: string
+  owner: DocumentCardOwner
+  dealId: string | null
   documents: DealDocumentRowType[]
   canManage: boolean
   isRfpMode: boolean
@@ -36,6 +41,8 @@ export function DealDocumentsList({
   onRenameRequest: (doc: DealDocumentRowType) => void
   onKindChange: (doc: DealDocumentRowType, kind: DealDocumentKind) => void
   onDeleteRequest: (doc: DealDocumentRowType) => void
+  onAssignToTender: (doc: DealDocumentRowType) => void
+  onAssignToDeal: (doc: DealDocumentRowType, dealId: string) => void
   onAnalyzed: () => void
 }) {
   return (
@@ -45,6 +52,7 @@ export function DealDocumentsList({
           <DealDocumentRow
             key={doc.id}
             doc={doc}
+            owner={owner}
             canManage={canManage}
             isRfpMode={isRfpMode}
             analyzingId={analyzingId}
@@ -54,10 +62,12 @@ export function DealDocumentsList({
             onRenameRequest={onRenameRequest}
             onKindChange={onKindChange}
             onDeleteRequest={onDeleteRequest}
+            onAssignToTender={onAssignToTender}
+            onAssignToDeal={onAssignToDeal}
           />
         ))}
       </ul>
-      {isRfpMode && canManage ? (
+      {isRfpMode && canManage && dealId ? (
         <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             {COPY.deals.cockpit.documentsAnalyzeReadyHint}

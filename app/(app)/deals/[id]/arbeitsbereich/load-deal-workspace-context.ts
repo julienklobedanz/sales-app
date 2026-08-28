@@ -4,11 +4,12 @@ import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { ROUTES } from '@/lib/routes'
 import { resolveDealWorkspaceAccess } from '@/lib/deals/deal-workspace-href'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import { mergeLotAndTenderDocuments } from '@/lib/deals/document-display'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import type { DealWithReferences } from '../../types'
 
 import { getDealWithReferences } from '../../actions'
-import { listDealDocuments } from '../../document-actions'
+import { listDealDocuments, listTenderDocuments } from '../../document-actions'
 import type { DealDocumentRow } from '../../document-actions'
 
 export type DealWorkspaceContext = {
@@ -54,8 +55,16 @@ export async function loadDealWorkspaceContext(
     systemRole,
     functionRole,
   )
-  const documentsResult = await listDealDocuments(dealId)
-  const documents = documentsResult.success ? documentsResult.rows : []
+  const [documentsResult, tenderDocumentsResult] = await Promise.all([
+    listDealDocuments(dealId),
+    deal.tender_id
+      ? listTenderDocuments(deal.tender_id)
+      : Promise.resolve({ success: true as const, rows: [] }),
+  ])
+  const documents = mergeLotAndTenderDocuments(
+    documentsResult.success ? documentsResult.rows : [],
+    tenderDocumentsResult.success ? tenderDocumentsResult.rows : [],
+  )
 
   return { orgId, deal, canManageDocuments, documents }
 }

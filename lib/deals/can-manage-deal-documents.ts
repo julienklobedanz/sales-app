@@ -18,3 +18,14 @@ export function canManageDealDocuments(
   if (deal.account_manager_id === userId) return true
   return false
 }
+
+/** Org-Manager oder SM/AM eines Loses dieser Ausschreibung. */
+export function canManageTenderDocuments(
+  lots: DealDocumentAccessDeal[],
+  userId: string,
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
+): boolean {
+  if (profileCanManageOrgData(systemRole, functionRole)) return true
+  return lots.some((lot) => canManageDealDocuments(lot, userId, systemRole, functionRole))
+}

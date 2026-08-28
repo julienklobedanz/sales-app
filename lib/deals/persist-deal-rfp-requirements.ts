@@ -52,11 +52,12 @@ function rowsForRequirementInsert(extracted: RequirementInput[]): Array<{
 
 async function loadDealRfpRequirementsForDocument(
   supabase: SupabaseClient,
-  args: { sourceDocumentId: string; organizationId: string },
+  args: { dealId: string; sourceDocumentId: string; organizationId: string },
 ): Promise<{ requirements: ExtractedRfpRequirement[]; error?: string }> {
   const { data, error } = await supabase
     .from('deal_rfp_requirements')
     .select('id, text, category')
+    .eq('deal_id', args.dealId)
     .eq('source_document_id', args.sourceDocumentId)
     .eq('organization_id', args.organizationId)
 
@@ -108,6 +109,7 @@ export async function loadOrCreateDealRfpRequirementsForDocument(
   error?: string
 }> {
   const loaded = await loadDealRfpRequirementsForDocument(supabase, {
+    dealId: args.dealId,
     sourceDocumentId: args.sourceDocumentId,
     organizationId: args.organizationId,
   })

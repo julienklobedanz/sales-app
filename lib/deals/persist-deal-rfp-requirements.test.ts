@@ -37,6 +37,7 @@ function createMemoryClient() {
           ) {
             const data = rows.filter(
               (row) =>
+                row.deal_id === filters.deal_id &&
                 row.source_document_id === filters.source_document_id &&
                 row.organization_id === filters.organization_id,
             )
@@ -123,8 +124,12 @@ describe('loadOrCreateDealRfpRequirementsForDocument', () => {
     expect(first.requirements).toHaveLength(1)
     expect(second.requirements).toHaveLength(1)
     expect(second.requirements[0]?.id).not.toBe(first.requirements[0]?.id)
-    expect(memory.rows.filter((row) => row.source_document_id === 'doc-1')).toHaveLength(1)
-    expect(memory.rows.filter((row) => row.source_document_id === 'doc-2')).toHaveLength(1)
+    expect(memory.rows.filter((row) => row.source_document_id === 'doc-1')).toHaveLength(
+      1,
+    )
+    expect(memory.rows.filter((row) => row.source_document_id === 'doc-2')).toHaveLength(
+      1,
+    )
     expect(memory.rows.filter((row) => row.source_document_id === 'doc-1')[0]?.text).toBe(
       EXTRACTED[0]?.text,
     )
@@ -160,5 +165,39 @@ describe('loadOrCreateDealRfpRequirementsForDocument', () => {
     expect(new Set(memory.rows.map((row) => row.source_document_id))).toEqual(
       new Set(['doc-rfp', 'doc-lv']),
     )
+  })
+
+  it('creates a separate set when two lots analyze the same document', async () => {
+    const memory = createMemoryClient()
+    const extract = vi.fn().mockResolvedValue({ requirements: EXTRACTED })
+
+    const first = await loadOrCreateDealRfpRequirementsForDocument(
+      memory.supabase as never,
+      {
+        dealId: 'deal-1',
+        organizationId: 'org-1',
+        sourceDocumentId: 'doc-1',
+        extract,
+      },
+    )
+    const second = await loadOrCreateDealRfpRequirementsForDocument(
+      memory.supabase as never,
+      {
+        dealId: 'deal-2',
+        organizationId: 'org-1',
+        sourceDocumentId: 'doc-1',
+        extract,
+      },
+    )
+
+    expect(first.created).toBe(true)
+    expect(second.created).toBe(true)
+    expect(extract).toHaveBeenCalledTimes(2)
+    expect(memory.rows).toHaveLength(2)
+    expect(memory.rows.every((row) => row.source_document_id === 'doc-1')).toBe(true)
+    expect(memory.rows.map((row) => row.deal_id).sort()).toEqual(['deal-1', 'deal-2'])
+    expect(
+      memory.rows.some((row) => row.deal_id !== 'deal-1' && row.deal_id !== 'deal-2'),
+    ).toBe(false)
   })
 })

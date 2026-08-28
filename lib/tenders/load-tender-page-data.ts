@@ -3,6 +3,8 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { DealStatus } from '@/app/(app)/deals/types'
+import type { DealDocumentRow } from '@/app/(app)/deals/document-actions'
+import { listTenderDocuments } from '@/app/(app)/deals/document-actions'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { bidDecisionFromDb } from '@/lib/deal-desk/workspace-merge'
 import { listTenderDeadlines } from '@/lib/deals/deadlines'
@@ -17,6 +19,8 @@ type TenderPageLot = {
   title: string
   volume: string | null
   status: DealStatus
+  account_manager_id: string | null
+  sales_manager_id: string | null
   account_manager_name: string | null
   account_manager_avatar_url: string | null
   sales_manager_name: string | null
@@ -37,6 +41,7 @@ export type TenderPageData = {
   derivedStatus: DerivedTenderStatus
   lots: TenderPageLot[]
   deadlines: DealDeadlineRow[]
+  documents: DealDocumentRow[]
 }
 
 export async function loadTenderPageData(
@@ -123,6 +128,8 @@ export async function loadTenderPageData(
       title: row.title ?? '',
       volume: row.volume ?? null,
       status: normalizeDealStatus(row.status),
+      account_manager_id: row.account_manager_id ?? null,
+      sales_manager_id: row.sales_manager_id ?? null,
       account_manager_name: row.account_manager_id
         ? (names[row.account_manager_id] ?? null)
         : null,
@@ -141,7 +148,11 @@ export async function loadTenderPageData(
     }
   })
 
-  const deadlines = await listTenderDeadlines(supabase, tender.id)
+  const [deadlines, documentsResult] = await Promise.all([
+    listTenderDeadlines(supabase, tender.id),
+    listTenderDocuments(tender.id),
+  ])
+  const documents = documentsResult.success ? documentsResult.rows : []
 
   return {
     id: tender.id,
@@ -154,5 +165,6 @@ export async function loadTenderPageData(
     derivedStatus: deriveTenderStatus(lots.map((lot) => lot.status)),
     lots,
     deadlines,
+    documents,
   }
 }

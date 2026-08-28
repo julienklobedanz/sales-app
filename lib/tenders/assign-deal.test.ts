@@ -5,6 +5,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 const promoteActiveRfpDeadlinesToTender = vi.fn()
 const demoteTenderDeadlinesToDeal = vi.fn()
+const demoteTenderDocumentsToDeal = vi.fn()
 const revalidateTenderSurfaces = vi.fn()
 
 vi.mock('./move-deadlines', () => ({
@@ -12,6 +13,11 @@ vi.mock('./move-deadlines', () => ({
     promoteActiveRfpDeadlinesToTender(...args),
   demoteTenderDeadlinesToDeal: (...args: unknown[]) =>
     demoteTenderDeadlinesToDeal(...args),
+}))
+
+vi.mock('./move-documents', () => ({
+  demoteTenderDocumentsToDeal: (...args: unknown[]) =>
+    demoteTenderDocumentsToDeal(...args),
 }))
 
 vi.mock('./revalidate-tender-surfaces', () => ({
@@ -83,13 +89,18 @@ describe('detachDealFromTender', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     demoteTenderDeadlinesToDeal.mockResolvedValue({ success: true })
+    demoteTenderDocumentsToDeal.mockResolvedValue({ success: true })
     revalidateTenderSurfaces.mockResolvedValue(undefined)
   })
 
-  it('demotes deadlines before deleting the last-lot tender', async () => {
+  it('demotes documents then deadlines before deleting the last-lot tender', async () => {
     const order: string[] = []
+    demoteTenderDocumentsToDeal.mockImplementation(async () => {
+      order.push('demoteDocs')
+      return { success: true }
+    })
     demoteTenderDeadlinesToDeal.mockImplementation(async () => {
-      order.push('demote')
+      order.push('demoteDeadlines')
       return { success: true }
     })
     const from = vi.fn((table: string) => {
@@ -116,7 +127,12 @@ describe('detachDealFromTender', () => {
       dealId: 'deal-1',
     })
     expect(result).toEqual({ success: true })
-    expect(order).toEqual(['demote', 'delete'])
+    expect(order).toEqual(['demoteDocs', 'demoteDeadlines', 'delete'])
+    expect(demoteTenderDocumentsToDeal).toHaveBeenCalledWith(expect.anything(), {
+      organizationId: 'org-1',
+      dealId: 'deal-1',
+      tenderId: 'tender-1',
+    })
     expect(demoteTenderDeadlinesToDeal).toHaveBeenCalledWith(expect.anything(), {
       organizationId: 'org-1',
       dealId: 'deal-1',
@@ -140,6 +156,7 @@ describe('detachDealFromTender', () => {
       dealId: 'deal-1',
     })
     expect(result.success).toBe(true)
+    expect(demoteTenderDocumentsToDeal).not.toHaveBeenCalled()
     expect(demoteTenderDeadlinesToDeal).not.toHaveBeenCalled()
   })
 })

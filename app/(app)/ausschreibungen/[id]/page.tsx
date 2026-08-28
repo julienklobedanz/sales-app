@@ -5,7 +5,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import { ROUTES } from '@/lib/routes'
+import { canManageTenderDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { loadTenderPageData } from '@/lib/tenders/load-tender-page-data'
 
 import { TenderPageContent } from '../tender-page-content'
@@ -46,10 +48,19 @@ async function TenderDetailPageContent({ params }: { params: Promise<{ id: strin
     .eq('id', orgId)
     .maybeSingle()
 
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  const canManageDocuments = canManageTenderDocuments(
+    tender.lots,
+    user.id,
+    systemRole,
+    functionRole,
+  )
+
   return (
     <TenderPageContent
       tender={tender}
       orgDateDisplayFormat={normalizeOrgDateDisplayFormat(orgRow?.date_display_format)}
+      canManageDocuments={canManageDocuments}
     />
   )
 }
