@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { Pencil } from '@hugeicons/core-free-icons'
 
@@ -32,6 +33,7 @@ import { updateDeal } from '../actions'
 import { IndustrySelect } from '@/components/forms/industry-select'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 const EDITABLE_DEAL_STATUSES: DealStatus[] = [
   'open',
@@ -90,7 +92,8 @@ export function EditDealDialog({
         industry: industry || null,
         volume: volume.trim() || null,
         status,
-        expiry_date: expiry || null,
+        expiry_date:
+          deal.deadline.origin === 'legacy' ? expiry || null : deal.expiry_date,
         is_public: isPublic,
         account_manager_id: amId || null,
         sales_manager_id: smId || null,
@@ -211,13 +214,41 @@ export function EditDealDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deal-expiry">Ablaufdatum</Label>
-              <Input
-                id="deal-expiry"
-                type="date"
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value)}
-              />
+              <Label htmlFor="deal-expiry">{COPY.deals.editDeadlineLabel}</Label>
+              {deal.deadline.origin !== 'legacy' ? (
+                <>
+                  <Input
+                    id="deal-expiry"
+                    type="date"
+                    value={deal.deadline.date ?? ''}
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {deal.deadline.origin === 'tender' && deal.tender_id ? (
+                      <Link
+                        href={ROUTES.tenders.detail(deal.tender_id)}
+                        className="underline underline-offset-2"
+                      >
+                        {COPY.deals.cockpit.editInheritedDeadline}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={ROUTES.deals.detail(deal.id)}
+                        className="underline underline-offset-2"
+                      >
+                        {COPY.deals.editDeadlineLockedLot}
+                      </Link>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <Input
+                  id="deal-expiry"
+                  type="date"
+                  value={expiry}
+                  onChange={(e) => setExpiry(e.target.value)}
+                />
+              )}
             </div>
           </div>
 

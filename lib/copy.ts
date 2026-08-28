@@ -176,6 +176,11 @@ export const COPY = {
     filterStatusLost: 'Verloren',
     proofColumn: 'Beweislage',
     deadlineColumn: 'Frist',
+    formDescription:
+      'Titel, Account (Suche), Volumen und Phase sind Pflicht. Optional: Beschreibung und Frist.',
+    formDeadlineLabel: 'Frist',
+    editDeadlineLabel: 'Frist',
+    editDeadlineLockedLot: 'An der Fristenkarte bearbeiten',
     /** Labels im Menü „Spalten“ (Deals-Tabelle). */
     columnViewLabels: {
       status: 'Status',
@@ -639,6 +644,7 @@ export const COPY = {
         riskStrong: 'stark belegt',
         riskRequestRef: 'Referenz anfragen',
         riskReview: 'prüfen',
+        dealDeadline: 'Frist {date}',
         covPipeTitle: 'Abdeckung vs. Pipeline',
         covPipeDescription: 'Wo verfolgen wir Deals, für die uns der Beweis fehlt?',
         covPipeEmptyTitle: 'Noch keine Pipeline-Abdeckung',

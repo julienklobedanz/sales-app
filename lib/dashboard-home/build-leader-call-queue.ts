@@ -55,9 +55,9 @@ export function pickDealForCompany(
     let risk = 0
     if (linked === 0) risk += 40
     else if (best < PARTIAL_MATCH_CUTOFF) risk += 25
-    const days = d.expiry_date
+    const days = d.deadline.date
       ? Math.round(
-          (new Date(`${d.expiry_date}T12:00:00`).getTime() - Date.now()) / MS_PER_DAY,
+          (new Date(`${d.deadline.date}T12:00:00`).getTime() - Date.now()) / MS_PER_DAY,
         )
       : 999
     if (days >= 0 && days <= 21) risk += 15
@@ -71,7 +71,7 @@ export function pickDealForCompany(
     dealTitle: d.title,
     linkedCount: d.linked_refs?.length ?? 0,
     bestMatchScore: d.best_match_score ?? null,
-    expiryDate: d.expiry_date,
+    expiryDate: d.deadline.date,
   }
 }
 

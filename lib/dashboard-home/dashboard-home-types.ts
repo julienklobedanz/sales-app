@@ -1,6 +1,7 @@
 import type { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
 import type { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import type { DealStatus } from '@/app/(app)/deals/types'
+import type { ResolvedDealDeadline } from '@/lib/deals/resolve-deal-deadline'
 
 export const ACTIVE_DEAL_STATUSES: DealStatus[] = ['open', 'rfp', 'negotiation']
 
@@ -12,7 +13,7 @@ export type SalesRepDealCard = {
   company_name: string | null
   company_logo_url?: string | null
   volume: string | null
-  expiry_date: string | null
+  deadline: ResolvedDealDeadline
   linkedCount: number
   bestMatchScore: number | null
   quickShareReferenceId: string | null

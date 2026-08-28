@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
+import { EMPTY_RESOLVED_DEADLINE } from '@/lib/deals/resolve-deal-deadline'
 import { ACCOUNT_LENS_CARE_KEYS } from '@/lib/accounts/account-lens'
 import { COPY } from '@/lib/copy'
 
@@ -57,6 +58,7 @@ const openDeal: AccountDealRow = {
   volume: null,
   status: 'open',
   expiry_date: null,
+  deadline: EMPTY_RESOLVED_DEADLINE,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: null,
 }

@@ -1,5 +1,6 @@
 import type { DealRow } from '@/app/(app)/deals/types'
 import { COPY } from '@/lib/copy'
+import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import {
   formatReferenceDate,
   normalizeOrgDateDisplayFormat,
@@ -43,8 +44,11 @@ export function buildLeaderRiskDeals(
         coverageLabel = copy.riskStrong
         ctaLabel = null
       }
-      const closeLabel = deal.expiry_date
-        ? `schließt ${formatReferenceDate(deal.expiry_date, dateFmt)}`
+      const deadlineValue = deal.deadline.date
+        ? formatReferenceDate(deal.deadline.date, dateFmt)
+        : deal.deadline.text?.trim() || null
+      const closeLabel = deadlineValue
+        ? formatCopy(copy.dealDeadline, { date: deadlineValue })
         : null
       const subtitle = [closeLabel, coverageLabel].filter(Boolean).join(' · ')
       return {

@@ -1,3 +1,5 @@
+import type { ResolvedDealDeadline } from '@/lib/deals/resolve-deal-deadline'
+
 export type CompanyRefRow = {
   id: string
   title: string
@@ -18,6 +20,7 @@ export type AccountDealRow = {
   volume: string | null
   status: string
   expiry_date: string | null
+  deadline: ResolvedDealDeadline
   created_at: string
   updated_at: string | null
 }

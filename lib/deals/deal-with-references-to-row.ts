@@ -28,6 +28,7 @@ export function dealWithReferencesToRow(deal: DealWithReferences): DealRow {
     tender_id: deal.tender_id,
     tender: deal.tender,
     expiry_date: deal.expiry_date,
+    deadline: deal.deadline,
     created_at: deal.created_at,
     updated_at: deal.updated_at,
     linked_refs: deal.references.map((r) => ({

@@ -8,6 +8,7 @@ import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { ReferenceDetailHeader } from '@/app/(app)/references/[id]/reference-detail-header'
 import { DealCockpitHeader } from '@/app/(app)/deals/cockpit/deal-cockpit-header'
 import type { DealWithReferences } from '@/app/(app)/deals/types'
+import { EMPTY_RESOLVED_DEADLINE } from '@/lib/deals/resolve-deal-deadline'
 import { ShowcaseSingleReference } from '@/app/p/[slug]/showcase-single-reference'
 import type { PublicReference } from '@/app/p/actions'
 import { ApprovalReferenceSections } from '@/app/approval/[token]/approval-reference-sections'
@@ -109,6 +110,7 @@ const deal: DealWithReferences = {
   tender_id: null,
   tender: null,
   expiry_date: null,
+  deadline: EMPTY_RESOLVED_DEADLINE,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: null,
   best_match_score: null,
@@ -133,7 +135,9 @@ describe('§11.2 heading outline', () => {
 
     expect(headingsByLevel(1)).toHaveLength(1)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Referenzen')
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Kundenprojekt Nord')
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+      'Kundenprojekt Nord',
+    )
   })
 
   it('Deal-Cockpit: genau ein h1', () => {
@@ -201,7 +205,9 @@ describe('§11.2 heading outline', () => {
     )
 
     expect(headingsByLevel(1)).toHaveLength(1)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Willkommen zurück.')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Willkommen zurück.',
+    )
     expect(headingsByLevel(2)).toHaveLength(0)
   })
 

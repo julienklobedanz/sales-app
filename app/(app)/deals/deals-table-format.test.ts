@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { isDealExpiringIn30Days, formatDealCollectionDeadline } from './deals-table-format'
+import {
+  formatDealCollectionDeadline,
+  formatResolvedCollectionDeadline,
+  isDealExpiringIn30Days,
+} from './deals-table-format'
 
 function isoDaysFromToday(days: number): string {
   const d = new Date()
@@ -37,5 +41,22 @@ describe('formatDealCollectionDeadline', () => {
     expect(formatDealCollectionDeadline('2026-08-17', now)).toBe('in 1 Tag')
     expect(formatDealCollectionDeadline('2026-08-20', now)).toBe('in 4 Tagen')
     expect(formatDealCollectionDeadline('2026-08-14', now)).toBe('vor 2 Tagen')
+  })
+})
+
+describe('formatResolvedCollectionDeadline', () => {
+  const now = new Date('2026-08-16T12:00:00')
+
+  it('nutzt das Datum wenn vorhanden, sonst den Text', () => {
+    expect(
+      formatResolvedCollectionDeadline(
+        { date: '2026-08-20', text: 'September 2026' },
+        now,
+      ),
+    ).toBe('in 4 Tagen')
+    expect(
+      formatResolvedCollectionDeadline({ date: null, text: 'September 2026' }, now),
+    ).toBe('September 2026')
+    expect(formatResolvedCollectionDeadline({ date: null, text: null }, now)).toBeNull()
   })
 })

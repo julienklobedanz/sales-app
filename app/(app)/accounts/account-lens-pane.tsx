@@ -18,7 +18,7 @@ import {
 } from '@/lib/accounts/account-lens'
 import type { NdaDisplayStatus } from '@/lib/accounts/account-entity'
 import { resolveNdaDisplayStatus } from '@/lib/accounts/account-entity'
-import { formatDealCollectionDeadline } from '@/app/(app)/deals/deals-table-format'
+import { formatResolvedCollectionDeadline } from '@/app/(app)/deals/deals-table-format'
 import { referenceStatusLabel } from './account-detail-constants'
 import { AccountDetailNdaPopover } from './components/account-detail-nda-popover'
 import type { CompanyCard } from './accounts-collection-types'
@@ -123,10 +123,7 @@ export function AccountLensPane({
 
           if (section === 'identity') {
             return (
-              <header
-                key={section}
-                className="flex items-start justify-between gap-3"
-              >
+              <header key={section} className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
                   <CompanyLogo
                     src={company.logo_url}
@@ -139,9 +136,7 @@ export function AccountLensPane({
                     <h2 className="truncate text-lg font-semibold">{company.name}</h2>
                     <p className="mt-0.5 truncate text-sm text-muted-foreground">
                       {[
-                        company.industry
-                          ? formatIndustryDisplay(company.industry)
-                          : null,
+                        company.industry ? formatIndustryDisplay(company.industry) : null,
                         company.headquarters,
                       ]
                         .filter(Boolean)
@@ -186,22 +181,22 @@ export function AccountLensPane({
                     {references.map((ref) => (
                       <li key={ref.id}>
                         <Card className="p-3">
-                        <CardTitle as="h3" className="text-sm font-medium">
-                        <Link
-                          href={ROUTES.references.detail(ref.id)}
-                          className="hover:underline"
-                        >
-                          {ref.title}
-                        </Link>
-                        </CardTitle>
-                        <p className="mt-1 text-sm text-foreground/90">
-                          {ref.summary?.trim() || '—'}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {ref.project_year ?? '—'}
-                          {' · '}
-                          {proofUsability(ref.status, ndaGates)}
-                        </p>
+                          <CardTitle as="h3" className="text-sm font-medium">
+                            <Link
+                              href={ROUTES.references.detail(ref.id)}
+                              className="hover:underline"
+                            >
+                              {ref.title}
+                            </Link>
+                          </CardTitle>
+                          <p className="mt-1 text-sm text-foreground/90">
+                            {ref.summary?.trim() || '—'}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {ref.project_year ?? '—'}
+                            {' · '}
+                            {proofUsability(ref.status, ndaGates)}
+                          </p>
                         </Card>
                       </li>
                     ))}
@@ -218,22 +213,25 @@ export function AccountLensPane({
                   {COPY.accounts.lens.dealsHeading}
                 </h3>
                 <ul className="space-y-2">
-                  {deals.map((deal) => (
-                    <li key={deal.id} className="text-sm">
-                      <Link
-                        href={ROUTES.deals.detail(deal.id)}
-                        className="font-medium hover:underline"
-                      >
-                        {deal.title}
-                      </Link>
-                      {deal.expiry_date ? (
-                        <span className="text-muted-foreground">
-                          {' '}
-                          · {formatDealCollectionDeadline(deal.expiry_date)}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
+                  {deals.map((deal) => {
+                    const deadlineLabel = formatResolvedCollectionDeadline(deal.deadline)
+                    return (
+                      <li key={deal.id} className="text-sm">
+                        <Link
+                          href={ROUTES.deals.detail(deal.id)}
+                          className="font-medium hover:underline"
+                        >
+                          {deal.title}
+                        </Link>
+                        {deadlineLabel ? (
+                          <span className="text-muted-foreground">
+                            {' '}
+                            · {deadlineLabel}
+                          </span>
+                        ) : null}
+                      </li>
+                    )
+                  })}
                 </ul>
               </section>
             )

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { timelineDueToIso } from './deadline-rfp-mapper'
 import {
+  dueAtToDateIso,
   isTenderOwnedDeadline,
   mergeLotAndTenderDeadlines,
   type DealDeadlineRow,
@@ -49,5 +51,19 @@ describe('deadline display owner helpers', () => {
       ],
     )
     expect(merged.map((d) => d.id)).toEqual(['tender', 'lot'])
+  })
+})
+
+describe('dueAtToDateIso', () => {
+  it('keeps the calendar day for every date and time timelineDueToIso writes', () => {
+    const dates = ['2026-01-01', '2026-10-15', '2026-12-31']
+    const times = [null, '00:00', '09:30', '12:00', '23:59']
+    for (const date of dates) {
+      for (const time of times) {
+        const written = timelineDueToIso(date, time)
+        expect(written, `${date} ${time ?? 'ohne Zeit'}`).toBeTruthy()
+        expect(dueAtToDateIso(written!)).toBe(date)
+      }
+    }
   })
 })
