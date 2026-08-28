@@ -15,6 +15,10 @@ type TenderPageLot = {
   title: string
   volume: string | null
   status: DealStatus
+  account_manager_name: string | null
+  account_manager_avatar_url: string | null
+  sales_manager_name: string | null
+  sales_manager_avatar_url: string | null
 }
 
 export type TenderPageData = {
@@ -47,16 +51,49 @@ export async function loadTenderPageData(
 
   const { data: lotRows } = await supabase
     .from('deals')
-    .select('id, title, volume, status')
+    .select('id, title, volume, status, account_manager_id, sales_manager_id')
     .eq('tender_id', tender.id)
     .eq('organization_id', args.organizationId)
     .order('title', { ascending: true })
+
+  const accountManagerIds = [
+    ...new Set((lotRows ?? []).map((r) => r.account_manager_id).filter(Boolean)),
+  ] as string[]
+  const salesManagerIds = [
+    ...new Set((lotRows ?? []).map((r) => r.sales_manager_id).filter(Boolean)),
+  ] as string[]
+  const allUserIds = [...new Set([...accountManagerIds, ...salesManagerIds])]
+
+  const names: Record<string, string> = {}
+  const avatars: Record<string, string | null> = {}
+  if (allUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', allUserIds)
+    for (const p of profiles ?? []) {
+      names[p.id] = p.full_name ?? p.id.slice(0, 8)
+      avatars[p.id] = p.avatar_url ?? null
+    }
+  }
 
   const lots: TenderPageLot[] = (lotRows ?? []).map((row) => ({
     id: row.id,
     title: row.title ?? '',
     volume: row.volume ?? null,
     status: normalizeDealStatus(row.status),
+    account_manager_name: row.account_manager_id
+      ? (names[row.account_manager_id] ?? null)
+      : null,
+    account_manager_avatar_url: row.account_manager_id
+      ? (avatars[row.account_manager_id] ?? null)
+      : null,
+    sales_manager_name: row.sales_manager_id
+      ? (names[row.sales_manager_id] ?? null)
+      : null,
+    sales_manager_avatar_url: row.sales_manager_id
+      ? (avatars[row.sales_manager_id] ?? null)
+      : null,
   }))
 
   const deadlines = await listTenderDeadlines(supabase, tender.id)

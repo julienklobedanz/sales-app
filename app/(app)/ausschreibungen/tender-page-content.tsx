@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { DealStatusBadge } from '@/components/deal-status-badge'
+import { RoleAvatar } from '@/components/dashboard/role-avatar'
 import { DealBreadcrumbs } from '@/app/(app)/deals/cockpit/deal-breadcrumbs'
 import { DealDeadlinesCard } from '@/app/(app)/deals/cockpit/deal-deadlines-card'
 import { COPY } from '@/lib/copy'
@@ -108,8 +109,22 @@ export function TenderPageContent({
                     <p className="text-sm text-muted-foreground">
                       {formatDealVolume(lot.volume)}
                     </p>
-                    <div className="mt-auto">
+                    <div className="mt-auto flex items-center justify-between gap-2">
                       <DealStatusBadge status={lot.status} />
+                      {lot.account_manager_name || lot.sales_manager_name ? (
+                        <div className="flex items-center gap-1.5">
+                          <RoleAvatar
+                            name={lot.account_manager_name}
+                            avatarUrl={lot.account_manager_avatar_url}
+                            role={COPY.roles.accountManager}
+                          />
+                          <RoleAvatar
+                            name={lot.sales_manager_name}
+                            avatarUrl={lot.sales_manager_avatar_url}
+                            role={COPY.roles.salesManager}
+                          />
+                        </div>
+                      ) : null}
                     </div>
                   </CardContent>
                 </Link>
