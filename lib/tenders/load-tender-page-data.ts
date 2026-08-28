@@ -7,6 +7,7 @@ import type { DealDocumentRow } from '@/app/(app)/deals/document-actions'
 import { listTenderDocuments } from '@/app/(app)/deals/document-actions'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
 import { bidDecisionFromDb } from '@/lib/deal-desk/workspace-merge'
+import { resolveDealDeskProject } from '@/lib/deal-desk/resolve-deal-desk-project'
 import { listTenderDeadlines } from '@/lib/deals/deadlines'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
 import { loadDealProofSummary } from '@/lib/deals/load-deal-proof-summary'
@@ -42,6 +43,13 @@ export type TenderPageData = {
   lots: TenderPageLot[]
   deadlines: DealDeadlineRow[]
   documents: DealDocumentRow[]
+}
+
+type TenderLotDeskBidRow = {
+  deal_id: string | null
+  bid_decision: string | null
+  updated_at: string
+  archived_at: string | null
 }
 
 export async function loadTenderPageData(
@@ -93,16 +101,11 @@ export async function loadTenderPageData(
     lotIds.length > 0
       ? supabase
           .from('deal_desk_projects')
-          .select('deal_id, bid_decision, updated_at')
+          .select('deal_id, bid_decision, updated_at, archived_at')
           .eq('organization_id', args.organizationId)
           .in('deal_id', lotIds)
-          .is('archived_at', null)
       : Promise.resolve({
-          data: [] as Array<{
-            deal_id: string | null
-            bid_decision: string | null
-            updated_at: string
-          }>,
+          data: [] as TenderLotDeskBidRow[],
         })
 
   const [proofByDeal, bidRes] = await Promise.all([
@@ -110,15 +113,18 @@ export async function loadTenderPageData(
     bidPromise,
   ])
 
-  const latestBidUpdatedAt = new Map<string, string>()
+  const byDeal = new Map<string, TenderLotDeskBidRow[]>()
   for (const row of bidRes.data ?? []) {
     if (!row.deal_id) continue
-    const prev = latestBidUpdatedAt.get(row.deal_id)
-    if (prev != null && prev >= row.updated_at) continue
-    latestBidUpdatedAt.set(row.deal_id, row.updated_at)
-    const decision = bidDecisionFromDb(row.bid_decision)
-    if (decision) bidByDeal.set(row.deal_id, decision)
-    else bidByDeal.delete(row.deal_id)
+    const list = byDeal.get(row.deal_id) ?? []
+    list.push(row)
+    byDeal.set(row.deal_id, list)
+  }
+  for (const [dealId, rows] of byDeal) {
+    const picked = resolveDealDeskProject(rows)
+    if (!picked) continue
+    const decision = bidDecisionFromDb(picked.bid_decision)
+    if (decision) bidByDeal.set(dealId, decision)
   }
 
   const lots: TenderPageLot[] = (lotRows ?? []).map((row) => {

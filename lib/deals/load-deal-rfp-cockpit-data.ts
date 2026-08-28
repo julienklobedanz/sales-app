@@ -46,6 +46,7 @@ import {
 } from './build-requested-evidence-gaps'
 import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+import { resolveDealDeskProject } from '@/lib/deal-desk/resolve-deal-desk-project'
 import type { TenderLot } from '@/lib/deals/tender-lots'
 
 export type DealRfpCockpitData = {
@@ -86,17 +87,18 @@ export async function loadDealRfpCockpitData(
     title?: string | null
   },
 ): Promise<DealRfpCockpitData | null> {
-  const { data: project, error } = await supabase
+  const { data: completedRows, error } = await supabase
     .from('deal_desk_projects')
-    .select('id, analysis_status, analysis_snapshot, updated_at')
+    .select('id, analysis_status, analysis_snapshot, updated_at, archived_at')
     .eq('organization_id', organizationId)
     .eq('deal_id', dealId)
+    // Anzeigefilter: letzte fertige Analyse. Welches Projekt zum Deal gehört,
+    // entscheidet resolveDealDeskProject (aktiv, zuletzt geändert) — nicht dieser Status.
     .eq('analysis_status', 'completed')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
-  if (error || !project?.id) return null
+  if (error) return null
+  const project = resolveDealDeskProject(completedRows ?? [])
+  if (!project?.id) return null
 
   const raw = project.analysis_snapshot
   if (!raw || typeof raw !== 'object') return null

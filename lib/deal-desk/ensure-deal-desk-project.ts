@@ -2,7 +2,9 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-/** Liefert das neueste Deal-Desk-Projekt für einen Deal oder legt eines an. */
+import { resolveDealDeskProject } from '@/lib/deal-desk/resolve-deal-desk-project'
+
+/** Liefert das Deal-Desk-Projekt für einen Deal oder legt eines an. */
 export async function ensureDealDeskProjectForDeal(
   supabase: SupabaseClient,
   params: {
@@ -14,16 +16,14 @@ export async function ensureDealDeskProjectForDeal(
 ): Promise<{ projectId: string } | { error: string }> {
   const { organizationId, userId, dealId, projectName } = params
 
-  const { data: existing, error: findError } = await supabase
+  const { data: existingRows, error: findError } = await supabase
     .from('deal_desk_projects')
-    .select('id')
+    .select('id, archived_at, updated_at')
     .eq('organization_id', organizationId)
     .eq('deal_id', dealId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
   if (findError) return { error: findError.message }
+  const existing = resolveDealDeskProject(existingRows ?? [])
   if (existing?.id) return { projectId: String(existing.id) }
 
   const { data: created, error: insertError } = await supabase
