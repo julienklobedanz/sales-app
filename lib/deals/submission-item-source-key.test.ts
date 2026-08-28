@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildExtractedSubmissionItemSourceKey,
+  buildManualSubmissionItemSourceKey,
   normalizeSubmissionIdentifier,
 } from '@/lib/deals/submission-item-source-key'
 
@@ -58,5 +59,11 @@ describe('submission item source_key', () => {
     expect(buildExtractedSubmissionItemSourceKey('doc-1', item)).toBe(
       buildExtractedSubmissionItemSourceKey('doc-1', item),
     )
+  })
+
+  it('prefixes a manual key without a document', () => {
+    const key = buildManualSubmissionItemSourceKey()
+    expect(key.startsWith('manual:')).toBe(true)
+    expect(key).not.toBe(buildManualSubmissionItemSourceKey())
   })
 })

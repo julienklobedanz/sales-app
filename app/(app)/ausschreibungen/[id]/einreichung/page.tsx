@@ -6,29 +6,34 @@ import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import { ROUTES } from '@/lib/routes'
 import { canManageTenderDocuments } from '@/lib/deals/can-manage-deal-documents'
-import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { loadSubmissionWorkspace } from '@/lib/deals/load-submission-workspace'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { loadTenderPageData } from '@/lib/tenders/load-tender-page-data'
-import { loadSubmissionWorkspace } from '@/lib/deals/load-submission-workspace'
-import { formatSubmissionWorkspaceTileState } from '@/lib/deals/submission-item-display'
+import { redirectToSelectedSubmission } from '@/lib/deals/submission-workspace-href'
 
-import { TenderPageContent } from '../tender-page-content'
+import { SubmissionWorkspaceView } from '@/app/(app)/deals/cockpit/submission-workspace-view'
 
 export const dynamic = 'force-dynamic'
 
-export default function TenderDetailPage({
+export default function TenderSubmissionPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   return (
     <Suspense fallback={<DealDetailSkeleton />}>
-      <TenderDetailPageContent params={params} />
+      <TenderSubmissionPageContent params={params} deadlineId={null} />
     </Suspense>
   )
 }
 
-async function TenderDetailPageContent({ params }: { params: Promise<{ id: string }> }) {
+export async function TenderSubmissionPageContent({
+  params,
+  deadlineId,
+}: {
+  params: Promise<{ id: string }>
+  deadlineId: string | null
+}) {
   const { id } = await params
   const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
@@ -44,36 +49,28 @@ async function TenderDetailPageContent({ params }: { params: Promise<{ id: strin
   })
   if (!tender) notFound()
 
-  const { data: orgRow } = await supabase
-    .from('organizations')
-    .select('date_display_format')
-    .eq('id', orgId)
-    .maybeSingle()
-
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  const canManageDocuments = canManageTenderDocuments(
+  const canMutate = canManageTenderDocuments(
     tender.lots,
     user.id,
     systemRole,
     functionRole,
   )
-
-  const submissionData = await loadSubmissionWorkspace(supabase, {
+  const owner = { kind: 'tender' as const, id }
+  const data = await loadSubmissionWorkspace(supabase, {
     organizationId: orgId,
-    owner: { kind: 'tender', id },
-    selectedDeadlineId: null,
-    canMutate: false,
+    owner,
+    selectedDeadlineId: deadlineId,
+    canMutate,
   })
-  const submissionState = submissionData
-    ? formatSubmissionWorkspaceTileState(submissionData.markedDeadlines)
-    : null
+  if (!data) notFound()
 
-  return (
-    <TenderPageContent
-      tender={tender}
-      orgDateDisplayFormat={normalizeOrgDateDisplayFormat(orgRow?.date_display_format)}
-      canManageDocuments={canManageDocuments}
-      submissionState={submissionState}
-    />
+  const bounce = redirectToSelectedSubmission(
+    owner,
+    data.markedDeadlines.map((row) => row.id),
+    deadlineId,
   )
+  if (bounce) redirect(bounce)
+
+  return <SubmissionWorkspaceView owner={owner} data={data} canMutate={canMutate} />
 }

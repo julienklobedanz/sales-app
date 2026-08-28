@@ -22,4 +22,5 @@ export function revalidateDealWorkspacePaths(
   for (const next of areas) {
     revalidatePath(dealWorkspaceAreaHref(dealId, next), 'page')
   }
+  revalidatePath(ROUTES.deals.submission(dealId), 'page')
 }

@@ -5,9 +5,16 @@ import { COPY } from '@/lib/copy'
 import { DEAL_WORKSPACE_AREA_ICONS } from '@/lib/deals/deal-workspace-area-icons'
 import type { DealWorkspaceTile } from '@/lib/deals/build-deal-workspace-tiles'
 import { AppIcon } from '@/lib/icons'
+import type { ReactNode } from 'react'
 
-export function DealWorkspaceTiles({ tiles }: { tiles: DealWorkspaceTile[] }) {
-  if (tiles.length === 0) return null
+export function DealWorkspaceTiles({
+  tiles,
+  extra,
+}: {
+  tiles: DealWorkspaceTile[]
+  extra?: ReactNode
+}) {
+  if (tiles.length === 0 && !extra) return null
 
   return (
     <section className="mb-6 space-y-4 border-t border-border/70 pt-8">
@@ -34,6 +41,7 @@ export function DealWorkspaceTiles({ tiles }: { tiles: DealWorkspaceTile[] }) {
             </Link>
           </Card>
         ))}
+        {extra}
       </div>
     </section>
   )

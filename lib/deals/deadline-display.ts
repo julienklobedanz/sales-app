@@ -15,6 +15,7 @@ export type DealDeadlineRow = {
   source_key: string
   suppressed_at: string | null
   pinned: boolean
+  is_submission_target: boolean
   created_at: string
   updated_at: string
 }
@@ -23,6 +24,14 @@ export function isTenderOwnedDeadline(
   row: Pick<DealDeadlineRow, 'deal_id' | 'tender_id'>,
 ): boolean {
   return row.tender_id != null && row.deal_id == null
+}
+
+/** Inherited Fristen bleiben an der Ausschreibung; dort gibt es den Toggle. */
+export function canMarkDeadlineAsSubmissionTarget(
+  ownerKind: 'deal' | 'tender',
+  deadline: Pick<DealDeadlineRow, 'deal_id' | 'tender_id'>,
+): boolean {
+  return !(ownerKind === 'deal' && isTenderOwnedDeadline(deadline))
 }
 
 export function sortDeadlinesByDueAt(deadlines: DealDeadlineRow[]): DealDeadlineRow[] {

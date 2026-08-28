@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { timelineDueToIso } from './deadline-rfp-mapper'
 import {
   dueAtToDateIso,
+  canMarkDeadlineAsSubmissionTarget,
   isTenderOwnedDeadline,
   mergeLotAndTenderDeadlines,
   type DealDeadlineRow,
@@ -23,6 +24,7 @@ function row(overrides: Partial<DealDeadlineRow>): DealDeadlineRow {
     source_key: 'k',
     suppressed_at: null,
     pinned: false,
+    is_submission_target: false,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -35,6 +37,27 @@ describe('deadline display owner helpers', () => {
       true,
     )
     expect(isTenderOwnedDeadline(row({ deal_id: 'deal-1', tender_id: null }))).toBe(false)
+  })
+
+  it('hides the Abgabe toggle on inherited lot deadlines', () => {
+    expect(
+      canMarkDeadlineAsSubmissionTarget('deal', {
+        deal_id: null,
+        tender_id: 'tender-1',
+      }),
+    ).toBe(false)
+    expect(
+      canMarkDeadlineAsSubmissionTarget('tender', {
+        deal_id: null,
+        tender_id: 'tender-1',
+      }),
+    ).toBe(true)
+    expect(
+      canMarkDeadlineAsSubmissionTarget('deal', {
+        deal_id: 'deal-1',
+        tender_id: null,
+      }),
+    ).toBe(true)
   })
 
   it('merges lot and tender rows sorted by due_at', () => {

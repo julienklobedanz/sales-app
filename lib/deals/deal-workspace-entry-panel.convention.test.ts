@@ -7,10 +7,7 @@ import { buildCollectionObjectUrl } from '@/lib/dashboard/use-collection-object-
 import { DEAL_WORKSPACE_ENTRY_PARAM } from '@/lib/deals/deal-workspace-areas'
 
 function readCockpit(name: string): string {
-  return readFileSync(
-    path.join(process.cwd(), 'app/(app)/deals/cockpit', name),
-    'utf8',
-  )
+  return readFileSync(path.join(process.cwd(), 'app/(app)/deals/cockpit', name), 'utf8')
 }
 
 function readDealsComponent(name: string): string {
@@ -49,10 +46,7 @@ describe('deal workspace entry panel conventions (§10.6)', () => {
   })
 
   it('führt keine Risiko-Mutation ein', () => {
-    for (const name of [
-      'deal-rfp-risks-section.tsx',
-      'deal-risks-entry-panel.tsx',
-    ]) {
+    for (const name of ['deal-rfp-risks-section.tsx', 'deal-risks-entry-panel.tsx']) {
       const src = readCockpit(name)
       expect(src).not.toMatch(/['"]use server['"]/)
       expect(src).not.toMatch(/updateDeal/)
@@ -77,5 +71,17 @@ describe('deal workspace entry panel conventions (§10.6)', () => {
     expect(href).not.toContain('#')
     expect(href).toMatch(/ISO/)
     expect(decodeURIComponent(href)).toContain('~2')
+  })
+
+  it('hält den Einreichungs-Arbeitsbereich ohne Eintrag-Panel', () => {
+    for (const name of [
+      'submission-workspace-view.tsx',
+      'submission-items-section.tsx',
+      'submission-workspace-layout.tsx',
+    ]) {
+      const src = readCockpit(name)
+      expect(src).not.toMatch(/DEAL_WORKSPACE_ENTRY_PARAM/)
+      expect(src).not.toMatch(/\?eintrag=/)
+    }
   })
 })
