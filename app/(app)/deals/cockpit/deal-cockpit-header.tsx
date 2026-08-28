@@ -3,9 +3,9 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { DealStatusBadge } from '@/components/deal-status-badge'
+import { RoleAvatar } from '@/components/dashboard/role-avatar'
 import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -19,34 +19,6 @@ import { DealCockpitActions } from './deal-cockpit-actions'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
-
-function initialsFromName(name: string) {
-  return name
-    .split(/\s+/)
-    .map((part) => part.trim().charAt(0))
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-function RoleAvatar({
-  name,
-  avatarUrl,
-  role,
-}: {
-  name: string | null
-  avatarUrl: string | null
-  role: string
-}) {
-  if (!name) return null
-  return (
-    <Avatar size="sm" title={`${role}: ${name}`}>
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
-      <AvatarFallback>{initialsFromName(name)}</AvatarFallback>
-    </Avatar>
-  )
-}
 
 export function DealCockpitHeader({
   deal,
