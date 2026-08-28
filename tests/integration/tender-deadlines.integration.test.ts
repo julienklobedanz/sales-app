@@ -62,18 +62,23 @@ describeIntegration('tender deadline ownership', () => {
     pinned?: boolean
     suppressedAt?: string | null
   }) {
-    const { error } = await admin.from('deal_deadlines').insert({
-      deal_id: args.dealId,
-      organization_id: fixtures.orgAId,
-      kind: 'submission',
-      label: 'Angebotsabgabe',
-      due_at: '2026-09-01T12:00:00.000Z',
-      source: 'rfp',
-      source_key: buildRfpDeadlineSourceKey(args.dealId, 'submission'),
-      pinned: args.pinned ?? false,
-      suppressed_at: args.suppressedAt ?? null,
-    })
-    if (error) throw new Error(error.message)
+    const { data, error } = await admin
+      .from('deal_deadlines')
+      .insert({
+        deal_id: args.dealId,
+        organization_id: fixtures.orgAId,
+        kind: 'submission',
+        label: 'Angebotsabgabe',
+        due_at: '2026-09-01T12:00:00.000Z',
+        source: 'rfp',
+        source_key: buildRfpDeadlineSourceKey(args.dealId, 'submission'),
+        pinned: args.pinned ?? false,
+        suppressed_at: args.suppressedAt ?? null,
+      })
+      .select('id')
+      .single()
+    if (!data?.id) throw new Error(error?.message ?? 'Frist fehlgeschlagen')
+    return data.id
   }
 
   it('assigns rfp deadlines to the tender, keeps manual/suppressed, pins, then demotes on last detach', async () => {
@@ -81,7 +86,7 @@ describeIntegration('tender deadline ownership', () => {
     const deal5 = await insertDeal(`Los 5 ${fixtures.runId}`)
     const deal7 = await insertDeal(`Los 7 ${fixtures.runId}`)
 
-    await insertRfpDeadline({ dealId: deal1, pinned: true })
+    const deal1DeadlineId = await insertRfpDeadline({ dealId: deal1, pinned: true })
     await insertRfpDeadline({ dealId: deal5 })
     await insertRfpDeadline({ dealId: deal7 })
     const { error: manualError } = await admin.from('deal_deadlines').insert({
@@ -138,6 +143,7 @@ describeIntegration('tender deadline ownership', () => {
       .eq('tender_id', tenderId!)
     expect(tenderRows).toHaveLength(1)
     expect(tenderRows![0]).toMatchObject({
+      id: deal1DeadlineId,
       source: 'rfp',
       pinned: true,
       deal_id: null,
@@ -200,6 +206,9 @@ describeIntegration('tender deadline ownership', () => {
       .from('deal_deadlines')
       .select('id, source, deal_id, tender_id')
       .in('deal_id', [deal1, deal5, deal7])
+    expect(
+      onLot?.some((row) => row.id === deal1DeadlineId && row.deal_id === deal1),
+    ).toBe(true)
     expect(onLot?.some((row) => row.source === 'manual' && row.deal_id === deal1)).toBe(
       true,
     )
