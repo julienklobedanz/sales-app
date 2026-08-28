@@ -20,6 +20,7 @@ import type { TenderPageData } from '@/lib/tenders/load-tender-page-data'
 import { statusTone } from '@/lib/ui/status-tone'
 import { SubmissionWorkspaceTile } from '@/app/(app)/deals/cockpit/submission-workspace-tile'
 import { submissionWorkspaceHref } from '@/lib/deals/submission-workspace-href'
+import { TenderFactsSurface } from '@/app/(app)/ausschreibungen/tender-facts-surface'
 
 export function TenderPageContent({
   tender,
@@ -33,19 +34,6 @@ export function TenderPageContent({
   submissionState?: string | null
 }) {
   const procedureLabel = tenderProcedureTypeLabel(tender.procedure_type)
-  const facts = [
-    tender.company_name
-      ? {
-          label: COPY.tenders.customer,
-          value: tender.company_name,
-          companyId: tender.company_id,
-        }
-      : null,
-    procedureLabel ? { label: COPY.tenders.procedureType, value: procedureLabel } : null,
-    tender.reference_number
-      ? { label: COPY.tenders.referenceNumber, value: tender.reference_number }
-      : null,
-  ].filter((row): row is NonNullable<typeof row> => row != null)
 
   return (
     <div className="space-y-8">
@@ -71,11 +59,12 @@ export function TenderPageContent({
               <Link
                 href={accountsDetailHref(tender.company_id)}
                 className="text-foreground hover:underline"
+                title={COPY.tenders.customer}
               >
                 {tender.company_name}
               </Link>
             ) : tender.company_name ? (
-              <span>{tender.company_name}</span>
+              <span title={COPY.tenders.customer}>{tender.company_name}</span>
             ) : null}
             {procedureLabel ? (
               <>
@@ -90,6 +79,16 @@ export function TenderPageContent({
                 ) : null}
                 <span aria-label={COPY.tenders.totalVolume}>
                   {formatDealVolume(tender.total_volume)}
+                </span>
+              </>
+            ) : null}
+            {tender.reference_number ? (
+              <>
+                {tender.company_name || procedureLabel || tender.total_volume ? (
+                  <span aria-hidden>·</span>
+                ) : null}
+                <span aria-label={COPY.tenders.referenceNumber}>
+                  {tender.reference_number}
                 </span>
               </>
             ) : null}
@@ -190,29 +189,19 @@ export function TenderPageContent({
         )}
       </section>
 
-      {facts.length > 0 ? (
-        <section className="space-y-3">
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {facts.map((fact) => (
-              <div key={fact.label}>
-                <dt className="text-xs text-muted-foreground">{fact.label}</dt>
-                <dd className="text-sm">
-                  {'companyId' in fact && fact.companyId ? (
-                    <Link
-                      href={accountsDetailHref(fact.companyId)}
-                      className="hover:underline"
-                    >
-                      {fact.value}
-                    </Link>
-                  ) : (
-                    fact.value
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
+      <TenderFactsSurface
+        tender={{
+          id: tender.id,
+          title: tender.title,
+          procedure_type: tender.procedure_type,
+          reference_number: tender.reference_number,
+          total_volume: tender.total_volume,
+          max_lots_bid: tender.max_lots_bid,
+          max_lots_award: tender.max_lots_award,
+          lot_priority_required: tender.lot_priority_required,
+        }}
+        canManage={canManageDocuments}
+      />
     </div>
   )
 }

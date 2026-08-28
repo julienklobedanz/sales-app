@@ -39,6 +39,9 @@ export type TenderPageData = {
   procedure_type: string | null
   reference_number: string | null
   total_volume: string | null
+  max_lots_bid: number | null
+  max_lots_award: number | null
+  lot_priority_required: boolean | null
   derivedStatus: DerivedTenderStatus
   lots: TenderPageLot[]
   deadlines: DealDeadlineRow[]
@@ -59,7 +62,7 @@ export async function loadTenderPageData(
   const { data: tender, error } = await supabase
     .from('tenders')
     .select(
-      'id, title, company_id, procedure_type, reference_number, total_volume, companies ( name )',
+      'id, title, company_id, procedure_type, reference_number, total_volume, max_lots_bid, max_lots_award, lot_priority_required, companies ( name )',
     )
     .eq('id', args.tenderId)
     .eq('organization_id', args.organizationId)
@@ -168,6 +171,9 @@ export async function loadTenderPageData(
     procedure_type: tender.procedure_type,
     reference_number: tender.reference_number,
     total_volume: tender.total_volume,
+    max_lots_bid: tender.max_lots_bid,
+    max_lots_award: tender.max_lots_award,
+    lot_priority_required: tender.lot_priority_required,
     derivedStatus: deriveTenderStatus(lots.map((lot) => lot.status)),
     lots,
     deadlines,

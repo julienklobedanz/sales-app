@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
+import { FactsDl } from '@/components/dashboard/facts-dl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Collapsible,
@@ -17,21 +18,6 @@ import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 import { DealRfpLotsSection } from './deal-rfp-lots-section'
-
-function FactsDl({ rows }: { rows: RfpStammdatenRow[] }) {
-  return (
-    <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-      {rows.map((row) => (
-        <div key={row.key} className="min-w-0">
-          <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {row.label}
-          </dt>
-          <dd className="mt-1 text-sm font-medium leading-snug">{row.value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
 
 export function DealRfpFactsSurface({
   rows,
