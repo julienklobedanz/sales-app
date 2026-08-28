@@ -1,4 +1,5 @@
 import { daysUntil } from '@/lib/deal-desk/timeline-display'
+import type { ResolvedDealDeadline } from '@/lib/deals/resolve-deal-deadline'
 
 import type { DealRow, DealStatus } from './types'
 import type { StatusFilterValue } from './deals-table-constants'
@@ -21,6 +22,15 @@ export function formatDealCollectionDeadline(
   if (days === -1) return 'vor 1 Tag'
   if (days > 1) return `in ${days} Tagen`
   return `vor ${Math.abs(days)} Tagen`
+}
+
+export function formatResolvedCollectionDeadline(
+  deadline: Pick<ResolvedDealDeadline, 'date' | 'text'>,
+  now: Date = new Date(),
+): string | null {
+  if (deadline.date) return formatDealCollectionDeadline(deadline.date, now)
+  const text = deadline.text?.trim()
+  return text || null
 }
 
 export function isDealExpiringIn30Days(

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import { COPY } from '@/lib/copy'
 import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
-import type { SalesRepDashboardModel } from '@/lib/dashboard-home/dashboard-home-types'
+import type {
+  SalesRepDashboardModel,
+  SalesRepDealCard,
+} from '@/lib/dashboard-home/dashboard-home-types'
 
 function baseModel(
   overrides: Partial<SalesRepDashboardModel> = {},
@@ -31,7 +35,12 @@ describe('buildSalesRepQueue', () => {
             company_id: 'c1',
             company_name: 'Beta AG',
             volume: '0,9 Mio',
-            expiry_date: '2026-07-15',
+            deadline: {
+              date: '2026-07-15',
+              text: null,
+              isApproximate: false,
+              origin: 'legacy',
+            },
             linkedCount: 0,
             bestMatchScore: null,
             quickShareReferenceId: null,
@@ -94,7 +103,12 @@ describe('buildSalesRepQueue', () => {
             company_id: 'c1',
             company_name: 'Beta AG',
             volume: '1200000',
-            expiry_date: '2026-07-15',
+            deadline: {
+              date: '2026-07-15',
+              text: null,
+              isApproximate: false,
+              origin: 'legacy',
+            },
             linkedCount: 1,
             bestMatchScore: 0.3,
             quickShareReferenceId: null,
@@ -107,4 +121,66 @@ describe('buildSalesRepQueue', () => {
     expect(queue[0]?.meta).toContain('1.200.000 €')
     expect(queue[0]?.meta).not.toContain('1200000')
   })
+
+  it('zeigt due_text ohne Datum unverändert in der Meta-Zeile', () => {
+    const queue = buildSalesRepQueue(
+      baseModel({
+        activeDeals: [
+          gapDeal({
+            deadline: {
+              date: null,
+              text: 'September 2026',
+              isApproximate: true,
+              origin: 'tender',
+            },
+          }),
+        ],
+      }),
+    )
+
+    expect(queue[0]?.meta).toContain('September 2026')
+    expect(queue[0]?.meta).not.toMatch(/\d+\s+(Tag|Tagen|Wo)\b/)
+    expect(queue[0]?.meta).not.toContain(COPY.dashboard.home.salesRep.dealOpen)
+  })
+
+  it('zeigt ohne Datum und ohne Text die offene-Frist-Copy', () => {
+    const queue = buildSalesRepQueue(
+      baseModel({
+        activeDeals: [
+          gapDeal({
+            deadline: {
+              date: null,
+              text: null,
+              isApproximate: false,
+              origin: 'legacy',
+            },
+          }),
+        ],
+      }),
+    )
+
+    expect(queue[0]?.meta).toContain(COPY.dashboard.home.salesRep.dealOpen)
+  })
 })
+
+function gapDeal(overrides: Partial<SalesRepDealCard> = {}): SalesRepDealCard {
+  return {
+    id: 'd1',
+    title: 'ARD 2026',
+    status: 'open',
+    company_id: 'c1',
+    company_name: 'ARD',
+    volume: null,
+    deadline: {
+      date: null,
+      text: null,
+      isApproximate: false,
+      origin: 'legacy',
+    },
+    linkedCount: 0,
+    bestMatchScore: null,
+    quickShareReferenceId: null,
+    recentSignalCount: 0,
+    ...overrides,
+  }
+}

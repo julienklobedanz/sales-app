@@ -41,7 +41,10 @@ export function mergeLotAndTenderDeadlines(
   return sortDeadlinesByDueAt([...lotDeadlines, ...tenderDeadlines])
 }
 
-function dueAtToDateIso(dueAt: string): string {
+/** Kalendertag aus `due_at`. */
+export function dueAtToDateIso(dueAt: string): string {
+  // Gültig, weil timelineDueToIso Ortszeit als UTC schreibt (ohne Uhrzeit: T12:00Z).
+  // Ein echter Offset im Feld — Import, Kalender-Sync — würde hier den Vortag liefern.
   return dueAt.slice(0, 10)
 }
 

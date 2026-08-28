@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_RESOLVED_DEADLINE } from '@/lib/deals/resolve-deal-deadline'
 import {
   DEAL_ROW_DERIVED_FIELDS,
   DEAL_TABLE_ALLOWED_COLUMNS,
@@ -26,6 +27,7 @@ describe('deal schema guardrail (F2)', () => {
       tender_id: null,
       tender: null,
       expiry_date: null,
+      deadline: EMPTY_RESOLVED_DEADLINE,
       created_at: new Date().toISOString(),
       updated_at: null,
       best_match_score: null,

@@ -13,6 +13,7 @@ import {
 } from '@/components/dashboard/dashboard-home-primitives'
 import { Button } from '@/components/ui/button'
 import { COPY } from '@/lib/copy'
+import { compareResolvedDeadlines } from '@/lib/deals/resolve-deal-deadline'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
 import type { SalesRepDashboardModel } from '@/app/(app)/dashboard-home-data'
@@ -74,11 +75,9 @@ export function SalesRepDashboard({
         },
       ]
 
-  const sortedDeals = [...data.activeDeals].sort((a, b) => {
-    const da = a.expiry_date ? new Date(`${a.expiry_date}T12:00:00`).getTime() : Infinity
-    const db = b.expiry_date ? new Date(`${b.expiry_date}T12:00:00`).getTime() : Infinity
-    return da - db
-  })
+  const sortedDeals = [...data.activeDeals].sort((a, b) =>
+    compareResolvedDeadlines(a.deadline, b.deadline),
+  )
 
   return (
     <>
@@ -162,15 +161,15 @@ export function SalesRepDashboard({
               <div className="min-w-0 flex-1 space-y-0">
                 {sortedDeals.map((deal) => {
                   const hasProof = deal.linkedCount > 0
-                  const deadline = deal.expiry_date
-                    ? new Date(`${deal.expiry_date}T12:00:00`).toLocaleDateString(
+                  const deadline = deal.deadline.date
+                    ? new Date(`${deal.deadline.date}T12:00:00`).toLocaleDateString(
                         'de-DE',
                         {
                           day: 'numeric',
                           month: 'short',
                         },
                       )
-                    : null
+                    : deal.deadline.text
                   return (
                     <div
                       key={deal.id}

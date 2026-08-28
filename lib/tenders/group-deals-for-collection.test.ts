@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import type { DealRow } from '@/app/(app)/deals/types'
+import { resolvedFromExpiry } from '@/lib/deals/resolve-deal-deadline'
 import { ROUTES } from '@/lib/routes'
 
 import { groupDealsForCollection } from './group-deals-for-collection'
 
 function deal(partial: Partial<DealRow> & Pick<DealRow, 'id' | 'title'>): DealRow {
+  const expiry_date = partial.expiry_date ?? null
   return {
     company_id: null,
     company_name: null,
@@ -21,12 +23,13 @@ function deal(partial: Partial<DealRow> & Pick<DealRow, 'id' | 'title'>): DealRo
     is_rfp_mode: false,
     tender_id: null,
     tender: null,
-    expiry_date: null,
+    expiry_date,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: null,
     best_match_score: null,
     linked_refs: [],
     ...partial,
+    deadline: partial.deadline ?? resolvedFromExpiry(partial.expiry_date ?? expiry_date),
   }
 }
 
@@ -103,7 +106,7 @@ describe('groupDealsForCollection', () => {
     expect(band.title).toBe('BMI 2026')
     expect(band.href).toBe(ROUTES.tenders.detail('t-a'))
     expect(band.derivedStatusLabel).toBe('läuft · 1 von 2 gewonnen')
-    expect(band.nextDeadline).toBe('2026-09-01')
+    expect(band.nextDeadline.date).toBe('2026-09-01')
     expect(band.companyName).toBe('BMI')
 
     const lot2 = rows[1]
@@ -116,5 +119,41 @@ describe('groupDealsForCollection', () => {
     expect(lot2.volume).toBe('10 Mio. €')
 
     expect(rows[3]?.title).toBe('Allein')
+  })
+
+  it('nimmt die maßgebliche Frist, nicht expiry_date, für das Band', () => {
+    const rows = groupDealsForCollection([
+      deal({
+        id: 'd1',
+        title: 'Los 1',
+        tender_id: 't-a',
+        tender: tenderA,
+        expiry_date: '2026-09-01',
+        deadline: {
+          date: '2026-10-15',
+          text: null,
+          isApproximate: false,
+          origin: 'tender',
+        },
+      }),
+      deal({
+        id: 'd2',
+        title: 'Los 2',
+        tender_id: 't-a',
+        tender: tenderA,
+        expiry_date: '2026-09-01',
+        deadline: {
+          date: '2026-10-15',
+          text: null,
+          isApproximate: false,
+          origin: 'tender',
+        },
+      }),
+    ])
+    const band = rows[0]
+    expect(band?.rowKind).toBe('band')
+    if (band?.rowKind !== 'band') return
+    expect(band.nextDeadline.date).toBe('2026-10-15')
+    expect(band.nextDeadline.origin).toBe('tender')
   })
 })

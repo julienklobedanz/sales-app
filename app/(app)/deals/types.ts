@@ -1,3 +1,5 @@
+import type { ResolvedDealDeadline } from '@/lib/deals/resolve-deal-deadline'
+
 export type DealStatus =
   | 'open'
   | 'rfp'
@@ -39,6 +41,8 @@ export type DealRow = {
     total_volume: string | null
   } | null
   expiry_date: string | null
+  /** Maßgebliche Frist: Los-submission, sonst Ausschreibung, sonst expiry_date. */
+  deadline: ResolvedDealDeadline
   salesforce_opportunity_id?: string | null
   crm_opportunity_id?: string | null
   crm_source?: string | null
@@ -99,6 +103,7 @@ export const DEAL_ROW_DERIVED_FIELDS = [
   'linked_refs',
   'best_match_score',
   'tender',
+  'deadline',
 ] as const
 
 export type DealWithReferences = DealRow & {

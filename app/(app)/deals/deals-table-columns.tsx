@@ -11,6 +11,7 @@ import { TableTitleHoverContent } from '@/components/table/table-title-hover-con
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { dealProofDisplay } from '@/lib/deals/deal-proof-display'
+import { compareResolvedDeadlines } from '@/lib/deals/resolve-deal-deadline'
 import { formatDealVolume } from '@/lib/format'
 import {
   isDealCollectionLotRow,
@@ -19,7 +20,7 @@ import {
 
 import { DEAL_COL_LABELS } from './deals-table-constants'
 import {
-  formatDealCollectionDeadline,
+  formatResolvedCollectionDeadline,
   isDealExpiringIn30Days,
 } from './deals-table-format'
 
@@ -188,38 +189,31 @@ export function buildDealsTableColumns(): ColumnDef<DealCollectionRow>[] {
     {
       id: 'expiry_date',
       accessorFn: (row) =>
-        isDealCollectionLotRow(row) ? row.expiry_date : row.nextDeadline,
+        isDealCollectionLotRow(row) ? row.deadline.date : row.nextDeadline.date,
       meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
       size: 120,
       minSize: 88,
-      sortingFn: (rowA, rowB) => {
-        const a = isDealCollectionLotRow(rowA.original)
-          ? rowA.original.expiry_date
-          : null
-        const b = isDealCollectionLotRow(rowB.original)
-          ? rowB.original.expiry_date
-          : null
-        if (!a && !b) return 0
-        if (!a) return 1
-        if (!b) return -1
-        return new Date(a).getTime() - new Date(b).getTime()
-      },
+      sortingFn: (rowA, rowB) =>
+        compareResolvedDeadlines(
+          isDealCollectionLotRow(rowA.original)
+            ? rowA.original.deadline
+            : rowA.original.nextDeadline,
+          isDealCollectionLotRow(rowB.original)
+            ? rowB.original.deadline
+            : rowB.original.nextDeadline,
+        ),
       header: ({ column }) => (
         <TableSortableHeader label={COPY.deals.deadlineColumn} column={column} />
       ),
       cell: ({ row }) => {
         if (!isDealCollectionLotRow(row.original)) return null
-        const isHot = isDealExpiringIn30Days(
-          row.original.expiry_date,
-          row.original.status,
-        )
+        const deadline = row.original.deadline
+        const isHot = isDealExpiringIn30Days(deadline.date, row.original.status)
         return (
           <span
             className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}
           >
-            {row.original.expiry_date
-              ? formatDealCollectionDeadline(row.original.expiry_date)
-              : '—'}
+            {formatResolvedCollectionDeadline(deadline) ?? '—'}
           </span>
         )
       },

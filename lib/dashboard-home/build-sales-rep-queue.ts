@@ -22,9 +22,9 @@ export type SalesRepQueueItem = {
 const PARTIAL_MATCH_CUTOFF = 0.47
 const c = () => COPY.dashboard.home.salesRep
 
-function daysUntilExpiry(expiryDate: string | null, refDate = new Date()): number | null {
-  if (!expiryDate?.trim()) return null
-  const end = new Date(`${expiryDate}T12:00:00`)
+function daysUntilExpiry(date: string | null, refDate = new Date()): number | null {
+  if (!date?.trim()) return null
+  const end = new Date(`${date}T12:00:00`)
   if (Number.isNaN(end.getTime())) return null
   const today = new Date(refDate)
   today.setHours(0, 0, 0, 0)
@@ -32,8 +32,10 @@ function daysUntilExpiry(expiryDate: string | null, refDate = new Date()): numbe
   return Math.round((end.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
 }
 
-function formatDealDeadline(days: number | null): string {
+function formatDealDeadline(deal: SalesRepDashboardModel['activeDeals'][number]): string {
   const copy = c()
+  if (deal.deadline.text && !deal.deadline.date) return deal.deadline.text
+  const days = daysUntilExpiry(deal.deadline.date)
   if (days == null) return copy.dealOpen
   if (days < 0) return copy.dealOverdue
   if (days === 0) return copy.dealToday
@@ -45,8 +47,7 @@ function formatDealDeadline(days: number | null): string {
 
 function dealLabel(deal: SalesRepDashboardModel['activeDeals'][number]): string {
   const company = deal.company_name ?? deal.title
-  const deadline = formatDealDeadline(daysUntilExpiry(deal.expiry_date))
-  return `${company} · ${deadline}`
+  return `${company} · ${formatDealDeadline(deal)}`
 }
 
 export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueItem[] {
@@ -56,8 +57,8 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
   const gapDeals = [...data.activeDeals]
     .filter((d) => d.linkedCount === 0)
     .sort((a, b) => {
-      const da = daysUntilExpiry(a.expiry_date) ?? 9999
-      const db = daysUntilExpiry(b.expiry_date) ?? 9999
+      const da = daysUntilExpiry(a.deadline.date) ?? 9999
+      const db = daysUntilExpiry(b.deadline.date) ?? 9999
       return da - db
     })
 
@@ -85,10 +86,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
       id: `deal-warn-${deal.id}`,
       tone: 'warn',
       title: `${deal.company_name ?? deal.title} — ${copy.queueWeakProof}`,
-      meta: [
-        deal.volume ? formatDealVolume(deal.volume) : null,
-        dealLabel(deal),
-      ]
+      meta: [deal.volume ? formatDealVolume(deal.volume) : null, dealLabel(deal)]
         .filter(Boolean)
         .join(' · '),
       ctaLabel: copy.queueFindProof,

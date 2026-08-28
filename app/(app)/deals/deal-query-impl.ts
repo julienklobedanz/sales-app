@@ -2,6 +2,11 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile } from '@/lib/auth/request-user'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
+import { loadResolvedDealDeadlines } from '@/lib/deals/load-resolved-deal-deadlines'
+import {
+  compareResolvedDeadlines,
+  EMPTY_RESOLVED_DEADLINE,
+} from '@/lib/deals/resolve-deal-deadline'
 import { tenderSummaryFromJoin } from '@/lib/tenders/tender-summary-from-join'
 import type { DealRow, DealWithReferences } from './types'
 
@@ -127,42 +132,56 @@ export async function getDealsImpl(): Promise<DealRow[]> {
     }
   }
 
-  return (rows ?? []).map((r) => {
-    const company = accountFromJoin(r.companies)
-    return {
+  const deadlineByDeal = await loadResolvedDealDeadlines(supabase, {
+    organizationId: orgId,
+    deals: (rows ?? []).map((r) => ({
       id: r.id,
-      title: r.title ?? '',
-      company_id: r.company_id ?? null,
-      company_name: company?.name ?? null,
-      company_logo_url: company?.logoUrl ?? null,
-      industry: r.industry ?? null,
-      volume: r.volume ?? null,
-      requirements_text: r.requirements_text ?? null,
-      incumbent_provider: r.incumbent_provider ?? null,
-      is_public: r.is_public ?? true,
-      account_manager_id: r.account_manager_id ?? null,
-      account_manager_name: r.account_manager_id
-        ? (names[r.account_manager_id] ?? null)
-        : null,
-      account_manager_avatar_url: r.account_manager_id
-        ? (avatars[r.account_manager_id] ?? null)
-        : null,
-      sales_manager_id: r.sales_manager_id ?? null,
-      sales_manager_name: r.sales_manager_id ? (names[r.sales_manager_id] ?? null) : null,
-      sales_manager_avatar_url: r.sales_manager_id
-        ? (avatars[r.sales_manager_id] ?? null)
-        : null,
-      status: normalizeDealStatus(r.status),
-      is_rfp_mode: Boolean(r.is_rfp_mode),
       tender_id: r.tender_id ?? null,
-      tender: tenderSummaryFromJoin(r.tenders),
       expiry_date: r.expiry_date ?? null,
-      created_at: r.created_at ?? '',
-      updated_at: r.updated_at ?? null,
-      linked_refs: linkedRefsMap[r.id] ?? [],
-      best_match_score: bestScoreMap[r.id] ?? null,
-    }
+    })),
   })
+
+  return (rows ?? [])
+    .map((r) => {
+      const company = accountFromJoin(r.companies)
+      return {
+        id: r.id,
+        title: r.title ?? '',
+        company_id: r.company_id ?? null,
+        company_name: company?.name ?? null,
+        company_logo_url: company?.logoUrl ?? null,
+        industry: r.industry ?? null,
+        volume: r.volume ?? null,
+        requirements_text: r.requirements_text ?? null,
+        incumbent_provider: r.incumbent_provider ?? null,
+        is_public: r.is_public ?? true,
+        account_manager_id: r.account_manager_id ?? null,
+        account_manager_name: r.account_manager_id
+          ? (names[r.account_manager_id] ?? null)
+          : null,
+        account_manager_avatar_url: r.account_manager_id
+          ? (avatars[r.account_manager_id] ?? null)
+          : null,
+        sales_manager_id: r.sales_manager_id ?? null,
+        sales_manager_name: r.sales_manager_id
+          ? (names[r.sales_manager_id] ?? null)
+          : null,
+        sales_manager_avatar_url: r.sales_manager_id
+          ? (avatars[r.sales_manager_id] ?? null)
+          : null,
+        status: normalizeDealStatus(r.status),
+        is_rfp_mode: Boolean(r.is_rfp_mode),
+        tender_id: r.tender_id ?? null,
+        tender: tenderSummaryFromJoin(r.tenders),
+        expiry_date: r.expiry_date ?? null,
+        deadline: deadlineByDeal.get(r.id) ?? EMPTY_RESOLVED_DEADLINE,
+        created_at: r.created_at ?? '',
+        updated_at: r.updated_at ?? null,
+        linked_refs: linkedRefsMap[r.id] ?? [],
+        best_match_score: bestScoreMap[r.id] ?? null,
+      }
+    })
+    .sort((a, b) => compareResolvedDeadlines(a.deadline, b.deadline))
 }
 
 export async function getDealWithReferencesImpl(
@@ -267,6 +286,17 @@ export async function getDealWithReferencesImpl(
     ? (managerProfiles[deal.sales_manager_id]?.avatar_url ?? null)
     : null
 
+  const deadlineByDeal = await loadResolvedDealDeadlines(supabase, {
+    organizationId: orgId,
+    deals: [
+      {
+        id: deal.id,
+        tender_id: deal.tender_id ?? null,
+        expiry_date: deal.expiry_date ?? null,
+      },
+    ],
+  })
+
   const company = accountFromJoin(deal.companies)
 
   const best_match_score = references.reduce<number | null>((max, ref) => {
@@ -304,6 +334,7 @@ export async function getDealWithReferencesImpl(
     tender_id: deal.tender_id ?? null,
     tender: tenderSummaryFromJoin(deal.tenders),
     expiry_date: deal.expiry_date ?? null,
+    deadline: deadlineByDeal.get(deal.id) ?? EMPTY_RESOLVED_DEADLINE,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
     linked_refs,

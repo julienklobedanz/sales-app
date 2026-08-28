@@ -131,10 +131,7 @@ export function DealForm({
       />
       <CardHeader>
         <CardTitle>Neuer Deal</CardTitle>
-        <CardDescription>
-          Titel, Account (Suche), Volumen und Phase sind Pflicht. Optional: Beschreibung
-          und Closing-Datum.
-        </CardDescription>
+        <CardDescription>{COPY.deals.formDescription}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -241,7 +238,7 @@ export function DealForm({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="expiry_date">Closing-Datum (optional)</Label>
+            <Label htmlFor="expiry_date">{COPY.deals.formDeadlineLabel}</Label>
             <Input id="expiry_date" name="expiry_date" type="date" disabled={pending} />
           </div>
           <div className="space-y-2">

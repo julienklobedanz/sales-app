@@ -36,7 +36,7 @@ export async function loadSalesRepDashboardData(
       company_name: d.company_name,
       company_logo_url: d.company_logo_url ?? null,
       volume: d.volume ?? null,
-      expiry_date: d.expiry_date,
+      deadline: d.deadline,
       linkedCount: d.linked_refs?.length ?? 0,
       bestMatchScore: d.best_match_score ?? null,
       quickShareReferenceId: d.linked_refs?.[0]?.id ?? null,

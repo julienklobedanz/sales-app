@@ -1,4 +1,9 @@
 import type { DealRow } from '@/app/(app)/deals/types'
+import {
+  compareResolvedDeadlines,
+  earliestResolvedDeadline,
+  type ResolvedDealDeadline,
+} from '@/lib/deals/resolve-deal-deadline'
 import { ROUTES } from '@/lib/routes'
 import { deriveTenderStatus } from './derive-tender-status'
 import { formatTenderStatusLabel } from './tender-status-label'
@@ -15,7 +20,7 @@ export type DealCollectionBandRow = {
   href: string
   title: string
   companyName: string | null
-  nextDeadline: string | null
+  nextDeadline: ResolvedDealDeadline
   derivedStatusLabel: string
   collectionOrder: number
 }
@@ -26,12 +31,6 @@ export function isDealCollectionLotRow(
   row: DealCollectionRow,
 ): row is DealCollectionLotRow {
   return row.rowKind === 'lot'
-}
-
-function earliestExpiry(dates: Array<string | null>): string | null {
-  const filled = dates.filter((value): value is string => Boolean(value))
-  if (filled.length === 0) return null
-  return [...filled].sort()[0] ?? null
 }
 
 function asLotRow(deal: DealRow): DealCollectionLotRow {
@@ -57,12 +56,12 @@ export function groupDealsForCollection(deals: DealRow[]): DealCollectionRow[] {
     byTender.set(deal.tender_id, lots)
   }
 
-  type Bucket = { sortDate: string | null; rows: DealCollectionRow[] }
+  type Bucket = { deadline: ResolvedDealDeadline; rows: DealCollectionRow[] }
   const buckets: Bucket[] = []
 
   for (const deal of ungrouped) {
     buckets.push({
-      sortDate: deal.expiry_date,
+      deadline: deal.deadline,
       rows: [asLotRow(deal)],
     })
   }
@@ -71,7 +70,7 @@ export function groupDealsForCollection(deals: DealRow[]): DealCollectionRow[] {
     if (lots.length <= 1) {
       for (const deal of lots) {
         buckets.push({
-          sortDate: deal.expiry_date,
+          deadline: deal.deadline,
           rows: [asLotRow(deal)],
         })
       }
@@ -79,7 +78,7 @@ export function groupDealsForCollection(deals: DealRow[]): DealCollectionRow[] {
     }
 
     const tender = lots[0]!.tender!
-    const sortDate = earliestExpiry(lots.map((lot) => lot.expiry_date))
+    const nextDeadline = earliestResolvedDeadline(lots.map((lot) => lot.deadline))
     const derivedStatus = deriveTenderStatus(lots.map((lot) => lot.status))
     const band: DealCollectionBandRow = {
       rowKind: 'band',
@@ -87,20 +86,15 @@ export function groupDealsForCollection(deals: DealRow[]): DealCollectionRow[] {
       href: ROUTES.tenders.detail(tender.id),
       title: tender.title,
       companyName: tender.company_name,
-      nextDeadline: sortDate,
+      nextDeadline,
       derivedStatusLabel: formatTenderStatusLabel(derivedStatus),
       collectionOrder: 0,
     }
 
-    buckets.push({ sortDate, rows: [band, ...lots.map(asLotRow)] })
+    buckets.push({ deadline: nextDeadline, rows: [band, ...lots.map(asLotRow)] })
   }
 
-  buckets.sort((a, b) => {
-    if (a.sortDate === b.sortDate) return 0
-    if (!a.sortDate) return 1
-    if (!b.sortDate) return -1
-    return a.sortDate.localeCompare(b.sortDate)
-  })
+  buckets.sort((a, b) => compareResolvedDeadlines(a.deadline, b.deadline))
 
   return buckets
     .flatMap((bucket) => bucket.rows)
