@@ -428,6 +428,7 @@ export type Database = {
           due_text: string | null
           id: string
           is_approximate: boolean
+          is_submission_target: boolean
           kind: Database['public']['Enums']['deal_deadline_kind']
           label: string
           organization_id: string
@@ -446,6 +447,7 @@ export type Database = {
           due_text?: string | null
           id?: string
           is_approximate?: boolean
+          is_submission_target?: boolean
           kind?: Database['public']['Enums']['deal_deadline_kind']
           label: string
           organization_id: string
@@ -464,6 +466,7 @@ export type Database = {
           due_text?: string | null
           id?: string
           is_approximate?: boolean
+          is_submission_target?: boolean
           kind?: Database['public']['Enums']['deal_deadline_kind']
           label?: string
           organization_id?: string
@@ -2934,6 +2937,95 @@ export type Database = {
           },
         ]
       }
+      submission_items: {
+        Row: {
+          confidence: string
+          created_at: string
+          deadline_id: string | null
+          document_id: string | null
+          id: string
+          identifier: string | null
+          match_source: string | null
+          not_applicable_at: string | null
+          not_applicable_by: string | null
+          organization_id: string
+          sort_order: number
+          source: string
+          source_document_id: string
+          source_key: string
+          state: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          confidence: string
+          created_at?: string
+          deadline_id?: string | null
+          document_id?: string | null
+          id?: string
+          identifier?: string | null
+          match_source?: string | null
+          not_applicable_at?: string | null
+          not_applicable_by?: string | null
+          organization_id: string
+          sort_order?: number
+          source: string
+          source_document_id: string
+          source_key: string
+          state?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: string
+          created_at?: string
+          deadline_id?: string | null
+          document_id?: string | null
+          id?: string
+          identifier?: string | null
+          match_source?: string | null
+          not_applicable_at?: string | null
+          not_applicable_by?: string | null
+          organization_id?: string
+          sort_order?: number
+          source?: string
+          source_document_id?: string
+          source_key?: string
+          state?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'submission_items_deadline_id_fkey'
+            columns: ['deadline_id']
+            isOneToOne: false
+            referencedRelation: 'deal_deadlines'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'submission_items_document_id_fkey'
+            columns: ['document_id']
+            isOneToOne: false
+            referencedRelation: 'deal_documents'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'submission_items_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'submission_items_source_document_id_fkey'
+            columns: ['source_document_id']
+            isOneToOne: false
+            referencedRelation: 'deal_documents'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       tenders: {
         Row: {
           company_id: string | null
@@ -3242,6 +3334,19 @@ export type Database = {
           p_label: string
           p_organization_id: string
           p_source_key: string
+        }
+        Returns: undefined
+      }
+      upsert_extracted_submission_item: {
+        Args: {
+          p_confidence: string
+          p_identifier: string
+          p_match_source: string
+          p_organization_id: string
+          p_sort_order: number
+          p_source_document_id: string
+          p_source_key: string
+          p_title: string
         }
         Returns: undefined
       }

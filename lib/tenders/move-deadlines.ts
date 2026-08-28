@@ -29,6 +29,7 @@ async function relocateDeadline(
       deal_id: args.dealId,
       tender_id: args.tenderId,
       source_key: args.sourceKey,
+      is_submission_target: false,
       updated_at: new Date().toISOString(),
     })
     .eq('id', args.id)
