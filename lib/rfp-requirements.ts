@@ -4,6 +4,8 @@ import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 
 const MODEL = 'gpt-4o-mini'
 const MAX_RFP_CHARS = 100_000
+const MAX_RFP_REQUIREMENTS = 30
+const RFP_REQUIREMENTS_SEED = 1
 
 export type ExtractedRfpRequirement = {
   id: string
@@ -17,7 +19,9 @@ export type ExtractedRfpRequirement = {
 export async function extractRequirementsFromRfpText(
   apiKey: string,
   plainText: string,
-): Promise<{ requirements: ExtractedRfpRequirement[] } | { error: string }> {
+): Promise<
+  { requirements: ExtractedRfpRequirement[]; truncated: boolean } | { error: string }
+> {
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {
     return { error: 'Zu wenig Text für eine Anforderungsanalyse.' }
@@ -27,7 +31,10 @@ export async function extractRequirementsFromRfpText(
 
 Regeln:
 - Nur echte Anforderungen (müssen/sollten/werden gefordert), keine Floskeln.
-- 5 bis 30 Einträge, jeweils ein Satz oder kurzer Absatz.
+- 5 bis ${MAX_RFP_REQUIREMENTS} Einträge, jeweils ein Satz oder kurzer Absatz.
+- Der text ist der Wortlaut aus dem Dokument, nicht seine Zusammenfassung. Kein Kürzen, kein Umformulieren, kein Vereinheitlichen der Satzform. Zusammengehörige Sätze dürfen zusammen übernommen werden, aber ungeschrieben.
+- Falsch: „Der Auftragnehmer muss einen qualifizierten Objektleiter einsetzen …“
+- Richtig: „Der Auftragnehmer setzt einen qualifizierten Objektleiter ein …“
 - Jede Anforderung braucht eine stabile id (kebab-case, z. B. req-hosting-eu).
 - category optional: z. B. Security, Hosting, SLA, Compliance, Integration.
 
@@ -48,6 +55,8 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
           { role: 'user', content: body },
         ],
         temperature: 0,
+        // temperature: 0 ist gierige Auswahl, nicht Reproduzierbarkeit; ohne seed variiert der Anbieter.
+        seed: RFP_REQUIREMENTS_SEED,
         max_tokens: 4096,
         response_format: { type: 'json_object' },
       }),
@@ -92,7 +101,11 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
       return { error: 'Keine gültigen Anforderungen im JSON.' }
     }
 
-    return { requirements: requirements.slice(0, 35) }
+    const truncated = requirements.length > MAX_RFP_REQUIREMENTS
+    return {
+      requirements: requirements.slice(0, MAX_RFP_REQUIREMENTS),
+      truncated,
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unbekannter Fehler'
     return { error: message }
