@@ -322,7 +322,9 @@ describeIntegration('upsert_extracted_submission_item', () => {
     expect(after).toBeTruthy()
     expect(after?.source_document_id).toBeNull()
     expect(after?.review).toBe('confirmed')
-    expect(after?.not_applicable_at).toBe(stampedAt)
+    expect(new Date(after?.not_applicable_at ?? '').getTime()).toBe(
+      new Date(stampedAt).getTime(),
+    )
     expect(after?.not_applicable_by).toBe(fixtures.admin.id)
     expect(after?.state).toBe('not_applicable')
   })
