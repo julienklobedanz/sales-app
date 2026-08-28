@@ -234,6 +234,8 @@ export const COPY = {
         'Fristen erscheinen nach RFP-Analyse oder wenn du manuell Termine hinzufügst.',
       addDeadline: 'Termin',
       editDeadline: 'Termin bearbeiten',
+      deadlineFromTender: 'Ausschreibung',
+      editInheritedDeadline: 'An der Ausschreibung bearbeiten',
       downloadDeadlinesIcs: 'ICS',
       downloadDeadlinesIcsAria: 'Alle Termine als Kalenderdatei (.ics) herunterladen',
       downloadDeadlinesIcsEmpty: 'Keine Termine mit festem Datum zum Kalender-Export.',

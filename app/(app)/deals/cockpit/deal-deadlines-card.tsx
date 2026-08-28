@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -42,6 +43,8 @@ import {
   formatNextDeadlineHeadline,
   deadlineDaysUntil,
   pickNextDeadline,
+  isTenderOwnedDeadline,
+  sortDeadlinesByDueAt,
   type DealDeadlineRow,
 } from '@/lib/deals/deadline-display'
 import type { OrgDateDisplayFormat } from '@/lib/format'
@@ -54,6 +57,7 @@ import {
   type DealDeadlineKind,
 } from '@/lib/deals/deadline-types'
 import { cn } from '@/lib/utils'
+import { ROUTES } from '@/lib/routes'
 
 import {
   createDealDeadlineManual,
@@ -99,14 +103,16 @@ function deadlineMarkerTone(d: DealDeadlineRow): 'past' | 'today' | 'future' {
   return 'future'
 }
 
+export type DeadlineCardOwner =
+  | { kind: 'deal'; id: string; title: string }
+  | { kind: 'tender'; id: string; title: string }
+
 export function DealDeadlinesCard({
-  dealId,
-  dealTitle,
+  owner,
   deadlines,
   orgDateDisplayFormat = 'de-DE',
 }: {
-  dealId: string
-  dealTitle: string
+  owner: DeadlineCardOwner
   deadlines: DealDeadlineRow[]
   orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
@@ -114,14 +120,7 @@ export function DealDeadlinesCard({
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<DealDeadlineRow | null>(null)
 
-  const sorted = useMemo(() => {
-    return [...deadlines].sort((a, b) => {
-      if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at)
-      if (a.due_at) return -1
-      if (b.due_at) return 1
-      return a.label.localeCompare(b.label)
-    })
-  }, [deadlines])
+  const sorted = useMemo(() => sortDeadlinesByDueAt(deadlines), [deadlines])
 
   const next = useMemo(() => pickNextDeadline(sorted), [sorted])
   const headline = next
@@ -134,7 +133,11 @@ export function DealDeadlinesCard({
       toast.message(COPY.deals.cockpit.downloadDeadlinesIcsEmpty)
       return
     }
-    downloadDealDeadlinesIcs({ dealId, dealTitle, deadlines: sorted })
+    downloadDealDeadlinesIcs({
+      dealId: owner.id,
+      dealTitle: owner.title,
+      deadlines: sorted,
+    })
     toast.success('Kalenderdatei wird heruntergeladen.')
   }
 
@@ -168,7 +171,9 @@ export function DealDeadlinesCard({
                     </>
                   ) : (
                     <div className="text-sm text-muted-foreground">
-                      {COPY.deals.cockpit.deadlinesEmpty}
+                      {owner.kind === 'tender'
+                        ? COPY.tenders.nextDeadlineEmpty
+                        : COPY.deals.cockpit.deadlinesEmpty}
                     </div>
                   )}
                 </div>
@@ -200,7 +205,12 @@ export function DealDeadlinesCard({
                   <DeadlineForm
                     title={COPY.deals.cockpit.addDeadline}
                     onSubmit={async (values) => {
-                      const res = await createDealDeadlineManual({ dealId, ...values })
+                      const res = await createDealDeadlineManual({
+                        ...(owner.kind === 'tender'
+                          ? { tenderId: owner.id }
+                          : { dealId: owner.id }),
+                        ...values,
+                      })
                       if (!res.success) {
                         toast.error(res.error ?? 'Speichern fehlgeschlagen.')
                         return
@@ -227,6 +237,7 @@ export function DealDeadlinesCard({
                   })
                   const isFirst = index === 0
                   const isLast = index === sorted.length - 1
+                  const inherited = owner.kind === 'deal' && isTenderOwnedDeadline(d)
                   return (
                     <li key={d.id} className="group/deadline flex gap-3">
                       <DeadlineTimelineMarker
@@ -235,17 +246,22 @@ export function DealDeadlinesCard({
                         tone={deadlineMarkerTone(d)}
                       />
                       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 border-b border-dashed border-border/80 py-3 last:border-b-0">
-                      <div
-                        className={cn(
-                          'min-w-0 flex-1',
-                          deadlineMarkerTone(d) === 'past' && 'opacity-60',
-                        )}
-                      >
-                        <div className="text-sm font-medium">{rowParts.labelDate}</div>
+                        <div
+                          className={cn(
+                            'min-w-0 flex-1',
+                            deadlineMarkerTone(d) === 'past' && 'opacity-60',
+                          )}
+                        >
+                          <div className="text-sm font-medium">{rowParts.labelDate}</div>
                           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                             <Badge variant="outline" className="text-[10px]">
                               {d.source === 'manual' ? 'Manuell' : 'RFP'}
                             </Badge>
+                            {inherited ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {COPY.deals.cockpit.deadlineFromTender}
+                              </Badge>
+                            ) : null}
                             {d.pinned ? (
                               <Badge variant="secondary" className="text-[10px]">
                                 Angepasst
@@ -265,36 +281,58 @@ export function DealDeadlinesCard({
                             'group-hover/deadline:opacity-100 group-focus-within/deadline:opacity-100',
                           )}
                         >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            aria-label={COPY.deals.cockpit.editDeadline}
-                            title={COPY.deals.cockpit.editDeadline}
-                            onClick={() => setEditTarget(d)}
-                          >
-                            <AppIcon icon={PencilEdit01Icon} size={14} />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2"
-                            aria-label={COPY.deals.cockpit.deleteDeadlineAria}
-                            title={COPY.deals.cockpit.deleteDeadlineAria}
-                            onClick={async () => {
-                              const res = await suppressDealDeadlineAction({
-                                dealId,
-                                deadlineId: d.id,
-                              })
-                              if (!res.success)
-                                toast.error(res.error ?? 'Löschen fehlgeschlagen.')
-                              else toast.success('Termin entfernt.')
-                            }}
-                          >
-                            <AppIcon icon={Trash2} size={14} />
-                          </Button>
+                          {inherited && d.tender_id ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              asChild
+                            >
+                              <Link
+                                href={ROUTES.tenders.detail(d.tender_id)}
+                                aria-label={COPY.deals.cockpit.editInheritedDeadline}
+                                title={COPY.deals.cockpit.editInheritedDeadline}
+                              >
+                                <AppIcon icon={PencilEdit01Icon} size={14} />
+                              </Link>
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                aria-label={COPY.deals.cockpit.editDeadline}
+                                title={COPY.deals.cockpit.editDeadline}
+                                onClick={() => setEditTarget(d)}
+                              >
+                                <AppIcon icon={PencilEdit01Icon} size={14} />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                aria-label={COPY.deals.cockpit.deleteDeadlineAria}
+                                title={COPY.deals.cockpit.deleteDeadlineAria}
+                                onClick={async () => {
+                                  const res = await suppressDealDeadlineAction({
+                                    ...(owner.kind === 'tender'
+                                      ? { tenderId: owner.id }
+                                      : { dealId: owner.id }),
+                                    deadlineId: d.id,
+                                  })
+                                  if (!res.success)
+                                    toast.error(res.error ?? 'Löschen fehlgeschlagen.')
+                                  else toast.success('Termin entfernt.')
+                                }}
+                              >
+                                <AppIcon icon={Trash2} size={14} />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -323,7 +361,9 @@ export function DealDeadlinesCard({
               submitLabel="Speichern"
               onSubmit={async (values) => {
                 const res = await updateDealDeadlineAction({
-                  dealId,
+                  ...(owner.kind === 'tender'
+                    ? { tenderId: owner.id }
+                    : { dealId: owner.id }),
                   deadlineId: editTarget.id,
                   source: editTarget.source,
                   ...values,

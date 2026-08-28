@@ -32,13 +32,13 @@ export function inferDeadlineKindFromTitle(title: string): DealDeadlineKind {
   return 'custom'
 }
 
-/** Stabiler Hash — keine LLM-IDs, keine Array-Indizes. */
+/** Stabiler Hash — keine LLM-IDs, keine Array-Indizes. `ownerId` ist Los oder Ausschreibung. */
 export function buildRfpDeadlineSourceKey(
-  dealId: string,
+  ownerId: string,
   kind: DealDeadlineKind,
   label?: string,
 ): string {
-  const base = `${dealId}:${kind}`
+  const base = `${ownerId}:${kind}`
   if (isCanonicalRfpKind(kind)) {
     return createHash('sha256').update(base, 'utf8').digest('hex').slice(0, 32)
   }

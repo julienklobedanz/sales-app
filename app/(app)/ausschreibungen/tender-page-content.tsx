@@ -3,13 +3,9 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { DealBreadcrumbs } from '@/app/(app)/deals/cockpit/deal-breadcrumbs'
+import { DealDeadlinesCard } from '@/app/(app)/deals/cockpit/deal-deadlines-card'
 import { COPY } from '@/lib/copy'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import {
-  formatDeadlineRowParts,
-  formatNextDeadlineHeadline,
-  pickNextDeadline,
-} from '@/lib/deals/deadline-display'
 import { formatDealVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
 import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
@@ -24,10 +20,6 @@ export function TenderPageContent({
   tender: TenderPageData
   orgDateDisplayFormat: OrgDateDisplayFormat
 }) {
-  const nextDeadline = pickNextDeadline(tender.deadlines)
-  const restDeadlines = nextDeadline
-    ? tender.deadlines.filter((row) => row.id !== nextDeadline.id)
-    : tender.deadlines
   const procedureLabel = tenderProcedureTypeLabel(tender.procedure_type)
   const facts = [
     tender.company_name
@@ -93,43 +85,11 @@ export function TenderPageContent({
         </div>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">
-          {COPY.deals.cockpit.nextDeadlineLabel}
-        </h2>
-        {nextDeadline ? (
-          <div className="space-y-2">
-            {(() => {
-              const headline = formatNextDeadlineHeadline(nextDeadline, {
-                dateDisplayFormat: orgDateDisplayFormat,
-              })
-              return (
-                <p className="text-base font-semibold">
-                  {headline.title}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {headline.subtitle}
-                  </span>
-                </p>
-              )
-            })()}
-            {restDeadlines.map((deadline) => {
-              const parts = formatDeadlineRowParts(deadline, {
-                dateDisplayFormat: orgDateDisplayFormat,
-              })
-              return (
-                <p key={deadline.id} className="text-sm text-muted-foreground">
-                  {parts.labelDate}
-                  {parts.countdown ? ` · ${parts.countdown}` : ''}
-                </p>
-              )
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {COPY.tenders.nextDeadlineEmpty}
-          </p>
-        )}
-      </section>
+      <DealDeadlinesCard
+        owner={{ kind: 'tender', id: tender.id, title: tender.title }}
+        deadlines={tender.deadlines}
+        orgDateDisplayFormat={orgDateDisplayFormat}
+      />
 
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{COPY.tenders.lotsHeading}</h2>

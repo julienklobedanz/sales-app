@@ -1,9 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { ROUTES } from '@/lib/routes'
+import { revalidateDealWorkspacePaths } from '@/lib/deals/revalidate-deal-workspace-paths'
 import {
   createManualDealDeadline,
   suppressDealDeadline,
@@ -11,6 +9,7 @@ import {
 } from '@/lib/deals/deadlines'
 import type { DealDeadlineKind } from '@/lib/deals/deadline-types'
 import { timelineDueToIso } from '@/lib/deals/deadline-rfp-mapper'
+import { revalidateTenderSurfaces } from '@/lib/tenders/revalidate-tender-surfaces'
 
 async function getSessionOrgAndUser() {
   const supabase = await createServerSupabaseClient()
@@ -31,8 +30,28 @@ async function getSessionOrgAndUser() {
   return { supabase, userId: user.id, orgId }
 }
 
+async function revalidateDeadlineOwner(args: {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+  orgId: string
+  dealId?: string | null
+  tenderId?: string | null
+}) {
+  if (args.tenderId) {
+    await revalidateTenderSurfaces(args.supabase, {
+      organizationId: args.orgId,
+      tenderId: args.tenderId,
+      extraDealId: args.dealId ?? undefined,
+    })
+    return
+  }
+  if (args.dealId) {
+    revalidateDealWorkspacePaths(args.dealId)
+  }
+}
+
 export async function createDealDeadlineManual(args: {
-  dealId: string
+  dealId?: string
+  tenderId?: string
   kind: DealDeadlineKind
   label: string
   dueDate?: string | null
@@ -50,6 +69,7 @@ export async function createDealDeadlineManual(args: {
 
   const res = await createManualDealDeadline(ctx.supabase, {
     dealId: args.dealId,
+    tenderId: args.tenderId,
     organizationId: ctx.orgId,
     userId: ctx.userId,
     kind: args.kind,
@@ -59,12 +79,20 @@ export async function createDealDeadlineManual(args: {
     isApproximate,
   })
 
-  if (res.success) revalidatePath(ROUTES.deals.detail(args.dealId))
+  if (res.success) {
+    await revalidateDeadlineOwner({
+      supabase: ctx.supabase,
+      orgId: ctx.orgId,
+      dealId: args.dealId,
+      tenderId: args.tenderId,
+    })
+  }
   return res
 }
 
 export async function updateDealDeadlineAction(args: {
-  dealId: string
+  dealId?: string
+  tenderId?: string
   deadlineId: string
   source: 'rfp' | 'manual'
   kind: DealDeadlineKind
@@ -93,12 +121,20 @@ export async function updateDealDeadlineAction(args: {
     source: args.source,
   })
 
-  if (res.success) revalidatePath(ROUTES.deals.detail(args.dealId))
+  if (res.success) {
+    await revalidateDeadlineOwner({
+      supabase: ctx.supabase,
+      orgId: ctx.orgId,
+      dealId: args.dealId,
+      tenderId: args.tenderId,
+    })
+  }
   return res
 }
 
 export async function suppressDealDeadlineAction(args: {
-  dealId: string
+  dealId?: string
+  tenderId?: string
   deadlineId: string
 }): Promise<{ success: boolean; error?: string }> {
   const ctx = await getSessionOrgAndUser()
@@ -109,6 +145,13 @@ export async function suppressDealDeadlineAction(args: {
     organizationId: ctx.orgId,
   })
 
-  if (res.success) revalidatePath(ROUTES.deals.detail(args.dealId))
+  if (res.success) {
+    await revalidateDeadlineOwner({
+      supabase: ctx.supabase,
+      orgId: ctx.orgId,
+      dealId: args.dealId,
+      tenderId: args.tenderId,
+    })
+  }
   return res
 }

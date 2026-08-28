@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { DealStatus } from '@/app/(app)/deals/types'
 import { accountFromJoin } from '@/lib/accounts/account-from-join'
-import { listDealDeadlines } from '@/lib/deals/deadlines'
+import { listTenderDeadlines } from '@/lib/deals/deadlines'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import type { Database } from '@/lib/database.types'
@@ -59,15 +59,7 @@ export async function loadTenderPageData(
     status: normalizeDealStatus(row.status),
   }))
 
-  const deadlineLists = await Promise.all(
-    lots.map((lot) => listDealDeadlines(supabase, lot.id)),
-  )
-  const deadlines = deadlineLists.flat().sort((a, b) => {
-    if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at)
-    if (a.due_at) return -1
-    if (b.due_at) return 1
-    return a.label.localeCompare(b.label)
-  })
+  const deadlines = await listTenderDeadlines(supabase, tender.id)
 
   return {
     id: tender.id,

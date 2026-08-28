@@ -423,7 +423,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          deal_id: string
+          deal_id: string | null
           due_at: string | null
           due_text: string | null
           id: string
@@ -435,12 +435,13 @@ export type Database = {
           source: Database['public']['Enums']['deal_deadline_source']
           source_key: string
           suppressed_at: string | null
+          tender_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          deal_id: string
+          deal_id?: string | null
           due_at?: string | null
           due_text?: string | null
           id?: string
@@ -452,12 +453,13 @@ export type Database = {
           source: Database['public']['Enums']['deal_deadline_source']
           source_key: string
           suppressed_at?: string | null
+          tender_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          deal_id?: string
+          deal_id?: string | null
           due_at?: string | null
           due_text?: string | null
           id?: string
@@ -469,6 +471,7 @@ export type Database = {
           source?: Database['public']['Enums']['deal_deadline_source']
           source_key?: string
           suppressed_at?: string | null
+          tender_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -484,6 +487,13 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deal_deadlines_tender_id_fkey'
+            columns: ['tender_id']
+            isOneToOne: false
+            referencedRelation: 'tenders'
             referencedColumns: ['id']
           },
         ]
@@ -3222,6 +3232,19 @@ export type Database = {
           p_label: string
           p_organization_id: string
           p_source_key: string
+        }
+        Returns: undefined
+      }
+      upsert_tender_rfp_deadline: {
+        Args: {
+          p_due_at: string
+          p_due_text: string
+          p_is_approximate: boolean
+          p_kind: Database['public']['Enums']['deal_deadline_kind']
+          p_label: string
+          p_organization_id: string
+          p_source_key: string
+          p_tender_id: string
         }
         Returns: undefined
       }
